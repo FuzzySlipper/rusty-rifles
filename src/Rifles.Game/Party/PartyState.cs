@@ -33,23 +33,22 @@ internal sealed class PartyMemberState
 
 internal sealed class PartyState
 {
-    private static readonly MemberDefinition[] StarterRoster =
-    [
-        new("warden", "Warden", FormationSlot.FrontLeft, 40),
-        new("blade", "Blade", FormationSlot.FrontRight, 32),
-        new("seeker", "Seeker", FormationSlot.RearLeft, 26),
-        new("mender", "Mender", FormationSlot.RearRight, 28),
-    ];
-    private PartyMemberState[] members = StarterRoster.Select(d => new PartyMemberState(d)).ToArray();
+    private readonly MemberDefinition[] roster;
+    private PartyMemberState[] members;
+    internal PartyState(IReadOnlyList<MemberDefinition> definitions)
+    {
+        roster = definitions.ToArray();
+        members = roster.Select(d => new PartyMemberState(d)).ToArray();
+    }
     internal IReadOnlyList<PartyMemberState> Members => Array.AsReadOnly(members);
     internal IReadOnlyList<MemberSnapshot> Capture() => members.Select(m => new MemberSnapshot(m.Definition.Id, m.Vitality)).ToArray();
 
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
     {
-        if (saved.Count != StarterRoster.Length || saved.Select(s => s.Id).Distinct(StringComparer.Ordinal).Count() != saved.Count)
+        if (saved.Count != roster.Length || saved.Select(s => s.Id).Distinct(StringComparer.Ordinal).Count() != saved.Count)
             throw new InvalidOperationException("Party snapshot roster mismatch.");
         // Validate and construct the entire replacement before committing any member.
-        PartyMemberState[] restored = StarterRoster.Select(definition =>
+        PartyMemberState[] restored = roster.Select(definition =>
         {
             MemberSnapshot value = saved.SingleOrDefault(s => s.Id == definition.Id)
                 ?? throw new InvalidOperationException("Party snapshot member missing.");

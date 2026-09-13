@@ -7,11 +7,11 @@ namespace Rifles.Game.Dungeon;
 /// <summary>Publishes the resolved grid through Engine voxels and navigation.</summary>
 internal sealed class DungeonScene : IDisposable
 {
-    internal const float CellSize = 2f;
-    private const int ChunkSize = 16;
+    private readonly ExplorationTuning tuning;
+    private float CellSize => tuning.CellSize;
     private const int FloorY = 0;
     private const int NavigationY = 1;
-    private const int CeilingY = 3;
+    private int CeilingY => tuning.CeilingCells;
     private const ulong GridId = 1;
     private const uint StoneSlot = 1, ExitSlot = 2;
     private readonly IEngineContext engine;
@@ -20,16 +20,15 @@ internal sealed class DungeonScene : IDisposable
     private readonly List<Light> lights = [];
     private VoxelScenePresentation? scene;
 
-    internal DungeonScene(IEngineContext engine, DungeonFloor floor)
+    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance)
     {
         this.engine = engine;
-        spatial = engine.Spatial.CreateSession(new SpatialSessionConfig(CellSize, ChunkSize, VoxelSurfaceMode.GreedyCubes));
+        this.tuning = tuning;
+        spatial = engine.Spatial.CreateSession(new SpatialSessionConfig(CellSize, tuning.ChunkSize, VoxelSurfaceMode.GreedyCubes));
         try
         {
-            materials.Add(engine.Graphics.CreateMaterial(new MaterialRequest(new Color(.35f, .32f, .27f, 1),
-                new RenderResourceHandle(0), .95f, new Color(1, 1, 1, 1), Vector3.Zero, 0, false)));
-            materials.Add(engine.Graphics.CreateMaterial(new MaterialRequest(new Color(.25f, .52f, .43f, 1),
-                new RenderResourceHandle(0), .8f, new Color(1, 1, 1, 1), new Vector3(.08f, .2f, .12f), 0, false)));
+            materials.Add(engine.Graphics.CreateMaterial(appearance.Stone.Request()));
+            materials.Add(engine.Graphics.CreateMaterial(appearance.Exit.Request()));
             IReadOnlySet<GridPoint> cells = floor.Geometry.WalkableCells;
             HashSet<GridPoint> walls = cells.SelectMany(cell => CardinalDirections.Ordered.Select(d => cell + d.Offset()))
                 .Where(cell => !cells.Contains(cell)).ToHashSet();
@@ -45,17 +44,17 @@ internal sealed class DungeonScene : IDisposable
             VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
             engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, edits.ToArray()));
             engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
-                new PlanarNavConfig(GridId, CellSize, ChunkSize, 1),
+                new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
                 cells.Select(c => new PlanarNavCell(c.X, NavigationY, c.Y)).ToArray()));
             scene = engine.VoxelScenePresentation.ProjectScene(new ProjectVoxelSceneRequest(spatial,
                 new VoxelSceneMaterialBinding[] { new(StoneSlot, materials[0]), new(ExitSlot, materials[1]) }));
             ulong lightId = 1;
             foreach (PlacedPiece room in floor.Geometry.Pieces)
             {
-                Vector3 position = Eye(room.Origin + new GridPoint(2, 2));
+                Vector3 position = Eye(new GridPoint((int)room.WalkableCells.Average(p => p.X), (int)room.WalkableCells.Average(p => p.Y)));
                 lights.Add(engine.Graphics.CreateLight(new LightRequest(lightId++, false, 0,
-                    new LightDescriptor(LightKind.Point, new Vector3(1f, .78f, .5f), 5f,
-                        true, position, Vector3.UnitY, true, 24f, 1f, 0, 0, LightShadowIntent.Disabled))));
+                    new LightDescriptor(LightKind.Point, new Vector3(appearance.LightColor[0], appearance.LightColor[1], appearance.LightColor[2]), appearance.LightIntensity,
+                        true, position, Vector3.UnitY, true, appearance.LightRange, 1f, 0, 0, LightShadowIntent.Disabled))));
             }
         }
         catch { Dispose(); throw; }
@@ -65,14 +64,14 @@ internal sealed class DungeonScene : IDisposable
     {
         if (from.ManhattanDistance(destination) != 1) return false;
         NavigationStepReceipt step = engine.Spatial.EvaluateNavigationStep(new NavigationStepRequest(
-            spatial, NavigationCenter(from), NavigationCenter(destination), CellSize, 128));
+            spatial, NavigationCenter(from), NavigationCenter(destination), CellSize, tuning.NavigationBudget));
         return step.Outcome == NavigationPathOutcome.Reached && step.Reached != 0
             && step.NextPathCell == new PlanarNavCell(destination.X, NavigationY, destination.Y);
     }
 
-    private static Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
+    private Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
         (NavigationY + .5f) * CellSize, (cell.Y + .5f) * CellSize);
-    internal static Vector3 Eye(GridPoint cell) => NavigationCenter(cell) with { Y = CellSize + 1.6f };
+    internal Vector3 Eye(GridPoint cell) => NavigationCenter(cell) with { Y = CellSize + tuning.EyeHeight };
     internal void Attach() => engine.VoxelScenePresentation.RefreshScene(scene!);
 
     public void Dispose()

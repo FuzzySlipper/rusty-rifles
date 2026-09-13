@@ -1,0 +1,14 @@
+{
+  "stepSeconds": 0.22,
+  "turnSeconds": 0.18,
+  "cellSize": 2,
+  "eyeHeight": 1.6,
+  "ceilingCells": 3,
+  "chunkSize": 16,
+  "navigationBudget": 128,
+  "fieldOfView": 75,
+  "nearDistance": 0.05,
+  "farDistance": 250,
+  "cameraDelay": 0,
+  "initialFacing": "North"
+}

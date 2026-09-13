@@ -1,0 +1,28 @@
+{
+  "members": [
+    {
+      "id": "warden",
+      "name": "Warden",
+      "slot": "FrontLeft",
+      "maximumVitality": 40
+    },
+    {
+      "id": "blade",
+      "name": "Blade",
+      "slot": "FrontRight",
+      "maximumVitality": 32
+    },
+    {
+      "id": "seeker",
+      "name": "Seeker",
+      "slot": "RearLeft",
+      "maximumVitality": 26
+    },
+    {
+      "id": "mender",
+      "name": "Mender",
+      "slot": "RearRight",
+      "maximumVitality": 28
+    }
+  ]
+}

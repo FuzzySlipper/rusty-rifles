@@ -1,0 +1,37 @@
+{
+  "stone": {
+    "color": [
+      0.35,
+      0.32,
+      0.27,
+      1
+    ],
+    "roughness": 0.95,
+    "emission": [
+      0,
+      0,
+      0
+    ]
+  },
+  "exit": {
+    "color": [
+      0.25,
+      0.52,
+      0.43,
+      1
+    ],
+    "roughness": 0.8,
+    "emission": [
+      0.08,
+      0.2,
+      0.12
+    ]
+  },
+  "lightColor": [
+    1,
+    0.78,
+    0.5
+  ],
+  "lightIntensity": 5,
+  "lightRange": 24
+}

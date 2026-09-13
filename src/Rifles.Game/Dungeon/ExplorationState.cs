@@ -5,11 +5,10 @@ namespace Rifles.Game.Dungeon;
 internal enum ExplorationAction { Forward, Backward, StrafeLeft, StrafeRight, TurnLeft, TurnRight }
 
 /// <summary>One grid pose for the whole party; Engine admits movement and supplies elapsed simulation time.</summary>
-internal sealed class ExplorationState(GridPoint entrance)
+internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tuning)
 {
-    internal const double ActionDurationSeconds = 0.18;
     internal GridPoint Position { get; private set; } = entrance;
-    internal CardinalDirection Facing { get; private set; } = CardinalDirection.North;
+    internal CardinalDirection Facing { get; private set; } = tuning.InitialFacing;
     internal double ElapsedSeconds { get; private set; }
     internal double RecoverySeconds { get; private set; }
 
@@ -39,7 +38,7 @@ internal sealed class ExplorationState(GridPoint entrance)
             if (!admitStep(Position, destination)) return false;
             Position = destination;
         }
-        RecoverySeconds = ActionDurationSeconds;
+        RecoverySeconds = action is ExplorationAction.TurnLeft or ExplorationAction.TurnRight ? tuning.TurnSeconds : tuning.StepSeconds;
         return true;
     }
 }

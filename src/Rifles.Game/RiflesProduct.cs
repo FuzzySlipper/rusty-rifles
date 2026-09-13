@@ -1,4 +1,5 @@
 using System.Text;
+using Rifles.Game.Content;
 using Rusty.Engine;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Party;
@@ -8,12 +9,11 @@ namespace Rifles.Game;
 
 public sealed class RiflesProduct : IEngineProduct
 {
-    private const ulong InitialSeed = 29;
-    private const double FieldOfView = 75, NearDistance = .05, FarDistance = 250, CameraDelay = .05;
+    private readonly GameDefinitions definitions;
     private readonly IEngineContext engine;
     private readonly DungeonFloor floor;
     private ExplorationState exploration;
-    private PartyState party = new();
+    private PartyState party;
     private DungeonScene? scene;
     private Camera? camera;
     private SessionProjection? projection;
@@ -23,8 +23,10 @@ public sealed class RiflesProduct : IEngineProduct
     {
         ArgumentNullException.ThrowIfNull(context);
         engine = context.Engine;
-        floor = DungeonFloor.Generate(InitialSeed);
-        exploration = new ExplorationState(floor.Entrance);
+        definitions = GameDefinitions.Load(engine);
+        party = new PartyState(definitions.Party.Members);
+        floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
+        exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
     }
 
     public void Start()
@@ -32,7 +34,7 @@ public sealed class RiflesProduct : IEngineProduct
         if (started || shutdown) return;
         try
         {
-            scene = new DungeonScene(engine, floor);
+            scene = new DungeonScene(engine, floor, definitions.Exploration, definitions.Appearance);
             camera = engine.CameraView.CreateCamera(CameraDescriptor());
             projection = new SessionProjection(engine.Ui);
             engine.CameraView.SetActiveCamera(camera);
@@ -77,22 +79,22 @@ public sealed class RiflesProduct : IEngineProduct
     public void Restart()
     {
         if (!started || shutdown) return;
-        exploration = new ExplorationState(floor.Entrance);
-        party = new PartyState();
+        exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
+        party = new PartyState(definitions.Party.Members);
         paused = false;
         Publish();
     }
 
     private CameraDescriptor CameraDescriptor() => new(
-        new CameraPose(DungeonScene.Eye(exploration.Position), 0, (int)exploration.Facing * 90d),
+        new CameraPose(scene!.Eye(exploration.Position), 0, (int)exploration.Facing * 90d),
         CameraBasisMode.Derived, default,
-        new CameraProjection(CameraProjectionKind.Perspective, FieldOfView, 0, NearDistance, FarDistance),
+        new CameraProjection(CameraProjectionKind.Perspective, definitions.Exploration.FieldOfView, 0, definitions.Exploration.NearDistance, definitions.Exploration.FarDistance),
         new CameraViewport(0, 0, 1, 1));
 
     private void Publish()
     {
         engine.CameraView.UpdateCameraSample(new CameraSampleRequest(camera!, CameraDescriptor(),
-            exploration.ElapsedSeconds, CameraDelay, CameraInterpolation.Latest, 1));
+            exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Latest, 1));
         projection!.Publish(floor, exploration, party, paused);
     }
 
