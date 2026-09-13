@@ -1,0 +1,622 @@
+{
+  "available": true,
+  "canvas": {
+    "backingHeight": 1997,
+    "backingWidth": 2067,
+    "cssHeight": 1402,
+    "cssWidth": 1451,
+    "effectivePixelRatio": 1.4245348035837353
+  },
+  "detail": {
+    "admission": {
+      "recentAttemptLimit": 16,
+      "recentAttempts": [
+        {
+          "backend": {
+            "admissionObservedAtMs": null,
+            "admittedAtMs": null,
+            "automaticSubmissionLimit": 8,
+            "completionFenceMode": "active",
+            "effectiveDurationMs": null,
+            "maximumPendingSubmissions": 8,
+            "mode": "timerQuery",
+            "observedAtMs": null,
+            "pendingMeasurementCount": 3,
+            "pendingSubmissionCount": 3,
+            "rendererClass": "accelerated",
+            "state": "waiting",
+            "timerDurationMs": null
+          },
+          "demand": {
+            "controls": false,
+            "presentation": true,
+            "requested": true,
+            "retainedAnimation": false,
+            "schemaVersion": 1,
+            "shouldSubmit": true,
+            "viewportChanged": true
+          },
+          "outcome": "backendBlocked",
+          "phasesMs": {
+            "backendReadinessMs": 0.0,
+            "backendSubmissionMs": null,
+            "callbackTotalMs": 0.0,
+            "cameraMs": null,
+            "controlsMs": null,
+            "demandDecisionMs": 0.0,
+            "presentationMs": null,
+            "successorQueueMs": 0.0,
+            "unaccountedTailMs": 0.0
+          },
+          "sequence": 1,
+          "sourceTimeMs": 102757.4
+        },
+        {
+          "backend": {
+            "admissionObservedAtMs": 108782.10000002384,
+            "admittedAtMs": 108403.15882567328,
+            "automaticSubmissionLimit": 8,
+            "completionFenceMode": "active",
+            "effectiveDurationMs": 15.16032,
+            "maximumPendingSubmissions": 8,
+            "mode": "timerQuery",
+            "observedAtMs": 108782.10000002384,
+            "pendingMeasurementCount": 0,
+            "pendingSubmissionCount": 0,
+            "rendererClass": "accelerated",
+            "state": "ready",
+            "timerDurationMs": 15.16032
+          },
+          "demand": {
+            "controls": false,
+            "presentation": true,
+            "requested": true,
+            "retainedAnimation": false,
+            "schemaVersion": 1,
+            "shouldSubmit": true,
+            "viewportChanged": false
+          },
+          "outcome": "admitted",
+          "phasesMs": {
+            "backendReadinessMs": 0.0,
+            "backendSubmissionMs": 2.200000047683716,
+            "callbackTotalMs": 2.5,
+            "cameraMs": 0.0,
+            "controlsMs": 0.0,
+            "demandDecisionMs": 0.10000002384185791,
+            "presentationMs": 0.0,
+            "successorQueueMs": 0.0,
+            "unaccountedTailMs": 0.19999992847442627
+          },
+          "sequence": 2,
+          "sourceTimeMs": 108573.8
+        },
+        {
+          "backend": {
+            "admissionObservedAtMs": 108785.80000007153,
+            "admittedAtMs": 108403.15882567328,
+            "automaticSubmissionLimit": 8,
+            "completionFenceMode": "active",
+            "effectiveDurationMs": 15.16032,
+            "maximumPendingSubmissions": 8,
+            "mode": "timerQuery",
+            "observedAtMs": 108782.10000002384,
+            "pendingMeasurementCount": 1,
+            "pendingSubmissionCount": 1,
+            "rendererClass": "accelerated",
+            "state": "ready",
+            "timerDurationMs": 15.16032
+          },
+          "demand": {
+            "controls": false,
+            "presentation": true,
+            "requested": false,
+            "retainedAnimation": false,
+            "schemaVersion": 1,
+            "shouldSubmit": true,
+            "viewportChanged": false
+          },
+          "outcome": "admitted",
+          "phasesMs": {
+            "backendReadinessMs": 0.0,
+            "backendSubmissionMs": 0.3999999761581421,
+            "callbackTotalMs": 0.5,
+            "cameraMs": 0.0,
+            "controlsMs": 0.0,
+            "demandDecisionMs": 0.0,
+            "presentationMs": 0.10000002384185791,
+            "successorQueueMs": 0.0,
+            "unaccountedTailMs": 0.0
+          },
+          "sequence": 3,
+          "sourceTimeMs": 108782.1
+        },
+        {
+          "backend": {
+            "admissionObservedAtMs": 108785.80000007153,
+            "admittedAtMs": 108403.15882567328,
+            "automaticSubmissionLimit": 8,
+            "completionFenceMode": "active",
+            "effectiveDurationMs": 15.16032,
+            "maximumPendingSubmissions": 8,
+            "mode": "timerQuery",
+            "observedAtMs": 108782.10000002384,
+            "pendingMeasurementCount": 2,
+            "pendingSubmissionCount": 2,
+            "rendererClass": "accelerated",
+            "state": "waiting",
+            "timerDurationMs": 15.16032
+          },
+          "demand": {
+            "controls": false,
+            "presentation": true,
+            "requested": true,
+            "retainedAnimation": false,
+            "schemaVersion": 1,
+            "shouldSubmit": true,
+            "viewportChanged": false
+          },
+          "outcome": "backendBlocked",
+          "phasesMs": {
+            "backendReadinessMs": 0.0,
+            "backendSubmissionMs": null,
+            "callbackTotalMs": 0.0,
+            "cameraMs": null,
+            "controlsMs": null,
+            "demandDecisionMs": 0.0,
+            "presentationMs": null,
+            "successorQueueMs": 0.0,
+            "unaccountedTailMs": 0.0
+          },
+          "sequence": 4,
+          "sourceTimeMs": 108790.4
+        },
+        {
+          "backend": {
+            "admissionObservedAtMs": 108960,
+            "admittedAtMs": 108403.15882567328,
+            "automaticSubmissionLimit": 8,
+            "completionFenceMode": "active",
+            "effectiveDurationMs": 15.16032,
+            "maximumPendingSubmissions": 8,
+            "mode": "timerQuery",
+            "observedAtMs": 108782.10000002384,
+            "pendingMeasurementCount": 2,
+            "pendingSubmissionCount": 2,
+            "rendererClass": "accelerated",
+            "state": "ready",
+            "timerDurationMs": 15.16032
+          },
+          "demand": {
+            "controls": false,
+            "presentation": true,
+            "requested": true,
+            "retainedAnimation": false,
+            "schemaVersion": 1,
+            "shouldSubmit": true,
+            "viewportChanged": false
+          },
+          "outcome": "admitted",
+          "phasesMs": {
+            "backendReadinessMs": 0.0,
+            "backendSubmissionMs": 0.3999999761581421,
+            "callbackTotalMs": 0.6000000238418579,
+            "cameraMs": 0.0,
+            "controlsMs": 0.0,
+            "demandDecisionMs": 0.0,
+            "presentationMs": 0.10000002384185791,
+            "successorQueueMs": 0.0,
+            "unaccountedTailMs": 0.10000002384185791
+          },
+          "sequence": 5,
+          "sourceTimeMs": 108957.1
+        }
+      ],
+      "totals": {
+        "admitted": 3,
+        "attempts": 5,
+        "backendBlocked": 2,
+        "demandReasons": {
+          "controls": 0,
+          "presentation": 5,
+          "requested": 4,
+          "retainedAnimation": 0,
+          "viewportChanged": 1
+        },
+        "noDemand": 0
+      },
+      "window": {
+        "attempts": 5,
+        "callbackIntervalsMs": {
+          "count": 4,
+          "median": 166.70000000001164,
+          "p95": 5816.400000000009
+        },
+        "callbackRateHz": 0.6451925093149656,
+        "demandPositiveRateHz": 0.6451925093149656,
+        "outcomeRatesHz": {
+          "admitted": 0.3871155055889794,
+          "backendBlocked": 0.25807700372598624,
+          "noDemand": 0.0
+        },
+        "outcomes": {
+          "admitted": 3,
+          "backendBlocked": 2,
+          "noDemand": 0
+        },
+        "phaseAggregatesMs": {
+          "backendReadinessMs": {
+            "count": 5,
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "backendSubmissionMs": {
+            "count": 3,
+            "median": 0.3999999761581421,
+            "p95": 2.200000047683716
+          },
+          "callbackTotalMs": {
+            "count": 5,
+            "median": 0.5,
+            "p95": 2.5
+          },
+          "cameraMs": {
+            "count": 3,
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "controlsMs": {
+            "count": 3,
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "demandDecisionMs": {
+            "count": 5,
+            "median": 0.0,
+            "p95": 0.10000002384185791
+          },
+          "presentationMs": {
+            "count": 3,
+            "median": 0.10000002384185791,
+            "p95": 0.10000002384185791
+          },
+          "successorQueueMs": {
+            "count": 5,
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "unaccountedTailMs": {
+            "count": 5,
+            "median": 0.0,
+            "p95": 0.19999992847442627
+          }
+        },
+        "submissionIntervalsMs": {
+          "count": 2,
+          "median": 175.0,
+          "p95": 208.3000000000029
+        },
+        "submissionRateHz": 5.217845030002569
+      }
+    },
+    "cadence": {
+      "evictedFailureCount": 0,
+      "failures": [],
+      "retainedFailureCount": 0,
+      "state": "ready"
+    },
+    "pacing": {
+      "admissionObservedAtMs": 108960,
+      "admittedAtMs": 108403.15882567328,
+      "automaticSubmissionCapacity": 8,
+      "automaticSubmissionLimit": 8,
+      "completionAllowanceMs": 17,
+      "maximumPendingMeasurements": 8,
+      "maximumPendingSubmissions": 8,
+      "observedAtMs": 108782.10000002384,
+      "targetDutyFraction": 0.26384667342114154
+    },
+    "productFrames": {
+      "appliedAgeMs": 38.299999952316284,
+      "appliedCount": 7058,
+      "appliedIntervalsMs": {
+        "count": 256,
+        "median": 1.600000023841858,
+        "p95": 2.3000000715255737
+      },
+      "appliedRateHz": 716.083916083916,
+      "applyLatencyMs": {
+        "count": 256,
+        "median": 0.7000000476837158,
+        "p95": 1.100000023841858
+      },
+      "receivedAgeMs": 39.200000047683716,
+      "receivedCount": 7058,
+      "receivedIntervalsMs": {
+        "count": 256,
+        "median": 0.10000002384185791,
+        "p95": 2.700000047683716
+      },
+      "receivedRateHz": 372.2362161146085
+    },
+    "realizedTextures": {
+      "count": 40,
+      "decodedBytes": 251790720,
+      "encodedBytes": 69981589,
+      "omittedRows": 8,
+      "retainedRowLimit": 32,
+      "rows": [
+        {
+          "decodedBytes": 6290064,
+          "encodedBytes": 2874610,
+          "id": "texture/csharp-authored-2",
+          "resource": "texture-resource/50f4d1b114b3f185420ad2c4eb43ae75e05066a8c7517ce95349041779046a24"
+        },
+        {
+          "decodedBytes": 6290064,
+          "encodedBytes": 2953991,
+          "id": "texture/csharp-authored-3",
+          "resource": "texture-resource/f444bee5a7735826b43cdc4f88cf14837e01e117fe4f5b860a610cdf99663d65"
+        },
+        {
+          "decodedBytes": 6290064,
+          "encodedBytes": 3041330,
+          "id": "texture/csharp-authored-4",
+          "resource": "texture-resource/d25eee015c06d94ca9fe333f956d6833c08bf0a2536730d556ed65abfda61fff"
+        },
+        {
+          "decodedBytes": 6290064,
+          "encodedBytes": 3041330,
+          "id": "texture/csharp-authored-5",
+          "resource": "texture-resource/d25eee015c06d94ca9fe333f956d6833c08bf0a2536730d556ed65abfda61fff"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1932058,
+          "id": "texture/native-1",
+          "resource": "texture-resource/f0425ac1b8f6844d6894e9c864378c1c94504a36d87a82ea5c38a0e62af9f07f"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 2134215,
+          "id": "texture/native-10",
+          "resource": "texture-resource/173677230948a7fee14d767a76d806c256b7fba8dcf8639413e970361414bcdb"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1832259,
+          "id": "texture/native-11",
+          "resource": "texture-resource/4060cde23e8c1282cc367da4ff1cc0c408703fd3dc2a55749a020484cd3ed0ba"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1630783,
+          "id": "texture/native-12",
+          "resource": "texture-resource/03aeefe56d940d60d7f8b4e8cfcf6b1c147c81e439a6e82251264cacbf16024a"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1935921,
+          "id": "texture/native-13",
+          "resource": "texture-resource/434e065c802b8d1e663ba01ae41f712bca886f21b252107b8091d8bcc943f42b"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1709306,
+          "id": "texture/native-14",
+          "resource": "texture-resource/97a1d9d1a667c5ac0d219af6e4d9b63607d56f86a95cdf499acdf44113ac9b6c"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-15",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-16",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-17",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-18",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-19",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6292176,
+          "encodedBytes": 2331482,
+          "id": "texture/native-2",
+          "resource": "texture-resource/545cfab5f32d9c1275c384d057468c57c24551e0a7c1e4546c819d0d418ce83b"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-20",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-21",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6308352,
+          "encodedBytes": 562740,
+          "id": "texture/native-22",
+          "resource": "texture-resource/8b42f748da09cdd5fdb2970b0f931af5eb248855723929ffb3cb76c24cfb7d6e"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1932058,
+          "id": "texture/native-24",
+          "resource": "texture-resource/f0425ac1b8f6844d6894e9c864378c1c94504a36d87a82ea5c38a0e62af9f07f"
+        },
+        {
+          "decodedBytes": 6292176,
+          "encodedBytes": 2331482,
+          "id": "texture/native-25",
+          "resource": "texture-resource/545cfab5f32d9c1275c384d057468c57c24551e0a7c1e4546c819d0d418ce83b"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 2134215,
+          "id": "texture/native-26",
+          "resource": "texture-resource/173677230948a7fee14d767a76d806c256b7fba8dcf8639413e970361414bcdb"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1841996,
+          "id": "texture/native-27",
+          "resource": "texture-resource/aec7bf08021408da521e3a41191abe9e05ed424aa39ce290e73bcbf4d611fd14"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1630783,
+          "id": "texture/native-28",
+          "resource": "texture-resource/03aeefe56d940d60d7f8b4e8cfcf6b1c147c81e439a6e82251264cacbf16024a"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1935921,
+          "id": "texture/native-29",
+          "resource": "texture-resource/434e065c802b8d1e663ba01ae41f712bca886f21b252107b8091d8bcc943f42b"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 2134215,
+          "id": "texture/native-3",
+          "resource": "texture-resource/173677230948a7fee14d767a76d806c256b7fba8dcf8639413e970361414bcdb"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1709306,
+          "id": "texture/native-30",
+          "resource": "texture-resource/97a1d9d1a667c5ac0d219af6e4d9b63607d56f86a95cdf499acdf44113ac9b6c"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1932058,
+          "id": "texture/native-31",
+          "resource": "texture-resource/f0425ac1b8f6844d6894e9c864378c1c94504a36d87a82ea5c38a0e62af9f07f"
+        },
+        {
+          "decodedBytes": 6292176,
+          "encodedBytes": 2093901,
+          "id": "texture/native-32",
+          "resource": "texture-resource/30fe2a2f0b23421b434ca8db13610683c51d7833ca9dfe55fdc0d2339b1bb39e"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 2134215,
+          "id": "texture/native-33",
+          "resource": "texture-resource/173677230948a7fee14d767a76d806c256b7fba8dcf8639413e970361414bcdb"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1832259,
+          "id": "texture/native-34",
+          "resource": "texture-resource/4060cde23e8c1282cc367da4ff1cc0c408703fd3dc2a55749a020484cd3ed0ba"
+        },
+        {
+          "decodedBytes": 6291456,
+          "encodedBytes": 1630783,
+          "id": "texture/native-35",
+          "resource": "texture-resource/03aeefe56d940d60d7f8b4e8cfcf6b1c147c81e439a6e82251264cacbf16024a"
+        }
+      ]
+    },
+    "snapshotAgeMs": 187306
+  },
+  "frame": {
+    "intervalMs": 175,
+    "intervalStatus": "available",
+    "renderSequence": 5,
+    "submissionRateHz": 5.217845030002569,
+    "syncSubmissionMs": 0.3999999761581421,
+    "syncSubmissionStatus": "available"
+  },
+  "pacing": {
+    "completionAgeMs": 403.10000002384186,
+    "completionFenceMode": "active",
+    "effectiveDurationMs": 15.16032,
+    "mode": "timerQuery",
+    "pendingMeasurementCount": 3,
+    "pendingSubmissionCount": 3,
+    "state": "measuring",
+    "timerDurationMs": 15.16032
+  },
+  "renderer": {
+    "class": "accelerated",
+    "name": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER (0x00002702) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "vendor": "Google Inc. (NVIDIA)"
+  },
+  "resources": {
+    "definedTextureCount": 40,
+    "materialFallbackCount": 0,
+    "skyBackground": {
+      "contentHash": null,
+      "resource": null,
+      "textureId": null
+    },
+    "spriteAtlasCount": 36,
+    "spriteFallbackCount": 0,
+    "voxelSpecializedMaterialCount": 4
+  },
+  "schemaVersion": 1,
+  "statistics": {
+    "animatedInstanceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 0
+    },
+    "drawCallCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 17
+    },
+    "geometryResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 21
+    },
+    "materialResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 19
+    },
+    "renderHandleCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 27
+    },
+    "schemaVersion": 1,
+    "textureResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 40
+    },
+    "triangleCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 208
+    }
+  },
+  "widget": {
+    "visible": true
+  }
+}
