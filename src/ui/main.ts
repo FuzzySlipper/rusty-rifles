@@ -343,7 +343,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       }
       if (spellList.childElementCount === 0) spellList.textContent = 'No spells are known.';
     }
-    const targetSignature = JSON.stringify([state.party, state.selectedMember]);
+    const targetSignature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name]), state.selectedMember]);
     if (targetSignature !== previousMagicTargets && document.activeElement !== allyTarget) {
       previousMagicTargets = targetSignature;
       const previousTarget = allyTarget.value;

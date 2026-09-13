@@ -1,0 +1,71 @@
+{
+  "enabled": false,
+  "capacityPerPhase": 2048,
+  "scope": "Rifles C# wall time, including synchronous Engine services; excludes post-callback output conversion, transport and browser work.",
+  "phases": [
+    {
+      "phase": "Input",
+      "samples": 2048,
+      "meanMs": 0.0005170410156250059,
+      "p50Ms": 0.0005,
+      "p95Ms": 0.0007,
+      "maxMs": 0.0237
+    },
+    {
+      "phase": "Simulation",
+      "samples": 2048,
+      "meanMs": 0.09226748046875004,
+      "p50Ms": 0.0705,
+      "p95Ms": 0.3027,
+      "maxMs": 1.0465
+    },
+    {
+      "phase": "WorldInteractions",
+      "samples": 2048,
+      "meanMs": 0.003333349609374976,
+      "p50Ms": 0.0033,
+      "p95Ms": 0.0046,
+      "maxMs": 0.0191
+    },
+    {
+      "phase": "CameraAndLight",
+      "samples": 2048,
+      "meanMs": 0.16445932617187484,
+      "p50Ms": 0.1638,
+      "p95Ms": 0.2643,
+      "maxMs": 0.4695
+    },
+    {
+      "phase": "FeatureFocus",
+      "samples": 2048,
+      "meanMs": 0.19683720703125004,
+      "p50Ms": 0.1968,
+      "p95Ms": 0.3124,
+      "maxMs": 1.1121
+    },
+    {
+      "phase": "AppearancePublication",
+      "samples": 2048,
+      "meanMs": 0.16867075195312498,
+      "p50Ms": 0.1681,
+      "p95Ms": 0.2874,
+      "maxMs": 0.7394
+    },
+    {
+      "phase": "UiProjection",
+      "samples": 2048,
+      "meanMs": 0.6411059082031256,
+      "p50Ms": 0.6106,
+      "p95Ms": 0.9372,
+      "maxMs": 4.3439
+    },
+    {
+      "phase": "TotalUpdate",
+      "samples": 2048,
+      "meanMs": 1.268317431640627,
+      "p50Ms": 1.2654,
+      "p95Ms": 1.7872,
+      "maxMs": 5.2549
+    }
+  ]
+}

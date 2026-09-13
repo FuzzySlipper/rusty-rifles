@@ -13,6 +13,22 @@ static void Require(bool condition, string message)
 
 string contentRoot = Path.GetFullPath("content");
 GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
+var hud = new Rifles.Game.HudPublication();
+Require(hud.Take(.1, true), "Initial HUD is immediate.");
+hud.Advance(.05);
+Require(!hud.Take(.1, false), "Simulation updates do not flood the HUD.");
+Require(hud.Take(.1, true), "Commands publish before the periodic deadline.");
+hud.Advance(.05);
+Require(!hud.Take(.1, false), "Command feedback resets the periodic deadline.");
+hud.Advance(.06);
+Require(hud.Take(.1, false), "Admitted time refreshes the HUD even while gameplay is paused.");
+hud.Advance(1);
+Require(hud.Take(.1, false) && !hud.Take(.1, false), "Catch-up publishes only the latest HUD once.");
+foreach (double invalid in new[] { 0d, -1d, double.NaN, double.PositiveInfinity })
+{
+    try { new HudTuning(invalid).Validate(); throw new Exception("Invalid HUD tuning accepted."); }
+    catch (InvalidDataException) { }
+}
 ActionChecks.Run();
 MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();

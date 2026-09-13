@@ -1,3 +1,9 @@
+> Update, 2026-09-13: the later controlled HUD isolation test localized the
+> slowdown to the full-rate game HUD publication path. Freezing only that HUD
+> restored responsive movement in the same Brave session and about 120 Hz
+> rendering. The Engine-only direction below is an earlier hypothesis, not the
+> current conclusion. See [HUD investigation](hud-performance.md).
+
 # Brave presentation recovery investigation
 
 Observed on Rifles `60f727d`, paired Engine `03ac310b95c2`, runtime

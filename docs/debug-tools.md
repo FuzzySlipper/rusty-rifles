@@ -48,3 +48,37 @@ Closing/reopening the console and hiding metrics were also verified; a second
 `engine.renderer.status` command succeeded after remount. See
 [remounted console](evidence/debug-tools/remounted-console.png). Both owned
 playtest sessions were stopped afterward.
+
+## C# phase profiling
+
+`rifles.profile.start` clears and enables a bounded C# phase capture.
+`rifles.profile.read` returns mean, p50, p95 and maximum milliseconds per phase;
+`rifles.profile.stop` freezes and returns it. Collection is off by default and
+retains at most 2,048 samples per phase. These commands do not change simulation
+or presentation cadence. `TotalUpdate` includes the other phases: do not add it
+to them. Phases include synchronous Engine calls made from C#, but exclude
+post-callback output conversion, network delivery and browser execution.
+
+For the idle entrance/patrol scenario on 2026-09-13, the first 1,854 sampled
+updates averaged 1.35 ms total (p95 1.95 ms). UI projection averaged 0.69 ms,
+simulation 0.10 ms, camera/light 0.18 ms, feature focus 0.21 ms and appearance
+publication 0.17 ms. A prior ten-second process sample showed the game worker
+using 13% of one CPU core and the host 0.3%, with the simulation at 60 Hz.
+The final retained capture is [here](evidence/cpu-profile/csharp-phase-profile.json);
+the [process/Engine samples](evidence/cpu-profile/process-and-engine-samples.json)
+provide the underlying telemetry. Maxima and means describe that sample window,
+not all possible combat or inventory workloads.
+
+The browser had not supplied a new renderer snapshot after the profiling build
+was loaded, so this phase capture does not by itself reproduce the user's
+browser failure. It identifies the largest C# cost without attributing the
+remote browser's 100–170 ms submission intervals to it.
+
+`rifles.profile.ui false` freezes only the game HUD for diagnostic isolation;
+`rifles.profile.ui true` restores it. The default is enabled. This deliberately
+leaves stale HUD state and must not be left disabled after a test.
+
+Subsequent testing with the user's affected Brave session localized the slowdown
+to full-rate HUD publication; see [the investigation](hud-performance.md).
+Normal HUD refresh timing is authored in `content/tuning/hud.json`. Simulation,
+camera and world presentation retain their original Engine-driven cadence.

@@ -1,3 +1,5 @@
+using Rifles.Game.Debugging;
+using Rusty.Engine.Debugging;
 using Rifles.Procgen.Generation;
 using System.Text;
 using Rifles.Game.Combat;
@@ -13,8 +15,9 @@ using Rifles.Game.Presentation;
 
 namespace Rifles.Game;
 
-public sealed partial class RiflesProduct : IEngineProduct
+public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleSource
 {
+    private readonly RiflesUpdateProfile updateProfile = new();
     private readonly GameDefinitions definitions;
     private readonly IEngineContext engine;
     private GeneratedArt? generatedArt;
@@ -25,6 +28,7 @@ public sealed partial class RiflesProduct : IEngineProduct
     private ulong floorId = 1, partyId = 2, nextObjectId = 3;
     private readonly ExplorationInput controls = new();
     private ulong commandRevision = 1;
+    private readonly HudPublication hudPublication = new();
     private string selectedMember = "";
     private bool cameraCut = true;
     private string feedback = "Expedition ready";
@@ -56,6 +60,12 @@ public sealed partial class RiflesProduct : IEngineProduct
                 .Concat(definitions.Art.Styles.SelectMany(s => s.Images)
                     .Select(image => (image.Path, TextureFilter.Linear, TextureWrap.Clamp)))
                 .Append((definitions.ItemArt.Path, TextureFilter.Linear, TextureWrap.Clamp)));
+    }
+
+    public void RegisterDebugCommands(IDebugCommandModuleRegistrar registrar)
+    {
+        DebugCommandRegistrationResult result = registrar.Register(updateProfile);
+        if (!result.Succeeded) throw new InvalidOperationException(result.Message);
     }
 
     public void Start()
@@ -102,13 +112,19 @@ public sealed partial class RiflesProduct : IEngineProduct
     public ProductUpdateResult Update(ProductUpdate update)
     {
         if (!started || shutdown) return ProductUpdateResult.None;
+        long updateStarted = updateProfile.Begin();
+        long phaseStarted = updateStarted;
         controls.Clear();
         bool suppressMovement = paused;
+        bool immediateHud = false;
+        hudPublication.Advance(update.Facts.FixedDeltaSeconds * update.Facts.AdmittedStepCount);
         foreach (ProductInputEvent input in update.Input)
         {
             if (input.Kind == InputEventKind.Clear) { controls.Clear(); suppressMovement = true; continue; }
             string intent = Encoding.UTF8.GetString(input.Intent.Span);
             if (input.Phase == InputPhase.Released) continue;
+            if (intent is "rifles.command" or "rifles.pause" or "rifles.save" or "rifles.load"
+                or "rifles.use" or "rifles.cycle" or "rifles.attack" or "rifles.reload") immediateHud = true;
             if (intent == "rifles.command")
             {
                 try { Command(SessionCommand.Parse(input.PayloadData.Span)); }
@@ -136,6 +152,7 @@ public sealed partial class RiflesProduct : IEngineProduct
             };
             if (action is { } admitted) controls.Observe(admitted);
         }
+        phaseStarted = updateProfile.Record(UpdatePhase.Input, phaseStarted);
         if (!paused)
         {
             for (uint step = 0; step < update.Facts.AdmittedStepCount; step++)
@@ -149,11 +166,14 @@ public sealed partial class RiflesProduct : IEngineProduct
             }
             if (!suppressMovement && !Defeated) controls.Apply(exploration);
         }
+        phaseStarted = updateProfile.Record(UpdatePhase.Simulation, phaseStarted);
         itemWorld!.CheckOpen(exploration, scene!);
         bool wasOpen = itemWorld.Capture().DoorOpen;
         itemWorld.UpdateDoor(inventory!, exploration, actor!, movement!, scene!);
         if (!wasOpen && itemWorld.Capture().DoorOpen) EmitNoise(itemWorld.Capture().Door, NoiseKind.Alarm);
-        Publish();
+        updateProfile.Record(UpdatePhase.WorldInteractions, phaseStarted);
+        Publish(immediateHud);
+        updateProfile.Record(UpdatePhase.TotalUpdate, updateStarted);
         return ProductUpdateResult.None;
     }
 
@@ -321,18 +341,23 @@ public sealed partial class RiflesProduct : IEngineProduct
         new CameraProjection(CameraProjectionKind.Perspective, definitions.Exploration.FieldOfView, 0, definitions.Exploration.NearDistance, definitions.Exploration.FarDistance),
         new CameraViewport(0, 0, 1, 1));
 
-    private void Publish()
+    private void Publish(bool immediateHud = true)
     {
+        long phaseStarted = updateProfile.Begin();
         engine.CameraView.UpdateCameraSample(new CameraSampleRequest(camera!, CameraDescriptor(),
             exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Pose, cameraCut ? (byte)1 : (byte)0));
         cameraCut = false;
         UpdateSpellLight();
+        phaseStarted = updateProfile.Record(UpdatePhase.CameraAndLight, phaseStarted);
         features!.SetExtraCandidates(ItemCandidates());
         features.Observe(exploration);
+        phaseStarted = updateProfile.Record(UpdatePhase.FeatureFocus, phaseStarted);
         features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()),
             allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
             allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
-        projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable);
+        phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable);
+        updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 
     public void Shutdown()
