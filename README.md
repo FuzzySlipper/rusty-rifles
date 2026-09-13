@@ -3,6 +3,11 @@
 A Rusty Engine game taking shape as a procedural, grid-based, first-person,
 real-time party dungeon crawler: one party, one cell, four facing directions.
 
+The [campaign strategy draft](docs/campaign-strategy.md) proposes the classic
+blobber foundation, with ranged combat as a first-class system and early visual
+experiments. [Reference-code maps](docs/references/README.md) provide focused
+navigation of the local research games.
+
 The bootstrap includes a generated walkable dungeon with an exit tile,
 quarter-turn exploration, a four-member formation and vitality model, and
 a DOM party readout. Engine owns rendering, navigation, camera, input, and
