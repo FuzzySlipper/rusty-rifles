@@ -1,0 +1,10 @@
+await browser({op:'press',selector:'button:has-text("Save")',key:'Enter'});
+await sleep(300);
+checkpoint('saved', await capture({label:'m2-saved'}));
+await browser({op:'press',selector:'button:has-text("Restart")',key:'Enter'});
+await sleep(400);
+checkpoint('restarted',await capture({label:'m2-restarted'}));
+await browser({op:'press',selector:'button:has-text("Load")',key:'Enter'});
+await sleep(600);
+checkpoint('restored',await capture({label:'m2-restored'}));
+checkpoint('restored-dom',await browser({op:'inspect'}));

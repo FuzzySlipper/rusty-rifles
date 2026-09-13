@@ -1,0 +1,236 @@
+{
+  "initialStyle": "ink-wash",
+  "lighting": "Synthetic",
+  "normalStrength": 1.0,
+  "alphaCutoff": 0.5,
+  "observerScale": 0.7,
+  "observerFacing": "South",
+  "benchOffset": [
+    1,
+    1
+  ],
+  "crateOffset": [
+    -1,
+    1
+  ],
+  "observerOffset": [
+    1,
+    -1
+  ],
+  "lanternOffset": [
+    0.7,
+    0,
+    0.4
+  ],
+  "lightOffsets": [
+    [
+      0.7,
+      1.6,
+      0.4
+    ],
+    [
+      -1.1,
+      1.6,
+      -1
+    ],
+    [
+      1.1,
+      1.6,
+      -1
+    ]
+  ],
+  "styles": [
+    {
+      "id": "ink-wash",
+      "images": [
+        {
+          "id": "bench",
+          "path": "art/generated/ink-wash/bench.png",
+          "size": [
+            1.96923,
+            1.31282
+          ],
+          "pivot": [
+            0.50033,
+            0.1582
+          ],
+          "billboard": "None"
+        },
+        {
+          "id": "crate",
+          "path": "art/generated/ink-wash/crate.png",
+          "size": [
+            1.01009,
+            0.80836
+          ],
+          "pivot": [
+            0.50321,
+            0.03654
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "lantern",
+          "path": "art/generated/ink-wash/lantern.png",
+          "size": [
+            0.34111,
+            0.51166
+          ],
+          "pivot": [
+            0.49951,
+            0.01367
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-front",
+          "path": "art/generated/ink-wash/sentry-front.png",
+          "size": [
+            1.29076,
+            1.93613
+          ],
+          "pivot": [
+            0.52734,
+            0.05339
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-right",
+          "path": "art/generated/ink-wash/sentry-right.png",
+          "size": [
+            1.30169,
+            1.95254
+          ],
+          "pivot": [
+            0.55273,
+            0.06185
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-back",
+          "path": "art/generated/ink-wash/sentry-back.png",
+          "size": [
+            1.28805,
+            1.93208
+          ],
+          "pivot": [
+            0.50537,
+            0.05534
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-left",
+          "path": "art/generated/ink-wash/sentry-left.png",
+          "size": [
+            1.2642,
+            1.8963
+          ],
+          "pivot": [
+            0.50537,
+            0.03711
+          ],
+          "billboard": "Cylindrical"
+        }
+      ]
+    },
+    {
+      "id": "painted-cover",
+      "images": [
+        {
+          "id": "bench",
+          "path": "art/generated/ink-wash/bench.png",
+          "size": [
+            1.96923,
+            1.31282
+          ],
+          "pivot": [
+            0.50033,
+            0.1582
+          ],
+          "billboard": "None"
+        },
+        {
+          "id": "crate",
+          "path": "art/generated/painted-cover/crate.png",
+          "size": [
+            1.00815,
+            0.80681
+          ],
+          "pivot": [
+            0.50285,
+            0.03565
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "lantern",
+          "path": "art/generated/ink-wash/lantern.png",
+          "size": [
+            0.34111,
+            0.51166
+          ],
+          "pivot": [
+            0.49951,
+            0.01367
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-front",
+          "path": "art/generated/painted-cover/sentry-front.png",
+          "size": [
+            1.27734,
+            1.91601
+          ],
+          "pivot": [
+            0.52686,
+            0.04622
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-right",
+          "path": "art/generated/ink-wash/sentry-right.png",
+          "size": [
+            1.30169,
+            1.95254
+          ],
+          "pivot": [
+            0.55273,
+            0.06185
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-back",
+          "path": "art/generated/ink-wash/sentry-back.png",
+          "size": [
+            1.28805,
+            1.93208
+          ],
+          "pivot": [
+            0.50537,
+            0.05534
+          ],
+          "billboard": "Cylindrical"
+        },
+        {
+          "id": "sentry-left",
+          "path": "art/generated/ink-wash/sentry-left.png",
+          "size": [
+            1.2642,
+            1.8963
+          ],
+          "pivot": [
+            0.50537,
+            0.03711
+          ],
+          "billboard": "Cylindrical"
+        }
+      ]
+    }
+  ]
+}

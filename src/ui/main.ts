@@ -32,11 +32,17 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const focus = document.createElement('p');
   const use = button('Use feature', () => command('use', {target: Number(state.focusId), targetRevision: Number(state.focusRevision)}));
   actions.append(use);
-  panel.append(title, help, status, roster, actions, focus, feedback); root.append(panel);
+  const art = document.createElement('details');
+  const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison';
+  const artStatus = document.createElement('p');
+  art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')),
+    button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
+  panel.append(title, help, status, roster, actions, art, focus, feedback); root.append(panel);
   let previousRoster = '';
   const render = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
     state = record(envelope.value);
+    artStatus.textContent = `${String(state.artStyle)} · Light ${String(state.lightPosition)} · ${state.roomLights === 1 ? "Room lights on" : "Room fill off"}`;
     status.textContent = `${String(state.status)} · ${String(state.facing)} · (${String(state.x)}, ${String(state.y)}) · ${Math.floor(Number(state.seconds))}s · Seed ${String(state.seed)}`;
     focus.textContent = String(state.focusLabel); use.disabled = !state.focusId || state.paused === 1;
     feedback.textContent = String(state.feedback); pause.textContent = state.paused === 1 ? 'Resume' : 'Pause';

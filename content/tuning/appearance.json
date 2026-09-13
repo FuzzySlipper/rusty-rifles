@@ -1,32 +1,220 @@
 {
-  "stone": {
-    "color": [
-      0.35,
-      0.32,
-      0.27,
-      1
-    ],
-    "roughness": 0.95,
-    "emission": [
-      0,
-      0,
-      0
-    ]
-  },
-  "exit": {
-    "color": [
-      0.25,
-      0.52,
-      0.43,
-      1
-    ],
-    "roughness": 0.8,
-    "emission": [
-      0.08,
-      0.2,
-      0.12
-    ]
-  },
+  "initialStyle": "ink-wash",
+  "voxelsPerCell": 2,
+  "styles": [
+    {
+      "id": "ink-wash",
+      "textures": [
+        {
+          "id": "texture/rifles-ink-brick",
+          "path": "art/generated/ink-wash/brick.png",
+          "contentHash": "50f4d1b114b3f185420ad2c4eb43ae75e05066a8c7517ce95349041779046a24",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        },
+        {
+          "id": "texture/rifles-ink-limewash",
+          "path": "art/generated/ink-wash/limewash.png",
+          "contentHash": "f444bee5a7735826b43cdc4f88cf14837e01e117fe4f5b860a610cdf99663d65",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        },
+        {
+          "id": "texture/rifles-ink-floor",
+          "path": "art/generated/ink-wash/floor.png",
+          "contentHash": "d25eee015c06d94ca9fe333f956d6833c08bf0a2536730d556ed65abfda61fff",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        }
+      ],
+      "wall": {
+        "materialId": "material/rifles-ink-wall",
+        "textureId": "texture/rifles-ink-brick",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.95,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "ceiling": {
+        "materialId": "material/rifles-ink-ceiling",
+        "textureId": "texture/rifles-ink-limewash",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.95,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "floor": {
+        "materialId": "material/rifles-ink-floor",
+        "textureId": "texture/rifles-ink-floor",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.9,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "exit": {
+        "materialId": "material/rifles-ink-exit",
+        "textureId": "texture/rifles-ink-floor",
+        "color": [
+          0.48,
+          0.86,
+          0.72,
+          1
+        ],
+        "roughness": 0.9,
+        "emission": [
+          0.08,
+          0.2,
+          0.12
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      }
+    },
+    {
+      "id": "painted-cover",
+      "textures": [
+        {
+          "id": "texture/rifles-painted-brick",
+          "path": "art/generated/painted-cover/brick.png",
+          "contentHash": "779c29fd6221b7ebcaad98f528c93f54401eeb7a48c3cc66667a914d73bf6d56",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        },
+        {
+          "id": "texture/rifles-painted-limewash",
+          "path": "art/generated/painted-cover/limewash.png",
+          "contentHash": "373a3614bc78827d3d8bd9b19c7e1886bd4b192573037a2716983213272cd34b",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        },
+        {
+          "id": "texture/rifles-painted-floor",
+          "path": "art/generated/painted-cover/floor.png",
+          "contentHash": "ed4383dd969fbd303a05dd9df218b31c48de930537758d9fd6d5950ed3e156fe",
+          "pixelWidth": 1254,
+          "pixelHeight": 1254
+        }
+      ],
+      "wall": {
+        "materialId": "material/rifles-painted-wall",
+        "textureId": "texture/rifles-painted-brick",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.95,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "ceiling": {
+        "materialId": "material/rifles-painted-ceiling",
+        "textureId": "texture/rifles-painted-limewash",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.95,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "floor": {
+        "materialId": "material/rifles-painted-floor",
+        "textureId": "texture/rifles-painted-floor",
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughness": 0.9,
+        "emission": [
+          0,
+          0,
+          0
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      },
+      "exit": {
+        "materialId": "material/rifles-painted-exit",
+        "textureId": "texture/rifles-painted-floor",
+        "color": [
+          0.48,
+          0.86,
+          0.72,
+          1
+        ],
+        "roughness": 0.9,
+        "emission": [
+          0.08,
+          0.2,
+          0.12
+        ],
+        "worldTileScaleX": 2,
+        "worldTileScaleY": 2,
+        "worldTileOriginX": 0,
+        "worldTileOriginY": 0
+      }
+    }
+  ],
   "lightColor": [
     1,
     0.78,

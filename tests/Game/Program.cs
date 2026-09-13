@@ -95,9 +95,11 @@ savePose.Bind(saveGrid, 2); saveActor.Bind(saveGrid);
 saveActor.Advance(.1);
 PartyState saveParty = new(definitions.Party.Members);
 saveParty.Members[0].ApplyDamage(9);
-var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, 6,
+ulong dressingId = 6;
+ulong AllocateDressingId() => dressingId++;
+var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, 9,
     savedFloor, savePose.Capture(), definitions.Party.Members, saveParty.Capture().ToArray(), true,
-    definitions.Party.Members[2].Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true));
+    definitions.Party.Members[2].Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, RoomDressing.Create(savedFloor, saveActor, definitions.Art, AllocateDressingId)));
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);
@@ -144,3 +146,36 @@ Require(Rusty.Engine.Interaction.InteractionFocus.Revalidate(target, [candidate 
 Require(Rusty.Engine.Interaction.InteractionFocus.Revalidate(target, [candidate with { ReachDistance = .5f }], query) == Rusty.Engine.Interaction.InteractionReason.OutOfReach, "Out-of-reach feature rejected.");
 Require(Rusty.Engine.Interaction.InteractionFocus.Revalidate(target, [], query) == Rusty.Engine.Interaction.InteractionReason.InvalidTarget, "Removed feature rejected.");
 Console.WriteLine("Milestone checks passed: snapshot codec/validation, actor transit replay, contested reservations, target revalidation.");
+
+foreach (CardinalDirection facing in CardinalDirections.Ordered)
+{
+    GridPoint forward = facing.Offset();
+    System.Numerics.Vector2 front = new(forward.X, forward.Y), right = new(-forward.Y, forward.X);
+    Require(SentryView.Select(default, facing, front) == "sentry-front", "Front view follows actor facing.");
+    Require(SentryView.Select(default, facing, -front) == "sentry-back", "Back view is independent of camera yaw.");
+    Require(SentryView.Select(default, facing, right) == "sentry-right", "Right profile preserves anatomical side.");
+    Require(SentryView.Select(default, facing, -right) == "sentry-left", "Left profile is not a mirrored right profile.");
+}
+Require(decoded.Features.Dressing == snapshot.Features.Dressing, "Dressing identities and resolved cells round-trip.");
+foreach (ArtStyleDefinition style in definitions.Art.Styles)
+    foreach (SpriteImageDefinition image in style.Images)
+        Require(File.Exists(Path.Combine(contentRoot, image.Path)), "Every authored sprite resolves to a committed asset.");
+try
+{
+    (definitions.Art with { AlphaCutoff = float.NaN }).Validate();
+    throw new Exception("Invalid sprite alpha was accepted.");
+}
+catch (InvalidDataException) { }
+Console.WriteLine("Art checks passed: cardinal views, saved dressing, asset references and lighting admission.");
+
+try
+{
+    GameDefinitions.Load(path => path == "definitions/world-art.json"
+        ? System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(Path.Combine(contentRoot, path)).Replace("ink-wash", "different-treatment"))
+        : File.ReadAllBytes(Path.Combine(contentRoot, path)));
+    throw new Exception("Mismatched voxel/sprite treatments were accepted.");
+}
+catch (InvalidDataException error)
+{
+    Require(error.Message.Contains("matching treatments"), "Style drift fails at content admission.");
+}

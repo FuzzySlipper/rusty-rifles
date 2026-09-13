@@ -33,6 +33,7 @@ public sealed class RiflesProduct : IEngineProduct
     private Camera? camera;
     private SessionProjection? projection;
     private bool started, paused, shutdown;
+    private bool roomLights = true;
 
     public RiflesProduct(ProductCreateContext context)
     {
@@ -40,6 +41,11 @@ public sealed class RiflesProduct : IEngineProduct
         engine = context.Engine;
         try { definitions = GameDefinitions.Load(engine); }
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
+        // Engine closes renderer resource selection after Create; select every treatment here.
+        foreach (TextureDefinition texture in definitions.Appearance.Styles.SelectMany(s => s.Textures))
+            engine.Graphics.OpenResource(new RenderResourceRequest(texture.Path, TextureFilter.Linear, TextureWrap.Repeat));
+        foreach (string path in definitions.Art.Styles.SelectMany(s => s.Images).Select(i => i.Path).Distinct())
+            engine.Graphics.OpenResource(new RenderResourceRequest(path, TextureFilter.Linear, TextureWrap.Clamp));
         party = new PartyState(definitions.Party.Members);
         selectedMember = party.Members[0].Definition.Id;
         floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
@@ -54,7 +60,8 @@ public sealed class RiflesProduct : IEngineProduct
             saves = new ProductStateStore<ExpeditionSnapshot>(engine, "expedition", new ExpeditionCodec());
             scene = new DungeonScene(engine, floor, definitions.Exploration, definitions.Appearance, AllocateLightId);
             actor = PatrolActor.Create(AllocateId(), floor, ActorTuning, definitions.Features);
-            features = new WorldFeatures(engine, scene, floor, definitions.Features, new FeatureSnapshot(AllocateId(), AllocateId(), 1, true, false), AllocateLightId());
+            features = new WorldFeatures(engine, scene, floor, definitions.Features, definitions.Art, new FeatureSnapshot(AllocateId(), AllocateId(), 1, true, false,
+                RoomDressing.Create(floor, actor, definitions.Art, AllocateId)), AllocateLightId());
             BindMovement();
             camera = engine.CameraView.CreateCamera(CameraDescriptor());
             projection = new SessionProjection(engine.Ui);
@@ -62,7 +69,13 @@ public sealed class RiflesProduct : IEngineProduct
             started = true;
             Publish();
         }
-        catch (Exception error) { Console.Error.WriteLine("Rifles startup failed: " + error); Shutdown(); throw; }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine("Rifles startup failed: " + error);
+            if (error is EngineCallException engineError)
+                foreach (EngineDiagnostic diagnostic in engineError.Diagnostics.Span) Console.Error.WriteLine(diagnostic);
+            Shutdown(); throw;
+        }
     }
 
     public void Attach()
@@ -129,6 +142,14 @@ public sealed class RiflesProduct : IEngineProduct
             case "save": Save(); break;
             case "load": Load(); break;
             case "restart": Restart(); break;
+            case "art-style":
+                string currentStyle = features!.Style;
+                int index = Array.FindIndex(definitions.Art.Styles, s => s.Id == currentStyle);
+                string nextStyle = definitions.Art.Styles[(index + 1) % definitions.Art.Styles.Length].Id;
+                scene!.SetStyle(nextStyle); features.SetStyle(nextStyle);
+                feedback = "Art treatment: " + nextStyle; break;
+            case "art-light": features!.CycleLight(); feedback = "Light position " + (features.LightPosition + 1); break;
+            case "art-fill": roomLights = !roomLights; scene!.SetRoomLights(roomLights); feedback = roomLights ? "Room lights on" : "Room fill disabled"; break;
             case "use": Use(command.Target is { } target && command.TargetRevision is { } revision ? new InteractionTarget(target, revision) : null); break;
             default: feedback = "Unknown command"; break;
         }
@@ -182,10 +203,20 @@ public sealed class RiflesProduct : IEngineProduct
             try { restored.Exploration.Bind(replacementGrid, saved.PartyId); restored.Actor.Bind(replacementGrid); }
             catch { replacement.Dispose(); throw; }
             WorldFeatures replacementFeatures;
-            try { replacementFeatures = new WorldFeatures(engine, replacement, saved.Floor, definitions.Features, saved.Features, AllocateLightId()); }
+            try { replacementFeatures = new WorldFeatures(engine, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features!.Style); }
             catch { replacement.Dispose(); throw; }
-            // Retire old appearance references before releasing their Engine resources.
-            replacementFeatures.Present(restored.Actor);
+            try
+            {
+                if (replacement.Style != features!.Style) replacement.SetStyle(features.Style);
+                replacement.SetRoomLights(roomLights);
+                replacementFeatures.Bind(replacementGrid);
+                // Retire old appearance references before releasing their Engine resources.
+                replacementFeatures.Present(restored.Actor, restored.Exploration);
+            }
+            catch
+            {
+                replacementFeatures.Dispose(); replacement.Dispose(); throw;
+            }
             WorldFeatures? previousFeatures = features;
             features = replacementFeatures; actor = restored.Actor;
             DungeonScene? previous = scene;
@@ -215,6 +246,7 @@ public sealed class RiflesProduct : IEngineProduct
         movement = new MovementGrid(floor.Cells.ToHashSet(), scene!.AdmitStep);
         exploration.Bind(movement, partyId);
         actor!.Bind(movement);
+        features!.Bind(movement);
     }
 
     private CameraDescriptor CameraDescriptor() => new(
@@ -229,8 +261,8 @@ public sealed class RiflesProduct : IEngineProduct
             exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Pose, cameraCut ? (byte)1 : (byte)0));
         cameraCut = false;
         features!.Observe(exploration);
-        features.Present(actor!);
-        projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout);
+        features.Present(actor!, exploration);
+        projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition);
     }
 
     public void Shutdown()

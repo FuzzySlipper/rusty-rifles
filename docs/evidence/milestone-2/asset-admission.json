@@ -1,0 +1,212 @@
+[
+  {
+    "path": "content/art/generated/ink-wash/bench.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGBA",
+    "transparentPixels": 958814,
+    "cutoutPixels": 573857,
+    "cutoutBounds": [
+      28,
+      160,
+      1509,
+      862
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/brick.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/crate.png",
+    "width": 1402,
+    "height": 1122,
+    "mode": "RGBA",
+    "transparentPixels": 481474,
+    "cutoutPixels": 1078099,
+    "cutoutBounds": [
+      92,
+      40,
+      1319,
+      1081
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/floor.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/lantern.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 864532,
+    "cutoutPixels": 694358,
+    "cutoutBounds": [
+      135,
+      14,
+      888,
+      1515
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/limewash.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/sentry-back.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1098404,
+    "cutoutPixels": 438916,
+    "cutoutBounds": [
+      254,
+      20,
+      781,
+      1451
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/sentry-front.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1107333,
+    "cutoutPixels": 439666,
+    "cutoutBounds": [
+      261,
+      26,
+      819,
+      1454
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/sentry-left.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1173193,
+    "cutoutPixels": 377887,
+    "cutoutBounds": [
+      301,
+      21,
+      734,
+      1479
+    ]
+  },
+  {
+    "path": "content/art/generated/ink-wash/sentry-right.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1212585,
+    "cutoutPixels": 339545,
+    "cutoutBounds": [
+      321,
+      25,
+      811,
+      1441
+    ]
+  },
+  {
+    "path": "content/art/generated/painted-cover/brick.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/painted-cover/crate.png",
+    "width": 1402,
+    "height": 1122,
+    "mode": "RGBA",
+    "transparentPixels": 474851,
+    "cutoutPixels": 1084287,
+    "cutoutBounds": [
+      91,
+      39,
+      1319,
+      1082
+    ]
+  },
+  {
+    "path": "content/art/generated/painted-cover/floor.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/painted-cover/limewash.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "transparentPixels": 0,
+    "cutoutPixels": 1572516,
+    "cutoutBounds": [
+      0,
+      0,
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "content/art/generated/painted-cover/sentry-front.png",
+    "width": 1024,
+    "height": 1536,
+    "mode": "RGBA",
+    "transparentPixels": 1086008,
+    "cutoutPixels": 457855,
+    "cutoutBounds": [
+      253,
+      22,
+      826,
+      1465
+    ]
+  }
+]

@@ -115,5 +115,7 @@ Use an existing broker session instead of launching a competing host.
 
 Report build/test, runtime launch, and visible interaction evidence separately.
 Milestone 1 provides exploration, typed tuning, shared movement, feature focus,
-party controls and Engine-backed saves; see `docs/milestone-1.md`. Combat, richer
-procgen, inventory, multi-floor progression and generated art remain campaign work.
+party controls and Engine-backed saves; see `docs/milestone-1.md`. Milestone 2
+adds generated art, lit sprites, texture mapping and comparison controls; see
+`docs/milestone-2.md`. Combat, richer procgen, inventory and multi-floor progression
+remain campaign work.

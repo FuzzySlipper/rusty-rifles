@@ -14,7 +14,7 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
-    public uint SchemaVersion => 1;
+    public uint SchemaVersion => 2;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -40,7 +40,8 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         party.Restore(saved.Members);
         ExplorationState exploration = ExplorationState.Restore(saved.Exploration, saved.Floor, definitions.Exploration);
         GameDefinitions.Require(party.Members.Any(m => m.Definition.Id == saved.SelectedMember), "Save.SelectedMember");
-        ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId];
+        ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId,
+            saved.Features.Dressing.BenchId, saved.Features.Dressing.CrateId, saved.Features.Dressing.ObserverId];
         GameDefinitions.Require(ids.All(id => id > 0 && id <= uint.MaxValue && id < saved.NextObjectId) && ids.Distinct().Count() == ids.Length, "Save object identities");
         GameDefinitions.Require(saved.Features.LanternRevision > 0 && saved.Features.LanternRevision <= uint.MaxValue, "Save lantern revision");
         PatrolActor actor = PatrolActor.Restore(saved.Actor, saved.Floor, definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds });
@@ -48,6 +49,8 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         MovementGrid grid = new(saved.Floor.Cells.ToHashSet(), (_, _) => true);
         exploration.Bind(grid, saved.PartyId);
         actor.Bind(grid);
+        saved.Features.Dressing.Validate(saved.Floor);
+        saved.Features.Dressing.Bind(grid);
         return (exploration, party, actor);
     }
 }

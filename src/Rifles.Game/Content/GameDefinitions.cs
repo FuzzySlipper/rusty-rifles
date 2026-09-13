@@ -9,7 +9,7 @@ using Rifles.Procgen.Generation;
 namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
-    GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features)
+    GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -41,11 +41,16 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
                 throw new InvalidDataException($"Content '{path}': {error.Message}", error);
             }
         }
-        return new(Read<ExplorationTuning>("tuning/exploration.json", x => x.Validate()),
+        GameDefinitions result = new(Read<ExplorationTuning>("tuning/exploration.json", x => x.Validate()),
             Read<PartyDefinition>("definitions/party.json", x => x.Validate()),
             Read<GenerationDefinition>("tuning/generation.json", x => x.Validate()),
             Read<AppearanceDefinition>("tuning/appearance.json", x => x.Validate()),
-            Read<FeatureDefinition>("definitions/exploration-features.json", x => x.Validate()));
+            Read<FeatureDefinition>("definitions/exploration-features.json", x => x.Validate()),
+            Read<WorldArtDefinition>("definitions/world-art.json", x => x.Validate()));
+        Require(result.Appearance.InitialStyle == result.Art.InitialStyle
+            && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
+                .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
+        return result;
     }
 
     internal static void Require(bool condition, string field)

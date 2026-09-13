@@ -16,7 +16,7 @@ internal sealed class SessionProjection : IDisposable
         stream = ui.OpenStream(new UiStreamRequest("rifles.session", "rifles.session.v1"));
     }
 
-    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus)
+    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition)
     {
         SessionValueBuilder value = new();
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
@@ -38,6 +38,9 @@ internal sealed class SessionProjection : IDisposable
             ("commandRevision", value.String(commandRevision.ToString(System.Globalization.CultureInfo.InvariantCulture))),
             ("paused", value.Number(paused ? 1 : 0)),
             ("feedback", value.String(feedback)),
+            ("artStyle", value.String(artStyle)),
+            ("roomLights", value.Number(roomLights ? 1 : 0)),
+            ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster));
         ui.PublishProjection(new UiProjection(stream, checked(++sequence), value.Build(root)));
     }

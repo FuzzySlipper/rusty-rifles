@@ -12,9 +12,11 @@ The [working art direction](docs/art-direction.md) and
 [image prompt recipes](content/art/prompts/README.md) keep generated assets
 coherent while exploring ink/wash and painted-cover treatments.
 
-The bootstrap includes a generated walkable dungeon with an exit tile,
-quarter-turn exploration, a four-member formation and vitality model, and
-a DOM party readout. Engine owns rendering, navigation, camera, input, and
+The playable foundation includes a generated walkable dungeon, quarter-turn
+exploration, four-member party controls, reachable world interactions and
+Engine-backed saves. [Milestone 2](docs/milestone-2.md) adds generated textured
+voxels, grounded prop sprites, directional sentries and dynamic-light art
+comparisons. Engine owns rendering, navigation, camera, input, and
 the simulation clock. Game policy lives in ordinary C#.
 
 ## Run
@@ -32,7 +34,7 @@ bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420
 Open the URL printed by the host. Click the game view to focus it.
 W/S step forward/back; A/D sidestep; Q/E turn 90 degrees. Each key press
 requests one action with a short recovery interval. The green floor tile
-marks the exit. The initial seed is configured in `RiflesProduct.cs`.
+marks the exit. The initial seed is configured in `content/tuning/generation.json`.
 
 For broker-owned serving, `.den-serve.json` uses the same development command:
 
