@@ -18,6 +18,21 @@ complete port of an older game. Keep concrete domain owners loosely coupled
 through small, explicit contracts so established behavior can be retuned or
 replaced without rewriting unrelated systems.
 
+## Art experiments
+
+Start generated asset work from `docs/art-direction.md` and the editable
+recipes in `content/art/prompts/`. Use the shared style plus one named
+treatment and an asset-specific contract; make deviations explicit experiments
+instead of inventing an unrelated style for each image call. The provisional
+default is ink and wash, with painted cover as a comparison, not a final style
+decision. Generate actual art early in small coherent sets and judge it in-game.
+
+The direction is retro book/game-cover illustration, not pixel art: textured
+voxel levels, billboard clutter/interactables, simple directional enemy stills,
+and dynamic level lighting on sprites. Do not require generated sprite normal
+maps; verify simple Engine shading approaches first. Supplied concept briefs
+and reference images are inspiration, not mandatory setting or gameplay rules.
+
 ## Ownership
 
 - C# owns dungeon intent, rules, party formation, encounters, progression,

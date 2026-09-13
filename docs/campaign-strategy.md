@@ -1,8 +1,9 @@
 # Classic blobber foundation campaign
 
-**Discussion draft — 2026-09-13.** This proposes the campaign for `rusty-rifles`;
-no Den tasks have been created. Review the gameplay and visual direction first,
-then turn the agreed work packages into dependency-ordered tasks.
+**Working strategy — 2026-09-13.** The owner accepted this campaign direction
+for `rusty-rifles`; work-package sizing and remaining gameplay choices are still
+provisional. No Den tasks have been created. The [art direction](art-direction.md)
+and prompt recipes now support visual experiments without locking a final style.
 
 ## Destination
 
@@ -182,21 +183,27 @@ certificate that arbitrary composed levels cannot be bypassed or softlocked.
 
 ## Early visual exploration using inexpensive assets
 
-The upcoming visual discussion should choose a small visual brief before mass
-asset generation. Then make **one representative room and one mixed enemy
-encounter** using the actual generator, item placements, lighting, and combat
-systems. Promote useful authored content directly into the expedition.
+Use the [exploratory art direction](art-direction.md) and its shared prompt
+recipes to make **one representative room and one mixed enemy encounter** with
+actual art, using the real generator, item placements, lighting, and combat
+systems. Compare the named ink/wash and painted-cover treatments in small
+coherent batches. Promote useful authored content directly into the expedition;
+a final style decision is not required before trying art in the game.
 
-Use GPT image generation for a small coherent texture set and transparent,
-non-animated enemy sprites. Define tile scale, repeat/seam treatment, palette,
+Use GPT image generation for a small coherent texture set, transparent
+clutter/interactable billboards, and directional, non-animated enemy sprites.
+Define tile scale, repeat/seam treatment, palette,
 lighting assumptions, silhouette, ground anchor, apparent size, alpha edges,
 and import settings. Asset definitions control material/atlas assignments;
 changing a look must not require changing gameplay code.
 
-World textures are applied to Engine-rendered voxel geometry. Enemies are
-Engine world sprites with depth/occlusion and stable size/grounding, not DOM
-images over the canvas. Begin with a single static facing image per archetype;
-directional static variants remain an option after visual review. No skeletal
+World textures are applied to Engine-rendered voxel geometry. Clutter and
+interactables use world billboards with appropriate mounting/facing constraints;
+enemies use simple directional stills with consistent identity, size and
+grounding. Confirm one view before generating its companion directions, with
+four views as a first experiment. Runtime lights should affect these sprites;
+start with simple Engine shading approximations, without requiring generated
+normal maps. Validate lighting, depth and occlusion in the host. No skeletal
 animation or sprite animation campaign. Transform movement, readable windups,
 selection, impact flashes/effects, and modest audio can communicate state.
 
@@ -218,7 +225,7 @@ focused validation instead of creating separate implementation/proof campaigns.
 | Milestone | Candidate work packages | Playable result | Rough tasks |
 | --- | --- | --- | --- |
 | **1. Durable expedition skeleton** | Typed file content/admission; stable identities and base saves; shared cells/edges and movement reservations; smooth party controls; authoritative UI actions; required Engine contract checks | Walk, turn, pause, save/resume, and retune the existing dungeon | 6 |
-| **2. First visual room** | Agreed art brief and image samples; texture import/materials; static world sprites; size/alpha/occlusion checks; representative room/light comparison | Inspect generated textured geometry and small/large static enemies in the actual host | 5 |
+| **2. First visual room** | Shared style recipes and image samples; texture import/materials; prop billboards and directional enemy stills; dynamic light/size/alpha/occlusion checks; representative room comparison | Inspect generated textured geometry and small/large static enemies in the actual host | 5 |
 | **3. Characters, items, and hands-on exploration** | Party/formation and derived stats; inventories/stacks; equipment; drag/drop plus click transfers; world pickup/drop/throw; item use/consumables; containers/alcoves; doors/keys/plates/levers | Equip a party, move real items around, and solve a small physical obstacle | 8 |
 | **4. First ranged-and-melee fight** | Action phases/recovery; targeting/visibility; hit/damage/death; rifle ammo/reload; shots/projectiles/throws; minimal melee and ranged opponents; combat feedback/HUD | Complete a fight using ranged attacks from the outset, with melee pressure and recoverable loot | 7 |
 | **5. Crowds and tactical enemies** | Size footprints/capacity; stable slots and smooth repacking; reservation contention; Engine path queries/replanning; perception/noise/last-known targets; patrol/pursuit/search/return; ranged positioning/reload/retreat; mixed-group encounters | Small enemies share cells, large enemies constrain routes, and mixed enemies navigate and fight credibly | 8 |
@@ -233,8 +240,8 @@ enemies; milestone 6 extends the same action/effect system. Generation design
 and catalogs in 7 can begin after 1, but finished puzzle/population validation
 needs 3–6. Milestone 8 integrates 3–7. Saves, visual evaluation, and practical
 playtests evolve throughout; 8 and 9 complete them rather than introduce them.
-The art brief is the prerequisite for 2's generated assets, not a reason to
-block definitions, movement, or inventory work.
+The editable art direction and prompt recipes are the starting point for 2;
+style exploration can continue alongside definitions, movement and inventory.
 
 ## Verification and campaign discipline
 
@@ -290,8 +297,9 @@ one-time code transfers into Rifles.
 - Ranged is mandatory in the first fight; use a simple rifle with loaded state,
   ammo and reload timing. Defer misfires, detailed powder handling, and historical
   ballistic simulation. Choose body-blocking/friendly-fire policy explicitly.
-- Visual brief next: material palette, texture treatment, sprite proportions,
-  and mood. No art generation or large enemy roster before that discussion.
+- Art exploration now has [shared prompts and two treatments](art-direction.md).
+  Try small coherent sets in-game, then revise palette, proportions and mood.
+  A large asset roster should follow useful experiments rather than precede them.
 
 Free movement, destructible worlds, multiplayer, a universal game kit, a full
 legacy-game port, procedural narrative, and complex physics are outside this

@@ -7,6 +7,9 @@ The [campaign strategy draft](docs/campaign-strategy.md) proposes the classic
 blobber foundation, with ranged combat as a first-class system and early visual
 experiments. [Reference-code maps](docs/references/README.md) provide focused
 navigation of the local research games.
+The [working art direction](docs/art-direction.md) and
+[image prompt recipes](content/art/prompts/README.md) keep generated assets
+coherent while exploring ink/wash and painted-cover treatments.
 
 The bootstrap includes a generated walkable dungeon with an exit tile,
 quarter-turn exploration, a four-member formation and vitality model, and

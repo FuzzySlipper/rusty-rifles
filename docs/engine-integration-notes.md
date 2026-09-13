@@ -12,9 +12,17 @@ existing build checks cover its current narrow voxel/navigation/party usage.
 | Item conservation and equipment | `Mechanics.InventoryWorld`, `InventoryWorldCandidate`, `EquipmentService`, `ItemState` | Adapt inventory owners to characters, containers and world placements; confirm grouped transfer/equip/use settlement and save representation |
 | Timed behavior | Engine update facts; `Application.SimulationScheduler` | Product action phases, cancellation/interruption and save/resume; do not introduce a competing timer loop |
 | Textured voxel rooms | `VoxelScenePresentation.ProjectSceneDirectional`, material bindings, `Graphics.CreateMaterial` | Image admission, texture repetition/scale, material-face selection and retained resource lifecycle in the chosen art treatment |
-| Static enemies | `Graphics.CreateSprite`, atlas APIs, `ReplaceSprite`, `ReadSprite` | Ground anchor, world sizing, alpha/depth/occlusion, individual selection and crowded-cell rendering |
+| Directional still enemies and prop billboards | `Graphics.CreateSprite`, atlas APIs, `ReplaceSprite`, `ReadSprite` | Ground anchor, facing/identity consistency, world sizing, alpha/depth/occlusion, individual selection and crowded-cell rendering |
 | Item/world targeting | `Interaction.InteractionFocus.Update`, `Observe`, `Revalidate` | Reach/visibility and permitted use/drop/throw semantics; UI commands must revalidate changing targets |
 | Authored tuning and saves | `Content.ReadBytes`, `Persistence.ProductStateStore<T>.Save/Load` | Typed schemas and validation; a complete product snapshot including live actions and resolved floors |
+
+Sprite lighting is a campaign requirement to verify in the actual host. Begin
+with a simple Engine-supported dynamic response to level lights over color/alpha
+art; generated normal maps are not required. Selective illustrated form shading
+can remain, but strong painted lights must not fight the runtime light direction.
+If the paired SDK lacks the necessary control, scope the owning Engine addition
+rather than introducing a downstream renderer. No lighting implementation or
+visual acceptance is claimed by these planning notes.
 
 `InventoryWorld.Prepare` produces a candidate with `Validate` and `Publish`;
 inspect that contract before writing product-owned rollback or duplicate
