@@ -29,6 +29,7 @@ foreach (double invalid in new[] { 0d, -1d, double.NaN, double.PositiveInfinity 
     try { new HudTuning(invalid).Validate(); throw new Exception("Invalid HUD tuning accepted."); }
     catch (InvalidDataException) { }
 }
+ExpeditionChecks.Run(definitions);
 ActionChecks.Run();
 MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();
@@ -148,12 +149,16 @@ CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
-    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat);
+    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!);
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);
 var decoded = codec.Decode(payload.WrittenSpan);
 var restored = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, definitions);
+Require(decoded.Intent.Identity == snapshot.Intent.Identity
+    && decoded.Intent.Connectors.SequenceEqual(snapshot.Intent.Connectors), "Resolved expedition and connector identities survive the save.");
+var changedGeneration = definitions with { Generation = definitions.Generation with { Seed = 999 } };
+_ = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, changedGeneration);
 Require(decoded.Id == snapshot.Id && decoded.NextObjectId == snapshot.NextObjectId, "Stable identities survive serialization.");
 Require(decoded.Floor.Cells.SequenceEqual(savedFloor.Cells) && decoded.Floor.GenerationIdentity == savedFloor.GenerationIdentity, "Resolved floor is stored exactly.");
 Require(restored.Party.Capture().SequenceEqual(saveParty.Capture()) && restored.Actor.Capture() == saveActor.Capture(), "Vitality and in-transit actor survive save.");

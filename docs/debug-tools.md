@@ -82,3 +82,9 @@ Subsequent testing with the user's affected Brave session localized the slowdown
 to full-rate HUD publication; see [the investigation](hud-performance.md).
 Normal HUD refresh timing is authored in `content/tuning/hud.json`. Simulation,
 camera and world presentation retain their original Engine-driven cadence.
+
+## Expedition intent
+
+`rifles.expedition.read` returns the current resolved floor graphs, roles,
+connectors and identity. It reads the plan used by the expedition save and does
+not regenerate or travel. See [milestone 7](milestone-7.md) for current scope.

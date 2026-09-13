@@ -1,13 +1,81 @@
 {
   "seed": 29,
-  "intentId": "rifles.dungeon",
-  "title": "Dungeon",
-  "tags": [
-    "detour"
-  ],
-  "rules": [
-    "DetourLoop"
-  ],
+  "expedition": {
+    "id": "dead-garrison",
+    "title": "Rifles in the Deep: Dead Garrison",
+    "entranceFloor": "arrival",
+    "objectiveFloor": "redoubt",
+    "floors": [
+      {
+        "id": "arrival",
+        "role": "approach",
+        "title": "Supply Approach",
+        "tags": [
+          "supply-route",
+          "optional-cache"
+        ],
+        "rules": [
+          "DetourLoop"
+        ]
+      },
+      {
+        "id": "stores",
+        "role": "supply-crossroads",
+        "title": "Flooded Stores",
+        "tags": [
+          "supply",
+          "hazard",
+          "key-route"
+        ],
+        "rules": [
+          "LockKeyLoop",
+          "HazardResource"
+        ]
+      },
+      {
+        "id": "redoubt",
+        "role": "finale",
+        "title": "Inner Redoubt",
+        "tags": [
+          "preparation",
+          "finale",
+          "return-route"
+        ],
+        "rules": [
+          "BossPreparation",
+          "Shortcut"
+        ]
+      }
+    ],
+    "connectors": [
+      {
+        "id": "supply-descent",
+        "fromFloor": "arrival",
+        "toFloor": "stores",
+        "twoWay": true
+      },
+      {
+        "id": "redoubt-descent",
+        "fromFloor": "stores",
+        "toFloor": "redoubt",
+        "twoWay": true
+      }
+    ],
+    "budget": {
+      "maxFloors": 8,
+      "maxConnectors": 16,
+      "perFloor": {
+        "maxNodes": 32,
+        "maxEdges": 64,
+        "maxRuleApplications": 12
+      },
+      "total": {
+        "maxNodes": 128,
+        "maxEdges": 256,
+        "maxRuleApplications": 48
+      }
+    }
+  },
   "policy": {
     "id": "normal",
     "maxWidth": 192,

@@ -1,3 +1,4 @@
+using Rifles.Procgen.Expeditions;
 using Rifles.Procgen;
 using Rifles.Game.Content;
 using Rifles.Procgen.Generation;
@@ -6,20 +7,21 @@ namespace Rifles.Game.Dungeon;
 
 // Resolved data is the played floor. Reload never reruns the generator.
 internal sealed record DungeonFloor(ulong Seed, string GenerationIdentity, GridPoint[] Cells,
-    GridPoint[] RoomCenters, GridPoint Entrance, GridPoint Exit)
+    GridPoint[] RoomCenters, GridPoint Entrance, GridPoint Exit, string IntentFloorId, string IntentGraphIdentity)
 {
     internal static DungeonFloor Generate(ulong seed, GenerationDefinition definition)
     {
-        GraphCore graph = new();
-        Candidate candidate = graph.CreateInitial(new SeedIntent(definition.IntentId, definition.Title, definition.Tags), seed);
-        foreach (GraphRule rule in definition.Rules)
-        {
-            RuleApplication application = graph.Apply(candidate, rule, seed);
-            if (!application.Accepted)
-                throw new InvalidOperationException("Dungeon graph rejected: " + string.Join(", ", application.Diagnostics.Select(d => d.Code)));
-            candidate = application.Candidate;
-        }
-        DungeonGenerationResult generated = new DungeonGenerator().Generate(candidate, definition.Policy, seed);
+        ExpeditionGenerationResult result = new ExpeditionGenerator().Generate(definition.Expedition, seed);
+        if (!result.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", result.Diagnostics.Select(d => d.Code + ": " + d.Detail)));
+        ResolvedFloorIntent floor = result.Expedition!.Floors.Single(f => f.Id == result.Expedition.EntranceFloor);
+        return Generate(floor, definition.Policy);
+    }
+
+    internal static DungeonFloor Generate(ResolvedFloorIntent floor, GenerationPolicy policy)
+    {
+        Candidate candidate = floor.Candidate;
+        ulong seed = candidate.Seed;
+        DungeonGenerationResult generated = new DungeonGenerator().Generate(candidate, policy, seed);
         if (!generated.Accepted || generated.Artifacts is null)
             throw new InvalidOperationException($"Dungeon generation rejected: {generated.RejectionStage}/{generated.RejectionCode}");
         DungeonArtifacts geometry = generated.Artifacts;
@@ -30,11 +32,12 @@ internal sealed record DungeonFloor(ulong Seed, string GenerationIdentity, GridP
         }
         GridPoint Endpoint(NodeKind kind) => Center(geometry.Pieces.Single(p => p.RegionId == geometry.Intermediate.Regions.Single(r => r.Kind == kind).Id));
         return new(seed, generated.Identity, geometry.WalkableCells.OrderBy(p => p.Y).ThenBy(p => p.X).ToArray(),
-            geometry.Pieces.Select(Center).ToArray(), Endpoint(NodeKind.Start), Endpoint(NodeKind.Goal));
+            geometry.Pieces.Select(Center).ToArray(), Endpoint(NodeKind.Start), Endpoint(NodeKind.Goal), floor.Id, CanonicalIdentity.Hash(candidate));
     }
 
     internal void Validate()
     {
+        GameDefinitions.Require(!string.IsNullOrWhiteSpace(IntentFloorId) && !string.IsNullOrWhiteSpace(IntentGraphIdentity), "Floor intent identity");
         GameDefinitions.Require(!string.IsNullOrWhiteSpace(GenerationIdentity), "Floor.GenerationIdentity");
         GameDefinitions.Require(Cells is { Length: > 0 } && Cells.Distinct().Count() == Cells.Length, "Floor.Cells");
         GameDefinitions.Require(Cells.All(p => p.X >= 0 && p.Y >= 0

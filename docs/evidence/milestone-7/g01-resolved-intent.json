@@ -1,0 +1,521 @@
+{
+  "Seed": 29,
+  "Id": "dead-garrison",
+  "Title": "Rifles in the Deep: Dead Garrison",
+  "Identity": "20dac6a1cf823ab9a1d6736759bdc4188849e2f18cd0d821f17ee0b81f78953a",
+  "EntranceFloor": "arrival",
+  "ObjectiveFloor": "redoubt",
+  "Floors": [
+    {
+      "Id": "arrival",
+      "Role": "approach",
+      "Title": "Supply Approach",
+      "Candidate": {
+        "Id": "candidate.dead-garrison.arrival.29",
+        "Seed": 29,
+        "IntentId": "dead-garrison.arrival",
+        "Graph": {
+          "Nodes": [
+            {
+              "Id": "arrival/start",
+              "Kind": "Start",
+              "Label": "Start",
+              "Tags": [
+                "critical",
+                "supply-route",
+                "optional-cache",
+                "floor-role:approach"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "arrival/goal",
+              "Kind": "Goal",
+              "Label": "Goal",
+              "Tags": [
+                "critical",
+                "supply-route",
+                "optional-cache",
+                "floor-role:approach"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "arrival/treasure.detour_000000000000001d",
+              "Kind": "Treasure",
+              "Label": "Optional Treasure",
+              "Tags": [
+                "optional",
+                "reward",
+                "supply-route",
+                "optional-cache",
+                "floor-role:approach"
+              ],
+              "GrantsItem": null
+            }
+          ],
+          "Edges": [
+            {
+              "Id": "arrival/edge.start.goal",
+              "From": "arrival/start",
+              "To": "arrival/goal",
+              "Kind": "CriticalPath",
+              "Traversal": "Open",
+              "Tags": [
+                "initial"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "arrival/edge.start.treasure.detour_000000000000001d",
+              "From": "arrival/start",
+              "To": "arrival/treasure.detour_000000000000001d",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "detour"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "arrival/edge.treasure.detour_000000000000001d.goal",
+              "From": "arrival/treasure.detour_000000000000001d",
+              "To": "arrival/goal",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "rejoin"
+              ],
+              "RequiredItem": null
+            }
+          ]
+        },
+        "Provenance": [
+          {
+            "Step": 1,
+            "Operation": "initialize",
+            "Seed": 29,
+            "Summary": "Initialized from dead-garrison.arrival"
+          },
+          {
+            "Step": 2,
+            "Operation": "DetourLoop",
+            "Seed": 29,
+            "Summary": "Applied DetourLoop."
+          }
+        ]
+      }
+    },
+    {
+      "Id": "stores",
+      "Role": "supply-crossroads",
+      "Title": "Flooded Stores",
+      "Candidate": {
+        "Id": "candidate.dead-garrison.stores.6871969167356124647",
+        "Seed": 6871969167356124647,
+        "IntentId": "dead-garrison.stores",
+        "Graph": {
+          "Nodes": [
+            {
+              "Id": "stores/start",
+              "Kind": "Start",
+              "Label": "Start",
+              "Tags": [
+                "critical",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "stores/goal",
+              "Kind": "Goal",
+              "Label": "Goal",
+              "Tags": [
+                "critical",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "stores/gate.locked_1",
+              "Kind": "Gate",
+              "Label": "Locked Gate",
+              "Tags": [
+                "critical",
+                "lock",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "stores/key.gate_1",
+              "Kind": "Key",
+              "Label": "Gate Key",
+              "Tags": [
+                "branch",
+                "key",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": "stores/item.gate_key_1"
+            },
+            {
+              "Id": "stores/hazard.sluice_1",
+              "Kind": "Hazard",
+              "Label": "Flooded Sluice",
+              "Tags": [
+                "hazard",
+                "optional",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "stores/resource.safety_1",
+              "Kind": "Resource",
+              "Label": "Safety Cache",
+              "Tags": [
+                "optional",
+                "preparation",
+                "supply",
+                "hazard",
+                "key-route",
+                "floor-role:supply-crossroads"
+              ],
+              "GrantsItem": "stores/item.safety_cache_1"
+            }
+          ],
+          "Edges": [
+            {
+              "Id": "stores/edge.start.gate_1",
+              "From": "stores/start",
+              "To": "stores/gate.locked_1",
+              "Kind": "CriticalPath",
+              "Traversal": "Open",
+              "Tags": [
+                "approach"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.gate_1.goal",
+              "From": "stores/gate.locked_1",
+              "To": "stores/goal",
+              "Kind": "CriticalPath",
+              "Traversal": "Locked",
+              "Tags": [
+                "locked"
+              ],
+              "RequiredItem": "stores/item.gate_key_1"
+            },
+            {
+              "Id": "stores/edge.start.key_1",
+              "From": "stores/start",
+              "To": "stores/key.gate_1",
+              "Kind": "KeyBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "branch"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.key_1.gate_1",
+              "From": "stores/key.gate_1",
+              "To": "stores/gate.locked_1",
+              "Kind": "KeyBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "return"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.start.safety_1",
+              "From": "stores/start",
+              "To": "stores/resource.safety_1",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "branch"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.safety_1.sluice_1",
+              "From": "stores/resource.safety_1",
+              "To": "stores/hazard.sluice_1",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "preparation"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.start.sluice_1",
+              "From": "stores/start",
+              "To": "stores/hazard.sluice_1",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "branch",
+                "pressure"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "stores/edge.sluice_1.goal",
+              "From": "stores/hazard.sluice_1",
+              "To": "stores/goal",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "rejoin"
+              ],
+              "RequiredItem": null
+            }
+          ]
+        },
+        "Provenance": [
+          {
+            "Step": 1,
+            "Operation": "initialize",
+            "Seed": 6871969167356124647,
+            "Summary": "Initialized from dead-garrison.stores"
+          },
+          {
+            "Step": 2,
+            "Operation": "LockKeyLoop",
+            "Seed": 6871969167356124647,
+            "Summary": "Applied LockKeyLoop."
+          },
+          {
+            "Step": 3,
+            "Operation": "HazardResource",
+            "Seed": 6871969167356124647,
+            "Summary": "Applied HazardResource."
+          }
+        ]
+      }
+    },
+    {
+      "Id": "redoubt",
+      "Role": "finale",
+      "Title": "Inner Redoubt",
+      "Candidate": {
+        "Id": "candidate.dead-garrison.redoubt.5681767263628933845",
+        "Seed": 5681767263628933845,
+        "IntentId": "dead-garrison.redoubt",
+        "Graph": {
+          "Nodes": [
+            {
+              "Id": "redoubt/start",
+              "Kind": "Start",
+              "Label": "Start",
+              "Tags": [
+                "critical",
+                "preparation",
+                "finale",
+                "return-route",
+                "floor-role:finale"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "redoubt/goal",
+              "Kind": "Goal",
+              "Label": "Goal",
+              "Tags": [
+                "critical",
+                "preparation",
+                "finale",
+                "return-route",
+                "floor-role:finale"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "redoubt/gate.boss_1",
+              "Kind": "Gate",
+              "Label": "Boss Threshold",
+              "Tags": [
+                "boss",
+                "critical",
+                "preparation",
+                "finale",
+                "return-route",
+                "floor-role:finale"
+              ],
+              "GrantsItem": null
+            },
+            {
+              "Id": "redoubt/resource.boss_prep_1",
+              "Kind": "Resource",
+              "Label": "Boss Preparation",
+              "Tags": [
+                "optional",
+                "preparation",
+                "preparation",
+                "finale",
+                "return-route",
+                "floor-role:finale"
+              ],
+              "GrantsItem": "redoubt/item.boss_preparation_1"
+            },
+            {
+              "Id": "redoubt/shortcut.return_1",
+              "Kind": "Shortcut",
+              "Label": "Return Shortcut",
+              "Tags": [
+                "shortcut",
+                "preparation",
+                "finale",
+                "return-route",
+                "floor-role:finale"
+              ],
+              "GrantsItem": null
+            }
+          ],
+          "Edges": [
+            {
+              "Id": "redoubt/edge.approach.boss_1",
+              "From": "redoubt/start",
+              "To": "redoubt/gate.boss_1",
+              "Kind": "CriticalPath",
+              "Traversal": "Open",
+              "Tags": [
+                "approach"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "redoubt/edge.boss_1.goal",
+              "From": "redoubt/gate.boss_1",
+              "To": "redoubt/goal",
+              "Kind": "CriticalPath",
+              "Traversal": "Locked",
+              "Tags": [
+                "boss",
+                "locked"
+              ],
+              "RequiredItem": "redoubt/item.boss_preparation_1"
+            },
+            {
+              "Id": "redoubt/edge.approach.boss_prep_1",
+              "From": "redoubt/start",
+              "To": "redoubt/resource.boss_prep_1",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "branch",
+                "preparation"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "redoubt/edge.boss_prep_1.boss_1",
+              "From": "redoubt/resource.boss_prep_1",
+              "To": "redoubt/gate.boss_1",
+              "Kind": "OptionalBranch",
+              "Traversal": "Open",
+              "Tags": [
+                "return"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "redoubt/edge.goal.shortcut_1",
+              "From": "redoubt/goal",
+              "To": "redoubt/shortcut.return_1",
+              "Kind": "Shortcut",
+              "Traversal": "Open",
+              "Tags": [
+                "shortcut"
+              ],
+              "RequiredItem": null
+            },
+            {
+              "Id": "redoubt/edge.shortcut.return.start",
+              "From": "redoubt/shortcut.return_1",
+              "To": "redoubt/start",
+              "Kind": "Shortcut",
+              "Traversal": "OneWayReturn",
+              "Tags": [
+                "return",
+                "shortcut"
+              ],
+              "RequiredItem": null
+            }
+          ]
+        },
+        "Provenance": [
+          {
+            "Step": 1,
+            "Operation": "initialize",
+            "Seed": 5681767263628933845,
+            "Summary": "Initialized from dead-garrison.redoubt"
+          },
+          {
+            "Step": 2,
+            "Operation": "BossPreparation",
+            "Seed": 5681767263628933845,
+            "Summary": "Applied BossPreparation."
+          },
+          {
+            "Step": 3,
+            "Operation": "Shortcut",
+            "Seed": 5681767263628933845,
+            "Summary": "Applied Shortcut."
+          }
+        ]
+      }
+    }
+  ],
+  "Connectors": [
+    {
+      "Id": "supply-descent",
+      "FromFloor": "arrival",
+      "FromNode": "arrival/goal",
+      "ToFloor": "stores",
+      "ToNode": "stores/start",
+      "TwoWay": true
+    },
+    {
+      "Id": "redoubt-descent",
+      "FromFloor": "stores",
+      "FromNode": "stores/goal",
+      "ToFloor": "redoubt",
+      "ToNode": "redoubt/start",
+      "TwoWay": true
+    }
+  ],
+  "Budget": {
+    "MaxFloors": 8,
+    "MaxConnectors": 16,
+    "PerFloor": {
+      "MaxNodes": 32,
+      "MaxEdges": 64,
+      "MaxRuleApplications": 12
+    },
+    "Total": {
+      "MaxNodes": 128,
+      "MaxEdges": 256,
+      "MaxRuleApplications": 48
+    }
+  }
+}

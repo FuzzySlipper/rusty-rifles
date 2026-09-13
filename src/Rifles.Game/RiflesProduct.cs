@@ -1,3 +1,4 @@
+using Rifles.Procgen.Expeditions;
 using Rifles.Game.Debugging;
 using Rusty.Engine.Debugging;
 using Rifles.Procgen.Generation;
@@ -15,7 +16,7 @@ using Rifles.Game.Presentation;
 
 namespace Rifles.Game;
 
-public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleSource
+public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleSource, IDebugCommandModule
 {
     private readonly RiflesUpdateProfile updateProfile = new();
     private readonly GameDefinitions definitions;
@@ -29,6 +30,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private readonly ExplorationInput controls = new();
     private ulong commandRevision = 1;
     private readonly HudPublication hudPublication = new();
+    private ResolvedExpedition expedition;
     private string selectedMember = "";
     private bool cameraCut = true;
     private string feedback = "Expedition ready";
@@ -52,7 +54,10 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
         party = new PartyState(definitions.Characters.GetPreset(preset));
         selectedMember = party.Members[0].Definition.Id;
-        floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
+        ExpeditionGenerationResult generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, definitions.Generation.Seed);
+        if (!generated.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Code + ": " + d.Detail)));
+        expedition = generated.Expedition!;
+        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy);
         exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
         generatedArt = new GeneratedArt(context.Content, engine.Graphics,
             definitions.Appearance.Styles.SelectMany(s => s.Textures)
@@ -66,7 +71,13 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     {
         DebugCommandRegistrationResult result = registrar.Register(updateProfile);
         if (!result.Succeeded) throw new InvalidOperationException(result.Message);
+        result = registrar.Register(this);
+        if (!result.Succeeded) throw new InvalidOperationException(result.Message);
     }
+
+    [DebugCommand("rifles.expedition.read", Description = "Read the resolved expedition graph, floor roles and connectors stored with this run. Does not travel or regenerate.")]
+    public string ReadExpedition() => System.Text.Json.JsonSerializer.Serialize(expedition,
+        new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
 
     public void Start()
     {
@@ -244,7 +255,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat());
+        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat(), expedition);
 
     private void Save()
     {
@@ -304,6 +315,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             DungeonScene? previous = scene;
             movement = replacementGrid;
             scene = replacement; floor = saved.Floor; exploration = restored.Exploration; party = restored.Party;
+            expedition = saved.Intent;
             expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
             inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
             ApplyEquipment();

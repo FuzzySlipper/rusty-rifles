@@ -1,3 +1,4 @@
+using Rifles.Procgen.Expeditions;
 using System.Text.Json;
 using Rifles.Game.Combat;
 using Rifles.Game.Magic;
@@ -87,15 +88,11 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
     }
 }
 
-internal sealed record GenerationDefinition(ulong Seed, string IntentId, string Title, string[] Tags,
-    GraphRule[] Rules, GenerationPolicy Policy)
+internal sealed record GenerationDefinition(ulong Seed, ExpeditionDefinition Expedition, GenerationPolicy Policy)
 {
     internal void Validate()
     {
-        GameDefinitions.Require(!string.IsNullOrWhiteSpace(IntentId), nameof(IntentId));
-        GameDefinitions.Require(!string.IsNullOrWhiteSpace(Title), nameof(Title));
-        GameDefinitions.Require(Tags is not null && Tags.All(t => !string.IsNullOrWhiteSpace(t)), nameof(Tags));
-        GameDefinitions.Require(Rules is not null && Rules.All(Enum.IsDefined), nameof(Rules));
+        Expedition.Validate();
         GameDefinitions.Require(GenerationPolicyValidation.IsValid(Policy), nameof(Policy));
     }
 }

@@ -1,3 +1,5 @@
+using Rifles.Procgen;
+using Rifles.Procgen.Expeditions;
 using Rifles.Procgen.Generation;
 using System.Buffers;
 using Rifles.Game.Combat;
@@ -13,11 +15,11 @@ namespace Rifles.Game.Expedition;
 
 internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId, ulong NextObjectId,
     DungeonFloor Floor, ExplorationSnapshot Exploration, MemberDefinition[] Roster,
-    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat);
+    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent);
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
-    public uint SchemaVersion => 6;
+    public uint SchemaVersion => 7;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -38,6 +40,12 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
             && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId) && saved.NextObjectId <= (ulong)uint.MaxValue + 1, "Save identities");
         saved.Floor.Validate();
+        Diagnostic[] intentDiagnostics = ExpeditionGenerator.Validate(saved.Intent);
+        GameDefinitions.Require(!intentDiagnostics.Any(d => d.Severity == DiagnosticSeverity.Fatal),
+            "Save expedition intent: " + string.Join(", ", intentDiagnostics.Select(d => d.Code)));
+        ResolvedFloorIntent? floorIntent = saved.Intent.Floors.SingleOrDefault(f => f.Id == saved.Floor.IntentFloorId);
+        GameDefinitions.Require(floorIntent is not null && saved.Floor.Seed == floorIntent.Candidate.Seed
+            && saved.Floor.IntentGraphIdentity == CanonicalIdentity.Hash(floorIntent.Candidate), "Save floor intent identity");
         _ = definitions.Characters.GetPreset(saved.Preset);
         ExplorationItems itemWorld = new(definitions.ItemExploration, saved.ItemWorld);
         itemWorld.Validate(saved.Floor);
