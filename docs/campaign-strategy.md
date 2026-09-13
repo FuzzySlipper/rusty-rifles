@@ -289,6 +289,10 @@ one-time code transfers into Rifles.
 
 ## Initial campaign defaults
 
+The [player interface direction](player-interface-direction.md) records the
+future emphasis on formation, empty positions and a distinct inventory/player
+panel. It guides flexibility without expanding these foundation defaults.
+
 - Four-member 2×2 party; enemy sizes pack within one cell, with multi-cell
   creatures deferred. Capacity and footprint policy are file-tuned.
 - Classic slot inventory, selectable known spells/hotbar, and lightweight
