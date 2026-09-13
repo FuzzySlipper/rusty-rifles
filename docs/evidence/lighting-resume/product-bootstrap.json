@@ -1,0 +1,1 @@
+{"artifact":"rusty.product.browser-bootstrap","schemaVersion":1,"product":{"id":"rusty-rifles","title":"Rusty Rifles"},"ui":{"entry":"product-ui/main.js"},"lifecycle":{"mode":"realtime"},"uiProjection":{"expectedStream":"rifles.session","expectedContract":"rifles.session.v1"},"renderer":{"lighting":{"defaultLights":{"world":"disabled","viewmodel":"neutral"}}}}

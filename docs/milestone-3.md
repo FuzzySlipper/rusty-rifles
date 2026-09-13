@@ -50,8 +50,9 @@ counters are fresh after load; the product command revision invalidates old UI
 proposals. Saves from earlier schemas are rejected, not silently reinterpreted.
 
 The item atlas follows the provisional ink-and-wash treatment. The gate and
-pressure plate use simple Engine geometry/materials; lighting acceptance still
-belongs to B05 / Engine #8256. No renderer or shader workaround was introduced.
+pressure plate use simple Engine geometry/materials. B05 lighting acceptance
+subsequently resumed on pair `8c20a96d10ef`; see `docs/milestone-2.md`. No
+renderer or shader workaround was introduced.
 
 ## Verification
 

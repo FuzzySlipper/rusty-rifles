@@ -1,0 +1,90 @@
+[
+  {
+    "label": "lantern-only",
+    "file": "lantern-only.png",
+    "script": "bd729660-3ad9-4450-beb4-3cbc06184aa1",
+    "capture": "131a2a93-a9f2-46d2-8df3-15f0c5c5175f",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/f8e56116-bd6f-4fd1-aecc-1b762b2e7a6e/861adf81-eed5-4e25-a68f-cfa46f59aff3.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/bd729660-3ad9-4450-beb4-3cbc06184aa1/events.jsonl"
+  },
+  {
+    "label": "light-left",
+    "file": "light-left.png",
+    "script": "bd729660-3ad9-4450-beb4-3cbc06184aa1",
+    "capture": "c4d1f874-372f-44c3-a976-7cc6e692b5ca",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/f8e56116-bd6f-4fd1-aecc-1b762b2e7a6e/f3105fe7-49e4-44d7-a61d-da24c0d49b17.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/bd729660-3ad9-4450-beb4-3cbc06184aa1/events.jsonl"
+  },
+  {
+    "label": "light-right",
+    "file": "light-right.png",
+    "script": "bd729660-3ad9-4450-beb4-3cbc06184aa1",
+    "capture": "0ff62fd8-29ac-46f1-bdcc-06938c2e5c07",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/f8e56116-bd6f-4fd1-aecc-1b762b2e7a6e/27709852-5191-40c5-8128-5350a860ba5a.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/bd729660-3ad9-4450-beb4-3cbc06184aa1/events.jsonl"
+  },
+  {
+    "label": "painted",
+    "file": "painted.png",
+    "script": "bd729660-3ad9-4450-beb4-3cbc06184aa1",
+    "capture": "306aad2d-eefa-4cd2-bd72-b0949c2e8fe4",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/f8e56116-bd6f-4fd1-aecc-1b762b2e7a6e/180cae8a-699e-4893-8897-a2a04d05ad3f.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/bd729660-3ad9-4450-beb4-3cbc06184aa1/events.jsonl"
+  },
+  {
+    "label": "gpu-lantern",
+    "file": "gpu-lantern.png",
+    "script": "54896c38-3dfe-4734-bc5b-8c2a93ff3f9a",
+    "capture": "f92fa2d2-8b79-468e-b095-dacb92a64499",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/cf6f53e4-13ee-474e-92c0-f8652835c1c7.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/54896c38-3dfe-4734-bc5b-8c2a93ff3f9a/events.jsonl"
+  },
+  {
+    "label": "gpu-left",
+    "file": "gpu-left.png",
+    "script": "54896c38-3dfe-4734-bc5b-8c2a93ff3f9a",
+    "capture": "562620ab-5a34-4984-9fbe-1d0fd1e405d3",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/1683db5d-f286-48e9-a14c-0fd089d3f62b.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/54896c38-3dfe-4734-bc5b-8c2a93ff3f9a/events.jsonl"
+  },
+  {
+    "label": "gpu-right",
+    "file": "gpu-right.png",
+    "script": "54896c38-3dfe-4734-bc5b-8c2a93ff3f9a",
+    "capture": "3dd35287-a439-4651-8d55-eaf4e446d234",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/40a71364-3ca3-444c-9e60-533a7195ba80.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/54896c38-3dfe-4734-bc5b-8c2a93ff3f9a/events.jsonl"
+  },
+  {
+    "label": "gpu-painted",
+    "file": "gpu-painted.png",
+    "script": "54896c38-3dfe-4734-bc5b-8c2a93ff3f9a",
+    "capture": "e1752910-024b-452a-87a6-bf4e21a1f09f",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/9e264c23-f1ab-4277-ba0a-4fbc8ab4dafe.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/54896c38-3dfe-4734-bc5b-8c2a93ff3f9a/events.jsonl"
+  },
+  {
+    "label": "painted-settled",
+    "file": "painted-settled.png",
+    "script": "111769a8-e1f3-45dd-a014-d65c136f5cba",
+    "capture": "b3d2d740-8d69-462e-90a0-3b1726843bdf",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/3ba8a70e-a4f3-490d-98ac-71e117e3d738.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/111769a8-e1f3-45dd-a014-d65c136f5cba/events.jsonl"
+  },
+  {
+    "label": "painted-distance",
+    "file": "painted-distance.png",
+    "script": "111769a8-e1f3-45dd-a014-d65c136f5cba",
+    "capture": "4c06734c-4f06-44ab-9844-fc20569b492b",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/7c987cd0-b40f-4037-b37c-b1c260142425.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/111769a8-e1f3-45dd-a014-d65c136f5cba/events.jsonl"
+  },
+  {
+    "label": "side-angle",
+    "file": "side-angle.png",
+    "script": "ab7c2743-522f-4734-8a7c-8b7cc9ac152c",
+    "capture": "df057678-d31e-4829-b225-14833b922b62",
+    "original": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/f946a767-5aba-4cd0-9a25-894a1f880abc/b2beca2f-121c-4217-a29a-50a9b6aa99b1.png",
+    "journal": "/home/agent/.local/state/crew-playtest/scripts/ab7c2743-522f-4734-8a7c-8b7cc9ac152c/events.jsonl"
+  }
+]

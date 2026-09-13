@@ -25,10 +25,10 @@ the simulation clock. Game policy lives in ordinary C#.
 
 Requires .NET 10, Node/pnpm, and the matched Rusty Engine SDK/runtime artifacts.
 The Engine pair is already installed locally in this checkout. On a fresh
-checkout, install version `0.1.0-dev.2e4255bd3ad5` explicitly:
+checkout, install version `0.1.0-dev.8c20a96d10ef` explicitly:
 
 ```bash
-bash scripts/install-engine.sh /absolute/path/to/runtime-pack /absolute/path/to/Rusty.Engine.0.1.0-dev.2e4255bd3ad5.nupkg
+bash scripts/install-engine.sh /absolute/path/to/runtime-pack /absolute/path/to/Rusty.Engine.0.1.0-dev.8c20a96d10ef.nupkg
 pnpm install --frozen-lockfile
 bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420
 ```

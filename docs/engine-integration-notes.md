@@ -1,4 +1,23 @@
-# Engine integration notes for campaign planning
+# Engine integration notes
+
+## Current content and lighting integration
+
+Rifles now consumes paired SDK/runtime `0.1.0-dev.8c20a96d10ef`.
+`ProductCreateContext.Content.ReadBytes` loads typed definitions directly,
+replacing the manual OpenReference/ReadReferenceInfo/ReadBytes sequence.
+Packaged world default lights are disabled; viewmodel defaults remain neutral.
+
+This pair supports independently loaded `RustyEngineContentBundle` collections.
+They are useful for separately admitted data/catalogs, but bundle-owned files
+are excluded from global renderer selection. `Graphics.OpenResource` still
+accepts a path, without a bundle/ContentReference overload. Moving generated
+PNGs into a bundle would therefore break the current real renderer caller.
+Keep those images in normal product content and retain the small UI-atlas copy:
+content bundles do not publish browser DOM image URLs. Revisit image bundling
+when the Engine exposes an explicit resource consumer for it. Do not build a
+local resource loader or bundle-mount shim.
+
+## Original campaign survey
 
 Checked 2026-09-13 against the **installed** `Rusty.Engine`
 `0.1.0-dev.2e4255bd3ad5` assembly, not just the newer sibling Engine checkout.

@@ -46,11 +46,19 @@ focus angles, patrol timing and lantern light intensity/range.
 
 Verification and original host captures belong in `docs/evidence/milestone-2/`.
 
-## Remaining upstream dependency
+## Lighting acceptance resumed
 
-B05 (#8203) remains blocked on Engine #8256: expose the existing default world
-lighting choice through packaged product configuration. This runtime forces a
-bright hemisphere/directional rig which masks the intended dungeon lighting.
-Synthetic sprite normals and owned point lights are implemented, but final
-lighting/style acceptance must wait for a matched runtime with that control.
-The game does not replace the host or implement a private shader workaround.
+B05 (#8203) now uses paired Engine `0.1.0-dev.8c20a96d10ef`, consuming
+completed Engine #8256. Packaged configuration disables the default world rig
+and leaves viewmodel lighting neutral. Product-owned room and lantern lights
+control voxel and synthetic-normal sprite shading.
+
+Browser controls and remote Wolf keyboard navigation verified room-fill removal,
+three lantern positions, both treatments and changed viewing positions. Ink and
+wash remains the provisional choice: readable silhouettes and cloth detail,
+with runtime brightness responding to the moved lantern. Painted cover stays an
+explicit comparison, not a complete second directional asset set. Brick repeats
+remain conspicuous and the simple pressure plate looks flat; these are retained
+art-development observations, not reasons to add normal maps or a renderer.
+
+[Original captures and verification](evidence/lighting-resume/README.md).

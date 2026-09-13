@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <RustyEngineSdkPackageVersion>0.1.0-dev.2e4255bd3ad5</RustyEngineSdkPackageVersion>
+    <RustyEngineSdkPackageVersion>0.1.0-dev.8c20a96d10ef</RustyEngineSdkPackageVersion>
     <RustyEngineProductEntryType>Rifles.Game.RiflesProduct</RustyEngineProductEntryType>
     <RustyEngineProductId>rusty-rifles</RustyEngineProductId>
     <RustyEngineProductTitle>Rusty Rifles</RustyEngineProductTitle>
@@ -13,6 +13,8 @@
     <RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>
     <RustyEngineProductUiProjectionStream>rifles.session</RustyEngineProductUiProjectionStream>
     <RustyEngineProductUiProjectionContract>rifles.session.v1</RustyEngineProductUiProjectionContract>
+    <RustyEngineProductDefaultWorldLights>disabled</RustyEngineProductDefaultWorldLights>
+    <RustyEngineProductDefaultViewmodelLights>neutral</RustyEngineProductDefaultViewmodelLights>
     <RustyEngineProductLifecycleMode>realtime</RustyEngineProductLifecycleMode>
     <RustyEngineProductFixedStepHz>60</RustyEngineProductFixedStepHz>
     <RustyEngineProductFixedStepMaxCatchUpSteps>4</RustyEngineProductFixedStepMaxCatchUpSteps>

@@ -40,7 +40,7 @@ public sealed partial class RiflesProduct : IEngineProduct
     {
         ArgumentNullException.ThrowIfNull(context);
         engine = context.Engine;
-        try { definitions = GameDefinitions.Load(engine); }
+        try { definitions = GameDefinitions.Load(context.Content); }
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
         // Engine closes renderer resource selection after Create; select every treatment here.
         foreach (TextureDefinition texture in definitions.Appearance.Styles.SelectMany(s => s.Textures))

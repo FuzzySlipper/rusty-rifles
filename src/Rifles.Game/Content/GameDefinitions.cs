@@ -21,12 +21,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         Converters = { new JsonStringEnumConverter() },
     };
 
-    internal static GameDefinitions Load(IEngineContext engine) => Load(path =>
-    {
-        using ContentReference reference = engine.Content.OpenReference(new ContentOpenRequest(path));
-        ContentReferenceInfo info = engine.Content.ReadReferenceInfo(reference).Span[0];
-        return engine.Content.ReadBytes(new ContentReadBytesRequest(reference, 0, checked((uint)info.ByteLength)));
-    });
+    internal static GameDefinitions Load(ProductContent content) => Load(content.ReadBytes);
     internal static GameDefinitions Load(Func<string, ReadOnlyMemory<byte>> read)
     {
         T Read<T>(string path, Action<T> validate)
