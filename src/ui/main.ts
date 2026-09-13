@@ -46,6 +46,25 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const combatMembers = document.createElement('div'); combatMembers.dataset.combatMembers = 'true'; combatMembers.style.cssText = 'display:grid;gap:3px;margin:5px 0';
   const combatActions = document.createElement('div'); combatActions.dataset.combatActions = 'true'; combatActions.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin:5px 0';
   const combatLog = document.createElement('output'); combatLog.dataset.combatLog = 'true'; combatLog.style.cssText = 'display:block;color:#e7c8b1;max-height:3.9em;overflow:auto;white-space:pre-line';
+  const magicPanel = document.createElement('details'); magicPanel.dataset.spellsRecovery = 'true'; magicPanel.open = false; magicPanel.style.cssText = 'border-top:1px solid #574f3d;margin-top:8px;padding-top:7px';
+  const magicTitle = document.createElement('summary'); magicTitle.textContent = 'Spells & recovery';
+  const magicStatus = document.createElement('output'); magicStatus.dataset.spellStatus = 'true'; magicStatus.style.cssText = 'display:block;margin:5px 0;color:#c9c0ae';
+  const spellList = document.createElement('div'); spellList.dataset.spellList = 'true'; spellList.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin:5px 0';
+  const spellDetails = document.createElement('div'); spellDetails.dataset.spellDetails = 'true'; spellDetails.style.cssText = 'background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:5px';
+  const spellInfo = document.createElement('output'); spellInfo.dataset.spellInfo = 'true'; spellInfo.style.cssText = 'display:block;white-space:pre-line';
+  const spellTarget = document.createElement('label'); spellTarget.textContent = 'Ally target '; spellTarget.style.cssText = 'display:block;margin-top:5px';
+  const allyTarget = document.createElement('select'); allyTarget.dataset.spellTarget = 'true'; allyTarget.setAttribute('aria-label', 'Spell ally target'); spellTarget.append(allyTarget);
+  const spellButtons = document.createElement('div'); spellButtons.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:5px';
+  spellDetails.append(spellInfo, spellTarget, spellButtons);
+  const spellHotbar = document.createElement('div'); spellHotbar.dataset.spellHotbar = 'true'; spellHotbar.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin:5px 0';
+  const restControls = document.createElement('div'); restControls.dataset.restControls = 'true'; restControls.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:6px 0';
+  const restStatus = document.createElement('output'); restStatus.dataset.restStatus = 'true'; restStatus.style.cssText = 'color:#c9c0ae';
+  restControls.append(restStatus);
+  const advancement = document.createElement('section'); advancement.dataset.advancement = 'true'; advancement.style.cssText = 'border-top:1px solid #574f3d;margin-top:7px;padding-top:6px';
+  const advancementTitle = document.createElement('strong'); advancementTitle.textContent = 'Party development';
+  const advancementRows = document.createElement('div'); advancementRows.dataset.advancementRows = 'true'; advancementRows.style.cssText = 'display:grid;gap:5px;margin-top:5px';
+  advancement.append(advancementTitle, advancementRows);
+  magicPanel.append(magicTitle, magicStatus, spellList, spellDetails, spellHotbar, restControls, advancement);
   const roster = document.createElement('div'); roster.dataset.roster = 'true'; roster.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0';
   const actions = document.createElement('nav'); actions.setAttribute('aria-label', 'Expedition controls'); actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px';
   const focus = document.createElement('p'); focus.style.cssText = 'margin:5px 0';
@@ -58,18 +77,19 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const inventoryControls = document.createElement('div'); inventoryControls.dataset.inventoryControls = 'true'; inventoryControls.style.cssText = 'background:#171914f5;border-top:1px solid #574f3d;bottom:0;margin-top:7px;padding-top:7px;position:sticky';
   inventory.append(inventoryFeedback, inventoryBody, inventoryControls);
   const syncPanelWidth = (): void => {
-    panel.style.width = inventory.open || partyTools.open
+    panel.style.width = inventory.open || partyTools.open || magicPanel.open
       ? 'min(620px,calc(100vw - 24px))'
       : 'min(380px,calc(100vw - 24px))';
   };
   inventory.addEventListener('toggle', syncPanelWidth);
   partyTools.addEventListener('toggle', syncPanelWidth);
+  magicPanel.addEventListener('toggle', syncPanelWidth);
 
   let state: Record<string, unknown> = {};
   let selectedItem: ItemSelection | null = null;
   let hoveredItem: ItemSelection | null = null;
   let selectedDestination: string | null = null;
-  let previousRoster = '', previousPartyTools = '', previousInventory = '', previousInventoryControls = '', previousPuzzle = '';
+  let previousRoster = '', previousPartyTools = '', previousInventory = '', previousInventoryControls = '', previousPuzzle = '', previousMagicSpells = '', previousMagicTargets = '';
   let drag: DragIntent | null = null;
   let uiFeedback = '';
   let productFeedback = '';
@@ -84,6 +104,20 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const element = document.createElement('button'); element.type = 'button'; element.textContent = label;
     element.style.cssText = 'background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:4px 6px;cursor:pointer;font:inherit'; element.addEventListener('click', action); return element;
   };
+  const spellCancel = button('Cancel spell', () => command('spell-cancel')); spellCancel.dataset.spellCancel = 'true';
+  const spellCast = button('Cast', () => command('cast', { spell: text(record(record(state.combat).magic).selectedSpell, ''), member: allyTarget.value || text(state.selectedMember, '') })); spellCast.dataset.spellCast = 'true';
+  const spellAssign = ['0', '1', '2'].map(slot => {
+    const assign = button(`Assign ${Number(slot) + 1}`, () => command('spell-assign', { spell: text(record(record(state.combat).magic).selectedSpell, ''), slot }));
+    assign.dataset.spellAssign = 'true'; assign.dataset.slot = slot; return assign;
+  });
+  spellButtons.append(spellCancel, spellCast, ...spellAssign);
+  const hotbarButtons = ['0', '1', '2'].map(slot => {
+    const quick = button('', () => command('spell-hotbar', { slot })); quick.dataset.spellHotbarSlot = slot; return quick;
+  });
+  spellHotbar.append(...hotbarButtons);
+  const rest = button('Rest', () => command('rest')); rest.dataset.rest = 'true';
+  const restCancel = button('Cancel rest', () => command('rest-cancel')); restCancel.dataset.restCancel = 'true';
+  restControls.append(rest, restCancel);
   const pause = button('Pause', () => command('pause'));
   const use = button('Use feature', () => command('use', { target: state.focusId, targetRevision: state.focusRevision }));
   actions.append(pause, button('Save', () => command('save')), button('Load', () => command('load')), button('Restart', () => command('restart')), use);
@@ -101,7 +135,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const attack = button('Attack [Space]', () => command('attack'));
   const reload = button('Reload [T]', () => command('reload'));
-  const bolt = button('Bolt', () => command('bolt'));
+  const bolt = button('Spark', () => { magicPanel.open = true; command('spell-select', { spell: 'spark' }); }); bolt.dataset.spellShortcut = 'spark';
   const interrupt = button('Interrupt', () => command('interrupt'));
   const toss = button('Throw selected', () => throwSelectedItem());
   const plate = button('Toss onto plate', () => throwSelectedItem('plate'));
@@ -109,6 +143,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   combat.append(combatTitle, combatStatus, combatTargets, combatMembers, combatActions, combatLog);
   const enemyRows = new Map<string, Readonly<{ row: HTMLElement; target: HTMLButtonElement; details: HTMLOutputElement }>>();
   const memberRows = new Map<string, HTMLOutputElement>();
+  const advancementMemberRows = new Map<string, Readonly<{ row: HTMLElement; status: HTMLOutputElement; choice: HTMLSelectElement; advance: HTMLButtonElement }>>();
 
   const selectedItemData = (): Record<string, unknown> | null => {
     if (selectedItem === null) return null;
@@ -282,6 +317,106 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     if (equipmentItems.childElementCount === 0) equipmentItems.textContent = 'No equipment'; equipment.append(equipmentItems); inventoryBody.append(ownerList, equipment); refreshInventorySelection(preservedQuantity);
   };
+  const renderMagic = (): void => {
+    const magicState = record(record(state.combat).magic);
+    magicPanel.hidden = Object.keys(magicState).length === 0;
+    if (magicPanel.hidden) return;
+    const spells = record(magicState.spells);
+    const selectedSpell = text(magicState.selectedSpell, '');
+    const selected = record(spells[selectedSpell]);
+    const selectedKnown = numeric(selected.known) === 1;
+    const selectedAvailable = numeric(selected.available) === 1;
+    const spellSignature = JSON.stringify([spells, selectedSpell]);
+    if (spellSignature !== previousMagicSpells) {
+      previousMagicSpells = spellSignature;
+      spellList.replaceChildren();
+      for (const [id, spell] of entries(spells)) {
+        if (numeric(spell.known) !== 1) continue;
+        const select = button(text(spell.name, id), () => command('spell-select', { spell: id }));
+        select.dataset.spellSelect = id; select.dataset.spell = id; select.setAttribute('aria-pressed', String(id === selectedSpell));
+        select.title = text(spell.description, 'No description');
+        if (id === selectedSpell) select.style.borderColor = '#e4bd63';
+        spellList.append(select);
+      }
+      if (spellList.childElementCount === 0) spellList.textContent = 'No spells are known.';
+    }
+    const targetSignature = JSON.stringify([state.party, state.selectedMember]);
+    if (targetSignature !== previousMagicTargets && document.activeElement !== allyTarget) {
+      previousMagicTargets = targetSignature;
+      const previousTarget = allyTarget.value;
+      allyTarget.replaceChildren();
+      for (const [id, member] of entries(state.party)) {
+        const option = document.createElement('option'); option.value = id; option.textContent = text(member.name, id); allyTarget.append(option);
+      }
+      const selectedMember = text(state.selectedMember, '');
+      allyTarget.value = entries(state.party).some(([id]) => id === previousTarget)
+        ? previousTarget
+        : entries(state.party).some(([id]) => id === selectedMember) ? selectedMember : entries(state.party)[0]?.[0] ?? '';
+    }
+    if (!selectedKnown) {
+      spellInfo.textContent = 'Select a known spell to inspect it, assign a quick slot, or cast it.';
+    } else {
+      const unavailable = selectedAvailable ? 'Available' : `Unavailable: ${text(selected.reason, 'No reason reported')}`;
+      spellInfo.textContent = `${text(selected.name, selectedSpell)} · ${text(selected.target, 'target unknown')}\n${text(selected.description, 'No description')}\nCost ${text(selected.cost, '0')} · windup ${text(selected.windup, '0')}s · recovery ${text(selected.recovery, '0')}s\n${unavailable}`;
+    }
+    spellTarget.hidden = !selectedKnown;
+    spellCancel.disabled = !selectedKnown;
+    spellCast.disabled = !selectedKnown || !selectedAvailable;
+    for (const assign of spellAssign) assign.disabled = !selectedKnown;
+    const hotbar = record(magicState.hotbar);
+    for (const [index, slot] of ['0', '1', '2'].entries()) {
+      const spellId = text(hotbar[slot], '');
+      const assigned = record(spells[spellId]);
+      hotbarButtons[index].textContent = `${index + 1}: ${spellId && numeric(assigned.known) === 1 ? text(assigned.name, spellId) : 'Empty'}`;
+      hotbarButtons[index].disabled = !spellId || numeric(assigned.known) !== 1;
+      hotbarButtons[index].title = spellId && numeric(assigned.known) === 1 ? text(assigned.description, '') : 'Assign the selected spell to this quick slot.';
+    }
+    const restState = record(magicState.rest);
+    const resting = numeric(restState.active) === 1;
+    const restReason = text(restState.reason, '');
+    restStatus.textContent = resting
+      ? `Resting${numeric(restState.remaining) > 0 ? ` · ${numeric(restState.remaining).toFixed(1)}s remaining` : ''}${restReason ? ` · ${restReason}` : ''}`
+      : restReason ? `Rest unavailable: ${restReason}` : 'Recovery is ready when the expedition is safe.';
+    rest.disabled = resting;
+    restCancel.disabled = !resting;
+
+    const choices = record(magicState.choices);
+    const choiceSignature = JSON.stringify(choices);
+    const presentMembers = new Set<string>();
+    for (const [id, member] of entries(magicState.members)) {
+      presentMembers.add(id);
+      let row = advancementMemberRows.get(id);
+      if (!row) {
+        const element = document.createElement('div'); element.dataset.advancementMember = id; element.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;align-items:center';
+        const memberStatus = document.createElement('output'); memberStatus.dataset.memberDevelopment = id; memberStatus.style.cssText = 'flex:1 1 100%';
+        const choice = document.createElement('select'); choice.dataset.advancementChoice = id; choice.setAttribute('aria-label', `${text(member.name, id)} advancement choice`);
+        const advance = button('Advance', () => command('advance', { member: id, choice: choice.value })); advance.dataset.advance = id;
+        element.append(memberStatus, choice, advance); advancementRows.append(element);
+        row = { row: element, status: memberStatus, choice, advance }; advancementMemberRows.set(id, row);
+      }
+      if (row.choice.dataset.choiceSignature !== choiceSignature && document.activeElement !== row.choice) {
+        const previousChoice = row.choice.value;
+        row.choice.replaceChildren();
+        for (const [choiceId, choice] of entries(choices)) {
+          const option = document.createElement('option'); option.value = choiceId; option.textContent = text(choice.name, choiceId); option.title = text(choice.description, ''); row.choice.append(option);
+        }
+        row.choice.value = entries(choices).some(([choiceId]) => choiceId === previousChoice) ? previousChoice : entries(choices)[0]?.[0] ?? '';
+        row.choice.dataset.choiceSignature = choiceSignature;
+      }
+      const conditions = text(member.conditions, 'Healthy').split(/[,;|]/).map(value => value.trim()).filter(Boolean).map(value => value.charAt(0).toUpperCase() + value.slice(1)).join(', ') || 'Healthy';
+      row.status.textContent = `${text(member.name, id)} · ${conditions} · ${text(member.experience, '0')} XP · ${text(member.unspent, '0')} unspent · ${text(member.revivals, '0')} revivals`;
+      row.advance.disabled = numeric(member.unspent) <= 0 || !row.choice.value;
+      row.advance.title = row.advance.disabled ? 'Earn an unspent advancement before choosing this benefit.' : text(record(choices[row.choice.value]).description, 'Apply this advancement.');
+      advancementRows.append(row.row);
+    }
+    for (const [id, row] of advancementMemberRows) {
+      if (!presentMembers.has(id)) { row.row.remove(); advancementMemberRows.delete(id); }
+    }
+    advancement.hidden = presentMembers.size === 0;
+    magicStatus.textContent = selectedKnown
+      ? `${text(selected.name, selectedSpell)} selected${selectedAvailable ? '' : ` · ${text(selected.reason, 'Unavailable')}`}`
+      : 'Choose a known spell. Selection and cancellation do not spend resources.';
+  };
   const renderCombat = (): void => {
     const combatState = record(state.combat);
     combat.hidden = Object.keys(combatState).length === 0;
@@ -294,7 +429,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       ? 'The party is defeated.'
       : selectedTargetNumber > 0 ? `Target: ${text(selectedEnemy.name, selectedTarget)}` : 'Select a visible enemy.';
     attack.disabled = defeated || selectedTargetNumber <= 0;
-    bolt.disabled = defeated || selectedTargetNumber <= 0;
+    bolt.disabled = defeated;
     reload.disabled = defeated;
     toss.disabled = defeated || selectedItem === null || selectedTargetNumber <= 0;
     plate.disabled = defeated || selectedItem === null;
@@ -373,7 +508,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
         puzzle.append(lever);
       }
     }
-    renderRoster(); renderPartyTools(); renderInventory(); renderCombat();
+    renderRoster(); renderPartyTools(); renderInventory(); renderCombat(); renderMagic();
   };
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); if (event.code === 'Escape') cancelDrag(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
@@ -381,6 +516,6 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget)) cancelDrag(); };
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, combat, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
+  panel.append(title, help, status, combat, magicPanel, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
+  return { dispose() { unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
 }
