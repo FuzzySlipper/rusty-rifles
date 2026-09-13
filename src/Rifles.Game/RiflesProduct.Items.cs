@@ -26,7 +26,7 @@ public sealed partial class RiflesProduct
         inventory = new ItemInventory(definitions.Items, members.Concat(anchors));
         inventory.GrantStarting(AllocateId, preset);
         ApplyEquipment();
-        scene!.SetDoor(itemWorld.Capture().Door, false);
+        scene!.SetDoor(itemWorld!.Capture().Door, false);
     }
     private void ApplyEquipment()
     {
@@ -41,13 +41,13 @@ public sealed partial class RiflesProduct
         string source = command.Source ?? "member:" + selectedMember;
         ulong revision = ulong.TryParse(command.InventoryRevision, out ulong parsed) ? parsed : throw new InvalidDataException("Inventory proposal expired.");
         if (revision != inventory!.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
-        itemWorld!.RequireAccess(source, exploration, scene!);
+        RequireItemAccess(source);
         string token = command.Item ?? throw new InvalidDataException("Select an item first.");
         switch (command.Action)
         {
             case "transfer":
                 string destination = command.Destination ?? throw new InvalidDataException("Choose a destination.");
-                itemWorld.RequireAccess(destination, exploration, scene!);
+                RequireItemAccess(destination);
                 inventory.Transfer(source, destination, token, command.Quantity ?? 1, revision);
                 feedback = "Item transferred";
                 break;
@@ -60,27 +60,16 @@ public sealed partial class RiflesProduct
                 break;
             case "unequip": inventory.Unequip(source, token, revision); feedback = "Item returned to pack"; break;
             case "consume":
-                PartyMemberState target = Member(command.Member ?? selectedMember);
-                if (!target.IsLiving) throw new InvalidDataException("This remedy cannot revive the dead.");
-                GearDefinition use = definitions.Items.Item(inventory.Find(source, token).Definition);
-                if (use.Use == ItemUse.Vitality && target.Vitality >= target.MaximumVitality
-                    || use.Use == ItemUse.Resource && target.Resource >= target.MaximumResource)
-                    throw new InvalidDataException("That character needs no restoration.");
-                if (use.Use is not (ItemUse.Vitality or ItemUse.Resource)) throw new InvalidDataException("This item is not a consumable.");
-                var candidate = inventory.PrepareUse(source, token, revision);
-                // All target/effect/cost validation precedes settlement on this authoritative update.
-                candidate.Publish();
-                long restored = use.Use == ItemUse.Vitality ? target.Heal(use.Effect) : target.RecoverResource(use.Effect);
-                feedback = $"{target.Definition.Name} restored {restored} {(use.Use == ItemUse.Vitality ? "vitality" : "resource")}";
+                BeginCombat(command);
                 break;
             case "item-feature":
                 if (paused) throw new InvalidDataException("Resume before using world features.");
                 GearDefinition key = definitions.Items.Item(inventory.Find(source, token).Definition);
-                if (key.Use != ItemUse.Key || command.Target != itemWorld.Capture().DoorId)
+                if (key.Use != ItemUse.Key || command.Target != itemWorld!.Capture().DoorId)
                     throw new InvalidDataException("This item does not fit that feature.");
                 // Reusable keys intentionally have no cost: the puzzle is recoverable after any plate/lever change.
                 if (key.Cost != 0) throw new InvalidDataException("This gate requires a reusable key.");
-                itemWorld.Unlock(exploration, scene!, command.TargetRevision ?? 0);
+                itemWorld!.Unlock(exploration, scene!, command.TargetRevision ?? 0);
                 feedback = "Gate unlocked; the key is retained. Set the lever and weight the plate.";
                 break;
         }
@@ -97,7 +86,7 @@ public sealed partial class RiflesProduct
             else label += contents.Count == 0 ? " — empty" : " — " + definitions.Items.Item(contents[0].Definition).Name;
             yield return Candidate(anchor.Id, label, itemWorld.Point(anchor.Key, scene!));
         }
-        ItemExplorationSnapshot state = itemWorld.Capture();
+        ItemExplorationSnapshot state = itemWorld!.Capture();
         yield return Candidate(state.DoorId, state.Unlocked ? "Gate — unlocked" : "Gate — use brass key", itemWorld.LeverPoint(scene!));
         yield return Candidate(state.LeverId, "Gate lever — " + (state.LeverOn ? "switch off" : "switch on"), itemWorld.LeverPoint(scene!));
     }

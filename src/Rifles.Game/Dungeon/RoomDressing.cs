@@ -25,11 +25,11 @@ internal sealed record RoomDressing(ulong BenchId, GridPoint Bench, ulong CrateI
         GameDefinitions.Require(cells.Distinct().Count() == cells.Length && cells.All(floor.Cells.Contains)
             && !cells.Contains(floor.Exit), "Saved room dressing");
     }
-    internal void Bind(MovementGrid grid)
+    internal void Bind(MovementGrid grid, bool observerAlive = true)
     {
         // These objects occupy authored grid cells. Alpha silhouettes never define collision.
         grid.Add(BenchId, Bench);
         grid.Add(CrateId, Crate);
-        grid.Add(ObserverId, Observer);
+        if (observerAlive) grid.Add(ObserverId, Observer);
     }
 }

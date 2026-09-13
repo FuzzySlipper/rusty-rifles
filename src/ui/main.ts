@@ -5,7 +5,7 @@ type UiContext = Readonly<{
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number; revision: string; inventoryRevision: string }>;
-const gameplayKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -34,11 +34,18 @@ function ownerRevision(owner: Record<string, unknown>): string | null { const re
 export function mountProductUi(root: Element, context: UiContext): Readonly<{ dispose(): void }> {
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Expedition'); panel.dataset.rustyUiInteractive = 'true';
-  panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 24px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(620px,calc(100vw - 24px))';
+  panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 24px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
   const title = document.createElement('strong'); title.textContent = 'Rusty Rifles';
-  const help = document.createElement('p'); help.textContent = 'W/S step · A/D sidestep · Q/E turn · F use · R cycle · P pause · K save · L load'; help.style.cssText = 'font-size:11px;margin:3px 0;color:#c9c0ae';
+  const help = document.createElement('p'); help.textContent = 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle · P pause · K save · L load'; help.style.cssText = 'font-size:11px;margin:3px 0;color:#c9c0ae';
   const status = document.createElement('output'); status.dataset.inventoryStatus = 'true';
   const feedback = document.createElement('p'); feedback.dataset.inventoryFeedback = 'true'; feedback.setAttribute('role', 'status'); feedback.style.cssText = 'min-height:1.35em;margin:4px 0;color:#ead27e';
+  const combat = document.createElement('section'); combat.dataset.combatHud = 'true'; combat.style.cssText = 'background:#251614ed;border:1px solid #aa6a4d;border-radius:4px;margin:8px 0;padding:7px';
+  const combatTitle = document.createElement('strong'); combatTitle.textContent = 'Combat';
+  const combatStatus = document.createElement('output'); combatStatus.dataset.combatStatus = 'true'; combatStatus.style.cssText = 'display:block;margin:3px 0;color:#ffd9bf';
+  const combatTargets = document.createElement('div'); combatTargets.dataset.combatTargets = 'true'; combatTargets.style.cssText = 'display:grid;gap:4px;grid-template-columns:repeat(2,minmax(0,1fr));margin:5px 0';
+  const combatMembers = document.createElement('div'); combatMembers.dataset.combatMembers = 'true'; combatMembers.style.cssText = 'display:grid;gap:3px;margin:5px 0';
+  const combatActions = document.createElement('div'); combatActions.dataset.combatActions = 'true'; combatActions.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin:5px 0';
+  const combatLog = document.createElement('output'); combatLog.dataset.combatLog = 'true'; combatLog.style.cssText = 'display:block;color:#e7c8b1;max-height:3.9em;overflow:auto;white-space:pre-line';
   const roster = document.createElement('div'); roster.dataset.roster = 'true'; roster.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0';
   const actions = document.createElement('nav'); actions.setAttribute('aria-label', 'Expedition controls'); actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px';
   const focus = document.createElement('p'); focus.style.cssText = 'margin:5px 0';
@@ -50,6 +57,13 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const inventoryBody = document.createElement('div'); inventoryBody.dataset.inventoryBody = 'true'; inventoryBody.style.cssText = 'max-height:36vh;overflow:auto;padding-right:3px';
   const inventoryControls = document.createElement('div'); inventoryControls.dataset.inventoryControls = 'true'; inventoryControls.style.cssText = 'background:#171914f5;border-top:1px solid #574f3d;bottom:0;margin-top:7px;padding-top:7px;position:sticky';
   inventory.append(inventoryFeedback, inventoryBody, inventoryControls);
+  const syncPanelWidth = (): void => {
+    panel.style.width = inventory.open || partyTools.open
+      ? 'min(620px,calc(100vw - 24px))'
+      : 'min(380px,calc(100vw - 24px))';
+  };
+  inventory.addEventListener('toggle', syncPanelWidth);
+  partyTools.addEventListener('toggle', syncPanelWidth);
 
   let state: Record<string, unknown> = {};
   let selectedItem: ItemSelection | null = null;
@@ -63,7 +77,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const command = (action: string, extra: Record<string, unknown> = {}, captured?: Pick<DragIntent, 'revision' | 'inventoryRevision'>): void => {
     const revision = captured?.revision ?? String(state.commandRevision ?? '');
     const inventoryRevision = captured?.inventoryRevision ?? text(inventoryOf(state).revision, '');
-    const inventoryAction = new Set(['transfer', 'equip', 'unequip', 'consume', 'item-feature', 'open-container', 'close-container']);
+    const inventoryAction = new Set(['transfer', 'equip', 'unequip', 'consume', 'item-feature', 'open-container', 'close-container', 'throw']);
     context.intents?.claim('rifles.command', { kind: 'product-payload', contract: 'rifles.command.v1', data: { revision, action, ...extra, ...(inventoryAction.has(action) ? { inventoryRevision } : {}) } });
   };
   const button = (label: string, action: () => void): HTMLButtonElement => {
@@ -73,6 +87,28 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const pause = button('Pause', () => command('pause'));
   const use = button('Use feature', () => command('use', { target: state.focusId, targetRevision: state.focusRevision }));
   actions.append(pause, button('Save', () => command('save')), button('Load', () => command('load')), button('Restart', () => command('restart')), use);
+  const currentCombatTarget = (): number => numeric(record(state.combat).selectedTarget, -1);
+  const throwSelectedItem = (destination?: 'plate'): void => {
+    if (selectedItem === null) { setUiFeedback('Select an inventory item before throwing it.'); return; }
+    const payload: Record<string, unknown> = { source: selectedItem.owner, item: selectedItem.token };
+    if (destination) payload.destination = destination;
+    else {
+      const target = currentCombatTarget();
+      if (target <= 0) { setUiFeedback('Select a visible enemy before throwing an item.'); return; }
+      payload.target = target;
+    }
+    command('throw', payload);
+  };
+  const attack = button('Attack [Space]', () => command('attack'));
+  const reload = button('Reload [T]', () => command('reload'));
+  const bolt = button('Bolt', () => command('bolt'));
+  const interrupt = button('Interrupt', () => command('interrupt'));
+  const toss = button('Throw selected', () => throwSelectedItem());
+  const plate = button('Toss onto plate', () => throwSelectedItem('plate'));
+  combatActions.append(attack, reload, bolt, interrupt, toss, plate);
+  combat.append(combatTitle, combatStatus, combatTargets, combatMembers, combatActions, combatLog);
+  const enemyRows = new Map<string, Readonly<{ row: HTMLElement; target: HTMLButtonElement; details: HTMLOutputElement }>>();
+  const memberRows = new Map<string, HTMLOutputElement>();
 
   const selectedItemData = (): Record<string, unknown> | null => {
     if (selectedItem === null) return null;
@@ -246,6 +282,67 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     if (equipmentItems.childElementCount === 0) equipmentItems.textContent = 'No equipment'; equipment.append(equipmentItems); inventoryBody.append(ownerList, equipment); refreshInventorySelection(preservedQuantity);
   };
+  const renderCombat = (): void => {
+    const combatState = record(state.combat);
+    combat.hidden = Object.keys(combatState).length === 0;
+    if (combat.hidden) return;
+    const selectedTarget = text(combatState.selectedTarget, '');
+    const selectedTargetNumber = numeric(selectedTarget, -1);
+    const selectedEnemy = record(record(combatState.enemies)[selectedTarget]);
+    const defeated = numeric(combatState.defeated) === 1;
+    combatStatus.textContent = defeated
+      ? 'The party is defeated.'
+      : selectedTargetNumber > 0 ? `Target: ${text(selectedEnemy.name, selectedTarget)}` : 'Select a visible enemy.';
+    attack.disabled = defeated || selectedTargetNumber <= 0;
+    bolt.disabled = defeated || selectedTargetNumber <= 0;
+    reload.disabled = defeated;
+    toss.disabled = defeated || selectedItem === null || selectedTargetNumber <= 0;
+    plate.disabled = defeated || selectedItem === null;
+
+    const presentEnemies = new Set<string>();
+    for (const [id, enemy] of entries(combatState.enemies)) {
+      presentEnemies.add(id);
+      let row = enemyRows.get(id);
+      if (!row) {
+        const element = document.createElement('div');
+        element.dataset.combatEnemy = id; element.style.cssText = 'display:grid;gap:2px';
+        const target = button('', () => {
+          const targetId = numeric(id, -1);
+          if (targetId > 0) command('target', { target: targetId });
+        });
+        const details = document.createElement('output'); details.style.cssText = 'color:#e7c8b1;font-size:11px';
+        element.append(target, details); combatTargets.append(element);
+        row = { row: element, target, details }; enemyRows.set(id, row);
+      }
+      const remaining = Math.max(0, numeric(enemy.remaining));
+      row.target.textContent = `${text(enemy.name, id)} · ${text(enemy.vitality, '0')}/${text(enemy.maxVitality, '0')}`;
+      row.target.dataset.target = id; row.target.setAttribute('aria-pressed', String(id === selectedTarget));
+      row.target.disabled = numeric(enemy.visible) !== 1 || numeric(id, -1) <= 0 || defeated;
+      row.details.textContent = `${text(enemy.kind)} · ${text(enemy.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''}`;
+    }
+    for (const [id, row] of enemyRows) {
+      if (!presentEnemies.has(id)) { row.row.remove(); enemyRows.delete(id); }
+    }
+
+    const party = record(state.party);
+    const presentMembers = new Set<string>();
+    for (const [id, member] of entries(combatState.members)) {
+      presentMembers.add(id);
+      let row = memberRows.get(id);
+      if (!row) {
+        row = document.createElement('output'); row.dataset.combatMember = id;
+        combatMembers.append(row); memberRows.set(id, row);
+      }
+      const partyMember = record(party[id]);
+      const remaining = Math.max(0, numeric(member.remaining));
+      row.textContent = `${text(partyMember.name, id)} · ${text(member.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(member.weapon, 'unarmed')} · ${text(member.loaded, '0')}/${text(member.ammunition, '0')}`;
+    }
+    for (const [id, row] of memberRows) {
+      if (!presentMembers.has(id)) { row.remove(); memberRows.delete(id); }
+    }
+    const log = text(combatState.log, '');
+    if (combatLog.textContent !== log) { combatLog.textContent = log; combatLog.scrollTop = combatLog.scrollHeight; }
+  };
   const render = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
     state = record(envelope.value);
@@ -276,7 +373,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
         puzzle.append(lever);
       }
     }
-    renderRoster(); renderPartyTools(); renderInventory();
+    renderRoster(); renderPartyTools(); renderInventory(); renderCombat();
   };
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); if (event.code === 'Escape') cancelDrag(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
@@ -284,6 +381,6 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget)) cancelDrag(); };
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { unsubscribe(); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
+  panel.append(title, help, status, combat, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
+  return { dispose() { unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
 }

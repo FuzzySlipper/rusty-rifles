@@ -104,6 +104,26 @@ internal sealed class DungeonScene : IDisposable
             && step.NextPathCell == new PlanarNavCell(destination.X, NavigationY, destination.Y);
     }
 
+    internal SpatialHit Trace(Vector3 start, Vector3 end, SpatialEntityCollider[] bodies, ulong ignore) =>
+        engine.Spatial.CastSegment(new SpatialSegmentCastRequest(spatial, start, end, new SpatialQueryFilter(0, 0), bodies, new[] { ignore }, ReadOnlyMemory<SpatialEntityCollider>.Empty));
+    internal GridPoint? NextStep(GridPoint from, IEnumerable<GridPoint> goals, IEnumerable<GridPoint> blocked)
+    {
+        NavigationTraversalCell[] overlay = blocked.Where(c => c != from).Distinct()
+            .Select(c => new NavigationTraversalCell(new PlanarNavCell(c.X, NavigationY, c.Y), false, 1)).ToArray();
+        engine.Spatial.ReplaceNavigationTraversal(new NavigationTraversalReplaceRequest(spatial, overlay));
+        GridPoint? best = null;
+        uint shortest = uint.MaxValue;
+        foreach (GridPoint goal in goals)
+        {
+            NavigationWeightedPathReadout path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
+                spatial, new PlanarNavCell(from.X, NavigationY, from.Y), new PlanarNavCell(goal.X, NavigationY, goal.Y), tuning.NavigationBudget));
+            if (path.Outcome != NavigationPathOutcome.Reached || path.PathLen <= 1 || path.PathLen >= shortest) continue;
+            NavigationPathCellAtReceipt next = engine.Spatial.ReadNavigationPathCellAt(new NavigationPathCellAtRequest(spatial, 1));
+            if (!next.Present) continue;
+            best = new(checked((int)next.Cell.X), checked((int)next.Cell.Z)); shortest = path.PathLen;
+        }
+        return best;
+    }
     private Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
         (NavigationY + .5f) * CellSize, (cell.Y + .5f) * CellSize);
     internal Vector3 Eye(GridPoint cell) => Eye(new Vector2(cell.X, cell.Y));

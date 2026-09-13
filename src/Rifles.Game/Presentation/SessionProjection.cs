@@ -17,7 +17,7 @@ internal sealed class SessionProjection : IDisposable
         stream = ui.OpenStream(new UiStreamRequest("rifles.session", "rifles.session.v1"));
     }
 
-    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art)
+    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable)
     {
         SessionValueBuilder value = new();
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
@@ -48,7 +48,8 @@ internal sealed class SessionProjection : IDisposable
             ("roomLights", value.Number(roomLights ? 1 : 0)),
             ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster),
-            ("inventory", InventoryProjection.Build(value, inventory, world, scene, exploration, party, selectedMember, art)),
+            ("combat", combat(value)),
+            ("inventory", InventoryProjection.Build(value, inventory, world, scene, exploration, party, selectedMember, art, dropReachable)),
             ("equipmentSlots", InventoryProjection.Equipment(value, inventory, selectedMember)),
             ("preset", value.String(preset)),
             ("presets", value.Object(characters.Presets.Select(p => (p.Id, value.Object(("name", value.String(p.Name))))).ToArray())),

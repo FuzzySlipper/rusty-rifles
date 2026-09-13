@@ -1,0 +1,135 @@
+{
+  "actions": [
+    {
+      "kind": "Melee",
+      "windup": 0.35,
+      "recovery": 0.7,
+      "range": 2.7,
+      "damage": 6,
+      "speed": 8,
+      "resourceCost": 0
+    },
+    {
+      "kind": "Fire",
+      "windup": 0.25,
+      "recovery": 1,
+      "range": 16,
+      "damage": 18,
+      "speed": 24,
+      "resourceCost": 0
+    },
+    {
+      "kind": "Reload",
+      "windup": 2.4,
+      "recovery": 0.35,
+      "range": 16,
+      "damage": 0,
+      "speed": 1,
+      "resourceCost": 0
+    },
+    {
+      "kind": "Throw",
+      "windup": 0.3,
+      "recovery": 0.6,
+      "range": 10,
+      "damage": 5,
+      "speed": 7,
+      "resourceCost": 0
+    },
+    {
+      "kind": "Consume",
+      "windup": 0.45,
+      "recovery": 0.4,
+      "range": 1,
+      "damage": 0,
+      "speed": 1,
+      "resourceCost": 0
+    },
+    {
+      "kind": "Bolt",
+      "windup": 0.6,
+      "recovery": 1,
+      "range": 12,
+      "damage": 10,
+      "speed": 5,
+      "resourceCost": 3
+    }
+  ],
+  "enemies": [
+    {
+      "id": "raider",
+      "name": "Garrison raider",
+      "attack": "Melee",
+      "vitality": 32,
+      "defense": 1,
+      "stepSeconds": 0.85,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "spawnDistance": 5,
+      "scale": 1,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "knife",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "tonic",
+          "quantity": 1,
+          "equipped": false
+        }
+      ]
+    },
+    {
+      "id": "musketeer",
+      "name": "Garrison musketeer",
+      "attack": "Fire",
+      "vitality": 28,
+      "defense": 1,
+      "stepSeconds": 0.85,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "spawnDistance": 8,
+      "scale": 1.1,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "rifle",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "shot",
+          "quantity": 8,
+          "equipped": false
+        }
+      ]
+    }
+  ],
+  "bodyWidth": 0.85,
+  "bodyHeight": 1.8,
+  "aimHeight": 1.1,
+  "targetAngle": 70,
+  "minimumDamage": 1,
+  "friendlyFire": false,
+  "allyVitality": 40,
+  "corpseScale": 0.25,
+  "windupScale": 1.08,
+  "boltScale": 0.3,
+  "logLength": 6,
+  "ammunitionItem": "shot",
+  "dropCapacity": {
+    "mass": 1000,
+    "space": 100
+  },
+  "recoverThrownItems": true,
+  "boltColor": [
+    0.35,
+    0.75,
+    1,
+    1
+  ]
+}

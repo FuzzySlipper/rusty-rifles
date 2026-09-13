@@ -26,16 +26,20 @@ internal sealed class ItemInventory
     internal ItemInventory(ItemDefinitions definitions, IEnumerable<PackOwner> owners)
     {
         this.definitions = definitions;
-        this.owners = owners.ToDictionary(o => o.Key, StringComparer.Ordinal);
-        GameDefinitions.Require(this.owners.Values.Select(o => o.Id).Distinct().Count() == this.owners.Count, "pack identities");
-        foreach (PackOwner owner in this.owners.Values)
-        {
-            GameDefinitions.Require(owner.Id > 0 && !string.IsNullOrWhiteSpace(owner.Key), "pack owner");
-            world.RegisterInventory(new InventoryState(new(owner.Id), [new(MassMetric, owner.MassCapacity), new(SpaceMetric, owner.SpaceCapacity)]));
-            if (IsMember(owner.Key)) world.RegisterEquipment(new EquipmentState(new(owner.Id)));
-        }
+        this.owners = new Dictionary<string, PackOwner>(StringComparer.Ordinal);
+        foreach (PackOwner owner in owners) RegisterOwner(owner);
     }
     internal static bool IsMember(string key) => key.StartsWith("member:", StringComparison.Ordinal);
+    private static bool IsCombatOwner(string key) => key.StartsWith("combat:", StringComparison.Ordinal);
+    internal void RegisterOwner(PackOwner owner)
+    {
+        GameDefinitions.Require(owner.Id > 0 && !string.IsNullOrWhiteSpace(owner.Key)
+            && owner.MassCapacity > 0 && owner.SpaceCapacity > 0
+            && !owners.ContainsKey(owner.Key) && owners.Values.All(existing => existing.Id != owner.Id), "pack owner");
+        world.RegisterInventory(new InventoryState(new(owner.Id), [new(MassMetric, owner.MassCapacity), new(SpaceMetric, owner.SpaceCapacity)]));
+        if (IsMember(owner.Key)) world.RegisterEquipment(new EquipmentState(new(owner.Id)));
+        owners.Add(owner.Key, owner);
+    }
     internal PackOwner Owner(string key) => owners.TryGetValue(key, out PackOwner? value) ? value : throw new InvalidDataException("Pack unavailable.");
     internal InventoryView View(string owner) => world.View(new(Owner(owner).Id));
     internal IReadOnlyList<CarriedItem> Items(string key)
@@ -68,13 +72,35 @@ internal sealed class ItemInventory
         }
         candidate.Publish();
     }
+    internal void Grant(string owner, string definition, ulong quantity, Func<ulong> allocate)
+    {
+        GearDefinition item = definitions.Item(definition);
+        if (quantity == 0 || quantity > item.MaximumQuantity) throw new InvalidDataException("Choose an available quantity.");
+        EntityId destination = new(Owner(owner).Id);
+        InventoryWorldCandidate candidate = world.Prepare();
+        if (item.Kind == ItemKind.Fungible) candidate.Grant(destination, item.Mechanical, quantity);
+        else
+        {
+            for (ulong count = 0; count < quantity; count++)
+                candidate.MaterializeUnique(new ItemState(new(allocate()), item.Mechanical), destination);
+        }
+        candidate.Publish();
+    }
+    internal void Consume(string owner, string definition, ulong quantity)
+    {
+        GearDefinition item = definitions.Item(definition);
+        if (item.Kind != ItemKind.Fungible || quantity == 0) throw new InvalidDataException("Choose available ammunition.");
+        InventoryWorldCandidate candidate = world.Prepare();
+        candidate.Consume(new(Owner(owner).Id), item.Mechanical, quantity);
+        candidate.Publish();
+    }
     internal void Transfer(string from, string to, string token, ulong quantity, ulong expectedRevision)
     {
         if (from == to) throw new InvalidDataException("Choose a different destination.");
         CarriedItem item = Find(from, token);
         if (quantity == 0 || quantity > item.Quantity) throw new InvalidDataException("Choose an available quantity.");
         // A floor quadrant/alcove/plate holds one item kind, with stack merging permitted.
-        if (!IsMember(to) && to != "crate")
+        if (!IsMember(to) && to != "crate" && !IsCombatOwner(to))
         {
             IReadOnlyList<CarriedItem> existing = Items(to);
             if (existing.Any(i => i.Entity != 0 || item.Entity != 0 || i.Definition != item.Definition))
@@ -133,6 +159,14 @@ internal sealed class ItemInventory
         candidate.Validate();
         return candidate;
     }
+    internal void Destroy(string owner, string token)
+    {
+        CarriedItem item = Find(owner, token);
+        InventoryWorldCandidate candidate = world.Prepare();
+        if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definitions.Item(item.Definition).Mechanical, item.Quantity);
+        else candidate.DestroyUnique(new(item.Entity));
+        candidate.Publish();
+    }
     internal (long Power, long Defense) Bonuses(string owner)
     {
         GearDefinition[] equipped = Items(owner).Where(i => i.Slots.Length > 0).Select(i => definitions.Item(i.Definition)).ToArray();
@@ -162,7 +196,7 @@ internal sealed class ItemInventory
                 GameDefinitions.Require(equipment.Slots.ToHashSet().SetEquals(definitions.Item(item.Definition).Slots), "saved equipment slots");
                 candidate.Equip(owner, new(equipment.Item), result.Slots(equipment.Slots));
             }
-            if (!IsMember(pack.Owner.Key) && pack.Owner.Key != "crate")
+            if (!IsMember(pack.Owner.Key) && pack.Owner.Key != "crate" && !IsCombatOwner(pack.Owner.Key))
                 GameDefinitions.Require(pack.Items.Length + pack.Stacks.Length <= 1, "saved anchor occupancy");
         }
         candidate.Publish();

@@ -35,6 +35,10 @@
     <RustyEngineProductInputMapping Include="rifles.save.keyboard" Intent="rifles.save" Trigger="key:key-k:pressed" />
     <RustyEngineProductInputIntent Include="rifles.load" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.load.keyboard" Intent="rifles.load" Trigger="key:key-l:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.attack" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.attack.keyboard" Intent="rifles.attack" Trigger="key:space:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.reload" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.reload.keyboard" Intent="rifles.reload" Trigger="key:key-t:pressed" />
     <RustyEngineProductInputIntent Include="rifles.forward" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.forward.keyboard" Intent="rifles.forward" Trigger="key:key-w:held" />
     <RustyEngineProductInputIntent Include="rifles.backward" Value="digital" />

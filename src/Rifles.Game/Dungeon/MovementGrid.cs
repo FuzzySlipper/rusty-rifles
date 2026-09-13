@@ -20,6 +20,7 @@ internal sealed class MovementGrid(IReadOnlySet<GridPoint> cells, Func<GridPoint
         occupants.Add(actor, cell);
     }
     internal GridPoint Position(ulong actor) => occupants[actor];
+    internal IEnumerable<GridPoint> BlockedCells => occupants.Values.Concat(reservations.Values.Select(r => r.To)).Distinct();
     internal bool Occupied(GridPoint cell) => occupants.Values.Contains(cell) || reservations.Values.Any(r => r.To == cell);
     internal void SetBlocked(GridPoint a, GridPoint b, bool blocked)
     {
@@ -46,5 +47,6 @@ internal sealed class MovementGrid(IReadOnlySet<GridPoint> cells, Func<GridPoint
         occupants[actor] = reservation.To;
         return true;
     }
+    internal void Remove(ulong actor) { Cancel(actor); occupants.Remove(actor); }
     internal void Cancel(ulong actor) => reservations.Remove(actor);
 }

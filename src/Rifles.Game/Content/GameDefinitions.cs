@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Rifles.Game.Combat;
 using System.Text.Json.Serialization;
 using Rusty.Engine;
 using Rifles.Game.Dungeon;
@@ -11,7 +12,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -47,7 +48,8 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<CharacterOptionsDefinition>("definitions/character-options.json", x => x.Validate()),
             Read<ItemDefinitions>("definitions/items.json", x => x.Validate()),
             Read<ItemExplorationDefinition>("definitions/item-exploration.json", x => x.Validate()),
-            Read<ItemArtDefinition>("definitions/item-art.json", x => x.Validate()));
+            Read<ItemArtDefinition>("definitions/item-art.json", x => x.Validate()),
+            Read<CombatDefinition>("definitions/combat.json", x => x.Validate()));
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
@@ -56,6 +58,15 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             .Concat(result.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
         Require(result.Items.StartingItems.All(g => ownerKeys.Contains(g.Owner)
             && (g.Preset is null || result.Characters.Presets.Any(p => p.Id == g.Preset))), "starting loadout owners/presets");
+        Require(result.Items.Item(result.Combat.AmmunitionItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible, "combat ammunition");
+        Require(result.Items.Items.Where(i => i.Kind == Rusty.Engine.Mechanics.ItemKind.Unique && i.Ammunition.Length > 0)
+            .All(i => i.Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "combat rifle ammunition compatibility");
+        foreach (var enemy in result.Combat.Enemies)
+        {
+            foreach (var loot in enemy.Loot) Require(loot.Quantity <= result.Items.Item(loot.Definition).MaximumQuantity, "enemy loot");
+            Require(enemy.Attack != CombatActionKind.Fire || enemy.Loot.Any(l => result.Items.Item(l.Definition).Kind == Rusty.Engine.Mechanics.ItemKind.Unique
+                && result.Items.Item(l.Definition).Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "ranged enemy rifle");
+        }
         return result;
     }
 

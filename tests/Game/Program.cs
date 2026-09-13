@@ -1,4 +1,5 @@
 using Rifles.Game.Items;
+using Rifles.Game.Combat;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Content;
 using Rifles.Game.Party;
@@ -11,6 +12,9 @@ static void Require(bool condition, string message)
 
 string contentRoot = Path.GetFullPath("content");
 GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
+ActionChecks.Run();
+CombatInventoryChecks.Run(definitions);
+CombatSaveChecks.Run(definitions);
 // Invalid authored files fail at admission, before creating any live world.
 foreach (string invalid in new[] { "{", "{}", "null", File.ReadAllText(Path.Combine(contentRoot, "tuning/exploration.json")).Replace("0.22", "-1") })
 {
@@ -106,10 +110,23 @@ ItemInventory savedInventory = new(definitions.Items,
         a.Key == "crate" ? definitions.Items.Container.Mass : definitions.Items.Anchor.Mass,
         a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));
 savedInventory.GrantStarting(AllocateDressingId);
+savedDressing.Bind(saveGrid);
+List<EnemySnapshot> saveEnemies = [];
+foreach (EnemyDefinition enemy in definitions.Combat.Enemies)
+{
+    ulong id = AllocateDressingId(); string owner = "combat:enemy:" + id;
+    savedInventory.RegisterOwner(new PackOwner(AllocateDressingId(), owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
+    foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(owner, loot.Definition, loot.Quantity, AllocateDressingId);
+    GridPoint cell = savedFloor.Cells.First(c => !saveGrid.Occupied(c) && c != savedItemWorld.Capture().Door);
+    ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id);
+    saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner));
+}
+CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
+    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0);
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
-    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture());
+    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat);
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);

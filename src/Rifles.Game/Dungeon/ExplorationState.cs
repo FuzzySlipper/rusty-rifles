@@ -71,6 +71,19 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         RecoverySeconds = Duration;
         return true;
     }
+    internal void Stop()
+    {
+        grid?.Cancel(actorId); action = null; RecoverySeconds = 0;
+    }
+    internal bool StepTo(GridPoint cell)
+    {
+        foreach (ExplorationAction candidate in new[] { ExplorationAction.Forward, ExplorationAction.Backward, ExplorationAction.StrafeLeft, ExplorationAction.StrafeRight })
+        {
+            CardinalDirection direction = candidate switch { ExplorationAction.Forward => Facing, ExplorationAction.Backward => Facing.Opposite(), ExplorationAction.StrafeLeft => Facing.Rotate(-1), _ => Facing.Rotate(1) };
+            if (Position + direction.Offset() == cell) return Act(candidate);
+        }
+        return false;
+    }
     private void Plan(ExplorationAction requested)
     {
         action = requested; destination = Position; destinationFacing = Facing;

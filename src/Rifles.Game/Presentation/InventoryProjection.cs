@@ -7,15 +7,16 @@ namespace Rifles.Game.Presentation;
 internal static class InventoryProjection
 {
     internal static uint Build(SessionValueBuilder value, ItemInventory inventory, ExplorationItems world,
-        DungeonScene scene, ExplorationState exploration, PartyState party, string selectedMember, ItemArtDefinition art)
+        DungeonScene scene, ExplorationState exploration, PartyState party, string selectedMember, ItemArtDefinition art, Func<string, bool> dropReachable)
     {
         uint owners = value.Object(inventory.Owners.Select(owner =>
         {
             bool member = ItemInventory.IsMember(owner.Key), container = owner.Key == "crate";
-            bool reachable = member || world.Reachable(owner.Key, exploration, scene);
+            bool drop = owner.Key.StartsWith("combat:", StringComparison.Ordinal);
+            bool reachable = member || (drop ? dropReachable(owner.Key) : world.Reachable(owner.Key, exploration, scene));
             bool opened = !container || world.OpenContainer == owner.Key;
             string name = member ? party.Members.Single(m => "member:" + m.Definition.Id == owner.Key).Definition.Name
-                : world.AnchorDefinition(owner.Key).Name;
+                : drop ? "Ground belongings" : world.AnchorDefinition(owner.Key).Name;
             var view = inventory.View(owner.Key);
             uint items = value.Object((opened && reachable ? inventory.Items(owner.Key) : []).Select(item =>
             {
@@ -30,7 +31,7 @@ internal static class InventoryProjection
             }).ToArray());
             return (owner.Key, value.Object(("name", value.String(name)), ("id", value.String(owner.Id.ToString())),
                 ("revision", value.String(world.Revision.ToString())), ("reachable", value.Number(reachable ? 1 : 0)),
-                ("opened", value.Number(opened ? 1 : 0)), ("kind", value.String(member ? "member" : container ? "container" : "anchor")),
+                ("opened", value.Number(opened ? 1 : 0)), ("kind", value.String(member ? "member" : container ? "container" : drop ? "ground" : "anchor")),
                 ("mass", value.Number(view.Capacity.Single(c => c.Metric == ItemInventory.MassMetric).Used)),
                 ("maxMass", value.Number(owner.MassCapacity)), ("space", value.Number(view.Capacity.Single(c => c.Metric == ItemInventory.SpaceMetric).Used)),
                 ("maxSpace", value.Number(owner.SpaceCapacity)), ("items", items)));

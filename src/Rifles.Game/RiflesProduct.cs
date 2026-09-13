@@ -1,4 +1,5 @@
 using System.Text;
+using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Items;
 using Rifles.Game.Expedition;
@@ -68,6 +69,11 @@ public sealed partial class RiflesProduct : IEngineProduct
             StartItems();
             itemArt = new ItemArt(engine, definitions.ItemArt, definitions.Art, definitions.ItemExploration);
             BindMovement();
+            combatArt = new WorldArt(engine, definitions.Art);
+            float[] boltColor = Combat.BoltColor;
+            boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
+                new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
+            StartCombat();
             camera = engine.CameraView.CreateCamera(CameraDescriptor());
             projection = new SessionProjection(engine.Ui);
             engine.CameraView.SetActiveCamera(camera);
@@ -113,6 +119,12 @@ public sealed partial class RiflesProduct : IEngineProduct
             if (intent == "rifles.load") { Load(); suppressMovement = true; continue; }
             if (intent == "rifles.use") { Use(features!.Readout?.Selected); suppressMovement = true; continue; }
             if (intent == "rifles.cycle") { features!.Observe(exploration, 1); continue; }
+            if (intent is "rifles.attack" or "rifles.reload")
+            {
+                try { BeginCombat(new SessionCommand(commandRevision.ToString(), intent == "rifles.attack" ? "attack" : "reload", null, null, null)); }
+                catch (Exception error) { feedback = error.Message; }
+                suppressMovement = true; continue;
+            }
             ExplorationAction? action = intent switch
             {
                 "rifles.forward" => ExplorationAction.Forward, "rifles.backward" => ExplorationAction.Backward,
@@ -124,10 +136,14 @@ public sealed partial class RiflesProduct : IEngineProduct
         }
         if (!paused)
         {
-            double seconds = update.Facts.AdmittedStepCount * update.Facts.FixedDeltaSeconds;
-            exploration.Advance(seconds);
-            actor!.Advance(seconds);
-            if (!suppressMovement) controls.Apply(exploration);
+            for (uint step = 0; step < update.Facts.AdmittedStepCount; step++)
+            {
+                double seconds = update.Facts.FixedDeltaSeconds;
+                if (!Defeated) exploration.Advance(seconds);
+                if (allies[actor!.Id].IsLiving) actor.Advance(seconds);
+                AdvanceCombat(seconds);
+            }
+            if (!suppressMovement && !Defeated) controls.Apply(exploration);
         }
         itemWorld!.CheckOpen(exploration, scene!);
         itemWorld.UpdateDoor(inventory!, exploration, actor!, movement!, scene!);
@@ -144,6 +160,8 @@ public sealed partial class RiflesProduct : IEngineProduct
         {
             case "transfer": case "equip": case "unequip": case "consume": case "item-feature":
                 ItemCommand(command); break;
+            case "target": case "attack": case "reload": case "bolt": case "throw": case "interrupt":
+                BeginCombat(command); break;
             case "formation":
                 feedback = party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "") ? "Formation changed" : "Choose two living members"; break;
             case "choose-party":
@@ -191,13 +209,13 @@ public sealed partial class RiflesProduct : IEngineProduct
         actor = PatrolActor.Create(actor!.Id, floor, ActorTuning, definitions.Features);
         features!.Reset();
         StartItems();
-        BindMovement(); controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
+        BindMovement(); StartCombat(); controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
         paused = false; feedback = "Expedition restarted";
         Publish();
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture());
+        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat());
 
     private void Save()
     {
@@ -220,11 +238,17 @@ public sealed partial class RiflesProduct : IEngineProduct
             ExpeditionSnapshot saved = loaded.State!;
             var restored = ExpeditionCodec.Validate(saved, definitions);
             ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
+            RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
+                new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId });
             ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
             DungeonScene replacement = new(engine, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
             MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep);
-            try { restored.Exploration.Bind(replacementGrid, saved.PartyId); restored.Actor.Bind(replacementGrid); }
+            try
+            {
+                if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
+                if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
+            }
             catch { replacement.Dispose(); throw; }
             WorldFeatures replacementFeatures;
             try { replacementFeatures = new WorldFeatures(engine, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features!.Style); }
@@ -233,7 +257,9 @@ public sealed partial class RiflesProduct : IEngineProduct
             {
                 if (replacement.Style != features!.Style) replacement.SetStyle(features.Style);
                 replacement.SetRoomLights(roomLights);
-                replacementFeatures.Bind(replacementGrid);
+                replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
+                foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
+                foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id);
                 // Retire old appearance references before releasing their Engine resources.
                 replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt!.Facts(restoredInventory, restoredItems, replacement));
             }
@@ -249,6 +275,7 @@ public sealed partial class RiflesProduct : IEngineProduct
             expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
             inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
             ApplyEquipment();
+            ApplyCombatRestore(restoredCombat);
             paused = saved.Paused;
             selectedMember = saved.SelectedMember;
             controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
@@ -289,8 +316,10 @@ public sealed partial class RiflesProduct : IEngineProduct
         cameraCut = false;
         features!.SetExtraCandidates(ItemCandidates());
         features.Observe(exploration);
-        features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!));
-        projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt);
+        features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()),
+            allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
+            allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
+        projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable);
     }
 
     public void Shutdown()
@@ -301,6 +330,8 @@ public sealed partial class RiflesProduct : IEngineProduct
         engine.Graphics.PublishSnapshot(ReadOnlySpan<AppearanceFact>.Empty);
         features?.Dispose();
         itemArt?.Dispose();
+        combatArt?.Dispose();
+        boltAppearance?.Dispose();
         saves?.Dispose();
         projection?.Dispose();
         camera?.Dispose();

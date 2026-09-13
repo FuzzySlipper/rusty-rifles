@@ -50,7 +50,7 @@ internal sealed class WorldFeatures : IDisposable
         lightPosition = (lightPosition + 1) % artDefinition.LightOffsets.Length;
         engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest()));
     }
-    internal void Bind(MovementGrid grid) => state.Dressing.Bind(grid);
+    internal void Bind(MovementGrid grid, bool observerAlive = true) => state.Dressing.Bind(grid, observerAlive);
     private InteractionQuery Query(ExplorationState party)
     {
         var direction = party.Facing.Offset();
@@ -84,7 +84,7 @@ internal sealed class WorldFeatures : IDisposable
         }
         if (target.Value.Id == state.Dressing.BenchId) return "A workbench with a hand plane and folded cloth.";
         if (target.Value.Id == state.Dressing.CrateId) return "A strapped storage crate. Item containers come later.";
-        if (target.Value.Id == state.Dressing.ObserverId) return "A sentry stands watch. Combat comes later.";
+        if (target.Value.Id == state.Dressing.ObserverId) return "A garrison ally stands watch. Friendly bodies block shots.";
         if (target.Value.Id != state.ExitId) return extraUse?.Invoke(target.Value) ?? "Feature unavailable";
         state = state with { ExitUsed = true };
         return "Exit inspected. This is the starting floor; expedition travel comes later.";
@@ -96,7 +96,7 @@ internal sealed class WorldFeatures : IDisposable
         engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest()));
         focus.Clear();
     }
-    internal void Present(PatrolActor actor, ExplorationState party, IEnumerable<AppearanceFact>? additional = null)
+    internal void Present(PatrolActor actor, ExplorationState party, IEnumerable<AppearanceFact>? additional = null, float actorScale = 1, float observerScale = 1)
     {
         string actorView = SentryView.Select(actor.Motion.VisualCell, actor.Motion.Facing, party.VisualCell);
         Vector2 observerCell = new(state.Dressing.Observer.X, state.Dressing.Observer.Y);
@@ -104,10 +104,10 @@ internal sealed class WorldFeatures : IDisposable
         engine.Graphics.PublishSnapshot(new AppearanceFact[]
         {
             Fact(state.LanternId, LanternPoint, "lantern", 1),
-            Fact(actor.Id, scene.Eye(actor.Motion.VisualCell) with { Y = scene.GroundHeight }, actorView, 1),
+            Fact(actor.Id, scene.Eye(actor.Motion.VisualCell) with { Y = scene.GroundHeight }, actorView, actorScale),
             Fact(state.Dressing.BenchId, Ground(state.Dressing.Bench), "bench", 1),
             Fact(state.Dressing.CrateId, Ground(state.Dressing.Crate), "crate", 1),
-            Fact(state.Dressing.ObserverId, Ground(state.Dressing.Observer), observerView, artDefinition.ObserverScale),
+            Fact(state.Dressing.ObserverId, Ground(state.Dressing.Observer), observerView, artDefinition.ObserverScale * observerScale),
         }.Concat(additional ?? []).ToArray());
     }
     private AppearanceFact Fact(ulong id, Vector3 point, string image, float scale) =>

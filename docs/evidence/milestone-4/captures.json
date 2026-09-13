@@ -1,0 +1,72 @@
+[
+  {
+    "label": "weight-landed",
+    "capture_id": "562c4890-3eb1-4df9-8e5e-ad88211fcb3f",
+    "script_id": "582879b7-e061-400a-a64d-3fecb6356f44",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/abd84c90-ac2e-4852-9960-9dbd9f5d3591.png"
+  },
+  {
+    "label": "combat-load",
+    "capture_id": "c9f37973-c66f-4f4e-b80f-b5ac52cc7428",
+    "script_id": "8a17d217-792c-4a71-8d6e-a8be1c686c76",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/91bb1bfb-c036-461f-b09c-8d151e872649.png"
+  },
+  {
+    "label": "first-shot",
+    "capture_id": "91e4d19a-a1fb-4fae-9c84-5e70dcdb33e9",
+    "script_id": "311ae7d9-8f95-49e2-9774-27008ade5a84",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/082750c0-24d8-49bb-9b34-4c300d40175e.png"
+  },
+  {
+    "label": "dry-rifle",
+    "capture_id": "cda2222e-4993-496a-8984-73442b432fa3",
+    "script_id": "065e02d6-e968-456b-8773-2d937d903cd7",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/3c1ef734-b073-4d74-91e0-bb70d0545b60.png"
+  },
+  {
+    "label": "reload-interrupted",
+    "capture_id": "f8140493-2e24-4b49-b54c-9fe428bab2ec",
+    "script_id": "065e02d6-e968-456b-8773-2d937d903cd7",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/5f10f420-3101-4a36-94d8-83b4fc3b69b3.png"
+  },
+  {
+    "label": "pending-reload-restored",
+    "capture_id": "73c9ec10-0e67-4b4d-a7e0-72d85b04a4a1",
+    "script_id": "065e02d6-e968-456b-8773-2d937d903cd7",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/f1fe05f7-f13c-435e-8776-8fc0c0db8f14.png"
+  },
+  {
+    "label": "raider-dead",
+    "capture_id": "1108d656-1e49-446a-966b-93a477c4bba1",
+    "script_id": "065e02d6-e968-456b-8773-2d937d903cd7",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/dc14ff53-85d7-408c-a69b-35ac6128be65.png"
+  },
+  {
+    "label": "bolt-paused-in-flight",
+    "capture_id": "09b18215-d82b-406b-907d-19ad5ad8bea7",
+    "script_id": "c68af091-b2d0-47a6-9978-4f2b71a08212",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/e64aee61-ed9c-4df1-b0aa-960717a34e8b.png"
+  },
+  {
+    "label": "bolt-flight-restored",
+    "capture_id": "c8143b1a-a7e2-490e-9646-b27cba335982",
+    "script_id": "c68af091-b2d0-47a6-9978-4f2b71a08212",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/5cb6c3ca-41bc-43f2-91e3-08102b6888b7.png"
+  },
+  {
+    "label": "victory",
+    "capture_id": "f6e585d4-2e39-4618-b4e9-b01d9a20f558",
+    "script_id": "c68af091-b2d0-47a6-9978-4f2b71a08212",
+    "session_id": "4d0d5158-d025-4fa5-972c-18b34b5931d9",
+    "original_path": "/home/agent/.local/state/crew-playtest/browser/4d0d5158-d025-4fa5-972c-18b34b5931d9/e85c79fd-63d9-4855-b343-07f878d5e0aa.png"
+  }
+]

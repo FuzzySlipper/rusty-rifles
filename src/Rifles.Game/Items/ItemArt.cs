@@ -57,6 +57,7 @@ internal sealed class ItemArt : IDisposable
         yield return Fact(state.PlateId, position with { Y = scene.GroundHeight + world.Definition.PlateHeight / 2 }, plate,
             new Vector3(scene.LogicalCellSize, world.Definition.PlateHeight, scene.LogicalCellSize));
     }
+    internal AppearanceFact At(ulong id, Vector3 point, string image, float scale) => Fact(id, point, images[image], new Vector3(scale));
     private static AppearanceFact Fact(ulong id, Vector3 point, Appearance appearance, Vector3 scale) =>
         new(id, false, 0, new Transform(point, Quaternion.Identity, scale), appearance, true, RenderLayer.Scene);
     public void Dispose() { foreach (Appearance appearance in images.Values) appearance.Dispose(); plate.Dispose(); }
