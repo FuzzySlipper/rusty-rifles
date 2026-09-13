@@ -2,20 +2,19 @@
 
 ## Current content and lighting integration
 
-Rifles now consumes paired SDK/runtime `0.1.0-dev.8c20a96d10ef`.
+Rifles now consumes paired SDK/runtime `0.1.0-dev.03ac310b95c2`.
 `ProductCreateContext.Content.ReadBytes` loads typed definitions directly,
 replacing the manual OpenReference/ReadReferenceInfo/ReadBytes sequence.
 Packaged world default lights are disabled; viewmodel defaults remain neutral.
 
 This pair supports independently loaded `RustyEngineContentBundle` collections.
-They are useful for separately admitted data/catalogs, but bundle-owned files
-are excluded from global renderer selection. `Graphics.OpenResource` still
-accepts a path, without a bundle/ContentReference overload. Moving generated
-PNGs into a bundle would therefore break the current real renderer caller.
-Keep those images in normal product content and retain the small UI-atlas copy:
-content bundles do not publish browser DOM image URLs. Revisit image bundling
-when the Engine exposes an explicit resource consumer for it. Do not build a
-local resource loader or bundle-mount shim.
+Generated images are declared in the `generated-art` bundle and admitted once
+through `ProductContentBundle.OpenReference` and
+`Graphics.OpenResourceFromContent`; `GeneratedArt` owns those resource handles
+and shares them with voxel materials, world sprites, and item sprites. The UI
+still receives the small atlas copy because content bundles do not publish
+browser DOM image URLs. Do not build a local resource loader or bundle-mount
+shim.
 
 ## Original campaign survey
 

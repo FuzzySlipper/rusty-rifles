@@ -17,6 +17,7 @@ public sealed partial class RiflesProduct : IEngineProduct
 {
     private readonly GameDefinitions definitions;
     private readonly IEngineContext engine;
+    private GeneratedArt? generatedArt;
     private DungeonFloor floor;
     private ProductStateStore<ExpeditionSnapshot>? saves;
     private Guid expeditionId = Guid.NewGuid();
@@ -44,17 +45,17 @@ public sealed partial class RiflesProduct : IEngineProduct
         engine = context.Engine;
         try { definitions = GameDefinitions.Load(context.Content); }
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
-        // Engine closes renderer resource selection after Create; select every treatment here.
-        foreach (TextureDefinition texture in definitions.Appearance.Styles.SelectMany(s => s.Textures))
-            engine.Graphics.OpenResource(new RenderResourceRequest(texture.Path, TextureFilter.Linear, TextureWrap.Repeat));
-        foreach (string path in definitions.Art.Styles.SelectMany(s => s.Images).Select(i => i.Path).Distinct())
-            engine.Graphics.OpenResource(new RenderResourceRequest(path, TextureFilter.Linear, TextureWrap.Clamp));
         preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
         party = new PartyState(definitions.Characters.GetPreset(preset));
-        engine.Graphics.OpenResource(new RenderResourceRequest(definitions.ItemArt.Path, TextureFilter.Linear, TextureWrap.Clamp));
         selectedMember = party.Members[0].Definition.Id;
         floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
         exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
+        generatedArt = new GeneratedArt(context.Content, engine.Graphics,
+            definitions.Appearance.Styles.SelectMany(s => s.Textures)
+                .Select(texture => (texture.Path, TextureFilter.Linear, TextureWrap.Repeat))
+                .Concat(definitions.Art.Styles.SelectMany(s => s.Images)
+                    .Select(image => (image.Path, TextureFilter.Linear, TextureWrap.Clamp)))
+                .Append((definitions.ItemArt.Path, TextureFilter.Linear, TextureWrap.Clamp)));
     }
 
     public void Start()
@@ -63,14 +64,14 @@ public sealed partial class RiflesProduct : IEngineProduct
         try
         {
             saves = new ProductStateStore<ExpeditionSnapshot>(engine, "expedition", new ExpeditionCodec());
-            scene = new DungeonScene(engine, floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
+            scene = new DungeonScene(engine, generatedArt!, floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
             actor = PatrolActor.Create(AllocateId(), floor, ActorTuning, definitions.Features);
-            features = new WorldFeatures(engine, scene, floor, definitions.Features, definitions.Art, new FeatureSnapshot(AllocateId(), AllocateId(), 1, true, false,
+            features = new WorldFeatures(engine, generatedArt!, scene, floor, definitions.Features, definitions.Art, new FeatureSnapshot(AllocateId(), AllocateId(), 1, true, false,
                 RoomDressing.Create(floor, actor, definitions.Art, AllocateId)), AllocateLightId());
             StartItems();
-            itemArt = new ItemArt(engine, definitions.ItemArt, definitions.Art, definitions.ItemExploration);
+            itemArt = new ItemArt(engine, generatedArt!, definitions.ItemArt, definitions.Art, definitions.ItemExploration);
             BindMovement();
-            combatArt = new WorldArt(engine, definitions.Art);
+            combatArt = new WorldArt(engine, generatedArt!, definitions.Art);
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
@@ -249,7 +250,7 @@ public sealed partial class RiflesProduct : IEngineProduct
             RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
                 new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId });
             ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
-            DungeonScene replacement = new(engine, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
+            DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
             MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
             foreach (var direction in CardinalDirections.Ordered)
@@ -262,7 +263,7 @@ public sealed partial class RiflesProduct : IEngineProduct
             }
             catch { replacement.Dispose(); throw; }
             WorldFeatures replacementFeatures;
-            try { replacementFeatures = new WorldFeatures(engine, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features!.Style); }
+            try { replacementFeatures = new WorldFeatures(engine, generatedArt!, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features!.Style); }
             catch { replacement.Dispose(); throw; }
             try
             {
@@ -349,6 +350,7 @@ public sealed partial class RiflesProduct : IEngineProduct
         projection?.Dispose();
         camera?.Dispose();
         scene?.Dispose();
+        generatedArt?.Dispose();
     }
     public void Dispose() => Shutdown();
 }

@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <RustyEngineSdkPackageVersion>0.1.0-dev.8c20a96d10ef</RustyEngineSdkPackageVersion>
+    <RustyEngineSdkPackageVersion>0.1.0-dev.03ac310b95c2</RustyEngineSdkPackageVersion>
     <RustyEngineProductEntryType>Rifles.Game.RiflesProduct</RustyEngineProductEntryType>
     <RustyEngineProductId>rusty-rifles</RustyEngineProductId>
     <RustyEngineProductTitle>Rusty Rifles</RustyEngineProductTitle>
@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="../Rifles.Procgen/Rifles.Procgen.csproj" />
     <PackageReference Include="Rusty.Engine" Version="[$(RustyEngineSdkPackageVersion)]" />
+    <RustyEngineContentBundle Include="generated-art" Root="art/generated" />
     <RustyEngineProductInputIntent Include="rifles.use" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.use.keyboard" Intent="rifles.use" Trigger="key:key-f:pressed" />
     <RustyEngineProductInputIntent Include="rifles.cycle" Value="digital" />
@@ -39,18 +40,25 @@
     <RustyEngineProductInputMapping Include="rifles.attack.keyboard" Intent="rifles.attack" Trigger="key:space:pressed" />
     <RustyEngineProductInputIntent Include="rifles.reload" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.reload.keyboard" Intent="rifles.reload" Trigger="key:key-t:pressed" />
+    <!-- Press edges retain short taps between simulation steps; held mappings repeat movement. -->
     <RustyEngineProductInputIntent Include="rifles.forward" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.forward.keyboard" Intent="rifles.forward" Trigger="key:key-w:held" />
+    <RustyEngineProductInputMapping Include="rifles.forward.press" Intent="rifles.forward" Trigger="key:key-w:pressed" />
     <RustyEngineProductInputIntent Include="rifles.backward" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.backward.keyboard" Intent="rifles.backward" Trigger="key:key-s:held" />
+    <RustyEngineProductInputMapping Include="rifles.backward.press" Intent="rifles.backward" Trigger="key:key-s:pressed" />
     <RustyEngineProductInputIntent Include="rifles.strafe-left" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.strafe-left.keyboard" Intent="rifles.strafe-left" Trigger="key:key-a:held" />
+    <RustyEngineProductInputMapping Include="rifles.strafe-left.press" Intent="rifles.strafe-left" Trigger="key:key-a:pressed" />
     <RustyEngineProductInputIntent Include="rifles.strafe-right" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.strafe-right.keyboard" Intent="rifles.strafe-right" Trigger="key:key-d:held" />
+    <RustyEngineProductInputMapping Include="rifles.strafe-right.press" Intent="rifles.strafe-right" Trigger="key:key-d:pressed" />
     <RustyEngineProductInputIntent Include="rifles.turn-left" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.turn-left.keyboard" Intent="rifles.turn-left" Trigger="key:key-q:held" />
+    <RustyEngineProductInputMapping Include="rifles.turn-left.press" Intent="rifles.turn-left" Trigger="key:key-q:pressed" />
     <RustyEngineProductInputIntent Include="rifles.turn-right" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.turn-right.keyboard" Intent="rifles.turn-right" Trigger="key:key-e:held" />
+    <RustyEngineProductInputMapping Include="rifles.turn-right.press" Intent="rifles.turn-right" Trigger="key:key-e:pressed" />
   </ItemGroup>
   <Target Name="BuildRiflesUi" BeforeTargets="GenerateRustyEngineProductComposition">
     <Exec Command="pnpm --dir &quot;$(MSBuildThisFileDirectory)../..&quot; exec tsc --project &quot;$(MSBuildThisFileDirectory)../ui/tsconfig.json&quot;" />

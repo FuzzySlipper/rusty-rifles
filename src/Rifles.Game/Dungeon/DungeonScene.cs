@@ -2,6 +2,7 @@ using System.Numerics;
 using Rusty.Engine;
 using Rusty.Engine.Interaction;
 using Rifles.Procgen.Generation;
+using Rifles.Game.Content;
 using Rifles.Game.Items;
 
 namespace Rifles.Game.Dungeon;
@@ -27,13 +28,15 @@ internal sealed class DungeonScene : IDisposable
     private bool doorVoxels;
     private readonly List<(Light Owner, LightRequest Request)> roomLights = [];
     private readonly AppearanceDefinition appearance;
+    private readonly GeneratedArt art;
     private DungeonMaterials? materials;
     private VoxelScenePresentation? scene;
     internal string Style { get; private set; }
 
-    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId, ItemExplorationDefinition? itemDefinition = null)
+    internal DungeonScene(IEngineContext engine, GeneratedArt art, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId, ItemExplorationDefinition? itemDefinition = null)
     {
         this.engine = engine;
+        this.art = art;
         this.floor = floor;
         this.tuning = tuning;
         this.appearance = appearance;
@@ -48,7 +51,7 @@ internal sealed class DungeonScene : IDisposable
                 doorMaterial = engine.Graphics.CreateMaterial(new MaterialRequest(new Color(color[0], color[1], color[2], color[3]),
                     default, 1, new Color(1, 1, 1, 1), Vector3.Zero, 0, false));
             }
-            materials = new DungeonMaterials(engine, appearance.Style(Style), VoxelCellSize);
+            materials = new DungeonMaterials(engine, art, appearance.Style(Style), VoxelCellSize);
             IReadOnlySet<GridPoint> cells = floor.Cells.ToHashSet();
             HashSet<GridPoint> walls = cells.SelectMany(cell => CardinalDirections.Ordered.Select(d => cell + d.Offset()))
                 .Where(cell => !cells.Contains(cell)).ToHashSet();
@@ -135,7 +138,7 @@ internal sealed class DungeonScene : IDisposable
     /// <summary>Rebinds only the retained voxel presentation to another admitted art treatment.</summary>
     internal void SetStyle(string style)
     {
-        DungeonMaterials replacement = new(engine, appearance.Style(style), VoxelCellSize);
+        DungeonMaterials replacement = new(engine, art, appearance.Style(style), VoxelCellSize);
         try
         {
             engine.VoxelScenePresentation.UpdateSceneDirectional(new UpdateVoxelScenePresentationDirectionalRequest(

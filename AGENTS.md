@@ -53,8 +53,8 @@ All source in this repository belongs to Rifles. Imported code is a one-time
 transfer: do not maintain donor links, source-provenance documents, sync
 scripts, parity obligations, or sibling project references.
 
-The installed development pair is SDK `0.1.0-dev.8c20a96d10ef` and
-`.runtime/pair-8c20a96d10ef/runtime-pack`. Keep the package and runtime matched.
+The installed development pair is SDK `0.1.0-dev.03ac310b95c2` and
+`.runtime/pair-03ac310b95c2/runtime-pack`. Keep the package and runtime matched.
 Use `scripts/install-engine.sh` to install external artifacts on another
 checkout. `.runtime`, generated SDK composition, and UI output are ignored.
 `rusty dev` is the normal CoreCLR loader; NativeAOT is an explicit release

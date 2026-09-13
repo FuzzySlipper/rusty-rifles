@@ -23,11 +23,11 @@ internal sealed class ItemArt : IDisposable
 {
     private readonly Dictionary<string, Appearance> images = [];
     private readonly Appearance plate;
-    internal ItemArt(IEngineContext engine, ItemArtDefinition definitions, WorldArtDefinition lighting, ItemExplorationDefinition exploration)
+    internal ItemArt(IEngineContext engine, GeneratedArt art, ItemArtDefinition definitions, WorldArtDefinition lighting, ItemExplorationDefinition exploration)
     {
         try
         {
-            RenderResourceInfo texture = engine.Graphics.OpenResource(new RenderResourceRequest(definitions.Path, TextureFilter.Linear, TextureWrap.Clamp));
+            RenderResourceInfo texture = art.Texture(definitions.Path, TextureFilter.Linear, TextureWrap.Clamp);
             SpriteMaterialDescriptor material = new(lighting.Lighting, default, default, lighting.NormalStrength, 0,
                 SpriteAlphaMode.Mask, lighting.AlphaCutoff, SpriteShadowPolicy.None);
             foreach (ItemSpriteDefinition image in definitions.Images)

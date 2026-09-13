@@ -1,5 +1,6 @@
 using Rifles.Procgen.Generation;
 using System.Numerics;
+using Rifles.Game.Content;
 using Rusty.Engine;
 using Rusty.Engine.Interaction;
 namespace Rifles.Game.Dungeon;
@@ -28,12 +29,12 @@ internal sealed class WorldFeatures : IDisposable
     private Vector3 LanternPoint => Ground(floor.Entrance) + Vector(artDefinition.LanternOffset);
     private Vector3 LightPoint => Ground(floor.Entrance) + Vector(artDefinition.LightOffsets[lightPosition]);
     private static Vector3 Vector(float[] values) => new(values[0], values[1], values[2]);
-    internal WorldFeatures(IEngineContext engine, DungeonScene scene, DungeonFloor floor, FeatureDefinition tuning, WorldArtDefinition artDefinition, FeatureSnapshot state, ulong lightId, string? style = null)
+    internal WorldFeatures(IEngineContext engine, GeneratedArt artResources, DungeonScene scene, DungeonFloor floor, FeatureDefinition tuning, WorldArtDefinition artDefinition, FeatureSnapshot state, ulong lightId, string? style = null)
     {
         this.engine = engine; this.scene = scene; this.floor = floor; this.tuning = tuning; this.state = state; this.lightId = lightId;
         this.artDefinition = artDefinition;
         Style = style ?? artDefinition.InitialStyle;
-        art = new WorldArt(engine, artDefinition);
+        art = new WorldArt(engine, artResources, artDefinition);
         try { lanternLight = engine.Graphics.CreateLight(LightRequest()); }
         catch { art.Dispose(); throw; }
     }

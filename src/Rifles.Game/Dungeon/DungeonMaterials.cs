@@ -1,4 +1,5 @@
 using Rusty.Engine;
+using Rifles.Game.Content;
 
 namespace Rifles.Game.Dungeon;
 
@@ -10,9 +11,10 @@ internal sealed class DungeonMaterials : IDisposable
     private readonly Material[] materials;
     private bool disposed;
 
-    internal DungeonMaterials(IEngineContext engine, AppearanceStyleDefinition style, float voxelCellSize)
+    internal DungeonMaterials(IEngineContext engine, GeneratedArt art, AppearanceStyleDefinition style, float voxelCellSize)
     {
         ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(art);
         ArgumentNullException.ThrowIfNull(style);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(voxelCellSize);
 
@@ -20,7 +22,7 @@ internal sealed class DungeonMaterials : IDisposable
         List<Material> admittedMaterials = [];
         try
         {
-            RenderResourceInfo[] textures = OpenTextures(engine, style);
+            RenderResourceInfo[] textures = OpenTextures(art, style);
             admittedCatalog = engine.AuthoredContent.AdmitCatalogPayload(CreatePayload(style, voxelCellSize));
             ValidateCatalog(engine.AuthoredContent.ReadCatalog(admittedCatalog), style);
             admittedMaterials.Add(CreateMaterial(engine, admittedCatalog, style.Wall, Texture(style, textures, style.Wall.TextureId)));
@@ -51,15 +53,14 @@ internal sealed class DungeonMaterials : IDisposable
         catalog.Dispose();
     }
 
-    private static RenderResourceInfo[] OpenTextures(IEngineContext engine, AppearanceStyleDefinition style)
+    private static RenderResourceInfo[] OpenTextures(GeneratedArt art, AppearanceStyleDefinition style)
     {
         RenderResourceInfo[] opened = new RenderResourceInfo[style.Textures.Length];
         for (int index = 0; index < style.Textures.Length; index++)
         {
             TextureDefinition texture = style.Textures[index];
-            RenderResourceInfo resource = engine.Graphics.OpenResource(
-                new RenderResourceRequest(texture.Path, TextureFilter.Linear, TextureWrap.Repeat));
-            if (resource.Kind != RenderResourceKind.Texture || resource.ByteLength == 0 || resource.Handle.Value == 0)
+            RenderResourceInfo resource = art.Texture(texture.Path, TextureFilter.Linear, TextureWrap.Repeat);
+            if (resource.Kind != RenderResourceKind.Texture || resource.ByteLength == 0 || resource.Handle.Handle.Value == 0)
                 throw new InvalidOperationException($"Dungeon texture '{texture.Path}' must open as a non-empty Engine texture resource.");
             opened[index] = resource;
         }
@@ -68,7 +69,8 @@ internal sealed class DungeonMaterials : IDisposable
 
     private static Material CreateMaterial(IEngineContext engine, AuthoredCatalog catalog,
         SurfaceDefinition surface, RenderResourceInfo texture) => engine.Graphics.CreateAuthoredMaterial(
-            new AuthoredMaterialAppearanceRequest(catalog, surface.MaterialId, texture.Handle));
+            new AuthoredMaterialAppearanceRequest(catalog, surface.MaterialId,
+                new RenderResourceReference(texture.Handle.Handle.Value)));
 
     private static RenderResourceInfo Texture(AppearanceStyleDefinition style, RenderResourceInfo[] opened, string id)
     {
