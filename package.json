@@ -1,0 +1,12 @@
+{
+  "name": "rusty-rifles-ui",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "check:ui": "tsc --project src/ui/tsconfig.json --noEmit",
+    "dev": "bash scripts/dev.sh",
+    "check": "bash scripts/check.sh"
+  },
+  "devDependencies": { "typescript": "5.9.2" }
+}

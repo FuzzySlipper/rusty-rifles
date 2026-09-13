@@ -1,0 +1,11 @@
+{
+  "project": "rusty-rifles",
+  "serve": {
+    "command": "exec bash scripts/dev.sh --bind-host {host} --port {port}",
+    "healthUrl": "/product-ui/main.js",
+    "readyText": "Rusty Rifles",
+    "reusePolicy": "broker_owned",
+    "startupTimeout": "120s",
+    "healthInterval": "250ms"
+  }
+}

@@ -1,0 +1,34 @@
+# Installed Engine pair, local stores, and generated product staging
+.runtime/
+
+# .NET build and test output
+**/[Bb]in/
+**/[Oo]bj/
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+BenchmarkDotNet.Artifacts/
+
+# Dependency and generated UI output
+node_modules/
+/src/ui/generated/
+/artifacts/
+*.tsbuildinfo
+
+# Machine-local IDE settings (keep shared editor configuration trackable)
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Local credentials and OS files
+.env
+.env.*
+!.env.example
+!.env.*.example
+.DS_Store
+Thumbs.db

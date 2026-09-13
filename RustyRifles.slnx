@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rifles.Game/Rifles.Game.csproj" />
+    <Project Path="src/Rifles.Procgen.Artifacts/Rifles.Procgen.Artifacts.csproj" />
+    <Project Path="src/Rifles.Procgen.Tool/Rifles.Procgen.Tool.csproj" />
+    <Project Path="src/Rifles.Procgen/Rifles.Procgen.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Game/Game.csproj" />
+    <Project Path="tests/Procgen/Procgen.csproj" />
+  </Folder>
+</Solution>

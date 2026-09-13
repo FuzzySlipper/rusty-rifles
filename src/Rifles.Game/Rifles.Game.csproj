@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RustyEngineSdkPackageVersion>0.1.0-dev.2e4255bd3ad5</RustyEngineSdkPackageVersion>
+    <RustyEngineProductEntryType>Rifles.Game.RiflesProduct</RustyEngineProductEntryType>
+    <RustyEngineProductId>rusty-rifles</RustyEngineProductId>
+    <RustyEngineProductTitle>Rusty Rifles</RustyEngineProductTitle>
+    <RustyEngineProductUiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../ui/generated/source'))</RustyEngineProductUiRoot>
+    <RustyEngineProductContentRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../content'))</RustyEngineProductContentRoot>
+    <RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>
+    <RustyEngineProductUiProjectionStream>rifles.session</RustyEngineProductUiProjectionStream>
+    <RustyEngineProductUiProjectionContract>rifles.session.v1</RustyEngineProductUiProjectionContract>
+    <RustyEngineProductLifecycleMode>realtime</RustyEngineProductLifecycleMode>
+    <RustyEngineProductFixedStepHz>60</RustyEngineProductFixedStepHz>
+    <RustyEngineProductFixedStepMaxCatchUpSteps>4</RustyEngineProductFixedStepMaxCatchUpSteps>
+    <RustyEngineWatchPaths>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'));$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../ui'));$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Rifles.Procgen'));$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../content'))</RustyEngineWatchPaths>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rifles.Procgen/Rifles.Procgen.csproj" />
+    <PackageReference Include="Rusty.Engine" Version="[$(RustyEngineSdkPackageVersion)]" />
+    <RustyEngineProductInputIntent Include="rifles.forward" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.forward.keyboard" Intent="rifles.forward" Trigger="key:key-w:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.backward" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.backward.keyboard" Intent="rifles.backward" Trigger="key:key-s:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.strafe-left" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.strafe-left.keyboard" Intent="rifles.strafe-left" Trigger="key:key-a:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.strafe-right" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.strafe-right.keyboard" Intent="rifles.strafe-right" Trigger="key:key-d:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.turn-left" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.turn-left.keyboard" Intent="rifles.turn-left" Trigger="key:key-q:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.turn-right" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.turn-right.keyboard" Intent="rifles.turn-right" Trigger="key:key-e:pressed" />
+  </ItemGroup>
+  <Target Name="BuildRiflesUi" BeforeTargets="GenerateRustyEngineProductComposition">
+    <Exec Command="pnpm --dir &quot;$(MSBuildThisFileDirectory)../..&quot; exec tsc --project &quot;$(MSBuildThisFileDirectory)../ui/tsconfig.json&quot;" />
+  </Target>
+</Project>
