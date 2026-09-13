@@ -3,9 +3,10 @@
 A Rusty Engine game taking shape as a procedural, grid-based, first-person,
 real-time party dungeon crawler: one party, one cell, four facing directions.
 
-The [campaign strategy draft](docs/campaign-strategy.md) proposes the classic
+The [campaign strategy](docs/campaign-strategy.md) defines the classic
 blobber foundation, with ranged combat as a first-class system and early visual
-experiments. [Reference-code maps](docs/references/README.md) provide focused
+experiments. The [task campaign](docs/campaign/task-index.md) maps all 63 Den
+implementation tasks and their dependencies. [Reference-code maps](docs/references/README.md) provide focused
 navigation of the local research games.
 The [working art direction](docs/art-direction.md) and
 [image prompt recipes](content/art/prompts/README.md) keep generated assets

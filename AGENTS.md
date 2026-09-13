@@ -9,8 +9,8 @@ faces one cardinal direction. Preserve that direction when extending the game.
 First establish a coherent, conventional real-time blobber foundation using
 games such as Dungeon Master, Eye of the Beholder, and Grimrock as behavioral
 references. Once those basics are established, customize them toward Rifles'
-specific gameplay. The implementation campaign will be discussed with the
-owner before its scope is defined.
+specific gameplay. The owner-approved scope is in `docs/campaign-strategy.md`;
+`docs/campaign/task-index.md` maps Den campaign #8187 and its implementation tasks.
 
 Build this game directly. Do not introduce a reusable blobber kit, ruleset
 framework, or abstraction layer for hypothetical games. Do not attempt a
@@ -102,7 +102,8 @@ fails, retain the local commit and report the exact blocker. Never force-push
 or discard work to resolve a push failure.
 
 Den project ID: `rusty-rifles`; repository root: `/home/dev/rusty-rifles`.
-Use that project for the forthcoming implementation campaign and shared work.
+Use that project for the implementation campaign and shared work; Den owns live
+task status and dependencies, while the repo index records the initial plan.
 
 Run `pnpm install --frozen-lockfile` once, then `bash scripts/check.sh` for the
 solution build, UI typecheck, procgen/game checks, offline tool self-check,

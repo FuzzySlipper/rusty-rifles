@@ -1,9 +1,10 @@
 # Classic blobber foundation campaign
 
-**Working strategy — 2026-09-13.** The owner accepted this campaign direction
-for `rusty-rifles`; work-package sizing and remaining gameplay choices are still
-provisional. No Den tasks have been created. The [art direction](art-direction.md)
-and prompt recipes now support visual experiments without locking a final style.
+**Accepted campaign strategy — 2026-09-13.** Den campaign **#8187** contains
+63 implementation tasks across nine milestones, with 136 dependency links.
+The [task index](campaign/task-index.md) maps the scheduled work; Den owns live
+status. Initial gameplay defaults remain tunable. The [art direction](art-direction.md)
+and prompt recipes support visual experiments without locking a final style.
 
 ## Destination
 
@@ -214,15 +215,16 @@ silhouettes. Do this early enough to change art direction cheaply. Keep actual
 accepted image files and runtime assets in Git, with compact asset/import
 metadata; no large automated asset factory or source-copy provenance system.
 
-## Proposed milestones and work packages
+## Milestones and work packages
 
-Approximately **63 focused implementation tasks** after refinement. The counts
-below size the discussion; they are not Den records or a fixed task quota.
+The [Den campaign](campaign/task-index.md) contains **63 focused implementation
+tasks** matching the groups below. Adjust tasks as implementation reveals concrete
+needs; this initial count is not a permanent quota.
 Split by coherent player behavior and ownership, not by file or testing layer.
 Each feature includes its tuning, presentation, state/snapshot changes, and
 focused validation instead of creating separate implementation/proof campaigns.
 
-| Milestone | Candidate work packages | Playable result | Rough tasks |
+| Milestone | Work packages | Playable result | Tasks |
 | --- | --- | --- | --- |
 | **1. Durable expedition skeleton** | Typed file content/admission; stable identities and base saves; shared cells/edges and movement reservations; smooth party controls; authoritative UI actions; required Engine contract checks | Walk, turn, pause, save/resume, and retune the existing dungeon | 6 |
 | **2. First visual room** | Shared style recipes and image samples; texture import/materials; prop billboards and directional enemy stills; dynamic light/size/alpha/occlusion checks; representative room comparison | Inspect generated textured geometry and small/large static enemies in the actual host | 5 |
@@ -285,18 +287,20 @@ See [reference navigation](references/README.md) and its three maps. These
 maps document research navigation, not provenance obligations for the earlier
 one-time code transfers into Rifles.
 
-## Defaults to discuss before task creation
+## Initial campaign defaults
 
 - Four-member 2×2 party; enemy sizes pack within one cell, with multi-cell
-  creatures deferred. Should any first-stage encounter require a larger footprint?
+  creatures deferred. Capacity and footprint policy are file-tuned.
 - Classic slot inventory, selectable known spells/hotbar, and lightweight
   advancement. Rune-combination casting, skill trees, crafting, and economy can
   wait unless they are important to the desired early play.
 - World time continues during inventory and casting choices; an explicit pause
-  stops simulation. Confirm whether an optional pause-on-inventory mode is wanted.
+  stops simulation. Automatic inventory pause is not part of the initial scope.
 - Ranged is mandatory in the first fight; use a simple rifle with loaded state,
   ammo and reload timing. Defer misfires, detailed powder handling, and historical
-  ballistic simulation. Choose body-blocking/friendly-fire policy explicitly.
+  ballistic simulation. Initially, party slots do not obstruct their own formation
+  shots; world allies block physical shots and friendly damage is off. Task D02
+  makes obstruction, targeting and friendly-damage policy explicit and tunable.
 - Art exploration now has [shared prompts and two treatments](art-direction.md).
   Try small coherent sets in-game, then revise palette, proportions and mood.
   A large asset roster should follow useful experiments rather than precede them.

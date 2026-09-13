@@ -1,0 +1,1215 @@
+{
+  "project_id": "rusty-rifles",
+  "campaign_title": "Classic blobber foundation: a complete ranged-first procedural expedition",
+  "common_contract": "Use /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.",
+  "creation_order": [
+    "A01",
+    "A02",
+    "B01",
+    "A03",
+    "A05",
+    "B02",
+    "C02",
+    "G01",
+    "A04",
+    "A06",
+    "B04",
+    "C01",
+    "G02",
+    "B03",
+    "C03",
+    "B05",
+    "C04",
+    "C05",
+    "C06",
+    "C07",
+    "C08",
+    "D01",
+    "D02",
+    "D03",
+    "F01",
+    "D04",
+    "D05",
+    "F02",
+    "G03",
+    "D06",
+    "F03",
+    "F04",
+    "D07",
+    "E01",
+    "E05",
+    "F05",
+    "E02",
+    "E03",
+    "F06",
+    "G04",
+    "E04",
+    "G05",
+    "G06",
+    "G07",
+    "E06",
+    "E07",
+    "E08",
+    "F07",
+    "G08",
+    "G09",
+    "H01",
+    "G10",
+    "H02",
+    "H03",
+    "H06",
+    "H04",
+    "H05",
+    "H07",
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05"
+  ],
+  "tasks": [
+    {
+      "key": "A01",
+      "title": "Load typed file-authored gameplay and presentation definitions",
+      "depends_on": [],
+      "scope": "Replace significant bootstrap literals with typed validated content records read through Engine Content; establish domain-local definition loading without a generic configuration framework.",
+      "acceptance": [
+        "Party defaults, movement/camera, grid scale, seed/generation policy and initial materials read from committed files.",
+        "Invalid or missing content reports actionable field/asset errors; no silent hard-coded balance fallback.",
+        "Retuning a file changes the running product through the normal dev flow; pure procgen still takes typed inputs rather than reading files."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Replace significant bootstrap literals with typed validated content records read through Engine Content; establish domain-local definition loading without a generic configuration framework.\n\nAcceptance:\n- Party defaults, movement/camera, grid scale, seed/generation policy and initial materials read from committed files.\n- Invalid or missing content reports actionable field/asset errors; no silent hard-coded balance fallback.\n- Retuning a file changes the running product through the normal dev flow; pure procgen still takes typed inputs rather than reading files.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "A02",
+      "title": "Persist an identified expedition and its resolved starting floor",
+      "depends_on": [
+        "A01"
+      ],
+      "scope": "Give expedition, floor, party and future spawned objects stable identity contracts; wire a minimal real save/load through Engine persistence and retain resolved generated geometry.",
+      "acceptance": [
+        "Save and reopen a walked starting floor with exact pose, party vitality and resolved layout restored.",
+        "Validate an entire incoming snapshot before replacing live state; reject incompatible/corrupt saves without partial mutation.",
+        "IDs survive reload and allow future spawned actors/items without assuming the authored roster is immutable."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Give expedition, floor, party and future spawned objects stable identity contracts; wire a minimal real save/load through Engine persistence and retain resolved generated geometry.\n\nAcceptance:\n- Save and reopen a walked starting floor with exact pose, party vitality and resolved layout restored.\n- Validate an entire incoming snapshot before replacing live state; reject incompatible/corrupt saves without partial mutation.\n- IDs survive reload and allow future spawned actors/items without assuming the authored roster is immutable.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "A03",
+      "title": "Unify party and actor movement on shared cells and edges",
+      "depends_on": [
+        "A02"
+      ],
+      "scope": "Establish the game-owned cell/edge/occupancy admission model over Engine navigation, with explicit actor identity, movement reservation and destination commit.",
+      "acceptance": [
+        "Party movement and an actor caller use the same resolved cells and door/edge facts; presentation coordinates never admit moves.",
+        "Two contenders cannot commit the same exclusive destination/edge; cancellation and failed moves release reservations consistently.",
+        "Specify in-transit hit/occupancy behavior and save/pause handling; size footprints can extend the contract without a second grid."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Establish the game-owned cell/edge/occupancy admission model over Engine navigation, with explicit actor identity, movement reservation and destination commit.\n\nAcceptance:\n- Party movement and an actor caller use the same resolved cells and door/edge facts; presentation coordinates never admit moves.\n- Two contenders cannot commit the same exclusive destination/edge; cancellation and failed moves release reservations consistently.\n- Specify in-transit hit/occupancy behavior and save/pause handling; size footprints can extend the contract without a second grid.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "A04",
+      "title": "Make grid stepping and quarter-turn controls smooth and predictable",
+      "depends_on": [
+        "A03"
+      ],
+      "scope": "Wire held-key repeat, bounded buffering and Engine camera interpolation to the shared movement contract with file-authored movement/turn/recovery tuning.",
+      "acceptance": [
+        "Walk, sidestep and turn smoothly through ordinary controls while logical commits remain exact.",
+        "Focus loss, pause, blocked steps and fast opposite inputs cannot queue a long unintended walk or leave movement stuck.",
+        "Save/resume and restart restore coherent camera/party pose; validate motion from actual grid viewpoints."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Wire held-key repeat, bounded buffering and Engine camera interpolation to the shared movement contract with file-authored movement/turn/recovery tuning.\n\nAcceptance:\n- Walk, sidestep and turn smoothly through ordinary controls while logical commits remain exact.\n- Focus loss, pause, blocked steps and fast opposite inputs cannot queue a long unintended walk or leave movement stuck.\n- Save/resume and restart restore coherent camera/party pose; validate motion from actual grid viewpoints.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "A05",
+      "title": "Route party UI actions and pause through the authoritative product",
+      "depends_on": [
+        "A02"
+      ],
+      "scope": "Provide supported Engine-admitted semantic UI commands and projections for member selection, save/load and explicit pause, extending the existing DOM companion.",
+      "acceptance": [
+        "UI shows current selected member and operation feedback; duplicate/stale commands cannot mutate the wrong state.",
+        "Opening UI does not pause simulation by default; explicit pause stops game time and resume continues it.",
+        "Keyboard focus and UI pointer gestures do not leak into movement; no custom transport or browser gameplay clock."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Provide supported Engine-admitted semantic UI commands and projections for member selection, save/load and explicit pause, extending the existing DOM companion.\n\nAcceptance:\n- UI shows current selected member and operation feedback; duplicate/stale commands cannot mutate the wrong state.\n- Opening UI does not pause simulation by default; explicit pause stops game time and resume continues it.\n- Keyboard focus and UI pointer gestures do not leak into movement; no custom transport or browser gameplay clock.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "A06",
+      "title": "Select and use reachable world features through Engine targeting",
+      "depends_on": [
+        "A03",
+        "A05"
+      ],
+      "scope": "Integrate Engine interaction focus/visibility with product-owned target identities, reach and action eligibility, using the current floor exit and an authored feature as real callers.",
+      "acceptance": [
+        "Ordinary input can focus, inspect and use a reachable feature with clear affordance and failure reason.",
+        "Targets behind walls, out of reach, removed or changed since selection are revalidated and rejected appropriately.",
+        "The same targeting contract supports future use/drop/throw commands and billboard features without storing authority in UI."
+      ],
+      "reference": "docs/engine-integration-notes.md",
+      "priority": 2,
+      "milestone": 1,
+      "description": "Integrate Engine interaction focus/visibility with product-owned target identities, reach and action eligibility, using the current floor exit and an authored feature as real callers.\n\nAcceptance:\n- Ordinary input can focus, inspect and use a reachable feature with clear affordance and failure reason.\n- Targets behind walls, out of reach, removed or changed since selection are revalidated and rejected appropriately.\n- The same targeting contract supports future use/drop/throw commands and billboard features without storing authority in UI.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/engine-integration-notes.md."
+    },
+    {
+      "key": "B01",
+      "title": "Generate and catalogue a coherent first art comparison set",
+      "depends_on": [
+        "A01"
+      ],
+      "scope": "Use the repo GPT prompt recipes to produce real texture/prop/character images for ink-and-wash and painted-cover comparisons on matched subjects; choose a provisional batch without locking final art.",
+      "acceptance": [
+        "Commit a small matching set: brick/limewash/floor, useful prop images, and the same rifle sentry in both treatments.",
+        "Check real alpha edges, full silhouettes, scale intent and texture repeats; asset IDs and import definitions are file-authored.",
+        "Keep selected images and concise prompts/variant notes, not a provenance ledger or asset factory; follow the local art brief rather than mandatory Dead Garrison lore."
+      ],
+      "reference": "content/art/prompts/README.md",
+      "priority": 2,
+      "milestone": 2,
+      "description": "Use the repo GPT prompt recipes to produce real texture/prop/character images for ink-and-wash and painted-cover comparisons on matched subjects; choose a provisional batch without locking final art.\n\nAcceptance:\n- Commit a small matching set: brick/limewash/floor, useful prop images, and the same rifle sentry in both treatments.\n- Check real alpha edges, full silhouettes, scale intent and texture repeats; asset IDs and import definitions are file-authored.\n- Keep selected images and concise prompts/variant notes, not a provenance ledger or asset factory; follow the local art brief rather than mandatory Dead Garrison lore.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: content/art/prompts/README.md."
+    },
+    {
+      "key": "B02",
+      "title": "Apply generated repeating textures to voxel materials",
+      "depends_on": [
+        "B01"
+      ],
+      "scope": "Bind generated color images to Engine voxel face materials and separate logical cell scale from authored texture scale and voxel detail resolution.",
+      "acceptance": [
+        "Current generated rooms display the matching wall/floor materials with configurable scale and mapping.",
+        "Near-wall and corridor views expose no accidental scale jumps, unusable seams or excessive shimmering.",
+        "Changing material art preserves world identity/navigation; runtime resources survive ordinary reload/attachment and are released correctly."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 2,
+      "description": "Bind generated color images to Engine voxel face materials and separate logical cell scale from authored texture scale and voxel detail resolution.\n\nAcceptance:\n- Current generated rooms display the matching wall/floor materials with configurable scale and mapping.\n- Near-wall and corridor views expose no accidental scale jumps, unusable seams or excessive shimmering.\n- Changing material art preserves world identity/navigation; runtime resources survive ordinary reload/attachment and are released correctly.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "B03",
+      "title": "Render clutter and interactable images as grounded world billboards",
+      "depends_on": [
+        "B02",
+        "A06"
+      ],
+      "scope": "Realize file-authored prop definitions using Engine world sprites, placement anchors and suitable full-facing or wall/mount constraints.",
+      "acceptance": [
+        "Bench, crate and lantern examples remain grounded and correctly occluded as the player moves and turns.",
+        "Inspectable/useable features reuse A06 identities; collision and blocking are explicit world facts, not the painted alpha silhouette.",
+        "Alpha edges and mounting are checked against multiple backgrounds; no DOM props or generated normal-map prerequisite."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 2,
+      "description": "Realize file-authored prop definitions using Engine world sprites, placement anchors and suitable full-facing or wall/mount constraints.\n\nAcceptance:\n- Bench, crate and lantern examples remain grounded and correctly occluded as the player moves and turns.\n- Inspectable/useable features reuse A06 identities; collision and blocking are explicit world facts, not the painted alpha silhouette.\n- Alpha edges and mounting are checked against multiple backgrounds; no DOM props or generated normal-map prerequisite.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "B04",
+      "title": "Render consistent directional stills for individual enemies",
+      "depends_on": [
+        "B01",
+        "A03"
+      ],
+      "scope": "Generate companion directions from the selected sentry identity and implement Engine-backed facing selection with authored atlas/frame, body size and foot anchors.",
+      "acceptance": [
+        "Start with four configurable views; turning around the actor selects coherent views without changing handedness, equipment or ground height.",
+        "Individual small/large actor images have stable world scale and selection identity; no skeletal or frame-animation requirement.",
+        "View changes, depth and cutout edges are inspected in the actual host, including two nearby actors."
+      ],
+      "reference": "docs/art-direction.md",
+      "priority": 2,
+      "milestone": 2,
+      "description": "Generate companion directions from the selected sentry identity and implement Engine-backed facing selection with authored atlas/frame, body size and foot anchors.\n\nAcceptance:\n- Start with four configurable views; turning around the actor selects coherent views without changing handedness, equipment or ground height.\n- Individual small/large actor images have stable world scale and selection identity; no skeletal or frame-animation requirement.\n- View changes, depth and cutout edges are inspected in the actual host, including two nearby actors.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/art-direction.md."
+    },
+    {
+      "key": "B05",
+      "title": "Light and compare the first textured room and sprite ensemble",
+      "depends_on": [
+        "B03",
+        "B04"
+      ],
+      "scope": "Finish a selectable representative generated room using actual props/enemy images and dynamic level lights; test simple Engine sprite shading before considering extra authored maps.",
+      "acceptance": [
+        "Move lights and camera around sprites; level lighting visibly affects them without a contradictory strong baked light or detached glow.",
+        "Inspect both style treatments, texture repeat and large/small overlap at gameplay distances, then record a provisional coherent choice.",
+        "If the SDK lacks the shading control, identify the exact upstream dependency rather than ship unlit sprites or a game-local shader; no normal-map factory."
+      ],
+      "reference": "",
+      "priority": 2,
+      "milestone": 2,
+      "description": "Finish a selectable representative generated room using actual props/enemy images and dynamic level lights; test simple Engine sprite shading before considering extra authored maps.\n\nAcceptance:\n- Move lights and camera around sprites; level lighting visibly affects them without a contradictory strong baked light or detached glow.\n- Inspect both style treatments, texture repeat and large/small overlap at gameplay distances, then record a provisional coherent choice.\n- If the SDK lacks the shading control, identify the exact upstream dependency rather than ship unlit sprites or a game-local shader; no normal-map factory.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C01",
+      "title": "Handle party roster, formation and derived character statistics",
+      "depends_on": [
+        "A05"
+      ],
+      "scope": "Extend the existing four-member party with file-defined character/loadout choices, formation changes and Engine-backed derived statistics/tracks.",
+      "acceptance": [
+        "Players select a starter party and inspect/change formation with living/dead eligibility respected.",
+        "Statistic changes recalculate from definitions/equipment sources rather than cached UI state; formation persists.",
+        "Front/rear reach is explicit policy and rear members remain eligible for ranged/casting roles; no large character-builder framework."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Extend the existing four-member party with file-defined character/loadout choices, formation changes and Engine-backed derived statistics/tracks.\n\nAcceptance:\n- Players select a starter party and inspect/change formation with living/dead eligibility respected.\n- Statistic changes recalculate from definitions/equipment sources rather than cached UI state; formation persists.\n- Front/rear reach is explicit policy and rear members remain eligible for ranged/casting roles; no large character-builder framework.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C02",
+      "title": "Own inventory items and stacks with atomic transfers",
+      "depends_on": [
+        "A02"
+      ],
+      "scope": "Use Engine InventoryWorld/Item mechanics for per-character inventories, identity-bearing items, fungible stacks, capacity and typed item definitions.",
+      "acceptance": [
+        "Grant, consume, split/merge and transfer items between owners without loss/duplication or exceeding authored capacity.",
+        "Rejected or stale multi-part operations leave ownership/quantity unchanged; use Engine candidate semantics where applicable.",
+        "Saved items and their owners reconstruct exactly with stable identity; no duplicate downstream inventory ledger."
+      ],
+      "reference": "docs/engine-integration-notes.md",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Use Engine InventoryWorld/Item mechanics for per-character inventories, identity-bearing items, fungible stacks, capacity and typed item definitions.\n\nAcceptance:\n- Grant, consume, split/merge and transfer items between owners without loss/duplication or exceeding authored capacity.\n- Rejected or stale multi-part operations leave ownership/quantity unchanged; use Engine candidate semantics where applicable.\n- Saved items and their owners reconstruct exactly with stable identity; no duplicate downstream inventory ledger.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/engine-integration-notes.md."
+    },
+    {
+      "key": "C03",
+      "title": "Equip characters and compare usable gear",
+      "depends_on": [
+        "C01",
+        "C02"
+      ],
+      "scope": "Wire Engine equipment helpers to authored slots, requirements and source effects, including two-handed rifles, hands, armor and ammunition compatibility.",
+      "acceptance": [
+        "Equip, unequip and swap through player controls with clear comparison and invalid-slot/requirement feedback.",
+        "Displaced items retain ownership and respect capacity; failures never partially apply stat sources.",
+        "Equipment, charges/loaded state fields where introduced, and derived values survive save/load; significant policy is file-authored."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Wire Engine equipment helpers to authored slots, requirements and source effects, including two-handed rifles, hands, armor and ammunition compatibility.\n\nAcceptance:\n- Equip, unequip and swap through player controls with clear comparison and invalid-slot/requirement feedback.\n- Displaced items retain ownership and respect capacity; failures never partially apply stat sources.\n- Equipment, charges/loaded state fields where introduced, and derived values survive save/load; significant policy is file-authored.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C04",
+      "title": "Deliver drag-and-drop inventory with a click alternative",
+      "depends_on": [
+        "C03",
+        "A05"
+      ],
+      "scope": "Build the real party inventory/equipment UI with proposed drag transfers and shared authoritative click/select commands.",
+      "acceptance": [
+        "Drag between characters, inventory and equipment, with stack amount selection and useful hover/invalid-drop feedback.",
+        "Original ownership remains until acceptance; Escape, outside drop, focus loss, stale state and full destinations never destroy or duplicate items.",
+        "World time continues unless explicitly paused; UI focus cannot fire or move the party, and click controls perform equivalent operations."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Build the real party inventory/equipment UI with proposed drag transfers and shared authoritative click/select commands.\n\nAcceptance:\n- Drag between characters, inventory and equipment, with stack amount selection and useful hover/invalid-drop feedback.\n- Original ownership remains until acceptance; Escape, outside drop, focus loss, stale state and full destinations never destroy or duplicate items.\n- World time continues unless explicitly paused; UI focus cannot fire or move the party, and click controls perform equivalent operations.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C05",
+      "title": "Pick up and place items at real world anchors",
+      "depends_on": [
+        "C02",
+        "A06",
+        "B03"
+      ],
+      "scope": "Connect inventory ownership to floor quadrants, shelves/alcoves and feature anchors; support ordinary pickup and drag/click drop into the world.",
+      "acceptance": [
+        "An item can move from floor to pack to another member to an alcove and back with one identity.",
+        "Visibility/reach, allowed surfaces, occupied anchors and changing targets are checked at transfer commit.",
+        "World item positions, quantities and identifiers persist and render via authored billboard assets; this task places items, D05 adds travelling throws."
+      ],
+      "reference": "docs/references/dungeoneye.md",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Connect inventory ownership to floor quadrants, shelves/alcoves and feature anchors; support ordinary pickup and drag/click drop into the world.\n\nAcceptance:\n- An item can move from floor to pack to another member to an alcove and back with one identity.\n- Visibility/reach, allowed surfaces, occupied anchors and changing targets are checked at transfer commit.\n- World item positions, quantities and identifiers persist and render via authored billboard assets; this task places items, D05 adds travelling throws.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/references/dungeoneye.md."
+    },
+    {
+      "key": "C06",
+      "title": "Use consumables and items on eligible targets",
+      "depends_on": [
+        "C03",
+        "C05"
+      ],
+      "scope": "Implement typed use actions for healing/resources and use-on-target interaction adapters with explicit item requirements and consumption timing.",
+      "acceptance": [
+        "Use a consumable on self/another eligible member and a required item on a feature through the same semantic command path.",
+        "No charge/item is consumed on rejected targeting; successful use settles effect and cost once and persists.",
+        "File definitions select targets/costs/effects; the typed effect cases extend into combat/spells without a generic scripting DSL."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Implement typed use actions for healing/resources and use-on-target interaction adapters with explicit item requirements and consumption timing.\n\nAcceptance:\n- Use a consumable on self/another eligible member and a required item on a feature through the same semantic command path.\n- No charge/item is consumed on rejected targeting; successful use settles effect and cost once and persists.\n- File definitions select targets/costs/effects; the typed effect cases extend into combat/spells without a generic scripting DSL.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C07",
+      "title": "Open containers and transfer their stored contents",
+      "depends_on": [
+        "C04",
+        "C05"
+      ],
+      "scope": "Add reachable world containers and useful alcove storage with visible content and transfers using existing inventory ownership.",
+      "acceptance": [
+        "Open a crate, inspect contents and drag/click items between it and characters with correct capacity rules.",
+        "Moving away, closing, removal or load invalidates a stale open target without committing to the wrong owner.",
+        "Revisiting and saving retains opened state and remaining loot without rerolls or duplicated container items."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Add reachable world containers and useful alcove storage with visible content and transfers using existing inventory ownership.\n\nAcceptance:\n- Open a crate, inspect contents and drag/click items between it and characters with correct capacity rules.\n- Moving away, closing, removal or load invalidates a stale open target without committing to the wrong owner.\n- Revisiting and saving retains opened state and remaining loot without rerolls or duplicated container items.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "C08",
+      "title": "Solve doors, keys, levers and weighted plates with real items",
+      "depends_on": [
+        "C05",
+        "C06",
+        "C07"
+      ],
+      "scope": "Create typed persistent door/lock/switch/plate states and wire their visual, collision/navigation and interaction consequences into a small playable obstacle.",
+      "acceptance": [
+        "Use a key, operate a lever and place/remove sufficient weight on a plate to change a door; status and affordances are visible.",
+        "Closed doors block travel and relevant rays; reopening restores them. Validate changing actor/item contact and no item duplication.",
+        "Load/revisit restores feature/item states and weights without replaying triggers; required-item consumption has an explicit recoverable design."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 3,
+      "description": "Create typed persistent door/lock/switch/plate states and wire their visual, collision/navigation and interaction consequences into a small playable obstacle.\n\nAcceptance:\n- Use a key, operate a lever and place/remove sufficient weight on a plate to change a door; status and affordances are visible.\n- Closed doors block travel and relevant rays; reopening restores them. Validate changing actor/item contact and no item duplication.\n- Load/revisit restores feature/item states and weights without replaying triggers; required-item consumption has an explicit recoverable design.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D01",
+      "title": "Execute real-time actions with commit and recovery phases",
+      "depends_on": [
+        "A03",
+        "A05",
+        "C06"
+      ],
+      "scope": "Introduce concrete game action phases over Engine time for weapon/use actions, with actor availability, effect commit, cancellation and recovery policy.",
+      "acceptance": [
+        "Ordinary weapon/use commands enter authored phases and apply their effect at most once.",
+        "Pause, interruption, actor death, equipment change and floor departure have defined pre/post-commit behavior and release resources.",
+        "Save/load retains remaining time and committed effects without replay; no second scheduler or turn-driven settlement."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Introduce concrete game action phases over Engine time for weapon/use actions, with actor availability, effect commit, cancellation and recovery policy.\n\nAcceptance:\n- Ordinary weapon/use commands enter authored phases and apply their effect at most once.\n- Pause, interruption, actor death, equipment change and floor departure have defined pre/post-commit behavior and release resources.\n- Save/load retains remaining time and committed effects without replay; no second scheduler or turn-driven settlement.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D02",
+      "title": "Select individual targets and resolve legal firing lanes",
+      "depends_on": [
+        "D01",
+        "B04",
+        "C08"
+      ],
+      "scope": "Combine Engine visibility/ray results and product actor footprints with range/reach and target selection for melee, rifles and future spell delivery.",
+      "acceptance": [
+        "Target visible individuals; walls, closed doors and nearer bodies prevent selecting/shooting through them.",
+        "Adopt explicit tunable baseline: other party slots do not obstruct their own formation shots; world allies block physical shots, with friendly damage off by default rather than shots silently passing through.",
+        "Movement transit and near/far targets have consistent rules; failed target/range/occlusion checks produce clear feedback."
+      ],
+      "reference": "docs/references/dungeonmaster-codex.md",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Combine Engine visibility/ray results and product actor footprints with range/reach and target selection for melee, rifles and future spell delivery.\n\nAcceptance:\n- Target visible individuals; walls, closed doors and nearer bodies prevent selecting/shooting through them.\n- Adopt explicit tunable baseline: other party slots do not obstruct their own formation shots; world allies block physical shots, with friendly damage off by default rather than shots silently passing through.\n- Movement transit and near/far targets have consistent rules; failed target/range/occlusion checks produce clear feedback.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/references/dungeonmaster-codex.md."
+    },
+    {
+      "key": "D03",
+      "title": "Resolve damage, defenses, death and recoverable remains",
+      "depends_on": [
+        "D01",
+        "C03"
+      ],
+      "scope": "Implement typed hit/defense/damage results, health/status consequences and death settlement shared by player and enemy actions.",
+      "acceptance": [
+        "Melee and ranged action deliveries use the same authored resolution path with deterministic Engine randomness where needed.",
+        "Death occurs once, stops actions, releases movement occupancy, and preserves owned items for intended loot/recovery.",
+        "Inspect damage/reason feedback and save/load injured/dead actors without reapplying rewards or effects; avoid a universal rules engine."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Implement typed hit/defense/damage results, health/status consequences and death settlement shared by player and enemy actions.\n\nAcceptance:\n- Melee and ranged action deliveries use the same authored resolution path with deterministic Engine randomness where needed.\n- Death occurs once, stops actions, releases movement occupancy, and preserves owned items for intended loot/recovery.\n- Inspect damage/reason feedback and save/load injured/dead actors without reapplying rewards or effects; avoid a universal rules engine.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D04",
+      "title": "Fight with loaded rifles and meaningful reload timing",
+      "depends_on": [
+        "D02",
+        "D03",
+        "C04"
+      ],
+      "scope": "Make rifles a working primary player weapon with authored ammunition compatibility, loaded state, shot commit and interruptible reload/recovery.",
+      "acceptance": [
+        "Front and rear members can fire eligible rifles, consume one loaded round and reload from real inventory.",
+        "Dry fire, unavailable ammo, hit/miss/block and interrupted reload are distinguishable; cancellation cannot duplicate ammunition.",
+        "Loaded state, remaining reload and committed shot survive save/pause correctly; no historical powder/misfire simulator required."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Make rifles a working primary player weapon with authored ammunition compatibility, loaded state, shot commit and interruptible reload/recovery.\n\nAcceptance:\n- Front and rear members can fire eligible rifles, consume one loaded round and reload from real inventory.\n- Dry fire, unavailable ammo, hit/miss/block and interrupted reload are distinguishable; cancellation cannot duplicate ammunition.\n- Loaded state, remaining reload and committed shot survive save/pause correctly; no historical powder/misfire simulator required.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D05",
+      "title": "Launch travelling projectiles and thrown inventory objects",
+      "depends_on": [
+        "D02",
+        "D03",
+        "C05"
+      ],
+      "scope": "Add authored travelling bolts and physical throws using the same action/impact rules; preserve real item identity from hand/pack through flight to impact/drop.",
+      "acceptance": [
+        "Projectiles travel with visible timing and stop at the first eligible body or blocking feature, including closed doors.",
+        "Thrown items leave their owner exactly once and are recoverable or consumed according to authored impact policy; misses have defined outcomes.",
+        "A thrown weight can activate an existing plate; pause/save mid-flight and target death cannot duplicate impacts or items."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Add authored travelling bolts and physical throws using the same action/impact rules; preserve real item identity from hand/pack through flight to impact/drop.\n\nAcceptance:\n- Projectiles travel with visible timing and stop at the first eligible body or blocking feature, including closed doors.\n- Thrown items leave their owner exactly once and are recoverable or consumed according to authored impact policy; misses have defined outcomes.\n- A thrown weight can activate an existing plate; pause/save mid-flight and target death cannot duplicate impacts or items.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D06",
+      "title": "Encounter simple melee and ranged opponents in a real fight",
+      "depends_on": [
+        "D04",
+        "D05",
+        "B05"
+      ],
+      "scope": "Introduce file-defined individual melee and ranged opponents as real callers of the action/target/damage systems before the later tactical AI expansion.",
+      "acceptance": [
+        "Play one mixed fight using rifles while a melee opponent approaches legally on the shared grid and a ranged opponent fires/reloads from a legal lane.",
+        "Use Engine paths/step admission to reachable attack positions; never move into the party cell or substitute a local pathfinder.",
+        "Enemies die and drop configured loot; awareness/attack cadence is explicit and the later group/AI tasks extend these actors instead of replacing them."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Introduce file-defined individual melee and ranged opponents as real callers of the action/target/damage systems before the later tactical AI expansion.\n\nAcceptance:\n- Play one mixed fight using rifles while a melee opponent approaches legally on the shared grid and a ranged opponent fires/reloads from a legal lane.\n- Use Engine paths/step admission to reachable attack positions; never move into the party cell or substitute a local pathfinder.\n- Enemies die and drop configured loot; awareness/attack cadence is explicit and the later group/AI tasks extend these actors instead of replacing them.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "D07",
+      "title": "Make the first fight readable through HUD and feedback",
+      "depends_on": [
+        "D06"
+      ],
+      "scope": "Complete combat controls/readout for active member, weapon choice, ammo, action phases, hit results and incoming threats with modest Engine effects/audio.",
+      "acceptance": [
+        "Complete a mixed fight through ordinary UI/input without debug commands; dry, blocked, miss, hit and interruption read differently.",
+        "Enemy windup/projectile cues, selected individual and party injury remain legible among static directional sprites.",
+        "UI interaction does not accidentally fire, feedback respects pause, and cosmetic effects do not duplicate on attachment/load."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 4,
+      "description": "Complete combat controls/readout for active member, weapon choice, ammo, action phases, hit results and incoming threats with modest Engine effects/audio.\n\nAcceptance:\n- Complete a mixed fight through ordinary UI/input without debug commands; dry, blocked, miss, hit and interruption read differently.\n- Enemy windup/projectile cues, selected individual and party injury remain legible among static directional sprites.\n- UI interaction does not accidentally fire, feedback respects pause, and cosmetic effects do not duplicate on attachment/load.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E01",
+      "title": "Admit mixed-size enemies into authored cell footprints",
+      "depends_on": [
+        "A03",
+        "D06"
+      ],
+      "scope": "Extend the shared occupancy contract with authored positions/footprints, capacity costs, edge clearance and explicit allied-sharing policy.",
+      "acceptance": [
+        "Small, medium and cell-filling large enemies can use the same grid without overlap; capacity alone never admits an invalid geometric fit.",
+        "Compatible allies can share regardless of species when policy allows; party/hostile occupancy stays exclusive.",
+        "Birth/spawn, move, death and save/restore validate capacity/footprints together; multi-cell giants are outside this campaign."
+      ],
+      "reference": "docs/references/dungeonmaster-net.md",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Extend the shared occupancy contract with authored positions/footprints, capacity costs, edge clearance and explicit allied-sharing policy.\n\nAcceptance:\n- Small, medium and cell-filling large enemies can use the same grid without overlap; capacity alone never admits an invalid geometric fit.\n- Compatible allies can share regardless of species when policy allows; party/hostile occupancy stays exclusive.\n- Birth/spawn, move, death and save/restore validate capacity/footprints together; multi-cell giants are outside this campaign.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task.\nFocused reference: docs/references/dungeonmaster-net.md."
+    },
+    {
+      "key": "E02",
+      "title": "Keep crowded enemy placements stable and repack smoothly",
+      "depends_on": [
+        "E01",
+        "B04"
+      ],
+      "scope": "Retain individual within-cell slots and smoothly present valid changes when group members arrive, depart or die.",
+      "acceptance": [
+        "Actors keep stable selectable identities and anchors rather than reshuffling every update.",
+        "Mixed sizes and changing occupancy settle to nonoverlapping authored positions with coherent directional sprites.",
+        "Presentation motion does not create free-grid movement or bypass hit occupancy; inspect full-cell overlap, rear visibility and selection."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Retain individual within-cell slots and smoothly present valid changes when group members arrive, depart or die.\n\nAcceptance:\n- Actors keep stable selectable identities and anchors rather than reshuffling every update.\n- Mixed sizes and changing occupancy settle to nonoverlapping authored positions with coherent directional sprites.\n- Presentation motion does not create free-grid movement or bypass hit occupancy; inspect full-cell overlap, rear visibility and selection.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E03",
+      "title": "Resolve competing enemy movement reservations fairly",
+      "depends_on": [
+        "E01",
+        "D01"
+      ],
+      "scope": "Handle simultaneous moves, contested edges/destinations, partial-group moves and interruption over the existing reservation owner.",
+      "acceptance": [
+        "Stable contention order and bounded waiting handle converging traffic, corridor queues, swaps and opposing groups without double commits.",
+        "Deaths, cancellations and reloads release/reconstruct reservations consistently; rejected moves do not flicker or shuffle actors.",
+        "Demonstrate progress or an explicit blocked route under sustained contention rather than oscillation or silent permanent deadlock."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Handle simultaneous moves, contested edges/destinations, partial-group moves and interruption over the existing reservation owner.\n\nAcceptance:\n- Stable contention order and bounded waiting handle converging traffic, corridor queues, swaps and opposing groups without double commits.\n- Deaths, cancellations and reloads release/reconstruct reservations consistently; rejected moves do not flicker or shuffle actors.\n- Demonstrate progress or an explicit blocked route under sustained contention rather than oscillation or silent permanent deadlock.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E04",
+      "title": "Route different enemy sizes with bounded Engine path queries",
+      "depends_on": [
+        "E03"
+      ],
+      "scope": "Use Engine navigation and traversal-query capabilities to route each actor to reachable melee contact or firing positions, accounting for size, doors and occupied edges.",
+      "acceptance": [
+        "Small and large enemies take valid routes on the player grid; closed/opened doors and blocked destinations trigger bounded replanning.",
+        "One actor query cannot poison another size/group view; copy/use retained query results according to the SDK contract.",
+        "Waiting, alternative routing and work quotas prevent repeated expensive replans; missing per-query Engine capability is an upstream dependency, not local A*."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Use Engine navigation and traversal-query capabilities to route each actor to reachable melee contact or firing positions, accounting for size, doors and occupied edges.\n\nAcceptance:\n- Small and large enemies take valid routes on the player grid; closed/opened doors and blocked destinations trigger bounded replanning.\n- One actor query cannot poison another size/group view; copy/use retained query results according to the SDK contract.\n- Waiting, alternative routing and work quotas prevent repeated expensive replans; missing per-query Engine capability is an upstream dependency, not local A*.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E05",
+      "title": "Give enemies sight, noise awareness and last-known targets",
+      "depends_on": [
+        "D06",
+        "A06"
+      ],
+      "scope": "Implement authored awareness policy from Engine perception/visibility facts and game action noise events, including gunfire, movement and alarms where authored.",
+      "acceptance": [
+        "Enemies notice visible/noisy threats at configured ranges and remember a last-known location without seeing through opaque geometry.",
+        "Losing contact decays awareness and produces search intent; inactive floors do not acquire impossible live sensory facts.",
+        "Persist relevant awareness without replaying historical noise; expose enough observation to explain unexpected aggro."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Implement authored awareness policy from Engine perception/visibility facts and game action noise events, including gunfire, movement and alarms where authored.\n\nAcceptance:\n- Enemies notice visible/noisy threats at configured ranges and remember a last-known location without seeing through opaque geometry.\n- Losing contact decays awareness and produces search intent; inactive floors do not acquire impossible live sensory facts.\n- Persist relevant awareness without replaying historical noise; expose enough observation to explain unexpected aggro.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E06",
+      "title": "Patrol, pursue, search and return using the shared enemy model",
+      "depends_on": [
+        "E04",
+        "E05"
+      ],
+      "scope": "Extend the first opponents into explicit bounded patrol/pursuit/search/return behavior using existing action and path owners.",
+      "acceptance": [
+        "Patrol routes, pursuit of last-seen targets and a search/return cycle work through ordinary gameplay.",
+        "State transitions respect movement reservations, action recovery, blocked doors and lost/dead targets.",
+        "Revisit/save restores authored routes and meaningful AI state; avoid coroutine clocks, a generic behavior-tree platform or donor runtime topology."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Extend the first opponents into explicit bounded patrol/pursuit/search/return behavior using existing action and path owners.\n\nAcceptance:\n- Patrol routes, pursuit of last-seen targets and a search/return cycle work through ordinary gameplay.\n- State transitions respect movement reservations, action recovery, blocked doors and lost/dead targets.\n- Revisit/save restores authored routes and meaningful AI state; avoid coroutine clocks, a generic behavior-tree platform or donor runtime topology.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E07",
+      "title": "Position ranged enemies for firing and reload opportunities",
+      "depends_on": [
+        "E06",
+        "D04"
+      ],
+      "scope": "Add authored ranged positioning, preferred distances, blocked-shot recovery, reload windows and bounded retreat to the shared tactical AI.",
+      "acceptance": [
+        "Ranged actors seek reachable legal firing positions and reposition when allies/doors block the lane instead of firing through them.",
+        "Melee pressure and rifle reload create useful opportunities; enemies do not endlessly backpedal or oscillate.",
+        "Decisions account for size/capacity/reservations and use explicit tuned thresholds; no omniscient target tracking."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Add authored ranged positioning, preferred distances, blocked-shot recovery, reload windows and bounded retreat to the shared tactical AI.\n\nAcceptance:\n- Ranged actors seek reachable legal firing positions and reposition when allies/doors block the lane instead of firing through them.\n- Melee pressure and rifle reload create useful opportunities; enemies do not endlessly backpedal or oscillate.\n- Decisions account for size/capacity/reservations and use explicit tuned thresholds; no omniscient target tracking.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "E08",
+      "title": "Author and integrate mixed-size mixed-range encounter groups",
+      "depends_on": [
+        "E02",
+        "E07",
+        "D07"
+      ],
+      "scope": "Create a small reusable encounter roster combining crowding, melee pressure and ranged threats using actual directional art.",
+      "acceptance": [
+        "Commit file-defined archetypes spanning small, medium and cell-filling enemies; aim toward the campaign six-to-eight roster without redundant variants.",
+        "Play crowded-room and narrow-corridor encounters with visible individual targeting, fair movement and meaningful ranged choices.",
+        "Spawn placement, drops, costs and stats persist and are tunable; record and fix observed softlocks/overlap rather than declaring group tests sufficient."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 5,
+      "description": "Create a small reusable encounter roster combining crowding, melee pressure and ranged threats using actual directional art.\n\nAcceptance:\n- Commit file-defined archetypes spanning small, medium and cell-filling enemies; aim toward the campaign six-to-eight roster without redundant variants.\n- Play crowded-room and narrow-corridor encounters with visible individual targeting, fair movement and meaningful ranged choices.\n- Spawn placement, drops, costs and stats persist and are tunable; record and fix observed softlocks/overlap rather than declaring group tests sufficient.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F01",
+      "title": "Select and prepare known spells through party controls",
+      "depends_on": [
+        "C04",
+        "D01"
+      ],
+      "scope": "Add typed spell definitions, learned/available spell state and known-spell selection/hotbar controls integrated with the active member.",
+      "acceptance": [
+        "Display target type, resource cost, cast/recovery time and availability from C# definitions.",
+        "Select/cancel without premature resource consumption or movement/input leakage.",
+        "Known spells and assignments persist; use a small direct selection model, not mandatory rune puzzles or a skill-tree framework."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Add typed spell definitions, learned/available spell state and known-spell selection/hotbar controls integrated with the active member.\n\nAcceptance:\n- Display target type, resource cost, cast/recovery time and availability from C# definitions.\n- Select/cancel without premature resource consumption or movement/input leakage.\n- Known spells and assignments persist; use a small direct selection model, not mandatory rune puzzles or a skill-tree framework.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F02",
+      "title": "Cast and interrupt spells with exact resource settlement",
+      "depends_on": [
+        "F01",
+        "D03"
+      ],
+      "scope": "Execute spell casts through the shared action phases with authored mana/resources, eligibility, interruption and recovery.",
+      "acceptance": [
+        "Commit costs/effects once at the declared phase; cancellation before/after commit follows explicit policy.",
+        "Death, pause, equipment/target change and save mid-cast cannot duplicate effects or restore spent resources incorrectly.",
+        "Player and enemy callers can use the same typed cast action; new browser timers or independent spell loops are excluded."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Execute spell casts through the shared action phases with authored mana/resources, eligibility, interruption and recovery.\n\nAcceptance:\n- Commit costs/effects once at the declared phase; cancellation before/after commit follows explicit policy.\n- Death, pause, equipment/target change and save mid-cast cannot duplicate effects or restore spent resources incorrectly.\n- Player and enemy callers can use the same typed cast action; new browser timers or independent spell loops are excluded.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F03",
+      "title": "Deliver projectile and area spells through shared targeting",
+      "depends_on": [
+        "F02",
+        "D05"
+      ],
+      "scope": "Implement direct/projectile and bounded area spell deliveries with typed damage/effect payloads over existing combat and spatial queries.",
+      "acceptance": [
+        "Projectile spells hit/stop under the same blocker and transit rules as other travelling attacks.",
+        "Area eligibility, origin, range, occlusion and ally policy are explicit and tuned; no automatic damage through walls.",
+        "Impact once, persistent flight/cast state and readable Engine feedback work on crowded enemy cells."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Implement direct/projectile and bounded area spell deliveries with typed damage/effect payloads over existing combat and spatial queries.\n\nAcceptance:\n- Projectile spells hit/stop under the same blocker and transit rules as other travelling attacks.\n- Area eligibility, origin, range, occlusion and ally policy are explicit and tuned; no automatic damage through walls.\n- Impact once, persistent flight/cast state and readable Engine feedback work on crowded enemy cells.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F04",
+      "title": "Apply buffs, debuffs and resistances with bounded lifetimes",
+      "depends_on": [
+        "F02",
+        "C03"
+      ],
+      "scope": "Add concrete status/effect cases using available Engine mechanics, with authored stacking, refresh, removal and resistance rules.",
+      "acceptance": [
+        "At least a defense buff, injury/damage-over-time debuff and control/slow case alter actual actions/stats correctly.",
+        "Expiration, dispel, death, rest and equipment change recompute effects without leaked sources or negative timers.",
+        "Save/load preserves remaining duration without duplicate application; presentation explains active conditions."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Add concrete status/effect cases using available Engine mechanics, with authored stacking, refresh, removal and resistance rules.\n\nAcceptance:\n- At least a defense buff, injury/damage-over-time debuff and control/slow case alter actual actions/stats correctly.\n- Expiration, dispel, death, rest and equipment change recompute effects without leaked sources or negative timers.\n- Save/load preserves remaining duration without duplicate application; presentation explains active conditions.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F05",
+      "title": "Use utility spells on exploration and world features",
+      "depends_on": [
+        "F03",
+        "F04",
+        "C08"
+      ],
+      "scope": "Add useful noncombat spells such as light, reveal and an explicitly permitted feature interaction through the same target/action/feature contracts.",
+      "acceptance": [
+        "Player can use utility magic through ordinary spell controls with clear valid and invalid targets.",
+        "Effects respect visibility/reach and authored gate policy; magic cannot silently bypass every required puzzle barrier.",
+        "Costs, duration and resulting feature state persist; generator validation can query the concrete capabilities rather than hard-coded spell names."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Add useful noncombat spells such as light, reveal and an explicitly permitted feature interaction through the same target/action/feature contracts.\n\nAcceptance:\n- Player can use utility magic through ordinary spell controls with clear valid and invalid targets.\n- Effects respect visibility/reach and authored gate policy; magic cannot silently bypass every required puzzle barrier.\n- Costs, duration and resulting feature state persist; generator validation can query the concrete capabilities rather than hard-coded spell names.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F06",
+      "title": "Recover party injuries and resources through explicit rest rules",
+      "depends_on": [
+        "F04",
+        "C06",
+        "E05"
+      ],
+      "scope": "Implement party injury/death eligibility, limited recovery/revival and rest resource rules using existing tracks, items and threat awareness.",
+      "acceptance": [
+        "An injured party can recover through defined items/rest; dead members follow explicit recovery limits and remain represented.",
+        "Rest advances admitted game time and respects nearby threats/interruptions, rather than granting free recovery through UI pause.",
+        "Tune costs/durations and persist partial recovery without replay; expose why rest or revival is unavailable."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Implement party injury/death eligibility, limited recovery/revival and rest resource rules using existing tracks, items and threat awareness.\n\nAcceptance:\n- An injured party can recover through defined items/rest; dead members follow explicit recovery limits and remain represented.\n- Rest advances admitted game time and respects nearby threats/interruptions, rather than granting free recovery through UI pause.\n- Tune costs/durations and persist partial recovery without replay; expose why rest or revival is unavailable.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "F07",
+      "title": "Reward advancement and publish a useful starter spell catalogue",
+      "depends_on": [
+        "F05",
+        "F06",
+        "E08"
+      ],
+      "scope": "Add lightweight experience/reward settlement and a meaningful per-member advancement/loadout choice; integrate a coherent initial spell set.",
+      "acceptance": [
+        "Rewards settle once for relevant encounters/objectives and survive reload; choices visibly change derived behavior.",
+        "Eight-to-twelve useful file-defined spells span combat, status, recovery and utility through implemented effects, not placeholder names.",
+        "A party with rifles and spells completes an encounter and obstacle; no broad class kit, crafting tree or full legacy spell port."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 6,
+      "description": "Add lightweight experience/reward settlement and a meaningful per-member advancement/loadout choice; integrate a coherent initial spell set.\n\nAcceptance:\n- Rewards settle once for relevant encounters/objectives and survive reload; choices visibly change derived behavior.\n- Eight-to-twelve useful file-defined spells span combat, status, recovery and utility through implemented effects, not placeholder names.\n- A party with rifles and spells completes an encounter and obstacle; no broad class kit, crafting tree or full legacy spell port.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G01",
+      "title": "Generate expedition graphs with distinct floor roles",
+      "depends_on": [
+        "A02"
+      ],
+      "scope": "Extend retained GraphCore policy to a bounded multi-floor expedition intent with main route, loops, branches, optional rewards and connectors.",
+      "acceptance": [
+        "File-authored requests create reproducible distinct floor roles and useful route choices rather than identical repeated graphs.",
+        "Persist the resolved intent and stable connector/feature identities; budgets bound unsuccessful generation.",
+        "Graph validation rejects unreachable main objectives and reports reasons; do not add a parallel generator."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Extend retained GraphCore policy to a bounded multi-floor expedition intent with main route, loops, branches, optional rewards and connectors.\n\nAcceptance:\n- File-authored requests create reproducible distinct floor roles and useful route choices rather than identical repeated graphs.\n- Persist the resolved intent and stable connector/feature identities; budgets bound unsuccessful generation.\n- Graph validation rejects unreachable main objectives and reports reasons; do not add a parallel generator.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G02",
+      "title": "Place varied functional rooms from authored catalogues",
+      "depends_on": [
+        "G01",
+        "B02"
+      ],
+      "scope": "Extend room shapes and placement policy with meaningful early-modern functions, proportions, thresholds and recognizable landmarks.",
+      "acceptance": [
+        "Generate varied chambers, alcoves and functional arrangements that support the grid and material scale.",
+        "Twelve-to-twenty combined room/puzzle motifs are a campaign target; start with coherent reusable shapes rather than copied whole levels.",
+        "Room fit, entrances and bounded placement failures remain validated, reproducible and inspectable."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Extend room shapes and placement policy with meaningful early-modern functions, proportions, thresholds and recognizable landmarks.\n\nAcceptance:\n- Generate varied chambers, alcoves and functional arrangements that support the grid and material scale.\n- Twelve-to-twenty combined room/puzzle motifs are a campaign target; start with coherent reusable shapes rather than copied whole levels.\n- Room fit, entrances and bounded placement failures remain validated, reproducible and inspectable.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G03",
+      "title": "Route loops and corridors for ranged and close combat",
+      "depends_on": [
+        "G02",
+        "D02"
+      ],
+      "scope": "Extend existing corridor routing and scoring for usable sightlines, flanks, controlled thresholds, close ambushes and purposeful dead ends.",
+      "acceptance": [
+        "Generated loops and optional paths produce observable tactical alternatives at player eye height.",
+        "Validate crossings and adjacency so corridors cannot create accidental protected-route shortcuts.",
+        "File-tuned widths/lengths and route search quotas yield reproducible artifacts or useful rejection, never an unbounded solver."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Extend existing corridor routing and scoring for usable sightlines, flanks, controlled thresholds, close ambushes and purposeful dead ends.\n\nAcceptance:\n- Generated loops and optional paths produce observable tactical alternatives at player eye height.\n- Validate crossings and adjacency so corridors cannot create accidental protected-route shortcuts.\n- File-tuned widths/lengths and route search quotas yield reproducible artifacts or useful rejection, never an unbounded solver.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G04",
+      "title": "Realize generated doors, protected barriers and secrets",
+      "depends_on": [
+        "G03",
+        "C08",
+        "F05"
+      ],
+      "scope": "Bind graph portal and secret facts to actual persistent feature states and voxel/navigation/ray barriers.",
+      "acceptance": [
+        "Closed gates really block intended travel/fire; keys/levers/utility spells affect only permitted features.",
+        "Secret routes have readable authored clues and discover/use behavior, not invisible metadata-only edges.",
+        "Validate protected separation against the complete realized floor and preserve exact feature state on revisit/load."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Bind graph portal and secret facts to actual persistent feature states and voxel/navigation/ray barriers.\n\nAcceptance:\n- Closed gates really block intended travel/fire; keys/levers/utility spells affect only permitted features.\n- Secret routes have readable authored clues and discover/use behavior, not invisible metadata-only edges.\n- Validate protected separation against the complete realized floor and preserve exact feature state on revisit/load.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G05",
+      "title": "Compose solvable item puzzles and timed hazards",
+      "depends_on": [
+        "G04",
+        "D05",
+        "F05"
+      ],
+      "scope": "Extend retained stateful motifs with bounded typed prerequisites/effects and place item/weight/timing puzzles and traps with discoverable clues.",
+      "acceptance": [
+        "Compose multiple motifs without inaccessible keys, self-locks or obligatory consumed-item dead ends; provide intended recovery where needed.",
+        "Throw/use/place real items and utility spells through existing systems; hazard time follows Engine facts.",
+        "Model-state validation and ordinary play agree on solutions; reject or repair bad compositions with a concrete explanation."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Extend retained stateful motifs with bounded typed prerequisites/effects and place item/weight/timing puzzles and traps with discoverable clues.\n\nAcceptance:\n- Compose multiple motifs without inaccessible keys, self-locks or obligatory consumed-item dead ends; provide intended recovery where needed.\n- Throw/use/place real items and utility spells through existing systems; hazard time follows Engine facts.\n- Model-state validation and ordinary play agree on solutions; reject or repair bad compositions with a concrete explanation.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G06",
+      "title": "Traverse generated stairs, pits and bridges across floor levels",
+      "depends_on": [
+        "G04",
+        "A04"
+      ],
+      "scope": "Add authored stacked planar-floor connectors, stair transitions and pit/bridge feature behavior using the shared grid and Engine spatial mechanisms.",
+      "acceptance": [
+        "Walk valid stairs/bridges and experience authored pit consequences through ordinary controls; no free-movement mode required.",
+        "Actor-size/route permissions, blocked landings and reservation release prevent overlap or traversal into invalid destinations.",
+        "Resolve and save connector identities/state without rerolling floors; Engine owns the reusable spatial capability."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Add authored stacked planar-floor connectors, stair transitions and pit/bridge feature behavior using the shared grid and Engine spatial mechanisms.\n\nAcceptance:\n- Walk valid stairs/bridges and experience authored pit consequences through ordinary controls; no free-movement mode required.\n- Actor-size/route permissions, blocked landings and reservation release prevent overlap or traversal into invalid destinations.\n- Resolve and save connector identities/state without rerolling floors; Engine owns the reusable spatial capability.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G07",
+      "title": "Detail voxel architecture without changing unintended routes",
+      "depends_on": [
+        "G04",
+        "B05"
+      ],
+      "scope": "Compose trim, recesses, supports, damage, material regions and fixtures from file-authored rules around the resolved functional plan.",
+      "acceptance": [
+        "Walls survive near inspection and rooms have coherent texture/voxel scale and purposeful visual variety.",
+        "Decoration cannot accidentally close a walkable cell, create a gate bypass or hide an interaction; deliberate occluders are explicit facts.",
+        "Detail and billboard placements replay from the artifact and respect a measured resource budget; no destructible-world system."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Compose trim, recesses, supports, damage, material regions and fixtures from file-authored rules around the resolved functional plan.\n\nAcceptance:\n- Walls survive near inspection and rooms have coherent texture/voxel scale and purposeful visual variety.\n- Decoration cannot accidentally close a walkable cell, create a gate bypass or hide an interaction; deliberate occluders are explicit facts.\n- Detail and billboard placements replay from the artifact and respect a measured resource budget; no destructible-world system.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G08",
+      "title": "Populate generated spaces with size-aware tactical encounters",
+      "depends_on": [
+        "G03",
+        "E08"
+      ],
+      "scope": "Place file-authored encounter groups by room role, occupancy/edge capacity, reachable attack positions and difficulty budget.",
+      "acceptance": [
+        "Large/small groups spawn legally with safe party arrivals and reachable relevant routes; no embedding in walls or inaccessible cells.",
+        "Mix range and melee roles to exploit actual lanes and cover while avoiding unavoidable spawn attacks.",
+        "Save accepted encounter instances and drops rather than respawning/rerolling on revisit; report rejected placement reasons."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Place file-authored encounter groups by room role, occupancy/edge capacity, reachable attack positions and difficulty budget.\n\nAcceptance:\n- Large/small groups spawn legally with safe party arrivals and reachable relevant routes; no embedding in walls or inaccessible cells.\n- Mix range and melee roles to exploit actual lanes and cover while avoiding unavoidable spawn attacks.\n- Save accepted encounter instances and drops rather than respawning/rerolling on revisit; report rejected placement reasons.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G09",
+      "title": "Budget loot, ammunition, recovery resources and clues by route",
+      "depends_on": [
+        "G05",
+        "G08",
+        "F07"
+      ],
+      "scope": "Populate meaningful items and clues using progression needs, encounter pressure and bounded route-aware resource budgets.",
+      "acceptance": [
+        "Key items and clues precede their required uses; optional rewards support exploration without forcing every branch.",
+        "Baseline rifle ammo, healing and spell resources make the intended route viable with reasonable mistakes; no magic guaranteed win or infinite supplies.",
+        "Resolve placements/quantities once, preserve on save/revisit and explain shortages; optional resource recovery remains authored gameplay."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Populate meaningful items and clues using progression needs, encounter pressure and bounded route-aware resource budgets.\n\nAcceptance:\n- Key items and clues precede their required uses; optional rewards support exploration without forcing every branch.\n- Baseline rifle ammo, healing and spell resources make the intended route viable with reasonable mistakes; no magic guaranteed win or infinite supplies.\n- Resolve placements/quantities once, preserve on save/revisit and explain shortages; optional resource recovery remains authored gameplay.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "G10",
+      "title": "Validate, inspect and repair complete generated floors",
+      "depends_on": [
+        "G06",
+        "G07",
+        "G09"
+      ],
+      "scope": "Unify bounded model, geometry, actor-size, resource and feature-state checks over the actual resolved artifacts; expose replay/inspection and useful failure exports.",
+      "acceptance": [
+        "Check intended-route reachability and forbidden bypasses against realized voxels/navigation, not only portal tags.",
+        "Inspect a bounded varied seed bank, replay a saved candidate and repair/regenerate invalid cases with specific reasons.",
+        "Exercise a generated floor with actual items/enemies/art through normal controls; keep algorithm checks distinct from visible play and do not claim all seeds certified."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 7,
+      "description": "Unify bounded model, geometry, actor-size, resource and feature-state checks over the actual resolved artifacts; expose replay/inspection and useful failure exports.\n\nAcceptance:\n- Check intended-route reachability and forbidden bypasses against realized voxels/navigation, not only portal tags.\n- Inspect a bounded varied seed bank, replay a saved candidate and repair/regenerate invalid cases with specific reasons.\n- Exercise a generated floor with actual items/enemies/art through normal controls; keep algorithm checks distinct from visible play and do not claim all seeds certified.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H01",
+      "title": "Travel between floors and revisit persistent worlds",
+      "depends_on": [
+        "G06",
+        "G08",
+        "A02"
+      ],
+      "scope": "Complete expedition floor activation/deactivation and backtracking while retaining party, features, encounters and loot.",
+      "acceptance": [
+        "Go down, return and revisit changed floors without rerolled loot, reset deaths or closed reopened doors.",
+        "Inactive-floor time policy is explicit; historical sounds/hits are not replayed on return.",
+        "Transition cleanup releases reservations/resources and rejects invalid arrivals without partially replacing the expedition."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Complete expedition floor activation/deactivation and backtracking while retaining party, features, encounters and loot.\n\nAcceptance:\n- Go down, return and revisit changed floors without rerolled loot, reset deaths or closed reopened doors.\n- Inactive-floor time policy is explicit; historical sounds/hits are not replayed on return.\n- Transition cleanup releases reservations/resources and rejects invalid arrivals without partially replacing the expedition.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H02",
+      "title": "Save and restore the complete live expedition",
+      "depends_on": [
+        "H01",
+        "F07",
+        "D05",
+        "E08"
+      ],
+      "scope": "Finish cross-domain save assembly/admission for resolved floors, party/items/equipment, feature states, enemies/awareness, effects and active actions.",
+      "acceptance": [
+        "Quit/load during reload, casting, a moving enemy and projectile flight; resumed costs/hits/timers settle exactly once.",
+        "Save world item ownership, open containers, consumed keys and changed routes; reject invalid snapshots before publishing replacements.",
+        "Restore resources and presentation from committed facts and preserve retryable failures; no save-specific second game model."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Finish cross-domain save assembly/admission for resolved floors, party/items/equipment, feature states, enemies/awareness, effects and active actions.\n\nAcceptance:\n- Quit/load during reload, casting, a moving enemy and projectile flight; resumed costs/hits/timers settle exactly once.\n- Save world item ownership, open containers, consumed keys and changed routes; reject invalid snapshots before publishing replacements.\n- Restore resources and presentation from committed facts and preserve retryable failures; no save-specific second game model.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H03",
+      "title": "Complete objectives, a finale and one-time rewards",
+      "depends_on": [
+        "G09",
+        "F07",
+        "H01"
+      ],
+      "scope": "Add a small file-authored expedition objective chain and final encounter/exit with visible progress and completion state.",
+      "acceptance": [
+        "An ordinary run has a clear goal and reachable ending using established combat and exploration systems.",
+        "Finale/reward settlement occurs once even after save/revisit and remains visible in the expedition result.",
+        "The objective model is concrete game policy, not a procedural narrative engine or a mandatory Dead Garrison plot."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Add a small file-authored expedition objective chain and final encounter/exit with visible progress and completion state.\n\nAcceptance:\n- An ordinary run has a clear goal and reachable ending using established combat and exploration systems.\n- Finale/reward settlement occurs once even after save/revisit and remains visible in the expedition result.\n- The objective model is concrete game policy, not a procedural narrative engine or a mandatory Dead Garrison plot.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H04",
+      "title": "Handle party defeat, recovery choice and a new expedition",
+      "depends_on": [
+        "H02",
+        "H03"
+      ],
+      "scope": "Wire complete defeat/end screens and restart/new-seed flows without corrupting the prior saved run or retaining old resources.",
+      "acceptance": [
+        "Total party defeat stops unavailable actions and offers the configured load/retry/new-run choices.",
+        "Starting another expedition resets identities, loot, input, UI selections and renderer owners correctly.",
+        "Completion and defeat transitions work through ordinary controls without debug restarts or duplicated rewards."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Wire complete defeat/end screens and restart/new-seed flows without corrupting the prior saved run or retaining old resources.\n\nAcceptance:\n- Total party defeat stops unavailable actions and offers the configured load/retry/new-run choices.\n- Starting another expedition resets identities, loot, input, UI selections and renderer owners correctly.\n- Completion and defeat transitions work through ordinary controls without debug restarts or duplicated rewards.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H05",
+      "title": "Tune difficulty and supply pressure across the run",
+      "depends_on": [
+        "H03",
+        "H04"
+      ],
+      "scope": "Play and tune the file-driven encounter, weapon, reload, recovery and resource budgets over multiple expedition routes.",
+      "acceptance": [
+        "Ranged weapons are a viable common baseline; reload windows and mixed threats create decisions without requiring perfect play.",
+        "Choose and save a difficulty profile; tune normal and harder variants through data rather than behavior forks.",
+        "Record concrete frustrating/unwinnable cases, fix their causes, and retain a small replay set instead of building a balancing platform."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Play and tune the file-driven encounter, weapon, reload, recovery and resource budgets over multiple expedition routes.\n\nAcceptance:\n- Ranged weapons are a viable common baseline; reload windows and mixed threats create decisions without requiring perfect play.\n- Choose and save a difficulty profile; tune normal and harder variants through data rather than behavior forks.\n- Record concrete frustrating/unwinnable cases, fix their causes, and retain a small replay set instead of building a balancing platform.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H06",
+      "title": "Guide exploration with discovered maps and useful notes",
+      "depends_on": [
+        "G05",
+        "H01",
+        "A05"
+      ],
+      "scope": "Add an exploration map/journal projection from discovered cells, clues, feature states and current objectives.",
+      "acceptance": [
+        "Player can orient and recover from backtracking without revealing undiscovered secrets by default.",
+        "Visited connectors, useful notes and known blocked routes update from authoritative state and persist.",
+        "Map/journal focus respects live combat/pause and offers readable controls; no new gameplay authority in UI."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Add an exploration map/journal projection from discovered cells, clues, feature states and current objectives.\n\nAcceptance:\n- Player can orient and recover from backtracking without revealing undiscovered secrets by default.\n- Visited connectors, useful notes and known blocked routes update from authoritative state and persist.\n- Map/journal focus respects live combat/pause and offers readable controls; no new gameplay authority in UI.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "H07",
+      "title": "Assemble a coherent three-floor playable expedition",
+      "depends_on": [
+        "H05",
+        "H06",
+        "G10",
+        "B05"
+      ],
+      "scope": "Integrate the intended floor roles, art batch, enemy roster, item/spell catalogue and progression into the first complete campaign content set.",
+      "acceptance": [
+        "Complete three varied generated floors with meaningful item puzzles, ranged/melee fights, spells and a finale through normal play.",
+        "Target six-to-eight enemy archetypes, eight-to-twelve spells and twelve-to-twenty room/puzzle motifs by actual usefulness, adjusting documented counts if evidence supports it.",
+        "All accepted art/content is committed and file-bound; integration defects are repaired here rather than left as disconnected component demos."
+      ],
+      "reference": "",
+      "priority": 3,
+      "milestone": 8,
+      "description": "Integrate the intended floor roles, art batch, enemy roster, item/spell catalogue and progression into the first complete campaign content set.\n\nAcceptance:\n- Complete three varied generated floors with meaningful item puzzles, ranged/melee fights, spells and a finale through normal play.\n- Target six-to-eight enemy archetypes, eight-to-twelve spells and twelve-to-twenty room/puzzle motifs by actual usefulness, adjusting documented counts if evidence supports it.\n- All accepted art/content is committed and file-bound; integration defects are repaired here rather than left as disconnected component demos.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "I01",
+      "title": "Refine combat, targeting and inventory usability in live play",
+      "depends_on": [
+        "H07"
+      ],
+      "scope": "Play the full control flow and repair usability defects across live inventory, world transfers, member selection, spell targeting and combat.",
+      "acceptance": [
+        "Cancel drags, lose focus, move out of reach and act under threat without accidental moves/shots or lost items.",
+        "Dense groups and ranged threats remain individually readable and selectable; click alternatives cover drag actions.",
+        "Fix observed workflow issues and preserve concise before/after evidence rather than requiring a bespoke UI harness."
+      ],
+      "reference": "",
+      "priority": 4,
+      "milestone": 9,
+      "description": "Play the full control flow and repair usability defects across live inventory, world transfers, member selection, spell targeting and combat.\n\nAcceptance:\n- Cancel drags, lose focus, move out of reach and act under threat without accidental moves/shots or lost items.\n- Dense groups and ranged threats remain individually readable and selectable; click alternatives cover drag actions.\n- Fix observed workflow issues and preserve concise before/after evidence rather than requiring a bespoke UI harness.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "I02",
+      "title": "Make level art, sprites, lighting and sound coherent",
+      "depends_on": [
+        "H07",
+        "E02"
+      ],
+      "scope": "Review actual run viewpoints and tune the chosen provisional art treatment and feedback into a consistent playable presentation.",
+      "acceptance": [
+        "Check corridor/near distances, repeated materials, full-cell groups and directional view changes without alpha/grounding defects.",
+        "Level lights affect sprites credibly without generated normal-map requirements or conflicting baked illumination.",
+        "Weapon/spell/interaction sounds and effects improve legibility without replay on load; retain modest content and Engine-owned rendering."
+      ],
+      "reference": "",
+      "priority": 4,
+      "milestone": 9,
+      "description": "Review actual run viewpoints and tune the chosen provisional art treatment and feedback into a consistent playable presentation.\n\nAcceptance:\n- Check corridor/near distances, repeated materials, full-cell groups and directional view changes without alpha/grounding defects.\n- Level lights affect sprites credibly without generated normal-map requirements or conflicting baked illumination.\n- Weapon/spell/interaction sounds and effects improve legibility without replay on load; retain modest content and Engine-owned rendering.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "I03",
+      "title": "Keep populated-floor rendering and generation responsive",
+      "depends_on": [
+        "H07"
+      ],
+      "scope": "Measure and repair actual generation/update/render/resource costs on the chosen test host using populated floors and ordinary navigation.",
+      "acceptance": [
+        "Establish explicit hardware-specific budgets from measurements, then fix material spikes/leaks under crowding, projectiles and inventory use.",
+        "Repeated floor visits and new runs do not monotonically grow retained renderer/spatial owners.",
+        "Keep work quotas and density tunable; no speculative optimization platform or lowering gameplay density solely to disguise a bug."
+      ],
+      "reference": "",
+      "priority": 4,
+      "milestone": 9,
+      "description": "Measure and repair actual generation/update/render/resource costs on the chosen test host using populated floors and ordinary navigation.\n\nAcceptance:\n- Establish explicit hardware-specific budgets from measurements, then fix material spikes/leaks under crowding, projectiles and inventory use.\n- Repeated floor visits and new runs do not monotonically grow retained renderer/spatial owners.\n- Keep work quotas and density tunable; no speculative optimization platform or lowering gameplay density solely to disguise a bug.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "I04",
+      "title": "Close seed and live-save regressions across game systems",
+      "depends_on": [
+        "H02",
+        "G10",
+        "H07"
+      ],
+      "scope": "Run a bounded useful seed/save set that exercises complete content combinations and fix cross-domain correctness failures.",
+      "acceptance": [
+        "Cover mixed-size congestion, gates with item use, projectile/reload/cast saves and changed-floor revisit.",
+        "Check item conservation, one-time damage/rewards, realized barrier integrity and consistent snapshot admission.",
+        "Retain minimal reproducible artifacts/tests for real failures; green checks do not substitute for the final ordinary-controls playthrough."
+      ],
+      "reference": "",
+      "priority": 4,
+      "milestone": 9,
+      "description": "Run a bounded useful seed/save set that exercises complete content combinations and fix cross-domain correctness failures.\n\nAcceptance:\n- Cover mixed-size congestion, gates with item use, projectile/reload/cast saves and changed-floor revisit.\n- Check item conservation, one-time damage/rewards, realized barrier integrity and consistent snapshot admission.\n- Retain minimal reproducible artifacts/tests for real failures; green checks do not substitute for the final ordinary-controls playthrough.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    },
+    {
+      "key": "I05",
+      "title": "Play and close the complete classic blobber foundation",
+      "depends_on": [
+        "I01",
+        "I02",
+        "I03",
+        "I04"
+      ],
+      "scope": "Perform the final complete expedition playthrough and repair task-owned defects before closing the campaign.",
+      "acceptance": [
+        "Finish one generated expedition without debug intervention, quit/resume mid-run, then play a different seed with mixed-size/ranged/melee encounters.",
+        "All child behaviors remain integrated: detailed textured voxels, dynamically lit directional/prop sprites, real items/drag inventory, characters/spells, AI/pathing, save/end/retry.",
+        "Report exact build/test, runtime and visual evidence separately and remaining limitations honestly; commit/push fixes and close only when the playable foundation is complete."
+      ],
+      "reference": "",
+      "priority": 4,
+      "milestone": 9,
+      "description": "Perform the final complete expedition playthrough and repair task-owned defects before closing the campaign.\n\nAcceptance:\n- Finish one generated expedition without debug intervention, quit/resume mid-run, then play a different seed with mixed-size/ranged/melee encounters.\n- All child behaviors remain integrated: detailed textured voxels, dynamically lit directional/prop sprites, real items/drag inventory, characters/spells, AI/pathing, save/end/retry.\n- Report exact build/test, runtime and visual evidence separately and remaining limitations honestly; commit/push fixes and close only when the playable foundation is complete.\n\nUse /home/dev/rusty-rifles/AGENTS.md and docs/campaign-strategy.md as owning contracts. Keep simple typed C# game policy, file-authored significant tuning, Engine mechanisms, and DOM-only UI. Extend real callers, presentation and snapshots with the behavior; no throwaway demo, generic kit, local renderer/pathfinder or second clock. Inspect the installed SDK before assuming a mechanism; report/link a narrow upstream dependency if absent rather than fake completion. Use docs/references/ for optional conceptual source lookup and content/art/prompts/ for generated art. Run focused checks plus ordinary-control observation appropriate to this change, commit/push completed work, and attach progress/evidence to the Den task."
+    }
+  ]
+}
