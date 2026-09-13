@@ -2,6 +2,7 @@ using System.Numerics;
 using Rusty.Engine;
 using Rusty.Engine.Interaction;
 using Rifles.Procgen.Generation;
+using Rifles.Game.Items;
 
 namespace Rifles.Game.Dungeon;
 
@@ -10,25 +11,30 @@ internal sealed class DungeonScene : IDisposable
 {
     private readonly ExplorationTuning tuning;
     private float CellSize => tuning.CellSize;
+    internal float LogicalCellSize => CellSize;
     private int VoxelsPerCell => appearance.VoxelsPerCell;
     private float VoxelCellSize => CellSize / VoxelsPerCell;
     private const int FloorY = 0;
     private const int NavigationY = 1;
     private int CeilingY => tuning.CeilingCells;
     private const ulong GridId = 1;
-    private const uint StoneSlot = 1, ExitSlot = 2;
+    private const uint StoneSlot = 1, ExitSlot = 2, DoorSlot = 3;
     private const int EngineVoxelEditLimit = 4096;
     private readonly IEngineContext engine;
     private readonly SpatialSession spatial;
+    private readonly DungeonFloor floor;
+    private Material? doorMaterial;
+    private bool doorVoxels;
     private readonly List<(Light Owner, LightRequest Request)> roomLights = [];
     private readonly AppearanceDefinition appearance;
     private DungeonMaterials? materials;
     private VoxelScenePresentation? scene;
     internal string Style { get; private set; }
 
-    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId)
+    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId, ItemExplorationDefinition? itemDefinition = null)
     {
         this.engine = engine;
+        this.floor = floor;
         this.tuning = tuning;
         this.appearance = appearance;
         Style = appearance.InitialStyle;
@@ -36,6 +42,12 @@ internal sealed class DungeonScene : IDisposable
             checked((uint)(tuning.ChunkSize * VoxelsPerCell)), VoxelSurfaceMode.GreedyCubes));
         try
         {
+            if (itemDefinition is not null)
+            {
+                float[] color = itemDefinition.DoorColor;
+                doorMaterial = engine.Graphics.CreateMaterial(new MaterialRequest(new Color(color[0], color[1], color[2], color[3]),
+                    default, 1, new Color(1, 1, 1, 1), Vector3.Zero, 0, false));
+            }
             materials = new DungeonMaterials(engine, appearance.Style(Style), VoxelCellSize);
             IReadOnlySet<GridPoint> cells = floor.Cells.ToHashSet();
             HashSet<GridPoint> walls = cells.SelectMany(cell => CardinalDirections.Ordered.Select(d => cell + d.Offset()))
@@ -66,6 +78,21 @@ internal sealed class DungeonScene : IDisposable
             }
         }
         catch { Dispose(); throw; }
+    }
+
+    internal void SetDoor(GridPoint door, bool open)
+    {
+        List<VoxelEdit> edits = [];
+        for (int y = FloorY + 1; y < CeilingY; y++) AddLogicalVoxel(edits, door, y, doorMaterial is null ? StoneSlot : DoorSlot);
+        if (open) edits = edits.Select(e => e with { Kind = VoxelEditKind.Clear }).ToList();
+        VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
+        engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, edits.ToArray()));
+        engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
+            new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
+            floor.Cells.Where(c => open || c != door).Select(c => new PlanarNavCell(c.X, NavigationY, c.Y)).ToArray()));
+        doorVoxels = !open;
+        engine.VoxelScenePresentation.UpdateSceneDirectional(new UpdateVoxelScenePresentationDirectionalRequest(
+            scene!, MaterialBindings(materials!), FaceMaterialBindings(materials!)));
     }
 
     internal bool AdmitStep(GridPoint from, GridPoint destination)
@@ -135,11 +162,9 @@ internal sealed class DungeonScene : IDisposable
 
     private int Subcell(int logicalCoordinate, int offset) => checked(logicalCoordinate * VoxelsPerCell + offset);
 
-    private static VoxelSceneMaterialBinding[] MaterialBindings(DungeonMaterials value) =>
-    [
-        new VoxelSceneMaterialBinding(StoneSlot, value.Wall),
-        new VoxelSceneMaterialBinding(ExitSlot, value.Exit),
-    ];
+    private VoxelSceneMaterialBinding[] MaterialBindings(DungeonMaterials value) => doorMaterial is null || !doorVoxels
+        ? [new(StoneSlot, value.Wall), new(ExitSlot, value.Exit)]
+        : [new(StoneSlot, value.Wall), new(ExitSlot, value.Exit), new(DoorSlot, doorMaterial)];
 
     private static VoxelSceneFaceMaterialBinding[] FaceMaterialBindings(DungeonMaterials value) =>
     [
@@ -156,6 +181,7 @@ internal sealed class DungeonScene : IDisposable
         scene = null;
         materials?.Dispose();
         materials = null;
+        doorMaterial?.Dispose();
         spatial.Dispose();
     }
 }

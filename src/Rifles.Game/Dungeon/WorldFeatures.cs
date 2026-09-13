@@ -17,6 +17,8 @@ internal sealed class WorldFeatures : IDisposable
     private readonly ulong lightId;
     private readonly InteractionFocus focus = new();
     private FeatureSnapshot state;
+    private InteractionCandidate[] extraCandidates = [];
+    internal void SetExtraCandidates(IEnumerable<InteractionCandidate> candidates) => extraCandidates = candidates.ToArray();
     private int lightPosition;
     internal string Style { get; private set; }
     internal int LightPosition => lightPosition;
@@ -59,15 +61,14 @@ internal sealed class WorldFeatures : IDisposable
     [
         Candidate(new(state.LanternId, state.LanternRevision), tuning.LanternLabel + (state.LanternOn ? " — extinguish" : " — light"), LanternPoint, party, true),
         Candidate(new(state.ExitId, state.ExitUsed ? 2UL : 1UL), state.ExitUsed ? "Floor exit — inspected" : "Floor exit — inspect", scene.Eye(floor.Exit), party, true),
-        Candidate(new(state.Dressing.BenchId, 1), "Workbench — inspect", Ground(state.Dressing.Bench) + Vector3.UnitY, party, true),
-        Candidate(new(state.Dressing.CrateId, 1), "Storage crate — inspect", Ground(state.Dressing.Crate) + Vector3.UnitY, party, true),
+        .. extraCandidates,
         Candidate(new(state.Dressing.ObserverId, 1), "Sentry — inspect", Ground(state.Dressing.Observer) + Vector3.UnitY, party, true),
     ];
     private InteractionCandidate Candidate(InteractionTarget target, string label, Vector3 point, ExplorationState party, bool available) =>
         new(target, label, point, tuning.Reach, scene.Visibility(scene.Eye(party.Position), point),
             available && !party.Moving ? InteractionAvailability.Available : InteractionAvailability.Unavailable);
     internal void Observe(ExplorationState party, int cycle = 0) => Readout = focus.Update(Candidates(party), Query(party), cycle);
-    internal string Use(ExplorationState party, InteractionTarget? target)
+    internal string Use(ExplorationState party, InteractionTarget? target, Func<InteractionTarget, string>? extraUse = null)
     {
         if (target is null) return "No reachable feature selected";
         InteractionReason reason = InteractionFocus.Revalidate(target.Value, Candidates(party), Query(party));
@@ -84,6 +85,7 @@ internal sealed class WorldFeatures : IDisposable
         if (target.Value.Id == state.Dressing.BenchId) return "A workbench with a hand plane and folded cloth.";
         if (target.Value.Id == state.Dressing.CrateId) return "A strapped storage crate. Item containers come later.";
         if (target.Value.Id == state.Dressing.ObserverId) return "A sentry stands watch. Combat comes later.";
+        if (target.Value.Id != state.ExitId) return extraUse?.Invoke(target.Value) ?? "Feature unavailable";
         state = state with { ExitUsed = true };
         return "Exit inspected. This is the starting floor; expedition travel comes later.";
     }
@@ -94,7 +96,7 @@ internal sealed class WorldFeatures : IDisposable
         engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest()));
         focus.Clear();
     }
-    internal void Present(PatrolActor actor, ExplorationState party)
+    internal void Present(PatrolActor actor, ExplorationState party, IEnumerable<AppearanceFact>? additional = null)
     {
         string actorView = SentryView.Select(actor.Motion.VisualCell, actor.Motion.Facing, party.VisualCell);
         Vector2 observerCell = new(state.Dressing.Observer.X, state.Dressing.Observer.Y);
@@ -106,7 +108,7 @@ internal sealed class WorldFeatures : IDisposable
             Fact(state.Dressing.BenchId, Ground(state.Dressing.Bench), "bench", 1),
             Fact(state.Dressing.CrateId, Ground(state.Dressing.Crate), "crate", 1),
             Fact(state.Dressing.ObserverId, Ground(state.Dressing.Observer), observerView, artDefinition.ObserverScale),
-        });
+        }.Concat(additional ?? []).ToArray());
     }
     private AppearanceFact Fact(ulong id, Vector3 point, string image, float scale) =>
         new(id, false, 0, new Transform(point, Quaternion.Identity, new Vector3(scale)), art.Image(Style, image), true, RenderLayer.Scene);

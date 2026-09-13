@@ -1,0 +1,95 @@
+{
+  "anchors": [
+    {
+      "key": "floor:nw",
+      "name": "Floor \u00b7 northwest",
+      "placement": "Floor",
+      "offset": [
+        -0.5,
+        0,
+        -0.5
+      ]
+    },
+    {
+      "key": "floor:ne",
+      "name": "Floor \u00b7 northeast",
+      "placement": "Floor",
+      "offset": [
+        0.5,
+        0,
+        -0.5
+      ]
+    },
+    {
+      "key": "floor:sw",
+      "name": "Floor \u00b7 southwest",
+      "placement": "Floor",
+      "offset": [
+        -0.5,
+        0,
+        0.5
+      ]
+    },
+    {
+      "key": "floor:se",
+      "name": "Floor \u00b7 southeast",
+      "placement": "Floor",
+      "offset": [
+        0.5,
+        0,
+        0.5
+      ]
+    },
+    {
+      "key": "alcove",
+      "name": "Workbench shelf",
+      "placement": "Bench",
+      "offset": [
+        0,
+        0.9,
+        0
+      ]
+    },
+    {
+      "key": "crate",
+      "name": "Storage crate",
+      "placement": "Crate",
+      "offset": [
+        0,
+        0.5,
+        0
+      ]
+    },
+    {
+      "key": "plate",
+      "name": "Weighted plate",
+      "placement": "Plate",
+      "offset": [
+        0,
+        0.04,
+        0
+      ]
+    }
+  ],
+  "plateOffset": [
+    -1,
+    -1
+  ],
+  "plateWeight": 50,
+  "partyWeight": 80,
+  "actorWeight": 65,
+  "reach": 3.5,
+  "doorColor": [
+    0.32,
+    0.18,
+    0.08,
+    1
+  ],
+  "plateColor": [
+    0.3,
+    0.32,
+    0.3,
+    1
+  ],
+  "plateHeight": 0.04
+}

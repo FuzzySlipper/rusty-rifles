@@ -16,7 +16,9 @@ The playable foundation includes a generated walkable dungeon, quarter-turn
 exploration, four-member party controls, reachable world interactions and
 Engine-backed saves. [Milestone 2](docs/milestone-2.md) adds generated textured
 voxels, grounded prop sprites, directional sentries and dynamic-light art
-comparisons. Engine owns rendering, navigation, camera, input, and
+comparisons. [Milestone 3](docs/milestone-3.md) adds starter-party presets,
+equipment and inventory, restorative items, world storage and a key/lever/plate
+gate puzzle. Engine owns rendering, navigation, camera, input, inventory and
 the simulation clock. Game policy lives in ordinary C#.
 
 ## Run

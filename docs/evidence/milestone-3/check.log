@@ -1,0 +1,44 @@
+
+> rusty-rifles-ui@ check:ui /home/dev/rusty-rifles
+> tsc --project src/ui/tsconfig.json --noEmit
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Rifles.Procgen -> /home/dev/rusty-rifles/src/Rifles.Procgen/bin/Release/net10.0/Rifles.Procgen.dll
+  Rifles.Procgen.Artifacts -> /home/dev/rusty-rifles/src/Rifles.Procgen.Artifacts/bin/Release/net10.0/Rifles.Procgen.Artifacts.dll
+  Procgen -> /home/dev/rusty-rifles/tests/Procgen/bin/Release/net10.0/Procgen.dll
+  Rifles.Game -> /home/dev/rusty-rifles/src/Rifles.Game/bin/Release/net10.0/Rifles.Game.dll
+  Rifles.Procgen.Tool -> /home/dev/rusty-rifles/src/Rifles.Procgen.Tool/bin/Release/net10.0/Rifles.Procgen.Tool.dll
+  Game -> /home/dev/rusty-rifles/tests/Game/bin/Release/net10.0/Rifles.Game.Checks.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.86
+Rifles.Procgen checks passed.
+Game checks passed: generated connectivity/replay, grid actions/recovery, party vitality/snapshots.
+Milestone checks passed: snapshot codec/validation, actor transit replay, contested reservations, target revalidation.
+Art checks passed: cardinal views, saved dressing, asset references and lighting admission.
+Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.
+accepted result=90e0e8ab5ed96a13e4f1ee3e506b4c5c3126ed414aee4b533eeb725cfbad7666 identity=1090492e583132ea2502291eb2b62fe893db39b37396303d6c113ce2a129b99c
+request rejected [invalid_request_json]: The JSON property 'unknown' could not be mapped to any .NET member contained in type 'Rifles.Procgen.Artifacts.ArtifactGenerationRequest'.
+generated workload corpus=bccc57b5647d14b8db4d93e0eca33faac8d727c7beee2088003a4081a5562811 identity=ba950eec0bdd039a85e2a5bbab9453556100be94eb3f064c6cd3477d2e3a1325
+repaired workbench candidate operation=restore-switch identity=5f043c0a4d428f7db141a76d0fc31bb56459d30b5a7d1f95805b5b7ed34a4363
+request rejected [workbench_repair_invalid]: The workbench repair 'restore-switch' is not applicable to this candidate.
+request rejected [repair_input_alias]: Repair input must be distinct from both result and receipt outputs.
+request rejected [repair_input_alias]: Repair input must be distinct from both result and receipt outputs.
+Rifles procgen artifact/tool self-check passed.
+MSBuild version 18.0.11 for .NET
+    Determining projects to restore...
+    All projects are up-to-date for restore.
+    Rifles.Procgen -> /home/dev/rusty-rifles/src/Rifles.Procgen/bin/Release/net10.0/Rifles.Procgen.dll
+    Rifles.Game -> /home/dev/rusty-rifles/src/Rifles.Game/bin/Release/net10.0/Rifles.Game.dll
+    Rusty.Engine.Product -> /home/dev/rusty-rifles/src/Rifles.Game/obj/Rusty.Engine/Composition/coreclr/output/Rusty.Engine.Product.dll
+  
+  Build succeeded.
+      0 Warning(s)
+      0 Error(s)
+  
+  Time Elapsed 00:00:05.09
+  Rusty Engine CoreCLR Product staged atomically at /home/dev/rusty-rifles/src/Rifles.Game/obj/Rusty.Engine/Product

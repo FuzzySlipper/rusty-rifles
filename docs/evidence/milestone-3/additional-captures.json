@@ -1,0 +1,30 @@
+[
+  {
+    "label": "gpuFinalInitial",
+    "capture_id": "b7f6978d-bff1-45ee-9158-b9623d18bd7d",
+    "path": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/slots/slot-2/7907341c-c030-410b-816c-3ea841c3b024/ba7748e8-f491-4e4e-b2bc-4fce275c48c5.png",
+    "session_id": "7907341c-c030-410b-816c-3ea841c3b024",
+    "slot_id": "slot-2"
+  },
+  {
+    "label": "gpuFinalNative",
+    "capture_id": "1a0ad276-e611-463d-8abf-41fbb8646890",
+    "path": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/slots/slot-2/7907341c-c030-410b-816c-3ea841c3b024/ddeb6676-71ec-4af8-b457-f36953abbd6d.png",
+    "session_id": "7907341c-c030-410b-816c-3ea841c3b024",
+    "slot_id": "slot-2"
+  },
+  {
+    "label": "browserNativeClick",
+    "capture_id": "af9a7291-41b2-4915-8a5a-c8a3f72eb60b",
+    "path": "/home/agent/.local/state/crew-playtest/browser/ddbab32e-bed1-46ae-9565-b472572b14ae/69550cb4-5323-4716-a8e0-a3e375e14905.png",
+    "session_id": "ddbab32e-bed1-46ae-9565-b472572b14ae",
+    "slot_id": "slot-1"
+  },
+  {
+    "label": "browserNativeTransfer",
+    "capture_id": "f69df5e3-138a-461d-8f0d-d198bb86cf39",
+    "path": "/home/agent/.local/state/crew-playtest/browser/ddbab32e-bed1-46ae-9565-b472572b14ae/ad44350a-46e9-47f8-a62d-161c60abbaa4.png",
+    "session_id": "ddbab32e-bed1-46ae-9565-b472572b14ae",
+    "slot_id": "slot-1"
+  }
+]

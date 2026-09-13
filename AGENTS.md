@@ -117,5 +117,6 @@ Report build/test, runtime launch, and visible interaction evidence separately.
 Milestone 1 provides exploration, typed tuning, shared movement, feature focus,
 party controls and Engine-backed saves; see `docs/milestone-1.md`. Milestone 2
 adds generated art, lit sprites, texture mapping and comparison controls; see
-`docs/milestone-2.md`. Combat, richer procgen, inventory and multi-floor progression
+`docs/milestone-2.md`. Milestone 3 adds party presets, equipment, inventory, world items and a gate puzzle;
+see `docs/milestone-3.md`. Combat, richer procgen and multi-floor progression
 remain campaign work.

@@ -48,5 +48,6 @@
   </ItemGroup>
   <Target Name="BuildRiflesUi" BeforeTargets="GenerateRustyEngineProductComposition">
     <Exec Command="pnpm --dir &quot;$(MSBuildThisFileDirectory)../..&quot; exec tsc --project &quot;$(MSBuildThisFileDirectory)../ui/tsconfig.json&quot;" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../../content/art/generated/items/ink-wash-items-atlas.png" DestinationFiles="$(RustyEngineProductUiRoot)/items.png" />
   </Target>
 </Project>

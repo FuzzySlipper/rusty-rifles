@@ -1,0 +1,252 @@
+{
+  "backpack": {
+    "mass": 160,
+    "space": 24
+  },
+  "container": {
+    "mass": 400,
+    "space": 48
+  },
+  "anchor": {
+    "mass": 100,
+    "space": 12
+  },
+  "equipmentSlots": [
+    "main-hand",
+    "off-hand",
+    "body"
+  ],
+  "items": [
+    {
+      "id": "rifle",
+      "name": "Long rifle",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 40,
+      "space": 6,
+      "slots": [
+        "main-hand",
+        "off-hand"
+      ],
+      "minimumPower": 4,
+      "power": 6,
+      "defense": 0,
+      "ammunition": "rifle-ball",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "rifle"
+    },
+    {
+      "id": "knife",
+      "name": "Belt knife",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 5,
+      "space": 1,
+      "slots": [
+        "main-hand"
+      ],
+      "minimumPower": 0,
+      "power": 2,
+      "defense": 0,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "knife"
+    },
+    {
+      "id": "coat",
+      "name": "Buff coat",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 25,
+      "space": 4,
+      "slots": [
+        "body"
+      ],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 4,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "coat"
+    },
+    {
+      "id": "key",
+      "name": "Brass gate key",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 1,
+      "space": 1,
+      "slots": [],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 0,
+      "ammunition": "",
+      "use": "Key",
+      "effect": 0,
+      "cost": 0,
+      "image": "key"
+    },
+    {
+      "id": "tonic",
+      "name": "Restorative tonic",
+      "kind": "Fungible",
+      "maximumQuantity": 99,
+      "mass": 2,
+      "space": 1,
+      "slots": [],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 0,
+      "ammunition": "",
+      "use": "Vitality",
+      "effect": 12,
+      "cost": 1,
+      "image": "tonic"
+    },
+    {
+      "id": "shot",
+      "name": "Rifle shot",
+      "kind": "Fungible",
+      "maximumQuantity": 99,
+      "mass": 1,
+      "space": 1,
+      "slots": [],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 0,
+      "ammunition": "rifle-ball",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "shot"
+    },
+    {
+      "id": "weight",
+      "name": "Iron weight",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 50,
+      "space": 3,
+      "slots": [],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 0,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "weight"
+    },
+    {
+      "id": "cordial",
+      "name": "Clear cordial",
+      "kind": "Fungible",
+      "maximumQuantity": 99,
+      "mass": 2,
+      "space": 1,
+      "slots": [],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 0,
+      "ammunition": "",
+      "use": "Resource",
+      "effect": 8,
+      "cost": 1,
+      "image": "tonic"
+    }
+  ],
+  "startingItems": [
+    {
+      "owner": "member:warden",
+      "definition": "rifle",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:warden",
+      "definition": "coat",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:warden",
+      "definition": "shot",
+      "quantity": 8,
+      "equipped": false
+    },
+    {
+      "owner": "member:blade",
+      "definition": "knife",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:blade",
+      "definition": "tonic",
+      "quantity": 2,
+      "equipped": false
+    },
+    {
+      "owner": "member:seeker",
+      "definition": "rifle",
+      "quantity": 1,
+      "equipped": false
+    },
+    {
+      "owner": "member:seeker",
+      "definition": "shot",
+      "quantity": 6,
+      "equipped": false
+    },
+    {
+      "owner": "member:mender",
+      "definition": "tonic",
+      "quantity": 3,
+      "equipped": false
+    },
+    {
+      "owner": "floor:nw",
+      "definition": "key",
+      "quantity": 1,
+      "equipped": false
+    },
+    {
+      "owner": "crate",
+      "definition": "weight",
+      "quantity": 1,
+      "equipped": false
+    },
+    {
+      "owner": "crate",
+      "definition": "tonic",
+      "quantity": 2,
+      "equipped": false
+    },
+    {
+      "owner": "member:mender",
+      "definition": "cordial",
+      "quantity": 2,
+      "equipped": false
+    },
+    {
+      "owner": "member:blade",
+      "definition": "rifle",
+      "quantity": 1,
+      "equipped": false,
+      "preset": "rifle-drill"
+    },
+    {
+      "owner": "member:mender",
+      "definition": "rifle",
+      "quantity": 1,
+      "equipped": false,
+      "preset": "rifle-drill"
+    }
+  ]
+}

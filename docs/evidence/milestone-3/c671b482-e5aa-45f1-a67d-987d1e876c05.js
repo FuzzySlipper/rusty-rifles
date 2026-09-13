@@ -1,0 +1,11 @@
+await browser({op:'press',selector:'[data-inventory-item][data-owner="member:blade"][data-definition="tonic"]',key:'Enter'});
+await browser({op:'press',selector:'button:has-text("Use on warden")',key:'Enter'});
+await sleep(400);
+checkpoint('healed',await capture({label:'m3-healed'}));
+await browser({op:'press',selector:'[data-inventory-item][data-owner="member:warden"][data-definition="shot"]',key:'Enter'});
+await browser({op:'fill',selector:'[data-inventory-quantity]',value:'3'});
+await sleep(700);
+checkpoint('amount-retained',await capture({label:'m3-amount-retained'}));
+await browser({op:'press',selector:'[data-owner-destination="member:blade"]',key:'Enter'});
+await sleep(400);
+checkpoint('split-transferred',await capture({label:'m3-split-transferred'}));

@@ -1,0 +1,18 @@
+await browser({op:'press',selector:'[data-inventory-item][data-owner="floor:nw"][data-definition="key"]',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'[data-owner-destination="member:warden"]',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'[data-inventory-item][data-owner="member:warden"][data-definition="key"]',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'button:has-text("Use key on gate")',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'button:has-text("Use nearby lever")',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'[data-inventory-owner][data-owner="crate"] button:has-text("Open")',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'[data-inventory-item][data-owner="crate"][data-definition="weight"]',key:'Enter'});
+await sleep(350);
+await browser({op:'press',selector:'[data-owner-destination="plate"]',key:'Enter'});
+await sleep(350);
+await sleep(500);
+checkpoint('world-puzzle',await capture({label:'m3-world-puzzle'}));

@@ -1,0 +1,90 @@
+[
+  {
+    "script": "c671b482-e5aa-45f1-a67d-987d1e876c05",
+    "label": "m3-healed",
+    "capture": "f8b177b0-d988-4b50-a7bf-1b63a4019779",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/542afd4e-3e3f-4364-ab53-6b51e93c2d17.png",
+    "file": "m3-healed.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/c671b482-e5aa-45f1-a67d-987d1e876c05/events.jsonl"
+  },
+  {
+    "script": "c671b482-e5aa-45f1-a67d-987d1e876c05",
+    "label": "m3-amount-retained",
+    "capture": "af22e4a6-4f34-4cfe-84c2-6866dd1081f2",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/b02d0cfa-5488-4b7e-a1e1-68762aa8396a.png",
+    "file": "m3-amount-retained.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/c671b482-e5aa-45f1-a67d-987d1e876c05/events.jsonl"
+  },
+  {
+    "script": "c671b482-e5aa-45f1-a67d-987d1e876c05",
+    "label": "m3-split-transferred",
+    "capture": "28e6b28f-c6d2-4a9a-80d5-e72c4a34ac87",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/421cdd0f-9ca3-47a2-b11f-3c9a93e1817a.png",
+    "file": "m3-split-transferred.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/c671b482-e5aa-45f1-a67d-987d1e876c05/events.jsonl"
+  },
+  {
+    "script": "9f2f2be8-1f26-47bc-aec0-9971afc51cd3",
+    "label": "m3-world-puzzle",
+    "capture": "ec4bdcee-b715-4bb2-bd6b-89aed8846767",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/7bda8cd4-5d51-4de0-bbbd-6879e6b443c0.png",
+    "file": "m3-world-puzzle.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/9f2f2be8-1f26-47bc-aec0-9971afc51cd3/events.jsonl"
+  },
+  {
+    "script": "37391627-8dd4-41fd-9fbd-da9061e59eb3",
+    "label": "m3-saved",
+    "capture": "cc4dbe25-6bca-4613-b214-04fa3a72b542",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/30ef233b-5903-4b4a-97aa-3bd3ba700975.png",
+    "file": "m3-saved.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/37391627-8dd4-41fd-9fbd-da9061e59eb3/events.jsonl"
+  },
+  {
+    "script": "37391627-8dd4-41fd-9fbd-da9061e59eb3",
+    "label": "m3-restarted",
+    "capture": "37234d73-36ba-4dc9-b330-01ebc589ba13",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/cdd93f13-8206-4e17-92eb-83e3ccb3256f.png",
+    "file": "m3-restarted.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/37391627-8dd4-41fd-9fbd-da9061e59eb3/events.jsonl"
+  },
+  {
+    "script": "37391627-8dd4-41fd-9fbd-da9061e59eb3",
+    "label": "m3-loaded",
+    "capture": "eeaa7dd8-9bd2-4ed9-9133-4bbf9af3770b",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/74972fa6-f388-47ab-a1f5-2d521f377311.png",
+    "file": "m3-loaded.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/37391627-8dd4-41fd-9fbd-da9061e59eb3/events.jsonl"
+  },
+  {
+    "script": "c833a74e-64e8-4756-813d-23bf71c297ee",
+    "label": "m3-equipped",
+    "capture": "376ec676-dfd0-4f45-b2dc-127a25dcaeb2",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/0cd5f1f4-548f-4710-8a88-49d39665bf32.png",
+    "file": "m3-equipped.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/c833a74e-64e8-4756-813d-23bf71c297ee/events.jsonl"
+  },
+  {
+    "script": "1eea66ec-7af3-44ce-ad25-8a9b8dbffde7",
+    "label": "m3-door-opened",
+    "capture": "b9af2424-f5b2-4b7a-92cc-a178d8a50b0d",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/bd10d3a5-ba18-4869-9a19-2d384203de2e.png",
+    "file": "m3-door-opened.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/1eea66ec-7af3-44ce-ad25-8a9b8dbffde7/events.jsonl"
+  },
+  {
+    "script": "1eea66ec-7af3-44ce-ad25-8a9b8dbffde7",
+    "label": "m3-inside-door",
+    "capture": "c1d38abd-9e78-488c-9c20-65314d3e76ab",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/743534e3-0b03-463f-a0dc-87d01eef2391.png",
+    "file": "m3-inside-door.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/1eea66ec-7af3-44ce-ad25-8a9b8dbffde7/events.jsonl"
+  },
+  {
+    "script": "1eea66ec-7af3-44ce-ad25-8a9b8dbffde7",
+    "label": "m3-door-closed-blocks",
+    "capture": "f2a5e26e-b557-4975-b4ff-8ea891213e35",
+    "original": "/home/agent/.local/state/crew-playtest/slots/slot-2/browser/04ef3edd-0e45-46b1-b869-c9e7f0c903eb/caced6ee-eabb-48bd-bb65-90cc20008eaa.png",
+    "file": "m3-door-closed-blocks.png",
+    "journal": "/home/agent/.local/state/crew-playtest/slots/slot-2/scripts/1eea66ec-7af3-44ce-ad25-8a9b8dbffde7/events.jsonl"
+  }
+]

@@ -1,3 +1,4 @@
+using Rifles.Game.Items;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Content;
 using Rifles.Game.Party;
@@ -93,13 +94,22 @@ PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
 MovementGrid saveGrid = new(savedFloor.Cells.ToHashSet(), (_, _) => true);
 savePose.Bind(saveGrid, 2); saveActor.Bind(saveGrid);
 saveActor.Advance(.1);
-PartyState saveParty = new(definitions.Party.Members);
+PartyState saveParty = new(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
 saveParty.Members[0].ApplyDamage(9);
 ulong dressingId = 6;
 ulong AllocateDressingId() => dressingId++;
-var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, 9,
-    savedFloor, savePose.Capture(), definitions.Party.Members, saveParty.Capture().ToArray(), true,
-    definitions.Party.Members[2].Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, RoomDressing.Create(savedFloor, saveActor, definitions.Art, AllocateDressingId)));
+RoomDressing savedDressing = RoomDressing.Create(savedFloor, saveActor, definitions.Art, AllocateDressingId);
+ExplorationItems savedItemWorld = ExplorationItems.Create(definitions.ItemExploration, savedFloor, savedDressing, saveActor, AllocateDressingId);
+ItemInventory savedInventory = new(definitions.Items,
+    saveParty.Members.Select(m => new PackOwner(AllocateDressingId(), "member:" + m.Definition.Id, definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space))
+    .Concat(savedItemWorld.Anchors.Select(a => new PackOwner(a.Id, a.Key,
+        a.Key == "crate" ? definitions.Items.Container.Mass : definitions.Items.Anchor.Mass,
+        a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));
+savedInventory.GrantStarting(AllocateDressingId);
+var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
+    savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
+    saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
+    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture());
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);
@@ -179,3 +189,4 @@ catch (InvalidDataException error)
 {
     Require(error.Message.Contains("matching treatments"), "Style drift fails at content admission.");
 }
+InventoryChecks.Run(definitions);
