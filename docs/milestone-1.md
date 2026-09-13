@@ -1,6 +1,8 @@
 # Durable expedition skeleton
 
-Milestone 1 is the first playable exploration foundation, tasks A01–A06. It uses
+Milestone 1 is the first playable exploration foundation, tasks A01–A06.
+[Verification and original capture](evidence/milestone-1/README.md) record the
+completed build and ordinary-control checks. It uses
 SDK/runtime pair `0.1.0-dev.2e4255bd3ad5`. Combat, inventory, richer generation
 and the generated art ensemble belong to the subsequent campaign milestones.
 
