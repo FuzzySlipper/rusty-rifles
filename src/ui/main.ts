@@ -1,3 +1,5 @@
+import { mountDebugTools } from './debug.js';
+
 type Envelope = Readonly<{ value: unknown }>;
 type UiContext = Readonly<{
   projection?: { current(): Envelope | null; subscribe(render: (value: Envelope | null) => void): () => void };
@@ -32,6 +34,7 @@ function ownerRevision(owner: Record<string, unknown>): string | null { const re
  * projections remain the sole displayed-state owner.
  */
 export function mountProductUi(root: Element, context: UiContext): Readonly<{ dispose(): void }> {
+  const debugTools = mountDebugTools(root);
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Expedition'); panel.dataset.rustyUiInteractive = 'true';
   panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 24px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
@@ -517,5 +520,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
   panel.append(title, help, status, combat, magicPanel, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
+  return { dispose() { debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
 }

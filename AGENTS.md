@@ -125,3 +125,7 @@ and multi-floor progression remain campaign work.
 Milestone 6 adds spellbooks, shared casts, conditions, utility magic, rest/revival,
 and advancement; see `docs/milestone-6.md`. Spell tuning lives in
 `content/definitions/spells.json`; retain Engine effect/stat/track ownership.
+
+The top-right Debug toolbar hosts Engine's packaged live-debug console and
+renderer metrics. See `docs/debug-tools.md` for commands and runtime/input
+telemetry. Keep diagnostics and command transport owned by Engine.
