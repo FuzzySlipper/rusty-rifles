@@ -112,6 +112,10 @@ saveActor.Advance(2); restored.Actor.Advance(2);
 Require(restored.Actor.Capture() == saveActor.Capture(), "Resumed actor settles the same reservation and next move.");
 foreach (var invalid in new[] {
     decoded with { NextObjectId = 3 },
+    decoded with { Features = decoded.Features with { LanternRevision = ulong.MaxValue } },
+    decoded with { Floor = decoded.Floor with { Cells = [.. decoded.Floor.Cells, new(16000, 16000)] } },
+    decoded with { Actor = decoded.Actor with { Motion = decoded.Actor.Motion with {
+        Position = decoded.Actor.Start, Action = ExplorationAction.Backward, RemainingSeconds = .1 } } },
     decoded with { SelectedMember = "missing" },
     decoded with { Floor = decoded.Floor with { Exit = new(-1, -1) } },
     decoded with { Exploration = decoded.Exploration with { RemainingSeconds = double.NaN } },

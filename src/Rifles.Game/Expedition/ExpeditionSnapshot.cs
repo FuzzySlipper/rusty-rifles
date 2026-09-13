@@ -33,7 +33,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
     internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions)
     {
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
-            && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId), "Save identities");
+            && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId) && saved.NextObjectId <= (ulong)uint.MaxValue + 1, "Save identities");
         saved.Floor.Validate();
         new PartyDefinition(saved.Roster).Validate();
         PartyState party = new(saved.Roster);
@@ -42,7 +42,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         GameDefinitions.Require(party.Members.Any(m => m.Definition.Id == saved.SelectedMember), "Save.SelectedMember");
         ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId];
         GameDefinitions.Require(ids.All(id => id > 0 && id <= uint.MaxValue && id < saved.NextObjectId) && ids.Distinct().Count() == ids.Length, "Save object identities");
-        GameDefinitions.Require(saved.Features.LanternRevision > 0, "Save lantern revision");
+        GameDefinitions.Require(saved.Features.LanternRevision > 0 && saved.Features.LanternRevision <= uint.MaxValue, "Save lantern revision");
         PatrolActor actor = PatrolActor.Restore(saved.Actor, saved.Floor, definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds });
         // Validate occupancy and both in-flight reservations before realizing any replacement scene.
         MovementGrid grid = new(saved.Floor.Cells.ToHashSet(), (_, _) => true);

@@ -184,6 +184,8 @@ public sealed class RiflesProduct : IEngineProduct
             WorldFeatures replacementFeatures;
             try { replacementFeatures = new WorldFeatures(engine, replacement, saved.Floor, definitions.Features, saved.Features, AllocateLightId()); }
             catch { replacement.Dispose(); throw; }
+            // Retire old appearance references before releasing their Engine resources.
+            replacementFeatures.Present(restored.Actor);
             WorldFeatures? previousFeatures = features;
             features = replacementFeatures; actor = restored.Actor;
             DungeonScene? previous = scene;
@@ -236,6 +238,7 @@ public sealed class RiflesProduct : IEngineProduct
         if (shutdown) return;
         shutdown = true;
         if (camera is not null) engine.CameraView.ClearActiveCamera(new ClearActiveCameraRequest(0));
+        engine.Graphics.PublishSnapshot(ReadOnlySpan<AppearanceFact>.Empty);
         features?.Dispose();
         saves?.Dispose();
         projection?.Dispose();

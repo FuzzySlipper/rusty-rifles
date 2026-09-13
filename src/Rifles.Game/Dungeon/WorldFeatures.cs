@@ -45,7 +45,7 @@ internal sealed class WorldFeatures : IDisposable
     private InteractionCandidate[] Candidates(ExplorationState party) =>
     [
         Candidate(new(state.LanternId, state.LanternRevision), tuning.LanternLabel + (state.LanternOn ? " — extinguish" : " — light"), LanternPoint, party, true),
-        Candidate(new(state.ExitId, 1), "Floor exit — inspect", scene.Eye(floor.Exit), party, true),
+        Candidate(new(state.ExitId, state.ExitUsed ? 2UL : 1UL), state.ExitUsed ? "Floor exit — inspected" : "Floor exit — inspect", scene.Eye(floor.Exit), party, true),
     ];
     private InteractionCandidate Candidate(InteractionTarget target, string label, Vector3 point, ExplorationState party, bool available) =>
         new(target, label, point, tuning.Reach, scene.Visibility(scene.Eye(party.Position), point),
@@ -58,6 +58,7 @@ internal sealed class WorldFeatures : IDisposable
         if (reason != InteractionReason.Ready) return "Cannot use: " + reason;
         if (target.Value.Id == state.LanternId)
         {
+            if (state.LanternRevision == uint.MaxValue) return "Lantern revision exhausted; restart the expedition";
             FeatureSnapshot previous = state;
             state = state with { LanternOn = !state.LanternOn, LanternRevision = checked(state.LanternRevision + 1) };
             try { engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest())); }
@@ -69,7 +70,7 @@ internal sealed class WorldFeatures : IDisposable
     }
     internal void Reset()
     {
-        state = state with { LanternOn = true, ExitUsed = false, LanternRevision = checked(state.LanternRevision + 1) };
+        state = state with { LanternOn = true, ExitUsed = false, LanternRevision = 1 };
         engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest()));
         focus.Clear();
     }

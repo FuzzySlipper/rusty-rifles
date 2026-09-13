@@ -63,8 +63,9 @@ are allocated afresh per live resource so a replacement scene can be prepared
 while the previous scene still exists. They are not gameplay identities.
 
 A load constructs and validates the candidate state, occupancy and reservations
-before replacement. Incompatible schema, invalid pose/roster/identity, impossible
-reservation, and missing save errors leave the previous live state usable and
+before replacement. Replacement appearances are published before the previous
+resources are released. Incompatible schema, invalid pose/roster/identity, impossible
+reservation, disconnected floor, and missing save errors leave the previous live state usable and
 show feedback. A tuning change that invalidates saved timing or geometry can be
 rejected; this initial schema does not promise migrations for future rules.
 

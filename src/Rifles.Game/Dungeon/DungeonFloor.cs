@@ -37,8 +37,11 @@ internal sealed record DungeonFloor(ulong Seed, string GenerationIdentity, GridP
     {
         GameDefinitions.Require(!string.IsNullOrWhiteSpace(GenerationIdentity), "Floor.GenerationIdentity");
         GameDefinitions.Require(Cells is { Length: > 0 } && Cells.Distinct().Count() == Cells.Length, "Floor.Cells");
+        GameDefinitions.Require(Cells.All(p => p.X >= 0 && p.Y >= 0
+            && p.X < GenerationPolicyValidation.MaxDimension && p.Y < GenerationPolicyValidation.MaxDimension), "Floor cell bounds");
         HashSet<GridPoint> cells = Cells.ToHashSet();
         GameDefinitions.Require(cells.Contains(Entrance) && cells.Contains(Exit) && Entrance != Exit, "Floor.Entrance/Exit");
+        GameDefinitions.Require(ResolvedGridValidation.IsConnected(cells, Entrance), "Floor connectivity");
         GameDefinitions.Require(RoomCenters is { Length: > 0 } && RoomCenters.All(cells.Contains), "Floor.RoomCenters");
     }
 }

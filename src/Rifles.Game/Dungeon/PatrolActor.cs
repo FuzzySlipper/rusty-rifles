@@ -29,6 +29,9 @@ internal sealed class PatrolActor(ulong id, GridPoint start, GridPoint end, Expl
         if (saved.Id == 0 || saved.Start.ManhattanDistance(saved.End) != 1 || !floor.Cells.Contains(saved.Start) || !floor.Cells.Contains(saved.End)
             || saved.Motion.Position != saved.Start && saved.Motion.Position != saved.End)
             throw new InvalidDataException("Invalid saved porter route.");
+        if (saved.Motion.Action == ExplorationAction.Forward && saved.Motion.Position != saved.Start
+            || saved.Motion.Action == ExplorationAction.Backward && saved.Motion.Position != saved.End)
+            throw new InvalidDataException("Saved porter action leaves its patrol route.");
         CardinalDirection direction = CardinalDirections.Ordered.Single(d => saved.Start + d.Offset() == saved.End);
         if (saved.Motion.Facing != direction || saved.Motion.Action is not (null or ExplorationAction.Forward or ExplorationAction.Backward))
             throw new InvalidDataException("Invalid saved porter motion.");
