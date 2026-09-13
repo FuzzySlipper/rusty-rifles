@@ -141,7 +141,7 @@ public sealed partial class RiflesProduct : IEngineProduct
             {
                 double seconds = update.Facts.FixedDeltaSeconds;
                 GridPoint previousCell = exploration.Position;
-                if (!Defeated) exploration.Advance(seconds);
+                if (!Defeated) exploration.Advance(seconds, PartySpeed);
                 if (exploration.Position != previousCell) EmitNoise(exploration.Position, NoiseKind.Footstep);
                 if (allies[actor!.Id].IsLiving) actor.Advance(seconds);
                 AdvanceCombat(seconds);
@@ -165,8 +165,11 @@ public sealed partial class RiflesProduct : IEngineProduct
         {
             case "transfer": case "equip": case "unequip": case "consume": case "item-feature":
                 ItemCommand(command); break;
-            case "target": case "attack": case "reload": case "bolt": case "throw": case "interrupt":
+            case "target": case "attack": case "reload": case "throw": case "interrupt":
                 BeginCombat(command); break;
+            case "spell-select": case "spell-cancel": case "spell-assign": case "spell-hotbar":
+            case "cast": case "rest": case "rest-cancel": case "advance":
+                MagicCommand(command); break;
             case "formation":
                 feedback = party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "") ? "Formation changed" : "Choose two living members"; break;
             case "choose-party":
@@ -322,6 +325,7 @@ public sealed partial class RiflesProduct : IEngineProduct
         engine.CameraView.UpdateCameraSample(new CameraSampleRequest(camera!, CameraDescriptor(),
             exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Pose, cameraCut ? (byte)1 : (byte)0));
         cameraCut = false;
+        UpdateSpellLight();
         features!.SetExtraCandidates(ItemCandidates());
         features.Observe(exploration);
         features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()),
@@ -340,6 +344,7 @@ public sealed partial class RiflesProduct : IEngineProduct
         itemArt?.Dispose();
         combatArt?.Dispose();
         boltAppearance?.Dispose();
+        spellLight?.Dispose();
         saves?.Dispose();
         projection?.Dispose();
         camera?.Dispose();

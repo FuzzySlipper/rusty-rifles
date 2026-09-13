@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Rifles.Game.Combat;
+using Rifles.Game.Magic;
 using System.Text.Json.Serialization;
 using Rusty.Engine;
 using Rifles.Game.Dungeon;
@@ -12,7 +13,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -50,7 +51,8 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<ItemExplorationDefinition>("definitions/item-exploration.json", x => x.Validate()),
             Read<ItemArtDefinition>("definitions/item-art.json", x => x.Validate()),
             Read<CombatDefinition>("definitions/combat.json", x => x.Validate()),
-            Read<CrowdDefinition>("definitions/crowds.json", x => x.Validate()));
+            Read<CrowdDefinition>("definitions/crowds.json", x => x.Validate()),
+            Read<MagicDefinition>("definitions/spells.json", x => x.Validate()));
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
@@ -69,6 +71,12 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Require(enemy.Attack != CombatActionKind.Fire || enemy.Loot.Any(l => result.Items.Item(l.Definition).Kind == Rusty.Engine.Mechanics.ItemKind.Unique
                 && result.Items.Item(l.Definition).Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "ranged enemy rifle");
         }
+        string[] memberIds = result.Characters.Presets[0].Members.Select(m => m.Id).ToArray();
+        Require(result.Magic.StartingSpells.Keys.ToHashSet().SetEquals(memberIds), "starting spell roster");
+        Require(memberIds.Concat(result.Combat.Enemies.Select(e => e.Id)).All(result.Magic.Resistances.ContainsKey), "magic resistance profiles");
+        Require(result.Magic.EnemySpells.Keys.All(id => result.Combat.Enemies.Any(e => e.Id == id)), "enemy spell profiles");
+        Require(result.Items.Item(result.Magic.RestItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible
+            && result.Items.Item(result.Magic.RevivalItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible, "recovery consumables");
         return result;
     }
 

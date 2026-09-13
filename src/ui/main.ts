@@ -376,7 +376,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const restReason = text(restState.reason, '');
     restStatus.textContent = resting
       ? `Resting${numeric(restState.remaining) > 0 ? ` · ${numeric(restState.remaining).toFixed(1)}s remaining` : ''}${restReason ? ` · ${restReason}` : ''}`
-      : restReason ? `Rest unavailable: ${restReason}` : 'Recovery is ready when the expedition is safe.';
+      : restReason ? restReason : 'Recovery is ready when the expedition is safe.';
     rest.disabled = resting;
     restCancel.disabled = !resting;
 
@@ -453,7 +453,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       row.target.textContent = `${text(enemy.name, id)} · ${text(enemy.vitality, '0')}/${text(enemy.maxVitality, '0')}`;
       row.target.dataset.target = id; row.target.setAttribute('aria-pressed', String(id === selectedTarget));
       row.target.disabled = numeric(enemy.visible) !== 1 || numeric(id, -1) <= 0 || defeated;
-      row.details.textContent = `${text(enemy.kind)} · ${text(enemy.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''}`;
+      row.details.textContent = `${text(enemy.kind)} · ${text(enemy.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(enemy.conditions)}`;
     }
     for (const [id, row] of enemyRows) {
       if (!presentEnemies.has(id)) { row.row.remove(); enemyRows.delete(id); }

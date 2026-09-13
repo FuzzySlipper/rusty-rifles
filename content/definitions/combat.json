@@ -44,15 +44,6 @@
       "damage": 0,
       "speed": 1,
       "resourceCost": 0
-    },
-    {
-      "kind": "Bolt",
-      "windup": 0.6,
-      "recovery": 1,
-      "range": 12,
-      "damage": 10,
-      "speed": 5,
-      "resourceCost": 3
     }
   ],
   "enemies": [

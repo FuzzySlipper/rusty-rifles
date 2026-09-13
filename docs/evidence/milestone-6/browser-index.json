@@ -1,0 +1,159 @@
+{
+  "profile": "rusty-rifles",
+  "backend": "browser",
+  "captures": [
+    {
+      "script": "ab62f988-6c1b-4449-8d0e-d1551fd1253b",
+      "capture": "c6a5273f-f4c9-48cd-8b9e-4ad8deb699c4",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "before-healing",
+      "file": "before-healing.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/0bf67f5c-fd30-4977-877c-2220b2a87e1c.png",
+      "recordedAt": "2026-09-13T12:04:11.985108496Z"
+    },
+    {
+      "script": "ab62f988-6c1b-4449-8d0e-d1551fd1253b",
+      "capture": "aa2f9c21-9974-49ff-aefd-7df3658a8804",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "after-healing",
+      "file": "after-healing.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/100e3673-2aad-4888-b19e-f64b92cd2bd7.png",
+      "recordedAt": "2026-09-13T12:04:15.216116402Z"
+    },
+    {
+      "script": "c9a6430e-0146-4a2a-ba19-b6b641dc1996",
+      "capture": "709ad1bb-a4ba-4576-99bd-b74d5eebeb95",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "ward-saved",
+      "file": "ward-saved.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/4b31f05c-b0f0-4c25-a53b-0fb88a85a900.png",
+      "recordedAt": "2026-09-13T12:04:56.431475046Z"
+    },
+    {
+      "script": "c9a6430e-0146-4a2a-ba19-b6b641dc1996",
+      "capture": "ab4ad8b5-a039-42d5-aa63-38ff78802bfe",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "ward-restored",
+      "file": "ward-restored.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/2a632b04-675e-461b-829e-1f0c158bd125.png",
+      "recordedAt": "2026-09-13T12:05:07.104490615Z"
+    },
+    {
+      "script": "c9a6430e-0146-4a2a-ba19-b6b641dc1996",
+      "capture": "4aded049-7cb4-4404-9686-8445ec482370",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "partial-rest-saved",
+      "file": "partial-rest-saved.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/1f542d83-f503-499f-b7f9-46f3b3905da9.png",
+      "recordedAt": "2026-09-13T12:05:10.456647542Z"
+    },
+    {
+      "script": "375fa335-6d66-4835-af45-aca0704d0a04",
+      "capture": "997d2250-cce9-4385-b046-3ae30abc2d90",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "rest-start",
+      "file": "rest-start.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/3f4264ea-07ec-4400-a67b-d42da33901af.png",
+      "recordedAt": "2026-09-13T12:05:50.916012083Z"
+    },
+    {
+      "script": "375fa335-6d66-4835-af45-aca0704d0a04",
+      "capture": "771061a2-2c09-415c-a0e0-9156cac06e2c",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "rest-paused",
+      "file": "rest-paused.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/fa150ebf-fd31-4a5a-88ca-44cdf36b7180.png",
+      "recordedAt": "2026-09-13T12:05:52.014027453Z"
+    },
+    {
+      "script": "fc7b0a06-8417-480f-b600-51b7d63bf0dd",
+      "capture": "aceab483-d110-4a7d-876d-b0231e78c86c",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "partial-rest-restored",
+      "file": "partial-rest-restored.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/0ac77342-b740-43c6-9e3b-5543d4996769.png",
+      "recordedAt": "2026-09-13T12:06:35.47338933Z"
+    },
+    {
+      "script": "fc7b0a06-8417-480f-b600-51b7d63bf0dd",
+      "capture": "dd6b661c-af97-40c2-b317-fb3fa6bce765",
+      "session": "21465397-4339-4c64-b191-52165dd5b2ce",
+      "label": "rest-finished",
+      "file": "rest-finished.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/21465397-4339-4c64-b191-52165dd5b2ce/5d7e2792-5922-441f-bdb6-f2c2bd44cdf6.png",
+      "recordedAt": "2026-09-13T12:06:44.01246848Z"
+    },
+    {
+      "script": "165bf3d6-72c8-46b7-a364-f35ab8d1cf71",
+      "capture": "3e2fbb21-d761-44f6-9128-1994860ea2c0",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "spell-hand-opened-gate",
+      "file": "spell-hand-opened-gate.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/723d0298-747e-427e-91a7-001468101d5b.png",
+      "recordedAt": "2026-09-13T12:10:28.877494422Z"
+    },
+    {
+      "script": "104f61d3-ca1e-478a-a1f5-d223a39bc3c7",
+      "capture": "eef3b580-335c-4812-8f39-084067fbc741",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "rifle-and-spark",
+      "file": "rifle-and-spark.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/0de67816-e7bc-46a5-a0a9-ffbf5dbe23bf.png",
+      "recordedAt": "2026-09-13T12:11:52.541121475Z"
+    },
+    {
+      "script": "0bf9026b-1e31-4b5f-8254-480664f1dc70",
+      "capture": "cf934982-fa6a-4bba-9b59-dda36cd68b94",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "binding-shot",
+      "file": "binding-shot.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/40930169-76f3-4c86-8452-9f41374365b9.png",
+      "recordedAt": "2026-09-13T12:13:20.824307328Z"
+    },
+    {
+      "script": "d956b882-fcc2-45e2-9790-9b58604865d8",
+      "capture": "858aa962-2aaa-4227-9e15-fabfd8f139f7",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "blight-impact",
+      "file": "blight-impact.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/8a2c7f4f-be6d-4673-829c-dd29650c18c1.png",
+      "recordedAt": "2026-09-13T12:14:35.857799191Z"
+    },
+    {
+      "script": "d956b882-fcc2-45e2-9790-9b58604865d8",
+      "capture": "8339844b-e0a9-49f6-9219-462d8bf5e46f",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "second-reward",
+      "file": "second-reward.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/ba934e55-a255-478f-a1c8-c9c76422cdeb.png",
+      "recordedAt": "2026-09-13T12:14:39.825846743Z"
+    },
+    {
+      "script": "d6df3ac2-5235-4126-938c-a7d5cb37e494",
+      "capture": "97711551-e968-4084-9741-3155e42d6201",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "burst-unlocked",
+      "file": "burst-unlocked.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/674b8f5d-3279-4b82-90f1-c8e99820e935.png",
+      "recordedAt": "2026-09-13T12:15:52.854507527Z"
+    },
+    {
+      "script": "d6df3ac2-5235-4126-938c-a7d5cb37e494",
+      "capture": "796fc9a2-97ac-4b37-a54b-c052d40afc23",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "burst-impact",
+      "file": "burst-impact.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/71ff893c-5eb7-4b09-b959-16a449bf499d.png",
+      "recordedAt": "2026-09-13T12:15:56.418457194Z"
+    },
+    {
+      "script": "5df38304-f2e7-4dc6-8cd9-c6056e8c51fe",
+      "capture": "a9e5638d-7da9-472a-8848-d1ae560a5faf",
+      "session": "9e9209bf-edae-4e0e-9d4c-a8416831e1be",
+      "label": "lantern-for-gpu",
+      "file": "lantern-for-gpu.png",
+      "original": "/home/agent/.local/state/crew-playtest/browser/9e9209bf-edae-4e0e-9d4c-a8416831e1be/a42f5390-d2c5-48a7-a25f-870d18372c5d.png",
+      "recordedAt": "2026-09-13T12:16:35.433731085Z"
+    }
+  ]
+}

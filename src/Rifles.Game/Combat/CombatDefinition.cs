@@ -16,10 +16,10 @@ internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinit
     internal EnemyDefinition Enemy(string id) => Enemies.Single(e => e.Id == id);
     internal void Validate()
     {
-        GameDefinitions.Require(Actions.Length == Enum.GetValues<CombatActionKind>().Length
+        GameDefinitions.Require(Actions.Length == Enum.GetValues<CombatActionKind>().Count(kind => kind != CombatActionKind.Cast)
             && Actions.Select(a => a.Kind).Distinct().Count() == Actions.Length, "combat actions");
         foreach (ActionDefinition action in Actions)
-            GameDefinitions.Require(Enum.IsDefined(action.Kind) && double.IsFinite(action.Windup) && action.Windup > 0
+            GameDefinitions.Require(Enum.IsDefined(action.Kind) && action.Kind != CombatActionKind.Cast && double.IsFinite(action.Windup) && action.Windup > 0
                 && double.IsFinite(action.Recovery) && action.Recovery > 0 && float.IsFinite(action.Range) && action.Range > 0
                 && action.Damage >= 0 && action.Damage <= 1000 && float.IsFinite(action.Speed) && action.Speed > 0
                 && action.ResourceCost >= 0 && action.ResourceCost <= 1000, "combat action " + action.Kind);

@@ -110,13 +110,12 @@ internal sealed class PartyMemberState
     private static readonly StatId DefenseId = StatId.Parse("rifles.defense");
     private static readonly TrackId VitalityId = TrackId.Parse("rifles.vitality");
     private static readonly TrackId ResourceId = TrackId.Parse("rifles.resource");
-    private static readonly SourceDefinitionId EquipmentSourceDefinition = SourceDefinitionId.Parse("rifles.equipment");
-    private static readonly SourceInstanceId EquipmentSourceInstance = SourceInstanceId.Parse("rifles.equipment");
     private static readonly ExactStatDefinition PowerDefinition = CreateStatDefinition(PowerId);
     private static readonly ExactStatDefinition DefenseDefinition = CreateStatDefinition(DefenseId);
     private readonly ExactTrack vitality;
     private readonly ExactTrack? resource;
     private EquipmentStatBonuses equipmentBonuses = new(0, 0);
+    private EquipmentStatBonuses developmentBonuses = new(0, 0);
 
     internal PartyMemberState(MemberDefinition definition)
     {
@@ -139,8 +138,8 @@ internal sealed class PartyMemberState
     internal long Resource => resource?.Current.Raw ?? 0;
     internal long MaximumResource => resource?.Bounds.Maximum.Raw ?? 0;
     internal bool IsLiving => Vitality > 0;
-    internal long Power => Evaluate(PowerDefinition, Definition.BasePower, equipmentBonuses.Power).Value.Raw;
-    internal long Defense => Evaluate(DefenseDefinition, Definition.BaseDefense, equipmentBonuses.Defense).Value.Raw;
+    internal long Power => Evaluate(PowerDefinition, Definition.BasePower, equipmentBonuses.Power, developmentBonuses.Power).Value.Raw;
+    internal long Defense => Evaluate(DefenseDefinition, Definition.BaseDefense, equipmentBonuses.Defense, developmentBonuses.Defense).Value.Raw;
     internal EquipmentStatBonuses EquipmentBonuses => equipmentBonuses;
 
     internal long ApplyDamage(long requested)
@@ -182,6 +181,13 @@ internal sealed class PartyMemberState
         equipmentBonuses = new EquipmentStatBonuses(power, defense);
     }
 
+    internal void SetDevelopmentBonuses(long power, long defense)
+    {
+        _ = Evaluate(PowerDefinition, Definition.BasePower, equipmentBonuses.Power, power);
+        _ = Evaluate(DefenseDefinition, Definition.BaseDefense, equipmentBonuses.Defense, defense);
+        developmentBonuses = new(power, defense);
+    }
+
     internal void SetSlot(FormationSlot slot)
     {
         if (!Enum.IsDefined(slot)) throw new ArgumentOutOfRangeException(nameof(slot));
@@ -191,19 +197,20 @@ internal sealed class PartyMemberState
     private static ExactStatDefinition CreateStatDefinition(StatId id) => new(
         id, ExactValue.Zero, new ExactValue(MaximumDerivedStatistic));
 
-    private static ExactStatEvaluation Evaluate(ExactStatDefinition definition, long baseValue, long equipmentBonus)
+    private static ExactStatEvaluation Evaluate(ExactStatDefinition definition, long baseValue, long equipmentBonus, long developmentBonus = 0)
     {
-        return ExactStatEvaluator.Evaluate(definition, new ExactValue(baseValue), equipmentBonus == 0
-            ? []
-            : [new ExactSource(
-                new IntrinsicSourceIdentity(null, EquipmentSourceInstance),
-                EquipmentSourceDefinition,
-                priority: 0,
-                [new ExactStatContributionDefinition(
-                    definition.Id,
-                    StackingGroupId.Parse($"rifles.equipment.{definition.Id.Value}"),
-                    MechanicsStackingPolicy.Sum,
-                    new ExactStatContribution.Add(new ExactValue(equipmentBonus)))])]);
+        List<ExactSource> sources = [];
+        void Add(string name, long bonus)
+        {
+            if (bonus == 0) return;
+            sources.Add(new ExactSource(new IntrinsicSourceIdentity(null, SourceInstanceId.Parse(name)),
+                SourceDefinitionId.Parse(name), 0,
+                [new ExactStatContributionDefinition(definition.Id, StackingGroupId.Parse(name + "." + definition.Id.Value),
+                    MechanicsStackingPolicy.Sum, new ExactStatContribution.Add(new ExactValue(bonus)))]));
+        }
+        Add("rifles.equipment", equipmentBonus);
+        Add("rifles.development", developmentBonus);
+        return ExactStatEvaluator.Evaluate(definition, new ExactValue(baseValue), sources);
     }
 }
 

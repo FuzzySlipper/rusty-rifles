@@ -1,5 +1,6 @@
 using System.Numerics;
 using Rifles.Game.Combat;
+using Rifles.Game.Magic;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
@@ -50,10 +51,11 @@ public sealed partial class RiflesProduct
             inventory!.RegisterOwner(new PackOwner(AllocateId(), owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
             foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, AllocateId);
             ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
-            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, cell, PatrolRoute(cell, spawn)).Capture(), spawn.Id), definition, floor, definitions.Exploration);
+            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, cell, PatrolRoute(cell, spawn)).Capture(), spawn.Id, definitions.Magic.EnemyResource), definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
             enemy.Motion.Bind(movement!, id, definition.Footprint, definition.Faction, definition.Share); created.Add(enemy);
         }
         enemies = created.ToArray();
+        StartMagic();
         CombatMessage("Rifles start empty. Load with T; select a visible foe and attack with Space.");
     }
     private SpatialEntityCollider[] CombatBodies()
@@ -112,12 +114,13 @@ public sealed partial class RiflesProduct
             if (state.Current?.Phase == ActionPhase.Recovery) throw new InvalidDataException("Committed actions must finish recovery.");
             state.Cancel(); CombatMessage(member.Definition.Name + " interrupted; no cost committed."); return;
         }
+        CancelRest("Rest interrupted by an action.");
         if (state.Busy) throw new InvalidDataException("That character is still acting.");
         CarriedItem? weapon = Weapon(selectedMember);
         string owner = "member:" + selectedMember;
         CombatActionKind kind = command.Action switch
         {
-            "reload" => CombatActionKind.Reload, "bolt" => CombatActionKind.Bolt, "throw" => CombatActionKind.Throw,
+            "reload" => CombatActionKind.Reload, "throw" => CombatActionKind.Throw,
             "consume" => CombatActionKind.Consume,
             _ => weapon is not null && definitions.Items.Item(weapon.Definition).Ammunition.Length > 0 ? CombatActionKind.Fire : CombatActionKind.Melee,
         };
@@ -129,7 +132,6 @@ public sealed partial class RiflesProduct
             if (kind == CombatActionKind.Reload && Ammo(owner) == 0) throw new InvalidDataException("No rifle shot in this character's pack.");
         }
         if (kind == CombatActionKind.Melee && !party.CanUseReach(selectedMember, PartyReach.Melee)) throw new InvalidDataException("Only the front row can reach with melee.");
-        if (kind == CombatActionKind.Bolt && member.Resource < Combat.Action(kind).ResourceCost) throw new InvalidDataException("Not enough resource for a bolt.");
         string? token = null, source = null, targetMember = null;
         GridPoint? aim = null; ulong targetId = 0;
         if (kind is CombatActionKind.Throw or CombatActionKind.Consume)
@@ -145,7 +147,7 @@ public sealed partial class RiflesProduct
             }
             else if (command.Destination == "plate") aim = itemWorld!.Anchor("plate").Cell;
         }
-        if (kind is CombatActionKind.Fire or CombatActionKind.Melee or CombatActionKind.Bolt or CombatActionKind.Throw && aim is null)
+        if (kind is CombatActionKind.Fire or CombatActionKind.Melee or CombatActionKind.Throw && aim is null)
         {
             targetId = command.Target ?? selectedTarget;
             EnemyState target = enemies.SingleOrDefault(e => e.Id == targetId && Visible(e)) ?? throw new InvalidDataException("Select a visible enemy.");
@@ -172,6 +174,7 @@ public sealed partial class RiflesProduct
     {
         PartyMemberState member = Member(memberId);
         if (!member.IsLiving) return;
+        if (action.Kind == CombatActionKind.Cast) { CommitSpell(memberId, null, action); return; }
         string owner = "member:" + memberId;
         if (action.Kind is CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Melee
             && (Weapon(memberId)?.Entity ?? 0) != action.Weapon) throw new InvalidDataException("Equipment changed; action interrupted.");
@@ -192,14 +195,8 @@ public sealed partial class RiflesProduct
         if (action.Kind == CombatActionKind.Melee && !party.CanUseReach(memberId, PartyReach.Melee)) throw new InvalidDataException("Formation changed; melee interrupted.");
         if (action.Kind == CombatActionKind.Fire && !loadedWeapons.Remove(action.Weapon)) throw new InvalidDataException("Dry rifle.");
         if (action.Kind == CombatActionKind.Fire) EmitNoise(exploration.Position, NoiseKind.Gunfire);
-        if (action.Kind == CombatActionKind.Bolt)
-        {
-            long cost = Combat.Action(action.Kind).ResourceCost;
-            if (member.Resource < cost) throw new InvalidDataException("Insufficient resource.");
-            member.SpendResource(cost);
-        }
         GridPoint cell = action.AimCell!.Value;
-        if (action.Kind is CombatActionKind.Throw or CombatActionKind.Bolt)
+        if (action.Kind is CombatActionKind.Throw)
         {
             string? flightOwner = null;
             if (action.Kind == CombatActionKind.Throw)
@@ -221,6 +218,7 @@ public sealed partial class RiflesProduct
     private void AdvanceCombat(double seconds)
     {
         if (seconds <= 0) return;
+        AdvanceMagic(seconds);
         AdvanceFlights(seconds);
         foreach ((string id, ActionState state) in actions)
         {
@@ -230,13 +228,14 @@ public sealed partial class RiflesProduct
                 && pending.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload
                 && (Weapon(id)?.Entity ?? 0) != pending.Weapon)
             { state.Cancel(); CombatMessage(member.Definition.Name + " interrupted by equipment change."); }
-            try { state.Advance(seconds, action => CommitMember(id, action)); }
+            try { state.Advance(seconds * magic!.Speed("member:" + id), action => CommitMember(id, action)); }
             catch (InvalidDataException error) { CombatMessage(error.Message); }
             catch (InvalidOperationException error) { CombatMessage("Action interrupted: " + error.Message); }
         }
         AdvanceEnemies(seconds);
         if (Defeated)
         {
+            magic!.Clear("party"); CancelRest("Party defeated.");
             exploration.Stop(); movement!.Remove(partyId); exploration.Detach();
             foreach (ActionState action in actions.Values) action.Cancel();
         }
@@ -244,6 +243,7 @@ public sealed partial class RiflesProduct
     private void CommitEnemy(EnemyState enemy, ActionSnapshot action)
     {
         if (!enemy.Alive || Defeated) return;
+        if (action.Kind == CombatActionKind.Cast) { CommitSpell(null, enemy, action); return; }
         if (action.Kind == CombatActionKind.Reload)
         {
             inventory!.Consume(enemy.Owner, Combat.AmmunitionItem, 1); enemy.Loaded = true;
@@ -263,15 +263,40 @@ public sealed partial class RiflesProduct
     {
         if (!hit.Present) { CombatMessage(kind + " missed."); return; }
         if (hit.Kind != SpatialHitKind.Entity) { CombatMessage(kind + " blocked by masonry or a closed gate."); return; }
-        long damage = Combat.Action(kind).Damage;
+        long damage = Combat.Action(kind).Damage + (member is null ? 0 : Member(member).Power);
         EnemyState? enemy = enemies.SingleOrDefault(e => e.Id == hit.Entity && e.Alive);
         if (enemy is not null)
         {
             if (shooter != partyId && !Combat.FriendlyFire) { CombatMessage("Shot stopped by a friendly body."); return; }
-            long applied = enemy.Damage(Math.Max(Combat.MinimumDamage, damage - enemy.Definition.Defense));
+            DamageEnemy(enemy, Math.Max(Combat.MinimumDamage, damage - enemy.Definition.Defense));
+            return;
+        }
+        if (hit.Entity == partyId)
+        {
+            if (shooter == partyId && !Combat.FriendlyFire) return;
+            PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Slot).FirstOrDefault();
+            if (target is null) return;
+            CancelRest("Rest interrupted by damage.");
+            long applied = target.ApplyDamage(Math.Max(Combat.MinimumDamage, damage - target.Defense));
+            CombatMessage(target.Definition.Name + " took " + applied + " damage" + (target.IsLiving ? "." : " and died. Pack retained."));
+            if (!target.IsLiving) { actions[target.Definition.Id].Cancel(); magic!.Clear("member:" + target.Definition.Id); }
+            return;
+        }
+        if (allies.TryGetValue(hit.Entity, out PartyMemberState? ally) && Combat.FriendlyFire)
+        {
+            ally.ApplyDamage(damage);
+            if (!ally.IsLiving) { if (hit.Entity == actor!.Id) { actor.Motion.Stop(); actor.Motion.Detach(); } movement!.Remove(hit.Entity); }
+            CombatMessage("Garrison ally " + (ally.IsLiving ? "wounded." : "fell."));
+        }
+        else CombatMessage("Attack stopped by a world body; friendly damage disabled.");
+    }
+    private void DamageEnemy(EnemyState enemy, long damage)
+    {
+            long applied = enemy.Damage(damage);
             enemy.Brain.Observe(null, exploration.Position); CombatMessage(enemy.Definition.Name + " took " + applied + " damage.");
             if (!enemy.Alive)
             {
+                magic!.Clear("enemy:" + enemy.Id); magic.Reward(enemy.Spawn);
                 enemy.Action.Cancel(); enemy.Motion.Stop(); movement!.Remove(enemy.Id); enemy.Motion.Detach();
                 drops[enemy.Owner] = enemy.Motion.Position;
                 // An enemy's loaded round stays with its unique rifle on death.
@@ -283,25 +308,6 @@ public sealed partial class RiflesProduct
                 }
                 CombatMessage(enemy.Definition.Name + " fell. Belongings can be recovered.");
             }
-            return;
-        }
-        if (hit.Entity == partyId)
-        {
-            if (shooter == partyId && !Combat.FriendlyFire) return;
-            PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Slot).FirstOrDefault();
-            if (target is null) return;
-            long applied = target.ApplyDamage(Math.Max(Combat.MinimumDamage, damage - target.Defense));
-            CombatMessage(target.Definition.Name + " took " + applied + " damage" + (target.IsLiving ? "." : " and died. Pack retained."));
-            if (!target.IsLiving) actions[target.Definition.Id].Cancel();
-            return;
-        }
-        if (allies.TryGetValue(hit.Entity, out PartyMemberState? ally) && Combat.FriendlyFire)
-        {
-            ally.ApplyDamage(damage);
-            if (!ally.IsLiving) { if (hit.Entity == actor!.Id) { actor.Motion.Stop(); actor.Motion.Detach(); } movement!.Remove(hit.Entity); }
-            CombatMessage("Garrison ally " + (ally.IsLiving ? "wounded." : "fell."));
-        }
-        else CombatMessage("Attack stopped by a world body; friendly damage disabled.");
     }
     private void Launch(ulong shooter, string? member, CombatActionKind kind, GridPoint source, GridPoint target, string? owner, string? destination, Vector2 targetOffset = default)
     {
@@ -317,7 +323,7 @@ public sealed partial class RiflesProduct
         foreach (FlightSnapshot flight in flights.ToArray())
         {
             Vector3 start = new(flight.X, flight.Y, flight.Z);
-            float travel = Math.Min(flight.Remaining, (float)(Combat.Action(flight.Kind).Speed * seconds));
+            float travel = Math.Min(flight.Remaining, (float)((flight.Spell is null ? Combat.Action(flight.Kind).Speed : definitions.Magic.Spell(flight.Spell).Speed) * seconds));
             Vector3 end = start + new Vector3(flight.DirectionX, flight.DirectionY, flight.DirectionZ) * travel;
             SpatialHit hit = scene!.Trace(start, end, CombatBodies(), flight.Shooter);
             GridPoint landed = new((int)MathF.Floor(end.X / scene.LogicalCellSize), (int)MathF.Floor(end.Z / scene.LogicalCellSize));
@@ -331,12 +337,13 @@ public sealed partial class RiflesProduct
                     landed = new((int)MathF.Floor(Before(hit.Point.X, flight.DirectionX) / scene.LogicalCellSize),
                         (int)MathF.Floor(Before(hit.Point.Z, flight.DirectionZ) / scene.LogicalCellSize));
                 }
-                ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter);
+                if (flight.Spell is null) ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter);
             }
             if (!floor.Cells.Contains(landed) || landed == itemWorld!.Capture().Door && !itemWorld.Capture().DoorOpen) landed = flight.LastCell;
             flights.Remove(flight);
             if (hit.Present || travel >= flight.Remaining)
             {
+                if (flight.Spell is not null) ResolveSpellImpact(flight, hit, hit.Present ? hit.Point : end);
                 if (flight.Owner is not null)
                 {
                     drops[flight.Owner] = landed;

@@ -16,6 +16,7 @@ public sealed partial class RiflesProduct
             ("name", value.String(enemy.Definition.Name)), ("vitality", value.Number(enemy.Vitality)),
             ("maxVitality", value.Number(enemy.Definition.Vitality)), ("visible", value.Number(Visible(enemy) ? 1 : 0)),
             ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Brain.Mode + " · " + enemy.Brain.Reason + " · " + enemy.NavigationStatus : "Dead")),
+            ("conditions", value.String(magic!.Describe("enemy:" + enemy.Id))),
             ("remaining", value.Number(enemy.Action.Current?.Remaining ?? 0)), ("kind", value.String(enemy.Definition.Attack.ToString()))))).ToArray());
         uint members = value.Object(party.Members.Select(member =>
         {
@@ -27,7 +28,7 @@ public sealed partial class RiflesProduct
                 ("ammunition", value.Number(Ammo("member:" + member.Definition.Id)))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(selectedTarget.ToString())), ("enemies", foes), ("members", members),
-            ("log", value.String(string.Join("\n", combatLog))), ("defeated", value.Number(Defeated ? 1 : 0)));
+            ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", combatLog))), ("defeated", value.Number(Defeated ? 1 : 0)));
     }
     private IEnumerable<AppearanceFact> CombatFacts()
     {
@@ -53,7 +54,7 @@ public sealed partial class RiflesProduct
     }
     private CombatSnapshot CaptureCombat() => new(enemies.Select(e => e.Capture()).ToArray(),
         actions.Select(a => new MemberActionSnapshot(a.Key, a.Value.Capture())).ToArray(), loadedWeapons.ToArray(), flights.ToArray(),
-        drops.Select(d => new DropSnapshot(d.Key, d.Value)).ToArray(), allies.Select(a => new AllySnapshot(a.Key, a.Value.Vitality)).ToArray(), selectedTarget);
+        drops.Select(d => new DropSnapshot(d.Key, d.Value)).ToArray(), allies.Select(a => new AllySnapshot(a.Key, a.Value.Vitality)).ToArray(), selectedTarget, magic!.Capture());
     private void ApplyCombatRestore(RestoredCombat restored)
     {
         enemies = restored.Enemies; actions = restored.Actions;
@@ -63,5 +64,6 @@ public sealed partial class RiflesProduct
         allies.Clear(); foreach (AllySnapshot ally in restored.Allies)
             allies.Add(ally.Id, new PartyMemberState(new MemberDefinition(ally.Id.ToString(), "Garrison ally", FormationSlot.FrontLeft, Combat.AllyVitality, StartingVitality: ally.Vitality)));
         selectedTarget = restored.SelectedTarget; combatLog.Clear();
+        magic = restored.Magic; RecomputeMagic();
     }
 }

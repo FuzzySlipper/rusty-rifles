@@ -17,7 +17,7 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
-    public uint SchemaVersion => 5;
+    public uint SchemaVersion => 6;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

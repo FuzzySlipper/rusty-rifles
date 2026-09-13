@@ -1,4 +1,5 @@
 using System.Numerics;
+using Rifles.Game.Magic;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
@@ -13,7 +14,7 @@ internal sealed record RestoredCombat(
     FlightSnapshot[] Flights,
     DropSnapshot[] Drops,
     AllySnapshot[] Allies,
-    ulong SelectedTarget);
+    ulong SelectedTarget, MagicState Magic);
 
 /// <summary>Validates saved combat facts before the product binds them to live movement or rendering resources.</summary>
 internal static class CombatRestore
@@ -25,14 +26,32 @@ internal static class CombatRestore
         ArgumentNullException.ThrowIfNull(allyIds);
 
         EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor);
-        Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions.Combat, floor, party);
+        Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions, floor, party);
         ValidateLoadedWeapons(saved.LoadedWeapons, definitions, inventory);
-        FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions.Combat, floor, inventory, party, partyId, enemies);
+        FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory, party, partyId, enemies);
         ValidateDropsAndCombatOwners(saved.Drops, flights, enemies, floor, inventory);
         ValidateAllies(saved.Allies, definitions.Combat, allyIds);
         GameDefinitions.Require(saved.SelectedTarget == 0 || enemies.Any(enemy => enemy.Id == saved.SelectedTarget), "saved combat target");
 
-        return new RestoredCombat(enemies, actions, saved.LoadedWeapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget);
+        MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic,
+            party.Members.Select(m => m.Definition.Id), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
+                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), enemies.Where(e => !e.Alive).Select(e => e.Spawn));
+        foreach (var entry in actions)
+            if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)
+                GameDefinitions.Require(magic.For(entry.Key).Known.Contains(cast.Spell!)
+                    && cast.Cost == Math.Max(0, definitions.Magic.Spell(cast.Spell!).Cost - magic.CostDiscount(entry.Key))
+                    && (cast.Phase == ActionPhase.Recovery || party.Members.Single(m => m.Definition.Id == entry.Key).Resource >= cast.Cost)
+                    && cast.TargetMember is not null && party.Members.Any(m => m.Definition.Id == cast.TargetMember), "saved caster spell and target");
+        GameDefinitions.Require(magic.RestRemaining == 0 || party.Members.Any(m => m.Definition.Id == magic.RestOwner && m.IsLiving)
+            && actions.Values.All(a => !a.Busy), "saved rest eligibility");
+        foreach (MagicConditionSnapshot condition in saved.Magic!.Conditions)
+        {
+            SpellDefinition spell = definitions.Magic.Spell(condition.Spell);
+            GameDefinitions.Require(condition.Target == "party" ? spell.Target == SpellTarget.Party
+                : condition.Target.StartsWith("member:", StringComparison.Ordinal) ? spell.Target == SpellTarget.Ally || spell.Harmful
+                : spell.Harmful, "saved condition target kind");
+        }
+        return new RestoredCombat(enemies, actions, saved.LoadedWeapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
     }
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor)
@@ -50,8 +69,12 @@ internal static class CombatRestore
             GameDefinitions.Require(spawn.Enemy == snapshot.Definition, "saved enemy archetype");
             EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
             GameDefinitions.Require(snapshot.Owner == EnemyOwner(snapshot.Id), "saved combat enemy owner");
-            ValidateAction(snapshot.Action, definitions.Combat, floor);
-            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration);
+            ValidateAction(snapshot.Action, definitions, floor);
+            if (snapshot.Action is { Kind: CombatActionKind.Cast } cast)
+                GameDefinitions.Require(definitions.Magic.EnemySpells.GetValueOrDefault(definition.Id) == cast.Spell
+                    && cast.Cost == definitions.Magic.Spell(cast.Spell!).Cost && cast.TargetMember is null
+                    && (cast.Phase == ActionPhase.Recovery || snapshot.Resource >= cast.Cost), "saved enemy cast");
+            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
             var placement = definitions.Crowd.Footprint(definition.Footprint).Placement(snapshot.Motion.Placement);
             enemies[index].Motion.RestoreVisualOffset(new(placement.OffsetX, placement.OffsetY));
         }
@@ -59,7 +82,7 @@ internal static class CombatRestore
     }
 
     private static Dictionary<string, ActionState> RestoreMemberActions(MemberActionSnapshot[] snapshots,
-        CombatDefinition combat, DungeonFloor floor, PartyState party)
+        GameDefinitions definitions, DungeonFloor floor, PartyState party)
     {
         if (snapshots is null) throw new InvalidDataException("Invalid saved combat party actions.");
         string[] expected = party.Members.Select(member => member.Definition.Id).ToArray();
@@ -71,7 +94,7 @@ internal static class CombatRestore
         foreach (MemberActionSnapshot snapshot in snapshots)
         {
             PartyMemberState member = party.Members.Single(member => member.Definition.Id == snapshot.Member);
-            ValidateAction(snapshot.Action, combat, floor);
+            ValidateAction(snapshot.Action, definitions, floor);
             ActionState action = ActionState.Restore(snapshot.Action);
             GameDefinitions.Require(member.IsLiving || !action.Busy, "dead member action");
             actions.Add(snapshot.Member, action);
@@ -79,18 +102,29 @@ internal static class CombatRestore
         return actions;
     }
 
-    private static void ValidateAction(ActionSnapshot? action, CombatDefinition combat, DungeonFloor floor)
+    private static void ValidateAction(ActionSnapshot? action, GameDefinitions definitions, DungeonFloor floor)
     {
         if (action is null) return;
         GameDefinitions.Require(float.IsFinite(action.AimOffsetX) && Math.Abs(action.AimOffsetX) <= .5f
             && float.IsFinite(action.AimOffsetY) && Math.Abs(action.AimOffsetY) <= .5f, "saved aim offset");
         _ = ActionState.Restore(action);
-        ActionDefinition profile = combat.Action(action.Kind);
+        if (action.Kind == CombatActionKind.Cast)
+        {
+            SpellDefinition spell = definitions.Magic.Spell(action.Spell ?? "");
+            GameDefinitions.Require(action.Cost >= 0 && action.Cost <= spell.Cost
+                && action.Remaining <= (action.Phase == ActionPhase.Windup ? spell.Windup : spell.Recovery)
+                && action.RecoverySeconds == spell.Recovery
+                && (spell.Target == SpellTarget.Enemy) == action.AimCell.HasValue
+                && (!action.AimCell.HasValue || floor.Cells.Contains(action.AimCell.Value)), "saved spell action");
+            return;
+        }
+        GameDefinitions.Require(action.Spell is null && action.Cost == 0, "nonspell action payload");
+        ActionDefinition profile = definitions.Combat.Action(action.Kind);
         double maximumRemaining = action.Phase == ActionPhase.Windup ? profile.Windup : profile.Recovery;
         GameDefinitions.Require(action.Remaining <= maximumRemaining && action.RecoverySeconds <= profile.Recovery
             && (action.Phase != ActionPhase.Recovery || action.Remaining <= action.RecoverySeconds), "saved combat action duration");
 
-        bool attacks = action.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Throw or CombatActionKind.Bolt;
+        bool attacks = action.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Throw;
         GameDefinitions.Require(attacks == action.AimCell.HasValue && (!action.AimCell.HasValue || floor.Cells.Contains(action.AimCell.Value)),
             "saved combat action aim");
     }
@@ -105,7 +139,7 @@ internal static class CombatRestore
         GameDefinitions.Require(loadedWeapons.All(rifles.Contains), "saved loaded weapon item");
     }
 
-    private static FlightSnapshot[] RestoreFlights(FlightSnapshot[] snapshots, CombatDefinition combat, DungeonFloor floor,
+    private static FlightSnapshot[] RestoreFlights(FlightSnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor,
         ItemInventory inventory, PartyState party, ulong partyId, EnemyState[] enemies)
     {
         if (snapshots is null) throw new InvalidDataException("Invalid saved combat flights.");
@@ -115,19 +149,24 @@ internal static class CombatRestore
         for (int index = 0; index < snapshots.Length; index++)
         {
             FlightSnapshot flight = snapshots[index];
-            GameDefinitions.Require(flight.Kind is CombatActionKind.Throw or CombatActionKind.Bolt
+            SpellDefinition? spell = flight.Kind == CombatActionKind.Cast ? definitions.Magic.Spell(flight.Spell ?? "") : null;
+            GameDefinitions.Require(spell is null ? flight.Spell is null : spell.Target == SpellTarget.Enemy && flight.Owner is null && flight.Destination is null, "saved spell flight payload");
+            bool validShooter = flight.Shooter == partyId && flight.Member is not null && members.Contains(flight.Member)
+                || spell is not null && flight.Member is null && enemies.Any(e => e.Id == flight.Shooter
+                    && definitions.Magic.EnemySpells.GetValueOrDefault(e.Definition.Id) == spell.Id);
+            GameDefinitions.Require(flight.Kind is CombatActionKind.Throw or CombatActionKind.Cast
                 && float.IsFinite(flight.X) && float.IsFinite(flight.Y) && float.IsFinite(flight.Z)
                 && float.IsFinite(flight.DirectionX) && float.IsFinite(flight.DirectionY) && float.IsFinite(flight.DirectionZ)
-                && float.IsFinite(flight.Remaining) && flight.Remaining > 0 && flight.Remaining <= combat.Action(flight.Kind).Range
-                && floor.Cells.Contains(flight.LastCell) && flight.Shooter == partyId && flight.Member is not null && members.Contains(flight.Member),
+                && float.IsFinite(flight.Remaining) && flight.Remaining > 0 && flight.Remaining <= (spell?.Range ?? definitions.Combat.Action(flight.Kind).Range)
+                && floor.Cells.Contains(flight.LastCell) && validShooter,
                 "saved combat flight");
 
             Vector3 direction = new(flight.DirectionX, flight.DirectionY, flight.DirectionZ);
             GameDefinitions.Require(direction.LengthSquared() > 0 && float.IsFinite(direction.LengthSquared()), "saved combat flight direction");
             direction = Vector3.Normalize(direction);
-            if (flight.Kind == CombatActionKind.Bolt)
+            if (flight.Kind == CombatActionKind.Cast)
             {
-                GameDefinitions.Require(flight.Owner is null, "saved combat bolt owner");
+                GameDefinitions.Require(flight.Owner is null, "saved spell owner");
             }
             else
             {

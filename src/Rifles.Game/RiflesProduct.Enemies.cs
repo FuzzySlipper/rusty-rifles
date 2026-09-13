@@ -71,11 +71,11 @@ public sealed partial class RiflesProduct
     {
         foreach (EnemyState enemy in enemies.Where(e => e.Alive))
         {
-            enemy.Motion.Advance(seconds);
+            enemy.Motion.Advance(seconds, magic!.Speed("enemy:" + enemy.Id));
             enemy.Brain.Advance(seconds);
             enemy.DecisionRemaining = Math.Max(0, enemy.DecisionRemaining - seconds);
             if (Defeated) { enemy.Action.Cancel(); enemy.Motion.Stop(); continue; }
-            try { enemy.Action.Advance(seconds, action => CommitEnemy(enemy, action)); }
+            try { enemy.Action.Advance(seconds * magic!.Speed("enemy:" + enemy.Id), action => CommitEnemy(enemy, action)); }
             catch (InvalidOperationException error) { CombatMessage(enemy.Definition.Name + ": " + error.Message); }
         }
         if (Defeated || enemies.Length == 0) return;
@@ -107,6 +107,7 @@ public sealed partial class RiflesProduct
                 retreat = ranged && enemy.Brain.NeedsRetreat(distance) && enemy.Brain.RetreatReady;
                 SpatialHit shot = scene!.Trace(EnemyAim(enemy), Aim(exploration.Position), CombatBodies(), enemy.Id);
                 bool clearShot = shot.Present && shot.Kind == SpatialHitKind.Entity && shot.Entity == partyId;
+                if (clearShot && TryEnemySpell(enemy, distance)) { enemy.NavigationStatus = "Casting"; continue; }
                 if (!retreat && clearShot && distance <= Combat.Action(kind).Range
                     && (!ranged || distance <= enemy.Definition.Brain.PreferredMaximumRange))
                 {

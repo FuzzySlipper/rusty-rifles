@@ -1,3 +1,4 @@
+using Rifles.Game.Magic;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -15,6 +16,7 @@ internal static class CombatSaveChecks
         Require(restored.Enemies.Length == definitions.Combat.Encounter.Length && restored.Actions.Count == fixture.Party.Members.Count,
             "Combat restore rebuilds exact enemy and party action owners.");
 
+        VerifySpellSettlementAndTargets(definitions, fixture);
         VerifyCorruptPositionsAreRejected(definitions, fixture);
         VerifyNonFiniteFlightIsRejected(definitions, fixture);
         VerifyNonWeaponLoadIsRejected(definitions, fixture);
@@ -29,6 +31,26 @@ internal static class CombatSaveChecks
             "Multiple instances of one archetype keep separate identities and inventories across restore.");
 
         Console.WriteLine("Combat save checks passed: combat owners, action phases, flights, drops, and allies.");
+    }
+
+    private static void VerifySpellSettlementAndTargets(GameDefinitions definitions, CombatFixture fixture)
+    {
+        SpellDefinition ward = definitions.Magic.Spell("ward");
+        ActionSnapshot cast = new(CombatActionKind.Cast, 0, null, null, 0, "warden", ward.Recovery,
+            ActionPhase.Recovery, ward.Recovery, Spell: ward.Id, Cost: ward.Cost);
+        CombatSnapshot WithCast(ActionSnapshot action) => fixture.Saved with
+        {
+            Members = fixture.Saved.Members.Select(m => m.Member == "warden" ? m with { Action = action } : m).ToArray(),
+        };
+        Validate(WithCast(cast), definitions, fixture);
+        RequireRejected(() => Validate(WithCast(cast with { Cost = 0 }), definitions, fixture),
+            "Restored spells cannot forge a free cast.");
+        MagicSnapshot magic = fixture.Saved.Magic!;
+        Validate(fixture.Saved with { Magic = magic with
+            { Conditions = [new("member:warden", "blight", 1, 1)] } }, definitions, fixture);
+        RequireRejected(() => Validate(fixture.Saved with { Magic = magic with
+            { Conditions = [new("enemy:" + fixture.Saved.Enemies[0].Id, "ward", 1, 0)] } }, definitions, fixture),
+            "Ally-only wards cannot be forged on enemy targets; hostile enemy spells on party members remain valid.");
     }
 
     private static void VerifyCorruptPositionsAreRejected(GameDefinitions definitions, CombatFixture fixture)
@@ -46,15 +68,15 @@ internal static class CombatSaveChecks
 
     private static void VerifyNonFiniteFlightIsRejected(GameDefinitions definitions, CombatFixture fixture)
     {
-        FlightSnapshot flight = new(600, fixture.PartyId, fixture.Party.Members[0].Definition.Id, CombatActionKind.Bolt,
-            1, 1, 1, 1, 0, 0, 1, fixture.Floor.Entrance, null, null);
+        FlightSnapshot flight = new(600, fixture.PartyId, fixture.Party.Members[0].Definition.Id, CombatActionKind.Cast,
+            1, 1, 1, 1, 0, 0, 1, fixture.Floor.Entrance, null, null, Spell: "spark");
         RequireRejected(() => Validate(fixture.Saved with { Flights = [flight with { X = float.NaN }] }, definitions, fixture),
             "Non-finite projectile coordinates are rejected before a live trace.");
         RequireRejected(() => Validate(fixture.Saved with { Flights = [flight with { Shooter = fixture.PartyId + 1 }] }, definitions, fixture),
             "Saved projectiles cannot claim an arbitrary shooter.");
         RequireRejected(() => Validate(fixture.Saved with { Flights = [flight with { Member = "missing" }] }, definitions, fixture),
             "Saved projectiles retain a real party member even after that member dies.");
-        RequireRejected(() => Validate(fixture.Saved with { Flights = [flight with { Kind = CombatActionKind.Throw, Owner = fixture.Saved.Enemies[0].Owner }] }, definitions, fixture),
+        RequireRejected(() => Validate(fixture.Saved with { Flights = [flight with { Kind = CombatActionKind.Throw, Spell = null, Owner = fixture.Saved.Enemies[0].Owner }] }, definitions, fixture),
             "A thrown item cannot claim a living enemy inventory as its flight owner.");
 
         RestoredCombat normalized = CombatRestore.Validate(fixture.Saved with { Flights = [flight with { DirectionX = 3 }] }, definitions,
@@ -130,7 +152,7 @@ internal static class CombatSaveChecks
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
             AllySnapshot[] allies = allyIds.Select(id => new AllySnapshot(id, definitions.Combat.AllyVitality)).ToArray();
-            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id);
+            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => m.Definition.Id)).Capture());
             return new CombatFixture(floor, inventory, party, saved, partyId, allyIds);
         }
     }

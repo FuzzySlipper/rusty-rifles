@@ -9,7 +9,7 @@ internal enum CombatActionKind
     Reload,
     Throw,
     Consume,
-    Bolt,
+    Cast,
 }
 
 internal enum ActionPhase
@@ -28,7 +28,7 @@ internal sealed record ActionSnapshot(
     double Remaining,
     ActionPhase Phase,
     double RecoverySeconds,
-    GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0);
+    GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0, string? Spell = null, long Cost = 0, ulong FeatureRevision = 0);
 
 /// <summary>
 /// The current party action. The caller supplies only admitted simulation time;

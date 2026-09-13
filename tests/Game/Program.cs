@@ -1,3 +1,4 @@
+using Rifles.Game.Magic;
 using Rifles.Game.Items;
 using Rifles.Game.Combat;
 using Rifles.Game.Dungeon;
@@ -13,6 +14,7 @@ static void Require(bool condition, string message)
 string contentRoot = Path.GetFullPath("content");
 GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
 ActionChecks.Run();
+MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();
 CrowdChecks.Run();
 CrowdLaneChecks.Run(definitions);
@@ -126,7 +128,7 @@ foreach (EnemySpawnDefinition spawn in definitions.Combat.Encounter)
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
 CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
-    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0);
+    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => m.Definition.Id)).Capture());
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),

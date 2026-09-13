@@ -67,11 +67,12 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         }
         return state;
     }
-    internal void Advance(double seconds)
+    internal void Advance(double seconds, double speed = 1)
     {
         if (!double.IsFinite(seconds) || seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+        if (!double.IsFinite(speed) || speed <= 0 || speed > 1) throw new ArgumentOutOfRangeException(nameof(speed));
         ElapsedSeconds += seconds;
-        RecoverySeconds = Math.Max(0, RecoverySeconds - seconds);
+        RecoverySeconds = Math.Max(0, RecoverySeconds - seconds * speed);
         if (!Moving || RecoverySeconds > 0) return;
         if (Turning) Facing = destinationFacing;
         else if (grid!.Commit(actorId)) Position = destination;

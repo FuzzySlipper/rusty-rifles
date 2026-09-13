@@ -120,5 +120,8 @@ adds generated art, lit sprites, texture mapping and comparison controls; see
 `docs/milestone-2.md`. Milestone 3 adds party presets, equipment, inventory, world items and a gate puzzle;
 see `docs/milestone-3.md`. Milestone 4 adds action phases, rifles, throws/bolts, mixed enemies and combat saves;
 see `docs/milestone-4.md`. Milestone 5 adds mixed-size crowd slots, bounded Engine paths,
-perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Richer procgen,
-spells and multi-floor progression remain campaign work.
+perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Richer procgen
+and multi-floor progression remain campaign work.
+Milestone 6 adds spellbooks, shared casts, conditions, utility magic, rest/revival,
+and advancement; see `docs/milestone-6.md`. Spell tuning lives in
+`content/definitions/spells.json`; retain Engine effect/stat/track ownership.
