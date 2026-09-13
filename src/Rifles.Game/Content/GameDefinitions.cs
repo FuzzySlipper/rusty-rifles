@@ -9,7 +9,7 @@ using Rifles.Procgen.Generation;
 namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
-    GenerationDefinition Generation, AppearanceDefinition Appearance)
+    GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -44,7 +44,8 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         return new(Read<ExplorationTuning>("tuning/exploration.json", x => x.Validate()),
             Read<PartyDefinition>("definitions/party.json", x => x.Validate()),
             Read<GenerationDefinition>("tuning/generation.json", x => x.Validate()),
-            Read<AppearanceDefinition>("tuning/appearance.json", x => x.Validate()));
+            Read<AppearanceDefinition>("tuning/appearance.json", x => x.Validate()),
+            Read<FeatureDefinition>("definitions/exploration-features.json", x => x.Validate()));
     }
 
     internal static void Require(bool condition, string field)

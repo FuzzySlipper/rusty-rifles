@@ -75,8 +75,8 @@ Engine CoreCLR product. The offline toolkit's richer locked/stateful motifs
 are available for future level design; the game currently uses an open detour
 graph and its resolved room/corridor grid.
 
-This is a starting game repository. Combat, enemies, equipment/inventory,
-spells, doors and interactions, campaign progression, persistent saves,
-and finished art are not implemented. Camera steps currently snap between
-grid poses. The party has a snapshot contract, but no save/load UI or store
-is wired yet.
+The [first milestone](docs/milestone-1.md) adds file-authored tuning, smooth grid
+movement, a shared-grid porter actor, member selection and pause, Engine-backed
+save/load, and reachable lantern/exit interactions. Combat, enemy AI, inventory,
+spells, doors, multi-floor progression and the generated art ensemble remain
+scheduled campaign work.

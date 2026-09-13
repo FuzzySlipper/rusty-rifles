@@ -1,5 +1,6 @@
 using System.Numerics;
 using Rusty.Engine;
+using Rusty.Engine.Interaction;
 using Rifles.Procgen.Generation;
 
 namespace Rifles.Game.Dungeon;
@@ -20,7 +21,7 @@ internal sealed class DungeonScene : IDisposable
     private readonly List<Light> lights = [];
     private VoxelScenePresentation? scene;
 
-    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance)
+    internal DungeonScene(IEngineContext engine, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId)
     {
         this.engine = engine;
         this.tuning = tuning;
@@ -29,7 +30,7 @@ internal sealed class DungeonScene : IDisposable
         {
             materials.Add(engine.Graphics.CreateMaterial(appearance.Stone.Request()));
             materials.Add(engine.Graphics.CreateMaterial(appearance.Exit.Request()));
-            IReadOnlySet<GridPoint> cells = floor.Geometry.WalkableCells;
+            IReadOnlySet<GridPoint> cells = floor.Cells.ToHashSet();
             HashSet<GridPoint> walls = cells.SelectMany(cell => CardinalDirections.Ordered.Select(d => cell + d.Offset()))
                 .Where(cell => !cells.Contains(cell)).ToHashSet();
             List<VoxelEdit> edits = [];
@@ -48,11 +49,10 @@ internal sealed class DungeonScene : IDisposable
                 cells.Select(c => new PlanarNavCell(c.X, NavigationY, c.Y)).ToArray()));
             scene = engine.VoxelScenePresentation.ProjectScene(new ProjectVoxelSceneRequest(spatial,
                 new VoxelSceneMaterialBinding[] { new(StoneSlot, materials[0]), new(ExitSlot, materials[1]) }));
-            ulong lightId = 1;
-            foreach (PlacedPiece room in floor.Geometry.Pieces)
+            foreach (GridPoint room in floor.RoomCenters)
             {
-                Vector3 position = Eye(new GridPoint((int)room.WalkableCells.Average(p => p.X), (int)room.WalkableCells.Average(p => p.Y)));
-                lights.Add(engine.Graphics.CreateLight(new LightRequest(lightId++, false, 0,
+                Vector3 position = Eye(room);
+                lights.Add(engine.Graphics.CreateLight(new LightRequest(allocateLightId(), false, 0,
                     new LightDescriptor(LightKind.Point, new Vector3(appearance.LightColor[0], appearance.LightColor[1], appearance.LightColor[2]), appearance.LightIntensity,
                         true, position, Vector3.UnitY, true, appearance.LightRange, 1f, 0, 0, LightShadowIntent.Disabled))));
             }
@@ -71,7 +71,10 @@ internal sealed class DungeonScene : IDisposable
 
     private Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
         (NavigationY + .5f) * CellSize, (cell.Y + .5f) * CellSize);
-    internal Vector3 Eye(GridPoint cell) => NavigationCenter(cell) with { Y = CellSize + tuning.EyeHeight };
+    internal Vector3 Eye(GridPoint cell) => Eye(new Vector2(cell.X, cell.Y));
+    internal Vector3 Eye(Vector2 cell) => new((cell.X + .5f) * CellSize, CellSize + tuning.EyeHeight, (cell.Y + .5f) * CellSize);
+    internal float GroundHeight => CellSize;
+    internal InteractionVisibility Visibility(Vector3 origin, Vector3 target) => InteractionVisibilityQuery.Cast(engine.Spatial, spatial, origin, target, new SpatialQueryFilter(0, 0), ReadOnlyMemory<SpatialEntityCollider>.Empty, ReadOnlyMemory<ulong>.Empty);
     internal void Attach() => engine.VoxelScenePresentation.RefreshScene(scene!);
 
     public void Dispose()

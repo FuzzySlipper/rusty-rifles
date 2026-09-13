@@ -1,0 +1,39 @@
+{
+  "actorLabel": "Clockwork porter",
+  "actorColor": [
+    0.6,
+    0.3,
+    0.12,
+    1
+  ],
+  "actorScale": [
+    0.6,
+    1.2,
+    0.6
+  ],
+  "actorOffsetCells": 2,
+  "lanternLabel": "Entrance lantern",
+  "lanternColor": [
+    1,
+    0.65,
+    0.18,
+    1
+  ],
+  "lanternScale": [
+    0.3,
+    0.5,
+    0.3
+  ],
+  "lanternOffset": [
+    0.7,
+    0,
+    0.4
+  ],
+  "reach": 3,
+  "queryDistance": 12,
+  "acquireAngle": 0.8,
+  "releaseAngle": 1.1,
+  "lightIntensity": 8,
+  "lightRange": 12,
+  "actorStepSeconds": 1.2
+}

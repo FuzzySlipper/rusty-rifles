@@ -9,6 +9,6 @@
   "fieldOfView": 75,
   "nearDistance": 0.05,
   "farDistance": 250,
-  "cameraDelay": 0,
+  "cameraDelay": 0.033,
   "initialFacing": "North"
 }
