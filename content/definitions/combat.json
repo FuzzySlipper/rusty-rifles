@@ -65,8 +65,7 @@
       "stepSeconds": 0.85,
       "decisionSeconds": 0.4,
       "awarenessRange": 14,
-      "spawnDistance": 5,
-      "scale": 1,
+      "scale": 0.8,
       "loot": [
         {
           "owner": "",
@@ -80,7 +79,23 @@
           "quantity": 1,
           "equipped": false
         }
-      ]
+      ],
+      "footprint": "medium",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 12,
+        "searchSeconds": 4,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 0,
+        "preferredMaximumRange": 2.7,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 100,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
     },
     {
       "id": "musketeer",
@@ -91,8 +106,7 @@
       "stepSeconds": 0.85,
       "decisionSeconds": 0.4,
       "awarenessRange": 14,
-      "spawnDistance": 8,
-      "scale": 1.1,
+      "scale": 0.8,
       "loot": [
         {
           "owner": "",
@@ -106,7 +120,187 @@
           "quantity": 8,
           "equipped": false
         }
-      ]
+      ],
+      "footprint": "medium",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 12,
+        "searchSeconds": 4,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 4,
+        "preferredMaximumRange": 10,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 100,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
+    },
+    {
+      "id": "runner",
+      "name": "Powder runner",
+      "attack": "Melee",
+      "vitality": 18,
+      "defense": 0,
+      "stepSeconds": 0.55,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "scale": 0.5,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "knife",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "tonic",
+          "quantity": 1,
+          "equipped": false
+        }
+      ],
+      "footprint": "small",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 18,
+        "searchSeconds": 6,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 0,
+        "preferredMaximumRange": 2.7,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 130,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
+    },
+    {
+      "id": "sapper",
+      "name": "Garrison sapper",
+      "attack": "Melee",
+      "vitality": 24,
+      "defense": 2,
+      "stepSeconds": 0.95,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "scale": 0.5,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "knife",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "tonic",
+          "quantity": 1,
+          "equipped": false
+        }
+      ],
+      "footprint": "small",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 8,
+        "searchSeconds": 6,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 0,
+        "preferredMaximumRange": 2.7,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 130,
+        "gunfireHearingRange": 28,
+        "footstepHearingRange": 8,
+        "alarmHearingRange": 18
+      }
+    },
+    {
+      "id": "bulwark",
+      "name": "Garrison bulwark",
+      "attack": "Melee",
+      "vitality": 60,
+      "defense": 5,
+      "stepSeconds": 1.4,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "scale": 1.25,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "knife",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "tonic",
+          "quantity": 1,
+          "equipped": false
+        }
+      ],
+      "footprint": "large",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 8,
+        "searchSeconds": 2,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 0,
+        "preferredMaximumRange": 2.7,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 75,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
+    },
+    {
+      "id": "marksman",
+      "name": "Garrison marksman",
+      "attack": "Fire",
+      "vitality": 22,
+      "defense": 1,
+      "stepSeconds": 1.1,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "scale": 0.8,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "rifle",
+          "quantity": 1,
+          "equipped": false
+        },
+        {
+          "owner": "",
+          "definition": "shot",
+          "quantity": 8,
+          "equipped": false
+        }
+      ],
+      "footprint": "medium",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 12,
+        "searchSeconds": 4,
+        "maxRetreatSteps": 1,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 6,
+        "preferredMaximumRange": 14,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 65,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
     }
   ],
   "bodyWidth": 0.85,
@@ -131,5 +325,98 @@
     0.75,
     1,
     1
-  ]
+  ],
+  "pathQueriesPerStep": 4,
+  "pathGoalsPerDecision": 3,
+  "doorClearance": 0.85,
+  "candidateCellsPerDecision": 24,
+  "encounter": [
+    {
+      "id": "raider-patrol",
+      "enemy": "raider",
+      "distance": 5,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "musketeer-patrol",
+      "enemy": "musketeer",
+      "distance": 8,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "runner-patrol",
+      "enemy": "runner",
+      "distance": 8,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "sapper-patrol",
+      "enemy": "sapper",
+      "distance": 8,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "bulwark-patrol",
+      "enemy": "bulwark",
+      "distance": 12,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "marksman-patrol",
+      "enemy": "marksman",
+      "distance": 15,
+      "patrolOffsets": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    }
+  ],
+  "actorsBlockSight": false
 }

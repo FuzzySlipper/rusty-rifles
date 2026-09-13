@@ -5,11 +5,12 @@ namespace Rifles.Game.Combat;
 
 internal sealed record ActionDefinition(CombatActionKind Kind, double Windup, double Recovery, float Range, long Damage, float Speed, long ResourceCost);
 internal sealed record EnemyDefinition(string Id, string Name, CombatActionKind Attack, long Vitality, long Defense,
-    double StepSeconds, double DecisionSeconds, float AwarenessRange, int SpawnDistance, float Scale, StartingItem[] Loot);
-internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinition[] Enemies, float BodyWidth,
+    double StepSeconds, double DecisionSeconds, float AwarenessRange, float Scale, StartingItem[] Loot, string Footprint, string Faction, bool Share, EnemyBrainDefinition Brain);
+internal sealed record EnemySpawnDefinition(string Id, string Enemy, int Distance, int[][] PatrolOffsets);
+internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinition[] Enemies, EnemySpawnDefinition[] Encounter, float BodyWidth,
     float BodyHeight, float AimHeight, float TargetAngle, long MinimumDamage, bool FriendlyFire, long AllyVitality,
     float CorpseScale, float WindupScale, float BoltScale, int LogLength, string AmmunitionItem,
-    PackDefinition DropCapacity, bool RecoverThrownItems, float[] BoltColor)
+    PackDefinition DropCapacity, bool RecoverThrownItems, float[] BoltColor, int PathQueriesPerStep, int PathGoalsPerDecision, float DoorClearance, int CandidateCellsPerDecision, bool ActorsBlockSight)
 {
     internal ActionDefinition Action(CombatActionKind kind) => Actions.Single(a => a.Kind == kind);
     internal EnemyDefinition Enemy(string id) => Enemies.Single(e => e.Id == id);
@@ -24,12 +25,23 @@ internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinit
                 && action.ResourceCost >= 0 && action.ResourceCost <= 1000, "combat action " + action.Kind);
         GameDefinitions.Require(Enemies.Length > 0 && Enemies.Select(e => e.Id).Distinct().Count() == Enemies.Length, "enemy ids");
         foreach (EnemyDefinition enemy in Enemies)
+        {
+            enemy.Brain.Validate();
+            GameDefinitions.Require(!string.IsNullOrWhiteSpace(enemy.Footprint) && !string.IsNullOrWhiteSpace(enemy.Faction), "enemy crowd profile");
             GameDefinitions.Require(!string.IsNullOrWhiteSpace(enemy.Id) && !string.IsNullOrWhiteSpace(enemy.Name)
                 && enemy.Attack is CombatActionKind.Melee or CombatActionKind.Fire && enemy.Vitality is > 0 and <= 1000
                 && enemy.Defense is >= 0 and <= 1000 && double.IsFinite(enemy.StepSeconds) && enemy.StepSeconds > 0
                 && double.IsFinite(enemy.DecisionSeconds) && enemy.DecisionSeconds > 0 && float.IsFinite(enemy.AwarenessRange)
-                && enemy.AwarenessRange > 0 && enemy.SpawnDistance > 0 && float.IsFinite(enemy.Scale) && enemy.Scale > 0
+                && enemy.AwarenessRange > 0 && float.IsFinite(enemy.Scale) && enemy.Scale > 0
                 && enemy.Loot.All(l => l.Quantity > 0 && !l.Equipped), "enemy " + enemy.Id);
+        }
+        GameDefinitions.Require(Encounter.Length > 0 && Encounter.Select(e => e.Id).Distinct().Count() == Encounter.Length, "encounter identities");
+        foreach (var spawn in Encounter)
+            GameDefinitions.Require(!string.IsNullOrWhiteSpace(spawn.Id) && Enemies.Any(e => e.Id == spawn.Enemy) && spawn.Distance > 0
+                && spawn.PatrolOffsets.Length > 0 && spawn.PatrolOffsets.All(p => p.Length == 2 && p.All(v => Math.Abs((long)v) <= 16)), "encounter spawn " + spawn.Id);
+        GameDefinitions.Require(CandidateCellsPerDecision > 0 && CandidateCellsPerDecision <= 128, "enemy candidate budget");
+        GameDefinitions.Require(PathQueriesPerStep > 0 && PathQueriesPerStep <= 32 && PathGoalsPerDecision > 0 && PathGoalsPerDecision <= 16
+            && float.IsFinite(DoorClearance) && DoorClearance > 0 && DoorClearance <= 1, "enemy navigation work and clearance");
         GameDefinitions.Require(BoltColor.Length == 4 && BoltColor.All(v => float.IsFinite(v) && v >= 0 && v <= 1), "bolt color");
         GameDefinitions.Require(new[] { BodyWidth, BodyHeight, AimHeight, CorpseScale, WindupScale, BoltScale }.All(v => float.IsFinite(v) && v > 0)
             && AimHeight < BodyHeight && float.IsFinite(TargetAngle) && TargetAngle is > 0 and <= 180

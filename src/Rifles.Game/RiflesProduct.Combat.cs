@@ -23,6 +23,7 @@ public sealed partial class RiflesProduct
     private WorldArt? combatArt;
     private Appearance? boltAppearance;
     private CombatDefinition Combat => definitions.Combat;
+    private int pathCursor;
     private bool Defeated => party.Members.All(m => !m.IsLiving);
     private Vector3 Aim(GridPoint cell) => scene!.Eye(cell) with { Y = scene.GroundHeight + Combat.AimHeight };
     private static string EnemyOwner(ulong id) => "combat:enemy:" + id;
@@ -33,22 +34,24 @@ public sealed partial class RiflesProduct
     }
     private void StartCombat()
     {
+        ConfigureEnemyClearance(movement!, itemWorld!.Capture().Door);
         loadedWeapons.Clear(); flights.Clear(); drops.Clear(); allies.Clear(); combatLog.Clear(); selectedTarget = 0;
         actions = party.Members.ToDictionary(m => m.Definition.Id, _ => new ActionState());
         foreach (ulong id in new[] { actor!.Id, features!.Capture().Dressing.ObserverId })
             allies.Add(id, new PartyMemberState(new MemberDefinition(id.ToString(), "Garrison ally", FormationSlot.FrontLeft, Combat.AllyVitality)));
         List<EnemyState> created = [];
-        foreach (EnemyDefinition definition in Combat.Enemies)
+        foreach (EnemySpawnDefinition spawn in Combat.Encounter)
         {
-            GridPoint cell = floor.Cells.Where(c => !movement!.Occupied(c) && c != itemWorld!.Capture().Door && c != floor.Exit)
-                .OrderBy(c => Math.Abs(c.ManhattanDistance(floor.Entrance) - definition.SpawnDistance))
+            EnemyDefinition definition = Combat.Enemy(spawn.Enemy);
+            GridPoint cell = floor.Cells.Where(c => movement!.CanFit(c, definition.Footprint, definition.Faction, definition.Share) && c != itemWorld!.Capture().Door && c != floor.Exit)
+                .OrderBy(c => Math.Abs(c.ManhattanDistance(floor.Entrance) - spawn.Distance))
                 .ThenBy(c => c.Y).ThenBy(c => c.X).First();
             ulong id = AllocateId(); string owner = EnemyOwner(id);
             inventory!.RegisterOwner(new PackOwner(AllocateId(), owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
             foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, AllocateId);
             ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
-            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner), definition, floor, definitions.Exploration);
-            enemy.Motion.Bind(movement!, id); created.Add(enemy);
+            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, cell, PatrolRoute(cell, spawn)).Capture(), spawn.Id), definition, floor, definitions.Exploration);
+            enemy.Motion.Bind(movement!, id, definition.Footprint, definition.Faction, definition.Share); created.Add(enemy);
         }
         enemies = created.ToArray();
         CombatMessage("Rifles start empty. Load with T; select a visible foe and attack with Space.");
@@ -56,14 +59,19 @@ public sealed partial class RiflesProduct
     private SpatialEntityCollider[] CombatBodies()
     {
         List<SpatialEntityCollider> bodies = [];
-        void Add(ulong id, GridPoint cell)
+        void Add(ulong id, GridPoint cell, Vector2 offset = default, float width = 0, float depth = 0)
         {
-            Vector3 center = Aim(cell);
-            Vector3 min = new(center.X - Combat.BodyWidth / 2, scene!.GroundHeight, center.Z - Combat.BodyWidth / 2);
-            bodies.Add(new(id, min, min + new Vector3(Combat.BodyWidth, Combat.BodyHeight, Combat.BodyWidth), 0, 0, true, false, false));
+            Vector3 center = Aim(cell) + new Vector3(offset.X, 0, offset.Y) * scene!.LogicalCellSize;
+            width = width > 0 ? width : Combat.BodyWidth; depth = depth > 0 ? depth : Combat.BodyWidth;
+            Vector3 min = new(center.X - width / 2, scene!.GroundHeight, center.Z - depth / 2);
+            bodies.Add(new(id, min, min + new Vector3(width, Combat.BodyHeight, depth), 0, 0, true, false, false));
         }
         if (!Defeated) Add(partyId, exploration.Position);
-        foreach (EnemyState enemy in enemies.Where(e => e.Alive)) Add(enemy.Id, enemy.Motion.Position);
+        foreach (EnemyState enemy in enemies.Where(e => e.Alive))
+        {
+            var slot = movement!.Placement(enemy.Id);
+            Add(enemy.Id, enemy.Motion.Position, enemy.Motion.CrowdOffset, slot.Width * scene!.LogicalCellSize, slot.Depth * scene.LogicalCellSize);
+        }
         if (allies.GetValueOrDefault(actor!.Id)?.IsLiving == true) Add(actor.Id, actor.Motion.Position);
         RoomDressing dressing = features!.Capture().Dressing;
         if (allies.GetValueOrDefault(dressing.ObserverId)?.IsLiving == true) Add(dressing.ObserverId, dressing.Observer);
@@ -73,11 +81,11 @@ public sealed partial class RiflesProduct
     private bool Visible(EnemyState enemy)
     {
         if (!enemy.Alive) return false;
-        Vector3 direction = Aim(enemy.Motion.Position) - Aim(exploration.Position);
+        Vector3 direction = EnemyAim(enemy) - Aim(exploration.Position);
         var facing = exploration.Facing.Offset();
         if (direction.Length() > Combat.Action(CombatActionKind.Fire).Range
             || Vector3.Dot(Vector3.Normalize(direction), new Vector3(facing.X, 0, facing.Y)) < Math.Cos(Combat.TargetAngle * Math.PI / 180)) return false;
-        SpatialHit hit = scene!.Trace(Aim(exploration.Position), Aim(enemy.Motion.Position), CombatBodies(), partyId);
+        SpatialHit hit = scene!.Trace(Aim(exploration.Position), EnemyAim(enemy), CombatBodies(), partyId);
         return hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
     }
     private CarriedItem? Weapon(string member) => inventory!.Items("member:" + member).SingleOrDefault(i => i.Slots.Contains("main-hand"));
@@ -145,8 +153,11 @@ public sealed partial class RiflesProduct
         }
         if (aim is { } cell && Vector3.Distance(Aim(exploration.Position), Aim(cell)) > Combat.Action(kind).Range)
             throw new InvalidDataException("Target is out of range.");
-        state.Start(NewAction(kind, kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload ? weapon?.Entity ?? 0 : 0,
-            token, source, targetId, targetMember, aim));
+        ActionSnapshot prepared = NewAction(kind, kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload ? weapon?.Entity ?? 0 : 0,
+            token, source, targetId, targetMember, aim);
+        EnemyState? aimedEnemy = enemies.SingleOrDefault(e => e.Id == targetId);
+        if (aimedEnemy is not null) prepared = prepared with { AimOffsetX = aimedEnemy.Motion.CrowdOffset.X, AimOffsetY = aimedEnemy.Motion.CrowdOffset.Y };
+        state.Start(prepared);
         CombatMessage(member.Definition.Name + ": " + kind + " windup");
     }
     private void ValidateRemedy(string source, string token, string targetId)
@@ -180,6 +191,7 @@ public sealed partial class RiflesProduct
         }
         if (action.Kind == CombatActionKind.Melee && !party.CanUseReach(memberId, PartyReach.Melee)) throw new InvalidDataException("Formation changed; melee interrupted.");
         if (action.Kind == CombatActionKind.Fire && !loadedWeapons.Remove(action.Weapon)) throw new InvalidDataException("Dry rifle.");
+        if (action.Kind == CombatActionKind.Fire) EmitNoise(exploration.Position, NoiseKind.Gunfire);
         if (action.Kind == CombatActionKind.Bolt)
         {
             long cost = Combat.Action(action.Kind).ResourceCost;
@@ -198,10 +210,10 @@ public sealed partial class RiflesProduct
                 inventory!.RegisterOwner(new(pack, flightOwner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
                 inventory.Transfer(action.SourceOwner!, flightOwner, action.ItemToken!, 1, inventory.Revision); ApplyEquipment();
             }
-            Launch(partyId, memberId, action.Kind, exploration.Position, cell, flightOwner, action.Target == 0 ? "plate" : null);
+            Launch(partyId, memberId, action.Kind, exploration.Position, cell, flightOwner, action.Target == 0 ? "plate" : null, new(action.AimOffsetX, action.AimOffsetY));
             CombatMessage(member.Definition.Name + " released " + action.Kind); return;
         }
-        Vector3 start = Aim(exploration.Position), end = Aim(cell);
+        Vector3 start = Aim(exploration.Position), end = Aim(cell) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scene!.LogicalCellSize;
         if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage("Attack missed — target outside reach."); return; }
         SpatialHit hit = scene!.Trace(start, end, CombatBodies(), partyId);
         ResolveHit(hit, action.Kind, memberId, partyId);
@@ -222,45 +234,10 @@ public sealed partial class RiflesProduct
             catch (InvalidDataException error) { CombatMessage(error.Message); }
             catch (InvalidOperationException error) { CombatMessage("Action interrupted: " + error.Message); }
         }
-        foreach (EnemyState enemy in enemies.Where(e => e.Alive))
-        {
-            enemy.Motion.Advance(seconds);
-            if (Defeated) { enemy.Action.Cancel(); enemy.Motion.Stop(); continue; }
-            try { enemy.Action.Advance(seconds, action => CommitEnemy(enemy, action)); }
-            catch (InvalidOperationException error) { CombatMessage(enemy.Definition.Name + ": " + error.Message); }
-            enemy.DecisionRemaining = Math.Max(0, enemy.DecisionRemaining - seconds);
-            if (enemy.Motion.Moving || enemy.Action.Busy || enemy.DecisionRemaining > 0) continue;
-            enemy.DecisionRemaining = enemy.Definition.DecisionSeconds;
-            float distance = Vector3.Distance(Aim(enemy.Motion.Position), Aim(exploration.Position));
-            SpatialHit sight = scene!.Trace(Aim(enemy.Motion.Position), Aim(exploration.Position), CombatBodies(), enemy.Id);
-            bool seesParty = sight.Present && sight.Kind == SpatialHitKind.Entity && sight.Entity == partyId;
-            if (distance <= enemy.Definition.AwarenessRange && seesParty) enemy.Aware = true;
-            if (!enemy.Aware) continue;
-            int dx = exploration.Position.X - enemy.Motion.Position.X, dy = exploration.Position.Y - enemy.Motion.Position.Y;
-            CardinalDirection facing = Math.Abs(dx) >= Math.Abs(dy) ? dx >= 0 ? CardinalDirection.East : CardinalDirection.West
-                : dy >= 0 ? CardinalDirection.South : CardinalDirection.North;
-            if (enemy.Motion.Facing != facing)
-            {
-                enemy.Motion.Act(enemy.Motion.Facing.Rotate(-1) == facing ? ExplorationAction.TurnLeft : ExplorationAction.TurnRight);
-                continue;
-            }
-            CombatActionKind kind = enemy.Definition.Attack;
-            if (seesParty && distance <= Combat.Action(kind).Range)
-            {
-                if (kind == CombatActionKind.Fire && !enemy.Loaded)
-                {
-                    if (Ammo(enemy.Owner) > 0) enemy.Action.Start(NewAction(CombatActionKind.Reload));
-                    else kind = CombatActionKind.Melee;
-                }
-                if (!enemy.Action.Busy && distance <= Combat.Action(kind).Range)
-                    enemy.Action.Start(NewAction(kind, target: partyId, aim: exploration.Position));
-            }
-            if (!enemy.Action.Busy && scene!.NextStep(enemy.Motion.Position, CardinalDirections.Ordered.Select(d => exploration.Position + d.Offset()), movement!.BlockedCells) is { } next)
-                enemy.Motion.StepTo(next);
-        }
+        AdvanceEnemies(seconds);
         if (Defeated)
         {
-            exploration.Stop(); movement!.Remove(partyId);
+            exploration.Stop(); movement!.Remove(partyId); exploration.Detach();
             foreach (ActionState action in actions.Values) action.Cancel();
         }
     }
@@ -276,8 +253,9 @@ public sealed partial class RiflesProduct
         {
             if (!enemy.Loaded) return;
             enemy.Loaded = false;
+            EmitNoise(enemy.Motion.Position, NoiseKind.Gunfire, enemy.Id);
         }
-        Vector3 start = Aim(enemy.Motion.Position), end = Aim(action.AimCell!.Value);
+        Vector3 start = EnemyAim(enemy), end = Aim(action.AimCell!.Value);
         if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage(enemy.Definition.Name + " missed."); return; }
         ResolveHit(scene!.Trace(start, end, CombatBodies(), enemy.Id), action.Kind, null, enemy.Id);
     }
@@ -291,10 +269,10 @@ public sealed partial class RiflesProduct
         {
             if (shooter != partyId && !Combat.FriendlyFire) { CombatMessage("Shot stopped by a friendly body."); return; }
             long applied = enemy.Damage(Math.Max(Combat.MinimumDamage, damage - enemy.Definition.Defense));
-            enemy.Aware = true; CombatMessage(enemy.Definition.Name + " took " + applied + " damage.");
+            enemy.Brain.Observe(null, exploration.Position); CombatMessage(enemy.Definition.Name + " took " + applied + " damage.");
             if (!enemy.Alive)
             {
-                enemy.Action.Cancel(); enemy.Motion.Stop(); movement!.Remove(enemy.Id);
+                enemy.Action.Cancel(); enemy.Motion.Stop(); movement!.Remove(enemy.Id); enemy.Motion.Detach();
                 drops[enemy.Owner] = enemy.Motion.Position;
                 // An enemy's loaded round stays with its unique rifle on death.
                 if (enemy.Loaded)
@@ -320,14 +298,14 @@ public sealed partial class RiflesProduct
         if (allies.TryGetValue(hit.Entity, out PartyMemberState? ally) && Combat.FriendlyFire)
         {
             ally.ApplyDamage(damage);
-            if (!ally.IsLiving) { if (hit.Entity == actor!.Id) actor.Motion.Stop(); movement!.Remove(hit.Entity); }
+            if (!ally.IsLiving) { if (hit.Entity == actor!.Id) { actor.Motion.Stop(); actor.Motion.Detach(); } movement!.Remove(hit.Entity); }
             CombatMessage("Garrison ally " + (ally.IsLiving ? "wounded." : "fell."));
         }
         else CombatMessage("Attack stopped by a world body; friendly damage disabled.");
     }
-    private void Launch(ulong shooter, string? member, CombatActionKind kind, GridPoint source, GridPoint target, string? owner, string? destination)
+    private void Launch(ulong shooter, string? member, CombatActionKind kind, GridPoint source, GridPoint target, string? owner, string? destination, Vector2 targetOffset = default)
     {
-        Vector3 position = Aim(source), offset = Aim(target) - position;
+        Vector3 position = Aim(source), offset = Aim(target) + new Vector3(targetOffset.X, 0, targetOffset.Y) * scene!.LogicalCellSize - position;
         if (offset.LengthSquared() == 0) offset = new Vector3(exploration.Facing.Offset().X, 0, exploration.Facing.Offset().Y);
         Vector3 direction = Vector3.Normalize(offset);
         float distance = Math.Min(offset.Length(), Combat.Action(kind).Range);

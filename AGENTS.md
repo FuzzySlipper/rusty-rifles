@@ -119,5 +119,6 @@ party controls and Engine-backed saves; see `docs/milestone-1.md`. Milestone 2
 adds generated art, lit sprites, texture mapping and comparison controls; see
 `docs/milestone-2.md`. Milestone 3 adds party presets, equipment, inventory, world items and a gate puzzle;
 see `docs/milestone-3.md`. Milestone 4 adds action phases, rifles, throws/bolts, mixed enemies and combat saves;
-see `docs/milestone-4.md`. Group occupancy, tactical AI, richer procgen and
-multi-floor progression remain campaign work.
+see `docs/milestone-4.md`. Milestone 5 adds mixed-size crowd slots, bounded Engine paths,
+perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Richer procgen,
+spells and multi-floor progression remain campaign work.

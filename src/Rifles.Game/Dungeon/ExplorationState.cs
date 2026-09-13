@@ -3,7 +3,7 @@ using Rifles.Procgen.Generation;
 namespace Rifles.Game.Dungeon;
 
 internal sealed record ExplorationSnapshot(GridPoint Position, CardinalDirection Facing, double ElapsedSeconds,
-    ExplorationAction? Action, GridPoint Destination, CardinalDirection DestinationFacing, double RemainingSeconds);
+    ExplorationAction? Action, GridPoint Destination, CardinalDirection DestinationFacing, double RemainingSeconds, string? Placement = null, string? DestinationPlacement = null);
 internal enum ExplorationAction { Forward, Backward, StrafeLeft, StrafeRight, TurnLeft, TurnRight }
 
 /// <summary>Source cell owns hits while in transit; destination is reserved until exact completion.</summary>
@@ -18,6 +18,12 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
     private CardinalDirection destinationFacing;
     private MovementGrid? grid;
     private ulong actorId;
+    private Vector2 lastOffset;
+    private string? savedPlacement;
+    private string? savedDestinationPlacement;
+    internal Vector2 CrowdOffset => grid is null ? lastOffset : new(grid.Placement(actorId).OffsetX, grid.Placement(actorId).OffsetY);
+    internal Vector2 VisualCrowdOffset => Moving && !Turning && grid?.DestinationPlacement(actorId) is { } target
+        ? Vector2.Lerp(CrowdOffset, new(target.OffsetX, target.OffsetY), Progress) : CrowdOffset;
     internal bool Moving => action is not null;
     private bool Turning => action is ExplorationAction.TurnLeft or ExplorationAction.TurnRight;
     private double Duration => Turning ? tuning.TurnSeconds : tuning.StepSeconds;
@@ -32,7 +38,15 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         grid.Add(id, Position);
         if (Moving && !Turning && !grid.TryReserve(id, destination)) throw new InvalidDataException("Saved movement destination is unavailable.");
     }
-    internal ExplorationSnapshot Capture() => new(Position, Facing, ElapsedSeconds, action, destination, destinationFacing, RecoverySeconds);
+    internal void Bind(MovementGrid movement, ulong id, string footprint, string faction, bool share)
+    {
+        grid = movement; actorId = id;
+        grid.Add(id, Position, footprint, faction, share, savedPlacement);
+        if (Moving && !Turning && !grid.RestoreReservation(id, destination, savedPlacement, savedDestinationPlacement))
+            throw new InvalidDataException("Saved crowd movement destination is unavailable.");
+    }
+    internal ExplorationSnapshot Capture() => new(Position, Facing, ElapsedSeconds, action, destination, destinationFacing, RecoverySeconds,
+        grid is null ? savedPlacement : grid.Placement(actorId).Id, grid?.DestinationPlacement(actorId)?.Id ?? savedDestinationPlacement);
     internal static ExplorationState Restore(ExplorationSnapshot saved, DungeonFloor floor, ExplorationTuning tuning)
     {
         bool turning = saved.Action is ExplorationAction.TurnLeft or ExplorationAction.TurnRight;
@@ -43,7 +57,7 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
             || saved.Action is { } action && (!Enum.IsDefined(action) || saved.RemainingSeconds == 0)
             || saved.Action is null && saved.RemainingSeconds != 0)
             throw new InvalidDataException("Invalid saved party pose/time.");
-        ExplorationState state = new(saved.Position, tuning) { Facing = saved.Facing, ElapsedSeconds = saved.ElapsedSeconds };
+        ExplorationState state = new(saved.Position, tuning) { Facing = saved.Facing, ElapsedSeconds = saved.ElapsedSeconds, savedPlacement = saved.Placement, savedDestinationPlacement = saved.DestinationPlacement };
         if (saved.Action is { } active)
         {
             state.Plan(active);
@@ -61,7 +75,7 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         if (!Moving || RecoverySeconds > 0) return;
         if (Turning) Facing = destinationFacing;
         else if (grid!.Commit(actorId)) Position = destination;
-        action = null;
+        action = null; savedDestinationPlacement = null;
     }
     internal bool Act(ExplorationAction requested)
     {
@@ -71,9 +85,12 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         RecoverySeconds = Duration;
         return true;
     }
+    internal void RestoreVisualOffset(Vector2 offset) => lastOffset = offset;
+    internal void Detach() { grid = null; }
     internal void Stop()
     {
-        grid?.Cancel(actorId); action = null; RecoverySeconds = 0;
+        if (grid is not null) { var placement = grid.Placement(actorId); savedPlacement = placement.Id; lastOffset = new(placement.OffsetX, placement.OffsetY); }
+        grid?.Cancel(actorId); action = null; RecoverySeconds = 0; savedDestinationPlacement = null;
     }
     internal bool StepTo(GridPoint cell)
     {

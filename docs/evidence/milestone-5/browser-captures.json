@@ -1,0 +1,62 @@
+[
+  {
+    "file": "corridor-start.png",
+    "script": "73773026-4834-43d0-9a81-52953ef9a4bd",
+    "capture": "a517317e-27de-4de1-bc06-f2f74ab509d2",
+    "session": "72205c40-7d27-4596-a427-c9a07d6d55c2",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/72205c40-7d27-4596-a427-c9a07d6d55c2/f482acc0-532f-4a65-9b90-367ed4ec6d8d.png",
+    "time": "2026-09-13T11:01:08.797923643Z",
+    "backend": "browser",
+    "canvasBacking": "320x180",
+    "interaction": "ordinary DOM keyboard activation and native grid keys",
+    "pageErrors": []
+  },
+  {
+    "file": "crowd-after-raider.png",
+    "script": "4e2088cf-7c84-4751-a4e5-86502f4d413b",
+    "capture": "e79b3dd2-aedc-4622-852b-34f635c53301",
+    "session": "72205c40-7d27-4596-a427-c9a07d6d55c2",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/72205c40-7d27-4596-a427-c9a07d6d55c2/c7b32cdb-3757-43db-9afc-e1c19e80f3dc.png",
+    "time": "2026-09-13T11:01:33.135105798Z",
+    "backend": "browser",
+    "canvasBacking": "320x180",
+    "interaction": "ordinary DOM keyboard activation and native grid keys",
+    "pageErrors": []
+  },
+  {
+    "file": "saved-crowd-in-transit.png",
+    "script": "5d73a69d-61bb-4e63-833a-b6496f639c3f",
+    "capture": "7d8708b9-3f8b-42fa-84b1-4f0bd7d61e77",
+    "session": "72205c40-7d27-4596-a427-c9a07d6d55c2",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/72205c40-7d27-4596-a427-c9a07d6d55c2/d499e1e6-7aa4-465e-8142-cf68fdfa201c.png",
+    "time": "2026-09-13T11:02:12.643552467Z",
+    "backend": "browser",
+    "canvasBacking": "320x180",
+    "interaction": "ordinary DOM keyboard activation and native grid keys",
+    "pageErrors": []
+  },
+  {
+    "file": "advanced-after-save.png",
+    "script": "5d73a69d-61bb-4e63-833a-b6496f639c3f",
+    "capture": "a41daef2-4c6d-48ad-bd88-44303fbf3ed8",
+    "session": "72205c40-7d27-4596-a427-c9a07d6d55c2",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/72205c40-7d27-4596-a427-c9a07d6d55c2/76910737-bd70-42ef-adce-10df2cb2eb5f.png",
+    "time": "2026-09-13T11:02:15.385496423Z",
+    "backend": "browser",
+    "canvasBacking": "320x180",
+    "interaction": "ordinary DOM keyboard activation and native grid keys",
+    "pageErrors": []
+  },
+  {
+    "file": "restored-crowd-in-transit.png",
+    "script": "5d73a69d-61bb-4e63-833a-b6496f639c3f",
+    "capture": "78b26ae9-0789-49c4-b9c1-f9ce9992efda",
+    "session": "72205c40-7d27-4596-a427-c9a07d6d55c2",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/72205c40-7d27-4596-a427-c9a07d6d55c2/d9d9df14-5f68-46c0-a0a5-e775846ffb3f.png",
+    "time": "2026-09-13T11:02:25.021580436Z",
+    "backend": "browser",
+    "canvasBacking": "320x180",
+    "interaction": "ordinary DOM keyboard activation and native grid keys",
+    "pageErrors": []
+  }
+]

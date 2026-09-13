@@ -15,7 +15,7 @@ public sealed partial class RiflesProduct
         uint foes = value.Object(enemies.Select(enemy => (enemy.Id.ToString(), value.Object(
             ("name", value.String(enemy.Definition.Name)), ("vitality", value.Number(enemy.Vitality)),
             ("maxVitality", value.Number(enemy.Definition.Vitality)), ("visible", value.Number(Visible(enemy) ? 1 : 0)),
-            ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Aware ? "Approaching" : "Unaware" : "Dead")),
+            ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Brain.Mode + " · " + enemy.Brain.Reason + " · " + enemy.NavigationStatus : "Dead")),
             ("remaining", value.Number(enemy.Action.Current?.Remaining ?? 0)), ("kind", value.String(enemy.Definition.Attack.ToString()))))).ToArray());
         uint members = value.Object(party.Members.Select(member =>
         {
@@ -33,9 +33,9 @@ public sealed partial class RiflesProduct
     {
         foreach (EnemyState enemy in enemies)
         {
-            string image = SentryView.Select(enemy.Motion.VisualCell, enemy.Motion.Facing, exploration.VisualCell);
+            string image = SentryView.Select((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset), enemy.Motion.Facing, exploration.VisualCell);
             float scale = enemy.Definition.Scale * (!enemy.Alive ? Combat.CorpseScale : enemy.Action.Current?.Phase == ActionPhase.Windup ? Combat.WindupScale : 1);
-            Vector3 position = scene!.Eye(enemy.Motion.VisualCell) with { Y = scene.GroundHeight };
+            Vector3 position = scene!.Eye((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset)) with { Y = scene.GroundHeight };
             yield return new(enemy.Id, false, 0, new Transform(position, Quaternion.Identity, new Vector3(scale)), combatArt!.Image(features!.Style, image), true, RenderLayer.Scene);
         }
         foreach (FlightSnapshot flight in flights)

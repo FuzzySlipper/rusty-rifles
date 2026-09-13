@@ -37,19 +37,23 @@ internal static class CombatRestore
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor)
     {
-        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length == definitions.Combat.Enemies.Length
-            && snapshots.Select(snapshot => snapshot.Definition).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
-            && snapshots.Select(snapshot => snapshot.Definition).ToHashSet(StringComparer.Ordinal)
-                .SetEquals(definitions.Combat.Enemies.Select(definition => definition.Id)), "saved combat enemy definitions");
+        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length == definitions.Combat.Encounter.Length
+            && snapshots.Select(snapshot => snapshot.Spawn).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
+            && snapshots.Select(snapshot => snapshot.Spawn).ToHashSet(StringComparer.Ordinal)
+                .SetEquals(definitions.Combat.Encounter.Select(spawn => spawn.Id)), "saved combat enemy definitions");
 
         EnemyState[] enemies = new EnemyState[snapshots.Length];
         for (int index = 0; index < snapshots.Length; index++)
         {
             EnemySnapshot snapshot = snapshots[index];
-            EnemyDefinition definition = definitions.Combat.Enemies.Single(definition => definition.Id == snapshot.Definition);
+            EnemySpawnDefinition spawn = definitions.Combat.Encounter.Single(s => s.Id == snapshot.Spawn);
+            GameDefinitions.Require(spawn.Enemy == snapshot.Definition, "saved enemy archetype");
+            EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
             GameDefinitions.Require(snapshot.Owner == EnemyOwner(snapshot.Id), "saved combat enemy owner");
             ValidateAction(snapshot.Action, definitions.Combat, floor);
             enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration);
+            var placement = definitions.Crowd.Footprint(definition.Footprint).Placement(snapshot.Motion.Placement);
+            enemies[index].Motion.RestoreVisualOffset(new(placement.OffsetX, placement.OffsetY));
         }
         return enemies;
     }
@@ -78,6 +82,8 @@ internal static class CombatRestore
     private static void ValidateAction(ActionSnapshot? action, CombatDefinition combat, DungeonFloor floor)
     {
         if (action is null) return;
+        GameDefinitions.Require(float.IsFinite(action.AimOffsetX) && Math.Abs(action.AimOffsetX) <= .5f
+            && float.IsFinite(action.AimOffsetY) && Math.Abs(action.AimOffsetY) <= .5f, "saved aim offset");
         _ = ActionState.Restore(action);
         ActionDefinition profile = combat.Action(action.Kind);
         double maximumRemaining = action.Phase == ActionPhase.Windup ? profile.Windup : profile.Recovery;

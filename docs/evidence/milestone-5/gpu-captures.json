@@ -1,0 +1,33 @@
+{
+  "session": "dff578ad-9b3a-42d8-8835-2e691b7fc244",
+  "slot": "slot-1",
+  "backend": "wolf",
+  "captures": [
+    {
+      "file": "gpu-corridor.png",
+      "originalPath": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/dff578ad-9b3a-42d8-8835-2e691b7fc244/2dba6977-f710-416e-a24c-32eaf0b1d5b6.png",
+      "capture": "52eca6ce-bb32-462b-9f51-4ca3d70dc0d9"
+    },
+    {
+      "file": "gpu-entrance-room.png",
+      "originalPath": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/dff578ad-9b3a-42d8-8835-2e691b7fc244/ca59f560-4043-4dd8-ae52-048c9a3eaf9a.png",
+      "capture": "69930c7d-76f1-45b7-9257-d8d3c1a9de49"
+    },
+    {
+      "file": "gpu-room-followup.png",
+      "originalPath": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/dff578ad-9b3a-42d8-8835-2e691b7fc244/85aac392-f1e7-40cb-af05-db2ffb40c406.png",
+      "capture": "869ee967-7cbe-41b7-83c2-a14c402a0cbe"
+    },
+    {
+      "file": "gpu-party-defeat.png",
+      "originalPath": "/home/dev/dsh-crew/experiments/wolf-den-srv/controller/state/dff578ad-9b3a-42d8-8835-2e691b7fc244/5f39e87b-2640-4b32-ab11-535a0259ed58.png",
+      "capture": "cfa595d0-e5bb-4838-8d0e-67158c8238a5"
+    }
+  ],
+  "cleanup": {
+    "released": true,
+    "local_capture_stopped": true,
+    "errors": []
+  },
+  "scope": "Native room/corridor visibility and lighting before final departure-lane admission guard; not full encounter clear or comprehensive smooth-motion certification."
+}

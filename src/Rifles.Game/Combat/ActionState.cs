@@ -28,7 +28,7 @@ internal sealed record ActionSnapshot(
     double Remaining,
     ActionPhase Phase,
     double RecoverySeconds,
-    GridPoint? AimCell = null);
+    GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0);
 
 /// <summary>
 /// The current party action. The caller supplies only admitted simulation time;

@@ -1,0 +1,99 @@
+{
+  "capacity": 4,
+  "waitingAttemptLimit": 8,
+  "footprints": {
+    "small": {
+      "size": 1,
+      "cost": 1,
+      "edgeClearance": 0.4,
+      "placements": [
+        {
+          "id": "nw",
+          "mask": 1,
+          "offsetX": -0.25,
+          "offsetY": -0.25,
+          "width": 0.4,
+          "depth": 0.4
+        },
+        {
+          "id": "ne",
+          "mask": 2,
+          "offsetX": 0.25,
+          "offsetY": -0.25,
+          "width": 0.4,
+          "depth": 0.4
+        },
+        {
+          "id": "sw",
+          "mask": 4,
+          "offsetX": -0.25,
+          "offsetY": 0.25,
+          "width": 0.4,
+          "depth": 0.4
+        },
+        {
+          "id": "se",
+          "mask": 8,
+          "offsetX": 0.25,
+          "offsetY": 0.25,
+          "width": 0.4,
+          "depth": 0.4
+        }
+      ]
+    },
+    "medium": {
+      "size": 2,
+      "cost": 2,
+      "edgeClearance": 0.8,
+      "placements": [
+        {
+          "id": "north",
+          "mask": 3,
+          "offsetX": 0,
+          "offsetY": -0.25,
+          "width": 0.8,
+          "depth": 0.4
+        },
+        {
+          "id": "south",
+          "mask": 12,
+          "offsetX": 0,
+          "offsetY": 0.25,
+          "width": 0.8,
+          "depth": 0.4
+        },
+        {
+          "id": "west",
+          "mask": 5,
+          "offsetX": -0.25,
+          "offsetY": 0,
+          "width": 0.4,
+          "depth": 0.8
+        },
+        {
+          "id": "east",
+          "mask": 10,
+          "offsetX": 0.25,
+          "offsetY": 0,
+          "width": 0.4,
+          "depth": 0.8
+        }
+      ]
+    },
+    "large": {
+      "size": 4,
+      "cost": 4,
+      "edgeClearance": 0.9,
+      "placements": [
+        {
+          "id": "whole",
+          "mask": 15,
+          "offsetX": 0,
+          "offsetY": 0,
+          "width": 0.9,
+          "depth": 0.9
+        }
+      ]
+    }
+  }
+}

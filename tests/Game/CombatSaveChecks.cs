@@ -12,13 +12,21 @@ internal static class CombatSaveChecks
         CombatFixture fixture = CombatFixture.Create(definitions);
         RestoredCombat restored = CombatRestore.Validate(fixture.Saved, definitions, fixture.Floor, fixture.Inventory, fixture.Party,
             fixture.PartyId, fixture.AllyIds);
-        Require(restored.Enemies.Length == definitions.Combat.Enemies.Length && restored.Actions.Count == fixture.Party.Members.Count,
+        Require(restored.Enemies.Length == definitions.Combat.Encounter.Length && restored.Actions.Count == fixture.Party.Members.Count,
             "Combat restore rebuilds exact enemy and party action owners.");
 
         VerifyCorruptPositionsAreRejected(definitions, fixture);
         VerifyNonFiniteFlightIsRejected(definitions, fixture);
         VerifyNonWeaponLoadIsRejected(definitions, fixture);
         VerifyInvalidAimAndDeadActivityAreRejected(definitions, fixture);
+
+        EnemySpawnDefinition first = definitions.Combat.Encounter[0];
+        GameDefinitions repeated = definitions with { Combat = definitions.Combat with
+            { Encounter = [first with { Id = "first" }, first with { Id = "second" }] } };
+        CombatFixture copies = CombatFixture.Create(repeated);
+        RestoredCombat repeatedResult = CombatRestore.Validate(copies.Saved, repeated, copies.Floor, copies.Inventory, copies.Party, copies.PartyId, copies.AllyIds);
+        Require(repeatedResult.Enemies.Length == 2 && repeatedResult.Enemies[0].Id != repeatedResult.Enemies[1].Id,
+            "Multiple instances of one archetype keep separate identities and inventories across restore.");
 
         Console.WriteLine("Combat save checks passed: combat owners, action phases, flights, drops, and allies.");
     }
@@ -57,7 +65,7 @@ internal static class CombatSaveChecks
     private static void VerifyNonWeaponLoadIsRejected(GameDefinitions definitions, CombatFixture fixture)
     {
         ulong knife = fixture.Inventory.Owners.SelectMany(owner => fixture.Inventory.Items(owner.Key))
-            .Single(item => item.Definition == "knife" && item.Entity != 0).Entity;
+            .First(item => item.Definition == "knife" && item.Entity != 0).Entity;
         RequireRejected(() => Validate(fixture.Saved with { LoadedWeapons = [knife] }, definitions, fixture),
             "A loaded item must be an actual rifle identity.");
     }
@@ -110,14 +118,15 @@ internal static class CombatSaveChecks
             ItemInventory inventory = new(definitions.Items, party.Members.Select(member => new PackOwner(nextId++, "member:" + member.Definition.Id,
                 definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space)));
 
-            EnemySnapshot[] enemies = definitions.Combat.Enemies.Select((definition, index) =>
+            EnemySnapshot[] enemies = definitions.Combat.Encounter.Select((spawn, index) =>
             {
+                EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
                 ulong id = (ulong)(10 + index);
                 string owner = "combat:enemy:" + id;
                 inventory.RegisterOwner(new PackOwner(nextId++, owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
                 foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, () => nextId++);
                 ExplorationState motion = new(floor.Cells.First(), definitions.Exploration with { StepSeconds = definition.StepSeconds });
-                return new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner);
+                return new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, motion.Position, [motion.Position]).Capture(), spawn.Id);
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
             AllySnapshot[] allies = allyIds.Select(id => new AllySnapshot(id, definitions.Combat.AllyVitality)).ToArray();

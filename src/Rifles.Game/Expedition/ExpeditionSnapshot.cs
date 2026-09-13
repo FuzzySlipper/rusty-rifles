@@ -1,3 +1,4 @@
+using Rifles.Procgen.Generation;
 using System.Buffers;
 using Rifles.Game.Combat;
 using System.Text.Json;
@@ -16,7 +17,7 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
-    public uint SchemaVersion => 4;
+    public uint SchemaVersion => 5;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -72,13 +73,16 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         GameDefinitions.Require(saved.Features.LanternRevision > 0 && saved.Features.LanternRevision <= uint.MaxValue, "Save lantern revision");
         PatrolActor actor = PatrolActor.Restore(saved.Actor, saved.Floor, definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds });
         // Validate occupancy and both in-flight reservations before realizing any replacement scene.
-        MovementGrid grid = new(saved.Floor.Cells.ToHashSet(), (_, _) => true);
+        MovementGrid grid = new(saved.Floor.Cells.ToHashSet(), (_, _) => true, definitions.Crowd);
+        foreach (var direction in Rifles.Procgen.Generation.CardinalDirections.Ordered)
+            if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
+                grid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), definitions.Combat.DoorClearance);
         if (party.Members.Any(m => m.IsLiving)) exploration.Bind(grid, saved.PartyId);
         if (combat.Allies.Single(a => a.Id == actor.Id).Vitality > 0) actor.Bind(grid);
         saved.Features.Dressing.Validate(saved.Floor);
         saved.Features.Dressing.Bind(grid, combat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
         foreach (var ally in combat.Allies.Where(a => a.Vitality == 0)) grid.Remove(ally.Id);
-        foreach (EnemyState enemy in combat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(grid, enemy.Id);
+        foreach (EnemyState enemy in combat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(grid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
         GameDefinitions.Require(saved.ItemWorld.DoorOpen || !grid.Occupied(saved.ItemWorld.Door), "closed gate occupancy");
         return (exploration, party, actor);
     }

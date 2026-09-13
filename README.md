@@ -18,7 +18,9 @@ Engine-backed saves. [Milestone 2](docs/milestone-2.md) adds generated textured
 voxels, grounded prop sprites, directional sentries and dynamic-light art
 comparisons. [Milestone 3](docs/milestone-3.md) adds starter-party presets,
 equipment and inventory, restorative items, world storage and a key/lever/plate
-gate puzzle. Engine owns rendering, navigation, camera, input, inventory and
+gate puzzle. [Milestone 4](docs/milestone-4.md) adds real-time rifle/melee combat,
+throws, bolts and enemy loot. [Milestone 5](docs/milestone-5.md) adds mixed-size
+crowds, sight/noise awareness, patrol/search and tactical rifle enemies. Engine owns rendering, navigation, camera, input, inventory and
 the simulation clock. Game policy lives in ordinary C#.
 
 ## Run

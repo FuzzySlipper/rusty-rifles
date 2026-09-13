@@ -13,6 +13,9 @@ static void Require(bool condition, string message)
 string contentRoot = Path.GetFullPath("content");
 GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
 ActionChecks.Run();
+EnemyBrainChecks.Run();
+CrowdChecks.Run();
+CrowdLaneChecks.Run(definitions);
 CombatInventoryChecks.Run(definitions);
 CombatSaveChecks.Run(definitions);
 // Invalid authored files fail at admission, before creating any live world.
@@ -95,7 +98,7 @@ DungeonFloor savedFloor = DungeonFloor.Generate(definitions.Generation.Seed, def
 ExplorationState savePose = new(savedFloor.Entrance, definitions.Exploration);
 PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
     definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);
-MovementGrid saveGrid = new(savedFloor.Cells.ToHashSet(), (_, _) => true);
+MovementGrid saveGrid = new(savedFloor.Cells.ToHashSet(), (_, _) => true, definitions.Crowd);
 savePose.Bind(saveGrid, 2); saveActor.Bind(saveGrid);
 saveActor.Advance(.1);
 PartyState saveParty = new(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
@@ -112,14 +115,15 @@ ItemInventory savedInventory = new(definitions.Items,
 savedInventory.GrantStarting(AllocateDressingId);
 savedDressing.Bind(saveGrid);
 List<EnemySnapshot> saveEnemies = [];
-foreach (EnemyDefinition enemy in definitions.Combat.Enemies)
+foreach (EnemySpawnDefinition spawn in definitions.Combat.Encounter)
 {
+    EnemyDefinition enemy = definitions.Combat.Enemy(spawn.Enemy);
     ulong id = AllocateDressingId(); string owner = "combat:enemy:" + id;
     savedInventory.RegisterOwner(new PackOwner(AllocateDressingId(), owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
     foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(owner, loot.Definition, loot.Quantity, AllocateDressingId);
     GridPoint cell = savedFloor.Cells.First(c => !saveGrid.Occupied(c) && c != savedItemWorld.Capture().Door);
-    ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id);
-    saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner));
+    ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id, enemy.Footprint, enemy.Faction, enemy.Share);
+    saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
 CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
     new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0);

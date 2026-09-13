@@ -1,0 +1,32 @@
+[
+  {
+    "file": "final-loaded-crowd.png",
+    "script": "6c0edf04-cebe-4124-8245-5b1dd9da838f",
+    "capture": "da706c47-c56b-4b3a-8e73-2f5eadedb11f",
+    "session": "135bad5c-3f49-4609-9c46-05853ecfb3ab",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/135bad5c-3f49-4609-9c46-05853ecfb3ab/793dd8b0-e97d-4c26-99d5-430804aac719.png",
+    "time": "2026-09-13T11:18:25.333061209Z",
+    "backend": "browser",
+    "pageErrors": []
+  },
+  {
+    "file": "final-room-crowd.png",
+    "script": "6c0edf04-cebe-4124-8245-5b1dd9da838f",
+    "capture": "f3d42bba-9dff-4972-8b18-1e9223cda99f",
+    "session": "135bad5c-3f49-4609-9c46-05853ecfb3ab",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/135bad5c-3f49-4609-9c46-05853ecfb3ab/c80c47ad-c67c-498c-beaf-715b5605f281.png",
+    "time": "2026-09-13T11:18:29.745959561Z",
+    "backend": "browser",
+    "pageErrors": []
+  },
+  {
+    "file": "final-restored-crowd.png",
+    "script": "6c0edf04-cebe-4124-8245-5b1dd9da838f",
+    "capture": "170a9bbd-7a60-4a63-8cab-752e8147f65a",
+    "session": "135bad5c-3f49-4609-9c46-05853ecfb3ab",
+    "originalPath": "/home/agent/.local/state/crew-playtest/browser/135bad5c-3f49-4609-9c46-05853ecfb3ab/4330c094-5285-405b-a797-a1ca2d824016.png",
+    "time": "2026-09-13T11:18:39.377161904Z",
+    "backend": "browser",
+    "pageErrors": []
+  }
+]

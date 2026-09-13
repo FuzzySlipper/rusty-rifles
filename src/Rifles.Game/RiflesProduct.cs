@@ -1,3 +1,4 @@
+using Rifles.Procgen.Generation;
 using System.Text;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
@@ -139,14 +140,18 @@ public sealed partial class RiflesProduct : IEngineProduct
             for (uint step = 0; step < update.Facts.AdmittedStepCount; step++)
             {
                 double seconds = update.Facts.FixedDeltaSeconds;
+                GridPoint previousCell = exploration.Position;
                 if (!Defeated) exploration.Advance(seconds);
+                if (exploration.Position != previousCell) EmitNoise(exploration.Position, NoiseKind.Footstep);
                 if (allies[actor!.Id].IsLiving) actor.Advance(seconds);
                 AdvanceCombat(seconds);
             }
             if (!suppressMovement && !Defeated) controls.Apply(exploration);
         }
         itemWorld!.CheckOpen(exploration, scene!);
+        bool wasOpen = itemWorld.Capture().DoorOpen;
         itemWorld.UpdateDoor(inventory!, exploration, actor!, movement!, scene!);
+        if (!wasOpen && itemWorld.Capture().DoorOpen) EmitNoise(itemWorld.Capture().Door, NoiseKind.Alarm);
         Publish();
         return ProductUpdateResult.None;
     }
@@ -243,7 +248,10 @@ public sealed partial class RiflesProduct : IEngineProduct
             ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
             DungeonScene replacement = new(engine, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
-            MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep);
+            MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
+            foreach (var direction in CardinalDirections.Ordered)
+                if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
+                    replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), Combat.DoorClearance);
             try
             {
                 if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
@@ -259,7 +267,7 @@ public sealed partial class RiflesProduct : IEngineProduct
                 replacement.SetRoomLights(roomLights);
                 replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
                 foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
-                foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id);
+                foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
                 // Retire old appearance references before releasing their Engine resources.
                 replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt!.Facts(restoredInventory, restoredItems, replacement));
             }
@@ -297,7 +305,7 @@ public sealed partial class RiflesProduct : IEngineProduct
     }
     private void BindMovement()
     {
-        movement = new MovementGrid(floor.Cells.ToHashSet(), scene!.AdmitStep);
+        movement = new MovementGrid(floor.Cells.ToHashSet(), scene!.AdmitStep, definitions.Crowd);
         exploration.Bind(movement, partyId);
         actor!.Bind(movement);
         features!.Bind(movement);

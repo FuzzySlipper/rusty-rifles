@@ -12,7 +12,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -49,7 +49,8 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<ItemDefinitions>("definitions/items.json", x => x.Validate()),
             Read<ItemExplorationDefinition>("definitions/item-exploration.json", x => x.Validate()),
             Read<ItemArtDefinition>("definitions/item-art.json", x => x.Validate()),
-            Read<CombatDefinition>("definitions/combat.json", x => x.Validate()));
+            Read<CombatDefinition>("definitions/combat.json", x => x.Validate()),
+            Read<CrowdDefinition>("definitions/crowds.json", x => x.Validate()));
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
@@ -63,6 +64,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             .All(i => i.Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "combat rifle ammunition compatibility");
         foreach (var enemy in result.Combat.Enemies)
         {
+            Require(result.Crowd.Footprints.ContainsKey(enemy.Footprint), "enemy footprint reference");
             foreach (var loot in enemy.Loot) Require(loot.Quantity <= result.Items.Item(loot.Definition).MaximumQuantity, "enemy loot");
             Require(enemy.Attack != CombatActionKind.Fire || enemy.Loot.Any(l => result.Items.Item(l.Definition).Kind == Rusty.Engine.Mechanics.ItemKind.Unique
                 && result.Items.Item(l.Definition).Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "ranged enemy rifle");
