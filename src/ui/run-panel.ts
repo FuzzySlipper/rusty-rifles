@@ -198,8 +198,8 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
     mapView.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     for (const cell of cells) {
       const tile = svgElement('rect');
-      // Invert the logical Y coordinate so increasing Y stays visually south.
-      const drawY = maxY - cell.y + minY;
+      // Grid and SVG both increase Y toward the south.
+      const drawY = cell.y;
       const shade = cell.level > 0 ? '#8ca65c' : cell.level < 0 ? '#5e86a5' : '#d1bc78';
       svgAttributes(tile, { x: cell.x + 0.06, y: drawY + 0.06, width: 0.88, height: 0.88, rx: 0.08, fill: shade, stroke: '#10120f', 'stroke-width': 0.06 });
       mapView.append(tile);
@@ -207,14 +207,14 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
     for (const marker of markers) {
       const mark = svgElement('path');
       mark.dataset.runMapMarker = marker.id;
-      const drawY = maxY - marker.y + minY;
+      const drawY = marker.y;
       svgAttributes(mark, { d: `M ${marker.x + 0.5} ${drawY + 0.18} L ${marker.x + 0.82} ${drawY + 0.5} L ${marker.x + 0.5} ${drawY + 0.82} L ${marker.x + 0.18} ${drawY + 0.5} Z`, fill: '#f0cf6a', stroke: '#281d0f', 'stroke-width': 0.06 });
       const label = svgElement('title'); label.textContent = marker.label; mark.append(label); mapView.append(mark);
     }
     if (activeHere) {
       const arrow = svgElement('path');
       arrow.dataset.runMapParty = 'true';
-      const drawY = maxY - pose.y + minY;
+      const drawY = pose.y;
       const rotation = { north: 0, east: 90, south: 180, west: 270 }[pose.facing.toLowerCase()] ?? 0;
       svgAttributes(arrow, { d: 'M 0.5 0.08 L 0.84 0.82 L 0.5 0.65 L 0.16 0.82 Z', fill: '#f5eee1', stroke: '#251914', 'stroke-width': 0.08, transform: `rotate(${rotation} ${pose.x + 0.5} ${drawY + 0.5}) translate(${pose.x} ${drawY})` });
       const label = svgElement('title'); label.textContent = `Party facing ${pose.facing}`; arrow.append(label); mapView.append(arrow);
