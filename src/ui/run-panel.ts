@@ -48,6 +48,7 @@ function svgAttributes(element: SVGElement, values: Record<string, string | numb
 export function mountRunPanel(root: Element, command: (action: string, fields?: Record<string, unknown>) => void): Readonly<{
   update(raw: unknown): void;
   dispose(): void;
+  element: HTMLElement;
 }> {
   const panel = element('aside');
   panel.setAttribute('aria-label', 'Expedition run');
@@ -329,7 +330,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   panel.addEventListener('keydown', stopGameplayKeys, true);
   panel.addEventListener('keyup', stopGameplayKeys, true);
 
-  return { update, dispose() {
+  return { update, element: panel, dispose() {
     floorSelect.removeEventListener('change', changeFloor);
     for (const event of pointerEvents) panel.removeEventListener(event, isolate);
     panel.removeEventListener('keydown', stopGameplayKeys, true);

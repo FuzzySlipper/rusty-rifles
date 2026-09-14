@@ -1,5 +1,6 @@
 import { UiProfile } from './ui-profile.js';
 import { mountRunPanel } from './run-panel.js';
+import { mountBottomBar } from './bottom-bar.js';
 import { mountDebugTools } from './debug.js';
 
 type Envelope = Readonly<{ value: unknown }>;
@@ -515,6 +516,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       previousMagicTargets = ''; allyTarget.value = '';
     }
     runPanel.update(state.run);
+    bottomBar.update(state);
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';
     productFeedback = nextFeedback;
@@ -552,6 +554,21 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   inventory.addEventListener('keydown', stopGameplayKeys, true); inventory.addEventListener('keyup', stopGameplayKeys, true); inventory.addEventListener('focusout', focusOutside);
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); inventory.remove(); panel.remove(); } };
+  panel.append(title, help, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
+  // First game-UI pass: the bottom bar is the default player view. Legacy
+  // agent panels stay in the DOM behind one toggle so existing dataset hooks
+  // and exercised commands keep working while the dropdown layout is hidden.
+  const legacyToggle = document.createElement('button'); legacyToggle.type = 'button'; legacyToggle.textContent = 'Show legacy panels'; legacyToggle.dataset.legacyToggle = 'true'; legacyToggle.setAttribute('aria-expanded', 'false');
+  legacyToggle.style.cssText = 'position:fixed;left:12px;top:12px;z-index:3;background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:4px 6px;cursor:pointer;font:12px/1.35 system-ui';
+  const setLegacyVisible = (visible: boolean): void => {
+    panel.hidden = !visible; inventory.hidden = !visible; runPanel.element.hidden = !visible;
+    inventory.style.bottom = visible ? '250px' : '12px';
+    legacyToggle.textContent = visible ? 'Hide legacy panels' : 'Show legacy panels';
+    legacyToggle.setAttribute('aria-expanded', String(visible));
+  };
+  legacyToggle.addEventListener('click', () => setLegacyVisible(panel.hidden));
+  root.append(legacyToggle);
+  setLegacyVisible(false);
+  render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.remove(); inventory.remove(); panel.remove(); } };
 }
