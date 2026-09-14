@@ -179,13 +179,21 @@ reports a complete comparison with no mismatches; [population](evidence/mileston
 and [progression](evidence/milestone-7/m7-live-progression.json) readbacks establish
 runtime integration separately from offline checks.
 
-**Visible acceptance is pending.** The owner confirmed eastward height traversal
-but reported clipping. The support-height correction has regression coverage;
-a clean visible retest is still needed. A subsequent Wolf session rendered the
-textured floor, but native pointer/control attempts did not establish a fresh
-living-party reset. After releasing it, the managed-browser attempt returned
-`pool_busy`. See the [runtime observation](evidence/milestone-7/runtime/README.md).
-The requested four-slot expansion is tracked by crew-services #8266 and requires
-an idle provisioning/restart window. These are separate from source checks and
-live Engine navigation admission. The existing native inventory-drag and Engine
-browser-binding recovery limitations also remain open.
+**Visible acceptance completed on 2026-09-14.** The bounded
+[retest and original captures](evidence/milestone-7/visible-retest/README.md)
+cover arrival bridge traversal, secret discovery/opening, generated key and
+counterweight inventory interaction, gate traversal, pit damage and escape,
+timed drain shutoff, and save restoration. Normal enemies remained active.
+A navigation-overlay failure discovered during play was corrected and retested;
+large floor debug output was compacted to fit the SDK result limit. The final
+Stores Engine comparison is complete with zero mismatches across 1,536 steps.
+
+These are managed-browser, keyboard/DOM-assisted observations, separate from
+GPU performance evidence. The original clipping report was not reproduced in
+the sampled corrected bridge traversal; pit faces remain dark and the stepped
+geometry needs visual polish. Native inventory dragging and Engine browser-binding
+recovery remain separately documented limitations. Stores was selected through
+a temporary standalone test configuration; default content was restored and
+named-floor travel remains M8. The earlier
+[runtime observation](evidence/milestone-7/runtime/README.md) records superseded
+pool/input blockers. Crew-services #8266 completed the four-slot expansion.

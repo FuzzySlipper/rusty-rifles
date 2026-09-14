@@ -151,7 +151,8 @@ internal sealed class DungeonScene : IDisposable
         engine.Spatial.CastSegment(new SpatialSegmentCastRequest(spatial, start, end, new SpatialQueryFilter(0, 0), bodies, new[] { ignore }, ReadOnlyMemory<SpatialEntityCollider>.Empty));
     internal GridPoint? NextStep(GridPoint from, IEnumerable<GridPoint> goals, IEnumerable<GridPoint> blocked)
     {
-        NavigationTraversalCell[] overlay = blocked.Where(c => c != from).Distinct()
+        // Closed doors are absent from the Engine projection, so they cannot be overlay cells.
+        NavigationTraversalCell[] overlay = blocked.Where(c => c != from && !closedDoors.Contains(c)).Distinct()
             .Select(c => new NavigationTraversalCell(NavigationCell(c), false, 1)).ToArray();
         engine.Spatial.ReplaceNavigationTraversal(new NavigationTraversalReplaceRequest(spatial, overlay));
         GridPoint? best = null;

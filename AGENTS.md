@@ -133,6 +133,6 @@ telemetry. Keep diagnostics and command transport owned by Engine.
 Milestone 7 now implements composed procedural floors: bounded routing repairs,
 protected item puzzles and hazards, planar height connectors, saved architecture,
 size-aware encounters and route supplies. See `docs/milestone-7.md` for the
-12-floor SVG/JSON bank, live inspection commands and pending visible acceptance.
+12-floor SVG/JSON bank, live inspection commands and bounded visible acceptance.
 Generation tuning and definitions remain file-authored. Named-floor expedition
 travel is M8 work; do not confuse an accepted floor bank with completed travel.

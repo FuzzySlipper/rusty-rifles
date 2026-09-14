@@ -1,0 +1,1148 @@
+[
+  {
+    "script_id": "e1a5d361-0114-482c-abe3-569a3c74f153",
+    "script": "arrival-bridge.js",
+    "captures": [
+      {
+        "file": "arrival-bridge-1.png",
+        "original_label": "bridge-approach",
+        "capture_id": "1c1fa8e4-a7bb-4f2b-a875-6203edd7563b",
+        "sha256": "ca51ed780484a97ed0c5f282c54c3556884772a4af3c6ec8b0b84fe3eef49e2b"
+      },
+      {
+        "file": "arrival-bridge-2.png",
+        "original_label": "bridge-step-0",
+        "capture_id": "3bd24949-ade7-4b57-906e-0639026f1a4f",
+        "sha256": "6864d7db52631b774e1d33cb278682dba53d3c6b05bb664460cd7a09ff32c93d"
+      },
+      {
+        "file": "arrival-bridge-3.png",
+        "original_label": "bridge-step-1",
+        "capture_id": "91eff0d9-f22d-4524-8485-2bb95e672fcd",
+        "sha256": "501209d136ae5cc10b2a5cf916bfa85a6dcada92c6f6ba9ad076b8f20cea7a04"
+      },
+      {
+        "file": "arrival-bridge-4.png",
+        "original_label": "bridge-step-2",
+        "capture_id": "bb82b91c-9555-400d-9988-25913ec1e902",
+        "sha256": "69ca9675d7396cc1a66af78db67da2e99cda4f217e651e03857e22dc28d549f2"
+      },
+      {
+        "file": "arrival-bridge-5.png",
+        "original_label": "bridge-step-3",
+        "capture_id": "20966cfd-525a-4485-ab8e-de6f2182d1fe",
+        "sha256": "a0e2041836c8f917ca75d60d882427498c9b8c278daac88d3eeadba3ed138abc"
+      },
+      {
+        "file": "arrival-bridge-6.png",
+        "original_label": "bridge-step-4",
+        "capture_id": "cebe1beb-c3b9-478c-9a4f-8e0590de8f7c",
+        "sha256": "31cf929d61a9c1af71299859d5ae10ab81a41efd29d83546f85d4a26a7df1dd4"
+      },
+      {
+        "file": "arrival-bridge-7.png",
+        "original_label": "bridge-end",
+        "capture_id": "64986441-5763-4127-bfdd-84aae8bb3b57",
+        "sha256": "ed125450c9c5fd58528c034bae1dbb7cc4723fffee9090e5bafbf345143d1eff"
+      }
+    ],
+    "visible_dom_observations": []
+  },
+  {
+    "script_id": "66c55064-f6b8-482f-a723-de467a966efa",
+    "script": "navigation-failure.js",
+    "captures": [
+      {
+        "file": "navigation-failure-1.png",
+        "original_label": "west-clue",
+        "capture_id": "6ff62961-dd82-42c0-9908-e6ee3aae4f6e",
+        "sha256": "18791225c3939b8d0b37fbadf47575938a4d253fb88e4d4bfc80628a363bda67"
+      },
+      {
+        "file": "navigation-failure-2.png",
+        "original_label": "west-discovery",
+        "capture_id": "a9b01c23-c5bc-483e-b916-a4c22845b801",
+        "sha256": "d716164ac9b17cb65c9aefd4e601f898debe0037a11073a3e2c835d3cc57c65c"
+      },
+      {
+        "file": "navigation-failure-3.png",
+        "original_label": "west-open",
+        "capture_id": "f297f168-242a-4339-96d9-2ab542f12828",
+        "sha256": "d716164ac9b17cb65c9aefd4e601f898debe0037a11073a3e2c835d3cc57c65c"
+      },
+      {
+        "file": "navigation-failure-4.png",
+        "original_label": "west-crossed",
+        "capture_id": "ebbb37f2-2762-4b20-82aa-b98bb5b8a262",
+        "sha256": "d51962e0076c19c7c502e8a6e8c67ecf0de303fd64ddfdf00c880a8167b8899b"
+      }
+    ],
+    "visible_dom_observations": []
+  },
+  {
+    "script_id": "1992263d-73de-465d-8958-1f117fde056f",
+    "script": "secret-fixed.js",
+    "captures": [
+      {
+        "file": "secret-fixed-1.png",
+        "original_label": "west-clue",
+        "capture_id": "1e4f43c8-5316-414e-882d-09645428edb3",
+        "sha256": "c0ad80c762c883b9b2350566b5aaa84db3d0c6be4fbad65cb5f78a68bfa2a858"
+      },
+      {
+        "file": "secret-fixed-2.png",
+        "original_label": "west-discovery",
+        "capture_id": "9467bc04-3070-4262-857f-07ecd3c3ec8a",
+        "sha256": "3a748a94f71e5d3d48e1e034ef65d45a8bac8f29853b4ca83489d3f2f78a4af5"
+      },
+      {
+        "file": "secret-fixed-3.png",
+        "original_label": "west-open",
+        "capture_id": "ccf0720f-7e4c-41df-9114-7ad706a20302",
+        "sha256": "dd29d38bb332a92581aca456683bc26a2f897667c807b64707c558883b6a9479"
+      },
+      {
+        "file": "secret-fixed-4.png",
+        "original_label": "west-crossed",
+        "capture_id": "41b44457-85aa-47d6-90b0-801b0fef6ca0",
+        "sha256": "daa83bcb4e4a887e39d5dddf632ae38a3c2421a36479f5814f6ae210bd5c5fc0"
+      }
+    ],
+    "visible_dom_observations": []
+  },
+  {
+    "script_id": "2c7ed97a-79d8-48db-bd61-a4950ca2c298",
+    "script": "secret-save.js",
+    "captures": [
+      {
+        "file": "secret-save-1.png",
+        "original_label": "secret-saved",
+        "capture_id": "688cba2e-d384-4174-aa2f-1bb9845a2b4e",
+        "sha256": "3d2522dd4ad104543bd3a9dbeecf7d72f4e383d689173cb8052faee5ab0c3009"
+      },
+      {
+        "file": "secret-save-2.png",
+        "original_label": "secret-restart",
+        "capture_id": "e5a81703-8054-4006-b07f-784b2b7c475a",
+        "sha256": "4f7e113c1995864dcf8b94896c8bf881bc0b91c461a7d26a49053ac7c881a7f6"
+      },
+      {
+        "file": "secret-save-3.png",
+        "original_label": "secret-restored",
+        "capture_id": "a7342602-c5e1-45ee-88d8-19e4b8be4953",
+        "sha256": "1cd845027524840d1823fae0aa67ac6b1bf2d73252935d0395fafd7351e2f7b9"
+      }
+    ],
+    "visible_dom_observations": []
+  },
+  {
+    "script_id": "d3f1ad23-7d63-4cee-a7f8-7a75ad42a8a4",
+    "script": "supply-pickup.js",
+    "captures": [
+      {
+        "file": "supply-pickup-1.png",
+        "original_label": "picked-key",
+        "capture_id": "f9236967-7256-47c4-9de5-ac123c7cdc51",
+        "sha256": "ff4f50a685493826e10e4066e581161da1eb81e3a46382ed1192a374ea4d528c"
+      },
+      {
+        "file": "supply-pickup-2.png",
+        "original_label": "picked-supply",
+        "capture_id": "78037d08-d5ed-428c-85a6-aaf23e8b83c2",
+        "sha256": "72cba9719da70227e496bceca5dd2c24eadd755d421715bcc1a32ccc9079d1ea"
+      }
+    ],
+    "visible_dom_observations": []
+  },
+  {
+    "script_id": "fd3ebb40-b94b-45ba-991a-ab5b46cfc8bb",
+    "script": "key-route.js",
+    "captures": [
+      {
+        "file": "key-route-1.png",
+        "original_label": "adaptive-route-11",
+        "capture_id": "cf25a76f-c0ed-4ce2-bc4c-a325d4e4e202",
+        "sha256": "f3648631a6b8f3d94bc3afa41e68aa3f8b6ba321297f0f87f54c7fa5aab33622"
+      },
+      {
+        "file": "key-route-2.png",
+        "original_label": "adaptive-route-23",
+        "capture_id": "b4fa509a-3966-424c-bc32-c9a1139e2a6c",
+        "sha256": "8cd500c77ae9e0335cb7de8b5696030dfe0d117c9b5ce4304a364f8a4bc2dc4f"
+      },
+      {
+        "file": "key-route-3.png",
+        "original_label": "adaptive-route-35",
+        "capture_id": "a9b05c04-a7c1-4e0d-ae81-815c05874f86",
+        "sha256": "a6710733632af225fc7d7ec6c34d9e5c713e19e905c68436226c707ebce6bc45"
+      },
+      {
+        "file": "key-route-4.png",
+        "original_label": "adaptive-key-arrival",
+        "capture_id": "89e77a45-71bd-4824-acb6-b5f421273465",
+        "sha256": "d63689a8bbf27a4e719e76fe0d2c93968555d9900030942c266e907f377298ba"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 0s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 99) \u00b7 0s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 99) \u00b7 1s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 100) \u00b7 1s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (99, 100) \u00b7 2s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (100, 100) \u00b7 2s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (100, 99) \u00b7 3s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (101, 99) \u00b7 3s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (102, 99) \u00b7 3s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (103, 99) \u00b7 4s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (104, 99) \u00b7 4s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 99) \u00b7 5s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (106, 99) \u00b7 5s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (107, 99) \u00b7 6s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (108, 99) \u00b7 6s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (109, 99) \u00b7 6s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (110, 99) \u00b7 7s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (110, 100) \u00b7 7s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (110, 101) \u00b7 8s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (110, 102) \u00b7 8s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (111, 102) \u00b7 9s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (112, 102) \u00b7 9s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (113, 102) \u00b7 9s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 103) \u00b7 10s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 104) \u00b7 10s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (112, 104) \u00b7 11s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (112, 105) \u00b7 11s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (111, 105) \u00b7 12s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (110, 105) \u00b7 12s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (109, 105) \u00b7 13s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (108, 105) \u00b7 13s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (107, 105) \u00b7 13s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 1 \u00b7 North \u00b7 (106, 105) \u00b7 14s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 105) \u00b7 14s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 106) \u00b7 15s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 107) \u00b7 15s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 108) \u00b7 15s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 109) \u00b7 16s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 110) \u00b7 17s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 111) \u00b7 17s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (104, 111) \u00b7 17s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (104, 112) \u00b7 18s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (103, 112) \u00b7 18s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Powder Bays \u00b7 Level 0 \u00b7 North \u00b7 (102, 112) \u00b7 19s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Powder Bays \u00b7 Level 0 \u00b7 North \u00b7 (101, 112) \u00b7 19s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Powder Bays \u00b7 Level 0 \u00b7 North \u00b7 (100, 112) \u00b7 19s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Warden \u00b7 80/160 mass \u00b7 22/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Long rifle \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Buff coat \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Brass gate key \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Rifle shot \u00d78",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d73",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Blade \u00b7 9/160 mass \u00b7 3/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Belt knife \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d72",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Mender \u00b7 10/160 mass \u00b7 5/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Clear cordial \u00d72",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d73",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Seeker \u00b7 46/160 mass \u00b7 12/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Long rifle \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Rifle shot \u00d76",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Ground belongings \u00b7 51/1000 mass \u00b7 4/100 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Brass gate key \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Iron weight \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "body: Buff coat",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "main-hand: Long rifle",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "off-hand: Long rifle",
+          "tag": "button",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "cc5fb08e-a142-43cc-9592-cfb282b9fd05",
+    "script": "key-weight-pickup.js",
+    "captures": [
+      {
+        "file": "key-weight-pickup-1.png",
+        "original_label": "puzzle-items-carried",
+        "capture_id": "bb60f216-1d68-4ef3-8b80-b1ab20f709f2",
+        "sha256": "5c5c3a672a66238532049d5ace3946d240f5b93a6147542165ccc19b2facd342"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Blade \u00b7 60/160 mass \u00b7 7/24 space\nBelt knife \u00d71\nBrass gate key \u00d71\nIron weight \u00d71\nRestorative tonic \u00d72",
+          "tag": "section",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "9fbb12ca-d50e-48df-9c39-b8f0be4455c9",
+    "script": "counterweight.js",
+    "captures": [
+      {
+        "file": "counterweight-1.png",
+        "original_label": "gate-requires-weight",
+        "capture_id": "9394c571-5346-4cd8-b213-499e90cf5f0b",
+        "sha256": "be8d06e8b29e87c1009423b755f890041da30dc9f9725cbb22048247e8a0df73"
+      },
+      {
+        "file": "counterweight-2.png",
+        "original_label": "weight-placed",
+        "capture_id": "23041b3e-f531-462c-bac1-d00a9f558b15",
+        "sha256": "948af87ec9e29f36af99ce0193732f5f5cc0c44f53eb71322a1c5179bfcc9de2"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Warden \u00b7 80/160 mass \u00b7 22/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Long rifle \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Buff coat \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Brass gate key \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Rifle shot \u00d78",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d73",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Blade \u00b7 10/160 mass \u00b7 4/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Belt knife \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Brass gate key \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d72",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Mender \u00b7 10/160 mass \u00b7 5/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Clear cordial \u00d72",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Restorative tonic \u00d73",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Seeker \u00b7 46/160 mass \u00b7 12/24 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Long rifle \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Rifle shot \u00d76",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Counterweight plate \u00b7 50/1000 mass \u00b7 3/100 space",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "Iron weight \u00d71",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "body: Buff coat",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "main-hand: Long rifle",
+          "tag": "button",
+          "visible": true
+        },
+        {
+          "text": "off-hand: Long rifle",
+          "tag": "button",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "3b77ca85-cc73-4d25-9324-8ce95bbce507",
+    "script": "gate-save.js",
+    "captures": [
+      {
+        "file": "gate-save-1.png",
+        "original_label": "latch-opened",
+        "capture_id": "8b1f2095-9d6a-4ba3-b9eb-55bdaf61607d",
+        "sha256": "4e11bbbd90122ee7f0b879de4080fbf1f39214cfa9dcafc9fa196f652ec6d9da"
+      },
+      {
+        "file": "gate-save-2.png",
+        "original_label": "gate-crossed",
+        "capture_id": "8bafcd66-9b6b-4740-99c2-827313ce4c19",
+        "sha256": "c55bb86b103c7c388b0bfcf960a6995032e174c525cf34773c770bdf77c3ab5f"
+      },
+      {
+        "file": "gate-save-3.png",
+        "original_label": "gate-save-restored",
+        "capture_id": "f7dc20b7-3003-4255-b957-f57cd4ece07c",
+        "sha256": "7867d8cb20134754f17b8ec603affb16ebe4b87f0c1e33257b9b8910d8fde347"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 0s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "c4e6567e-2a24-43ec-9d24-a125e886e937",
+    "script": "gate-restored-route.js",
+    "captures": [
+      {
+        "file": "gate-restored-route-1.png",
+        "original_label": "adaptive-route-11",
+        "capture_id": "8ce7f34c-f039-4206-aace-5bbc0fc6f1ee",
+        "sha256": "9c172bf30828b3e77fecd79f63670a07720c0f692d12e12104c19e0c2659a8d3"
+      },
+      {
+        "file": "gate-restored-route-2.png",
+        "original_label": "adaptive-route-23",
+        "capture_id": "28d2b8dd-adf6-45ac-87da-e4969dbb683b",
+        "sha256": "06bc095870b2a0e1b7049b6b7bee827bdd7284efd09c275483c5a24cf272df7c"
+      },
+      {
+        "file": "gate-restored-route-3.png",
+        "original_label": "plate-arrival",
+        "capture_id": "15fe1cd8-a197-41b6-ac47-311a6e129186",
+        "sha256": "59fa16ec8c5c817e5352bc56075694898b981d8702e87292b1c9f6edb66ae90f"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 91) \u00b7 41s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 90) \u00b7 41s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 89) \u00b7 42s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (113, 88) \u00b7 42s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (113, 88) \u00b7 42s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (113, 88) \u00b7 43s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (114, 88) \u00b7 43s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (114, 87) \u00b7 44s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (114, 86) \u00b7 44s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (113, 86) \u00b7 45s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (112, 86) \u00b7 45s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (112, 85) \u00b7 45s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (112, 84) \u00b7 46s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (111, 84) \u00b7 47s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (110, 84) \u00b7 47s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (108, 84) \u00b7 48s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (108, 85) \u00b7 48s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (107, 85) \u00b7 49s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (106, 85) \u00b7 49s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (105, 85) \u00b7 49s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (104, 85) \u00b7 50s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (103, 85) \u00b7 50s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (102, 85) \u00b7 51s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (102, 86) \u00b7 51s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (101, 86) \u00b7 52s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Exploring \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (100, 86) \u00b7 52s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "fb1e61c3-b507-4de3-89ec-0cb17c0d590c",
+    "script": "pit-success.js",
+    "captures": [
+      {
+        "file": "pit-success-1.png",
+        "original_label": "lowered-pit",
+        "capture_id": "0283a21b-04b6-40dd-82a6-cfc6bf71d798",
+        "sha256": "e9e2235689c11c8c97957a34b03b000ee9224e406cc0afaea231ee2c986811de"
+      },
+      {
+        "file": "pit-success-2.png",
+        "original_label": "climbed-out",
+        "capture_id": "ca95c542-5682-467b-bfde-0ee09b72723a",
+        "sha256": "7ca986e373b219d29250a8166494933c809500744892051aa5c2db01f37cdf62"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Paused \u00b7 Drain Crossing \u00b7 Level -1 \u00b7 North \u00b7 (101, 85) \u00b7 64s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Paused \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (101, 86) \u00b7 65s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "6d9a4afe-1887-4517-bd36-40de2fb1e054",
+    "script": "drain-success.js",
+    "captures": [
+      {
+        "file": "drain-success-1.png",
+        "original_label": "pit-entered",
+        "capture_id": "18b03e5e-11af-4d86-98c8-34c0b1897a3e",
+        "sha256": "4b1a076c5ab3ff07b4f37d28d0c43fe6398dcc454827af4ed50fc3fae9d9c390"
+      },
+      {
+        "file": "drain-success-2.png",
+        "original_label": "drain-pulse",
+        "capture_id": "6ba3f06b-c7bd-45fb-a036-9b18a90dfe32",
+        "sha256": "db03e50c3e7eab5e3a72df069dc56669dfe59601029307b338aa4ace9a9a8a29"
+      },
+      {
+        "file": "drain-success-3.png",
+        "original_label": "drain-stopped",
+        "capture_id": "9ca19425-2435-4eb0-860e-a0f91b81918f",
+        "sha256": "6c5e426a3f3e5d945efd9d97b8d503e334a76a914b4f2d9c63d76738a54de8a1"
+      },
+      {
+        "file": "drain-success-4.png",
+        "original_label": "disabled-drain-after-period",
+        "capture_id": "04e9cc02-1f6d-4b48-8dd5-33f8b54fb01c",
+        "sha256": "e3fc77d77dd8d9bde438d6f07c086d4f2d610ecc48ea956a4c7a5a370b68a37c"
+      },
+      {
+        "file": "drain-success-5.png",
+        "original_label": "pit-climbed-out",
+        "capture_id": "40c7706f-3f81-4be3-8985-96a6a5cfa05e",
+        "sha256": "d803e2aa2b3e6a85a9a80e23159d41c57e987061c9f37bc9bbb91f042880fe72"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Expedition saved",
+          "tag": "p",
+          "visible": true
+        },
+        {
+          "text": "",
+          "tag": "p",
+          "visible": true
+        }
+      ]
+    ]
+  },
+  {
+    "script_id": "b8cd8655-ce41-4570-9d52-f86edc379bb1",
+    "script": "drain-save.js",
+    "captures": [
+      {
+        "file": "drain-save-1.png",
+        "original_label": "restored-hazard-run",
+        "capture_id": "8dd3e876-92a3-4e5f-9796-67b13a6b7d18",
+        "sha256": "fb9f68e92059355feaf8e8019e48116b658624a325518e68b912eb446a1f381c"
+      }
+    ],
+    "visible_dom_observations": [
+      [
+        {
+          "text": "Paused",
+          "tag": "p",
+          "visible": true
+        },
+        {
+          "text": "",
+          "tag": "p",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Paused",
+          "tag": "p",
+          "visible": true
+        },
+        {
+          "text": "",
+          "tag": "p",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Expedition restored",
+          "tag": "p",
+          "visible": true
+        },
+        {
+          "text": "",
+          "tag": "p",
+          "visible": true
+        }
+      ],
+      [
+        {
+          "text": "Paused \u00b7 Drain Crossing \u00b7 Level 0 \u00b7 North \u00b7 (100, 85) \u00b7 81s \u00b7 Seed 6871969167356124647",
+          "tag": "output",
+          "visible": true
+        }
+      ]
+    ]
+  }
+]

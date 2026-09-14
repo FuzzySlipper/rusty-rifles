@@ -80,12 +80,11 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
 
     [DebugCommand("rifles.floor.read", Description = "Read the played floor cells, resolved room functions, architectural landmarks and thresholds.")]
-    public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(floor,
-        new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(floor);
 
     [DebugCommand("rifles.floor.population", Description = "Read retained generated gate, key, hazard, supply and encounter placement facts.")]
     public string ReadFloorPopulation() => System.Text.Json.JsonSerializer.Serialize(new { Features = generatedFeatures, Encounters = encounterPlacement },
-        new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
+        new System.Text.Json.JsonSerializerOptions { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
 
     [DebugCommand("rifles.floor.validate", Description = "Inspect actual floor connectivity, generated key acquisition and gate-handle reachability.")]
     public string ValidateFloor() => System.Text.Json.JsonSerializer.Serialize(

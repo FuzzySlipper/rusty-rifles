@@ -1,0 +1,16 @@
+await browser({op:'press',selector:'button:text-is("Resume")',key:'Enter'});await sleep(350);
+await browser({op:'press',selector:'canvas',key:'Shift'});
+await keyboard.hold(['A'],100);await sleep(280);
+await keyboard.hold(['W'],100);await sleep(400);
+checkpoint('Pit entered',await capture({label:'pit-entered'}));
+await sleep(6500);
+checkpoint('Drain pulse',await capture({label:'drain-pulse'}));
+await keyboard.hold(['F'],100);await sleep(400);
+checkpoint('Drain stopped',await capture({label:'drain-stopped'}));
+await sleep(6500);
+checkpoint('Disabled drain after period',await capture({label:'disabled-drain-after-period'}));
+await keyboard.hold(['S'],100);await sleep(400);
+await browser({op:'press',selector:'button:text-is("Pause")',key:'Enter'});await sleep(400);
+checkpoint('Pit climbed out',await capture({label:'pit-climbed-out'}));
+await browser({op:'press',selector:'button:text-is("Save")',key:'Enter'});await sleep(1000);
+checkpoint('Save feedback',await browser({op:'inspect',selector:'[data-inventory-feedback]'}));

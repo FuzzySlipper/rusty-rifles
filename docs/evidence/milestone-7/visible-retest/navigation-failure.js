@@ -1,0 +1,12 @@
+await browser({op:'press',selector:'button:text-is("Restart")',key:'Enter'});await sleep(600);
+await browser({op:'press',selector:'canvas',key:'Shift'});
+await keyboard.hold(['Q'],100);await sleep(300);
+await keyboard.hold(['W'],1540);await sleep(300);
+checkpoint('West clue',await capture({label:'west-clue'}));
+await keyboard.hold(['F'],100);await sleep(350);
+checkpoint('West discovery',await capture({label:'west-discovery'}));
+await keyboard.hold(['F'],100);await sleep(350);
+checkpoint('West open',await capture({label:'west-open'}));
+await keyboard.hold(['W'],600);await sleep(300);
+await browser({op:'press',selector:'button:text-is("Pause")',key:'Enter'});await sleep(500);
+checkpoint('West crossed paused',await capture({label:'west-crossed'}));
