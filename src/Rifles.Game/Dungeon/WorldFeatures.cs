@@ -61,7 +61,7 @@ internal sealed class WorldFeatures : IDisposable
     private InteractionCandidate[] Candidates(ExplorationState party) =>
     [
         Candidate(new(state.LanternId, state.LanternRevision), tuning.LanternLabel + (state.LanternOn ? " — extinguish" : " — light"), LanternPoint, party, true),
-        Candidate(new(state.ExitId, state.ExitUsed ? 2UL : 1UL), state.ExitUsed ? "Floor exit — inspected" : "Floor exit — inspect", scene.Eye(floor.Exit), party, true),
+        Candidate(new(state.ExitId, state.ExitUsed ? 2UL : 1UL), "Descent / objective — stand here and use", scene.Eye(floor.Exit), party, true),
         .. extraCandidates,
         Candidate(new(state.Dressing.ObserverId, 1), "Sentry — inspect", Ground(state.Dressing.Observer) + Vector3.UnitY, party, true),
     ];
@@ -88,7 +88,7 @@ internal sealed class WorldFeatures : IDisposable
         if (target.Value.Id == state.Dressing.ObserverId) return "A garrison ally stands watch. Friendly bodies block shots.";
         if (target.Value.Id != state.ExitId) return extraUse?.Invoke(target.Value) ?? "Feature unavailable";
         state = state with { ExitUsed = true };
-        return "Exit inspected. This is the starting floor; expedition travel comes later.";
+        return "Stand on the exit to continue the expedition.";
     }
     internal void Reset()
     {

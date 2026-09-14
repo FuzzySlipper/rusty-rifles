@@ -17,7 +17,7 @@ internal sealed class SessionProjection : IDisposable
         stream = ui.OpenStream(new UiStreamRequest("rifles.session", "rifles.session.v1"));
     }
 
-    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable)
+    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run)
     {
         SessionValueBuilder value = new();
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
@@ -51,6 +51,7 @@ internal sealed class SessionProjection : IDisposable
             ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster),
             ("combat", combat(value)),
+            ("run", run(value)),
             ("inventory", InventoryProjection.Build(value, inventory, world, scene, exploration, party, selectedMember, art, dropReachable)),
             ("equipmentSlots", InventoryProjection.Equipment(value, inventory, selectedMember)),
             ("preset", value.String(preset)),

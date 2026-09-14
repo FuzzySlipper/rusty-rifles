@@ -12,13 +12,7 @@ public sealed partial class RiflesProduct
     private Vector3 EnemyAim(EnemyState enemy) => Aim(enemy.Motion.Position)
         + new Vector3(enemy.Motion.CrowdOffset.X, 0, enemy.Motion.CrowdOffset.Y) * scene!.LogicalCellSize;
 
-    private GridPoint[] PatrolRoute(GridPoint home, EnemySpawnDefinition definition)
-    {
-        GridPoint[] route = definition.PatrolOffsets.Select(p => home + new GridPoint(p[0], p[1]))
-            .Where(c => floor.Cells.Contains(c) && c != itemWorld!.Capture().Door).ToArray();
-        if (route.Length == 0) throw new InvalidDataException("Enemy patrol has no floor cells: " + definition.Id);
-        return route;
-    }
+
 
     private void EmitNoise(GridPoint cell, NoiseKind kind, ulong emitter = 0)
     {
@@ -33,14 +27,7 @@ public sealed partial class RiflesProduct
         }
     }
 
-    private void ConfigureEnemyClearance(MovementGrid grid, GridPoint door)
-    {
-        foreach (var direction in CardinalDirections.Ordered)
-        {
-            GridPoint neighbor = door + direction.Offset();
-            if (floor.Cells.Contains(neighbor)) grid.SetClearance(door, neighbor, Combat.DoorClearance);
-        }
-    }
+
 
     private bool SeesParty(EnemyState enemy)
     {

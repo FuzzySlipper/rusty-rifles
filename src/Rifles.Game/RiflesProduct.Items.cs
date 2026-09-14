@@ -13,21 +13,7 @@ public sealed partial class RiflesProduct
     private ItemArt? itemArt;
     private PartyMemberState Member(string id) => party.Members.SingleOrDefault(m => m.Definition.Id == id)
         ?? throw new InvalidDataException("Character unavailable.");
-    private void StartItems()
-    {
-        itemWorld = ExplorationItems.Create(definitions.ItemExploration, floor, features!.Capture().Dressing, actor!, AllocateId);
-        IEnumerable<PackOwner> members = party.Members.Select(m => new PackOwner(AllocateId(), "member:" + m.Definition.Id,
-            definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space));
-        IEnumerable<PackOwner> anchors = itemWorld.Anchors.Select(a =>
-        {
-            PackDefinition capacity = a.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
-            return new PackOwner(a.Id, a.Key, capacity.Mass, capacity.Space);
-        });
-        inventory = new ItemInventory(definitions.Items, members.Concat(anchors));
-        inventory.GrantStarting(AllocateId, preset);
-        ApplyEquipment();
-        scene!.SetDoor(itemWorld!.Capture().Door, false);
-    }
+
     private void ApplyEquipment()
     {
         foreach (PartyMemberState member in party.Members)
@@ -77,6 +63,11 @@ public sealed partial class RiflesProduct
     }
     private IEnumerable<InteractionCandidate> ItemCandidates()
     {
+        foreach (var route in Connections().Where(c => !c.Forward))
+            yield return new InteractionCandidate(new(floorId, 1), "Return stair — " + expedition.Floors.Single(f => f.Id == route.Destination).Title,
+                scene!.Eye(floor.Entrance), definitions.Features.Reach,
+                scene.Visibility(scene.Eye(exploration.Position), scene.Eye(floor.Entrance)),
+                exploration.Moving ? InteractionAvailability.Unavailable : InteractionAvailability.Available);
         foreach (var generated in GeneratedCandidates()) yield return generated;
         foreach (WorldAnchor anchor in itemWorld!.Anchors)
         {

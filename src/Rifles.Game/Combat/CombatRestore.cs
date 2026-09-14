@@ -20,7 +20,7 @@ internal sealed record RestoredCombat(
 internal static class CombatRestore
 {
     internal static RestoredCombat Validate(CombatSnapshot saved, GameDefinitions definitions, DungeonFloor floor,
-        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds)
+        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds, IEnumerable<string>? expeditionRewards = null)
     {
         ArgumentNullException.ThrowIfNull(saved);
         ArgumentNullException.ThrowIfNull(allyIds);
@@ -35,7 +35,7 @@ internal static class CombatRestore
 
         MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic,
             party.Members.Select(m => m.Definition.Id), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
-                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), enemies.Where(e => !e.Alive).Select(e => e.Spawn));
+                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn));
         foreach (var entry in actions)
             if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)
                 GameDefinitions.Require(magic.For(entry.Key).Known.Contains(cast.Spell!)

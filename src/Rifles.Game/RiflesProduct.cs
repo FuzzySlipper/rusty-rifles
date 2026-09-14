@@ -23,7 +23,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private readonly IEngineContext engine;
     private GeneratedArt? generatedArt;
     private DungeonFloor floor;
-    private ProductStateStore<ExpeditionSnapshot>? saves;
+    private ProductStateStore<RunSnapshot>? saves;
     private Guid expeditionId = Guid.NewGuid();
     private ulong nextLightId = 1;
     private ulong floorId = 1, partyId = 2, nextObjectId = 3;
@@ -102,19 +102,16 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         if (started || shutdown) return;
         try
         {
-            saves = new ProductStateStore<ExpeditionSnapshot>(engine, "expedition", new ExpeditionCodec());
-            scene = new DungeonScene(engine, generatedArt!, floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
-            actor = PatrolActor.Create(AllocateId(), floor, ActorTuning, definitions.Features);
-            features = new WorldFeatures(engine, generatedArt!, scene, floor, definitions.Features, definitions.Art, new FeatureSnapshot(AllocateId(), AllocateId(), 1, true, false,
-                RoomDressing.Create(floor, actor, definitions.Art, AllocateId)), AllocateLightId());
-            StartItems();
+            saves = new ProductStateStore<RunSnapshot>(engine, "expedition", new RunCodec());
             itemArt = new ItemArt(engine, generatedArt!, definitions.ItemArt, definitions.Art, definitions.ItemExploration);
-            BindMovement();
             combatArt = new WorldArt(engine, generatedArt!, definitions.Art);
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
-            StartCombat();
+            var initial = FloorFactory.Create(engine, generatedArt!, definitions, expedition, expedition.EntranceFloor,
+                expeditionId, partyId, preset, ref nextObjectId, AllocateLightId, floor);
+            Activate(initial, []);
+            spellLightId = AllocateLightId(); spellLight = engine.Graphics.CreateLight(SpellLightRequest());
             camera = engine.CameraView.CreateCamera(CameraDescriptor());
             projection = new SessionProjection(engine.Ui);
             engine.CameraView.SetActiveCamera(camera);
@@ -247,6 +244,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             case "save": Save(); break;
             case "load": Load(); break;
             case "restart": Restart(); break;
+            case "travel": Travel(command.Choice ?? ""); break;
             case "art-style":
                 string currentStyle = features!.Style;
                 int index = Array.FindIndex(definitions.Art.Styles, s => s.Id == currentStyle);
@@ -269,16 +267,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     public void Restart()
     {
         if (!started || shutdown) return;
-        exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
-        preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
-        party = new PartyState(definitions.Characters.GetPreset(preset));
-        selectedMember = party.Members[0].Definition.Id;
-        expeditionId = Guid.NewGuid();
-        actor = PatrolActor.Create(actor!.Id, floor, ActorTuning, definitions.Features);
-        features!.Reset();
-        StartItems();
-        BindMovement(); StartCombat(); controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
-        paused = false; feedback = "Expedition restarted";
+        try { StartNewRun(expedition.Seed); }
+        catch (Exception error) { feedback = "Restart rejected: " + error.Message; }
         Publish();
     }
 
@@ -289,7 +279,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     {
         try
         {
-            ExpeditionSnapshot saved = Capture();
+            RunSnapshot saved = CaptureRun();
             PersistenceSaveReceipt receipt = saves!.Save("current", saved);
             if (receipt.Outcome != PersistenceSaveOutcome.Saved) throw new InvalidOperationException(receipt.Outcome.ToString());
             feedback = "Expedition saved";
@@ -301,64 +291,73 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     {
         try
         {
-            ProductStateLoad<ExpeditionSnapshot> loaded = saves!.Load("current");
+            ProductStateLoad<RunSnapshot> loaded = saves!.Load("current");
             if (!loaded.Present) { feedback = "No saved expedition"; return; }
-            ExpeditionSnapshot saved = loaded.State!;
-            var restored = ExpeditionCodec.Validate(saved, definitions);
-            ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
-            RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
-                new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId });
-            ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
-            DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
+            RunSnapshot run = loaded.State!;
+            RunCodec.Validate(run, definitions);
+            Activate(run.Active, RunCodec.Rewards(run), RunCodec.Items(run));
+            inactiveFloors.Clear();
+            foreach (var retained in run.Inactive) inactiveFloors.Add(retained.Floor.IntentFloorId, retained);
+            feedback = "Expedition restored";
+        }
+        catch (Exception error) { feedback = "Load rejected: " + error.Message; }
+    }
+
+    private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null)
+    {
+        var restored = ExpeditionCodec.Validate(saved, definitions, rewards, allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition));
+        ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
+        RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
+            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, rewards);
+        ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
+        DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
+        MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
+        try
+        {
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
             foreach (var gate in saved.GeneratedFeatures.Gates) replacement.SetDoor(gate.Cell, gate.Open);
-            MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
             foreach (var connector in saved.Floor.Connectors) replacementGrid.SetClearance(connector.From, connector.To, connector.Clearance);
             foreach (var direction in CardinalDirections.Ordered)
                 if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
                     replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), Combat.DoorClearance);
-            try
-            {
-                if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
-                if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
-            }
-            catch { replacement.Dispose(); throw; }
-            WorldFeatures replacementFeatures;
-            try { replacementFeatures = new WorldFeatures(engine, generatedArt!, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features!.Style); }
-            catch { replacement.Dispose(); throw; }
-            try
-            {
-                if (replacement.Style != features!.Style) replacement.SetStyle(features.Style);
-                replacement.SetRoomLights(roomLights);
-                replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
-                foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
-                foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
-                // Retire old appearance references before releasing their Engine resources.
-                replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt!.Facts(restoredInventory, restoredItems, replacement));
-            }
-            catch
-            {
-                replacementFeatures.Dispose(); replacement.Dispose(); throw;
-            }
-            WorldFeatures? previousFeatures = features;
-            features = replacementFeatures; actor = restored.Actor;
-            DungeonScene? previous = scene;
-            movement = replacementGrid;
-            scene = replacement; floor = saved.Floor; exploration = restored.Exploration; party = restored.Party;
-            expedition = saved.Intent;
-            generatedFeatures = saved.GeneratedFeatures;
-            encounterPlacement = saved.EncounterPlacement;
-            expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
-            inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
-            ApplyEquipment();
-            ApplyCombatRestore(restoredCombat);
-            paused = saved.Paused;
-            selectedMember = saved.SelectedMember;
-            controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
-            previousFeatures?.Dispose(); previous?.Dispose();
-            feedback = "Expedition restored";
+            if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
+            if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
         }
-        catch (Exception error) { feedback = "Load rejected: " + error.Message; }
+        catch { replacement.Dispose(); throw; }
+        WorldFeatures replacementFeatures;
+        try { replacementFeatures = new WorldFeatures(engine, generatedArt!, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features?.Style); }
+        catch { replacement.Dispose(); throw; }
+        try
+        {
+            if (features is not null && replacement.Style != features.Style) replacement.SetStyle(features.Style);
+            replacement.SetRoomLights(roomLights);
+            replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
+            foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
+            foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
+            // Retire old appearance references before releasing their Engine resources.
+            replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt!.Facts(restoredInventory, restoredItems, replacement));
+        }
+        catch
+        {
+            replacementFeatures.Dispose(); replacement.Dispose(); throw;
+        }
+        WorldFeatures? previousFeatures = features;
+        features = replacementFeatures; actor = restored.Actor;
+        DungeonScene? previous = scene;
+        movement = replacementGrid;
+        scene = replacement; floor = saved.Floor; exploration = restored.Exploration; party = restored.Party;
+        expedition = saved.Intent;
+        generatedFeatures = saved.GeneratedFeatures;
+        encounterPlacement = saved.EncounterPlacement;
+        expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
+        inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
+        ApplyEquipment();
+        ApplyCombatRestore(restoredCombat);
+        paused = saved.Paused;
+        selectedMember = saved.SelectedMember;
+        controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
+        previousFeatures?.Dispose(); previous?.Dispose();
+        feedback = "Expedition restored";
     }
 
     // Light IDs identify live presentation resources, not saved gameplay objects.
@@ -367,18 +366,21 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private ulong AllocateId() { if (nextObjectId > uint.MaxValue) throw new InvalidOperationException("Expedition object identity space exhausted."); ulong id = nextObjectId; nextObjectId = checked(nextObjectId + 1); return id; }
     private void Use(InteractionTarget? target)
     {
+        if (target is { } stair && (stair.Id == features!.Capture().ExitId || stair.Id == floorId))
+        {
+            var routes = Connections().Where(c => c.Forward == (stair.Id == features.Capture().ExitId)).ToArray();
+            if (routes.Length == 1)
+            {
+                try { Travel(routes[0].Link.Id); }
+                catch (Exception error) { feedback = error.Message; }
+                return;
+            }
+        }
         features!.SetExtraCandidates(ItemCandidates());
         feedback = paused ? "Resume before using world features" : features.Use(exploration, target, UseItemFeature);
         commandRevision = checked(commandRevision + 1);
     }
-    private void BindMovement()
-    {
-        movement = new MovementGrid(floor.Cells.ToHashSet(), scene!.AdmitStep, definitions.Crowd);
-        foreach (var connector in floor.Connectors) movement.SetClearance(connector.From, connector.To, connector.Clearance);
-        exploration.Bind(movement, partyId);
-        actor!.Bind(movement);
-        features!.Bind(movement);
-    }
+
 
     private CameraDescriptor CameraDescriptor() => new(
         new CameraPose(scene!.Eye(exploration.VisualCell), 0, exploration.VisualYaw),
@@ -401,7 +403,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
             allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
-        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable, RunProjection);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 

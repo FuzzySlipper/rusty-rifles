@@ -14,12 +14,7 @@ public sealed partial class RiflesProduct
     private ulong spellLightId;
     private double PartySpeed => party.Members.Where(m => m.IsLiving).Select(m => magic!.Speed("member:" + m.Definition.Id)).DefaultIfEmpty(1).Min();
 
-    private void StartMagic()
-    {
-        magic = new MagicState(definitions.Magic, party.Members.Select(m => m.Definition.Id));
-        RecomputeMagic();
-        if (spellLight is null) { spellLightId = AllocateLightId(); spellLight = engine.Graphics.CreateLight(SpellLightRequest()); }
-    }
+
     private void RecomputeMagic()
     {
         foreach (PartyMemberState member in party.Members)

@@ -36,7 +36,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
     public ExpeditionSnapshot Decode(ReadOnlySpan<byte> payload) => JsonSerializer.Deserialize<ExpeditionSnapshot>(payload, Json)
         ?? throw new InvalidDataException("Empty expedition save.");
 
-    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions)
+    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IEnumerable<string>? expeditionRewards = null, IReadOnlyDictionary<ulong, string>? expeditionItems = null)
     {
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
             && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId) && saved.NextObjectId <= (ulong)uint.MaxValue + 1, "Save identities");
@@ -71,7 +71,9 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         {
             GameDefinitions.Require(saved.Combat.Drops.Any(d => d.Owner == key.Owner && d.Cell == key.Cell), "saved key source anchor");
             var retained = inventory.Owners.SelectMany(o => inventory.Items(o.Key)).Where(i => i.Entity == key.Entity).ToArray();
-            GameDefinitions.Require(retained.Length == 1 && retained[0].Definition == definitions.GeneratedFeatures.KeyItem,
+            GameDefinitions.Require(expeditionItems is not null
+                ? expeditionItems.GetValueOrDefault(key.Entity) == definitions.GeneratedFeatures.KeyItem
+                : retained.Length == 1 && retained[0].Definition == definitions.GeneratedFeatures.KeyItem,
                 "saved generated key identity");
         }
         string[] expectedOwners = saved.Roster.Select(m => "member:" + m.Id).Concat(definitions.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
@@ -96,7 +98,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         ExplorationState exploration = ExplorationState.Restore(saved.Exploration, saved.Floor, definitions.Exploration);
         GameDefinitions.Require(party.Members.Any(m => m.Definition.Id == saved.SelectedMember), "Save.SelectedMember");
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
-            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId });
+            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, expeditionRewards);
         ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId,
             saved.Features.Dressing.BenchId, saved.Features.Dressing.CrateId, saved.Features.Dressing.ObserverId, saved.ItemWorld.DoorId, saved.ItemWorld.LeverId, saved.ItemWorld.PlateId,
             .. saved.GeneratedFeatures.Plates.Select(p => p.Id), .. saved.GeneratedFeatures.Gates.Select(g => g.Id), .. saved.GeneratedFeatures.Hazards.Select(h => h.Id),

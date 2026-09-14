@@ -9,58 +9,9 @@ public sealed partial class RiflesProduct
 {
     private GeneratedFeatureSnapshot generatedFeatures = new(1, [], [], [], [], []);
 
-    private void StartGeneratedFeatures()
-    {
-        // Retire closed volumes from the previous run before resolving new object identities.
-        foreach (var old in generatedFeatures.Gates) scene!.SetDoor(old.Cell, true);
-        var gates = GeneratedFeatures.Resolve(floor, AllocateId);
-        List<GeneratedKey> keys = [];
-        foreach (var grant in GeneratedFeatures.RequiredKeys(floor))
-        {
-            ulong packId = AllocateId();
-            string owner = "combat:flight:" + packId;
-            inventory!.RegisterOwner(new PackOwner(packId, owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
-            ulong entity = AllocateId();
-            inventory.Grant(owner, definitions.GeneratedFeatures.KeyItem, 1, () => entity);
-            drops.Add(owner, grant.Cell);
-            keys.Add(new(grant.Item, entity, owner, grant.Cell));
-        }
-        List<GeneratedPlate> plates = [];
-        foreach (var gate in gates.Where(g => g.Traversal == TraversalKind.Locked))
-        {
-            var route = floor.Routes.Single(r => r.Id == gate.RouteId);
-            var key = keys.Single(k => k.Item == gate.RequiredItem);
-            ulong packId = AllocateId(); string owner = "combat:flight:" + packId;
-            ulong id = AllocateId();
-            inventory!.RegisterOwner(new PackOwner(packId, owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space, "Counterweight plate"));
-            drops.Add(owner, route.Cells[0]);
-            inventory.Grant(key.Owner, definitions.GeneratedFeatures.WeightItem, 1, AllocateId);
-            plates.Add(new(id, gate.Id, owner, route.Cells[0], key.Cell, definitions.GeneratedFeatures.PlateWeight));
-        }
-        var hazardNodes = expedition.Floors.Single(f => f.Id == floor.IntentFloorId).Candidate.Graph.Nodes
-            .Where(n => n.Kind == NodeKind.Hazard).Select(n => n.Id).ToHashSet();
-        var hazards = floor.Rooms.Where(r => hazardNodes.Contains(r.NodeId)).Select(r =>
-            new GeneratedHazard(AllocateId(), r.NodeId, r.Cells.OrderBy(c => c.ManhattanDistance(r.Cells[r.Cells.Length / 2])).First(),
-                definitions.Hazards.ActiveSeconds, false, false)).ToArray();
-        generatedFeatures = new(1, gates, keys.ToArray(), [], hazards, plates.ToArray());
-        var progression = FloorProgression.Inspect(floor, gates, generatedFeatures.Plates);
-        if (!progression.Accepted) throw new InvalidDataException("Generated progression rejected: " + string.Join(", ", progression.Diagnostics));
-        foreach (var gate in gates) scene!.SetDoor(gate.Cell, false);
-    }
 
-    private void StartGeneratedSupplies()
-    {
-        var supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies,
-            encounterPlacement!.Instances.Sum(e => Combat.Enemy(e.EnemyId).Vitality));
-        foreach (var supply in supplies)
-        {
-            ulong packId = AllocateId(); string owner = "combat:flight:" + packId;
-            inventory!.RegisterOwner(new PackOwner(packId, owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
-            inventory.Grant(owner, supply.Item, supply.Quantity, AllocateId);
-            drops.Add(owner, supply.Cell);
-        }
-        generatedFeatures = generatedFeatures with { Supplies = supplies };
-    }
+
+
 
     private IEnumerable<InteractionCandidate> GeneratedCandidates()
     {

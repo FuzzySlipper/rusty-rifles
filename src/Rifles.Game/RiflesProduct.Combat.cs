@@ -34,40 +34,7 @@ public sealed partial class RiflesProduct
         feedback = message; combatLog.Enqueue(message);
         while (combatLog.Count > Combat.LogLength) combatLog.Dequeue();
     }
-    private void StartCombat()
-    {
-        ConfigureEnemyClearance(movement!, itemWorld!.Capture().Door);
-        loadedWeapons.Clear(); flights.Clear(); drops.Clear(); allies.Clear(); combatLog.Clear(); selectedTarget = 0;
-        actions = party.Members.ToDictionary(m => m.Definition.Id, _ => new ActionState());
-        foreach (ulong id in new[] { actor!.Id, features!.Capture().Dressing.ObserverId })
-            allies.Add(id, new PartyMemberState(new MemberDefinition(id.ToString(), "Garrison ally", FormationSlot.FrontLeft, Combat.AllyVitality)));
-        StartGeneratedFeatures();
-        List<EnemyState> created = [];
-        var excluded = floor.Cells.Where(c => movement!.Occupied(c)).Concat(generatedFeatures.Gates.Select(g => g.Cell))
-            .Concat(generatedFeatures.Hazards.Select(h => h.Cell)).Concat(floor.Grants.Select(g => g.Cell))
-            .Append(itemWorld!.Capture().Door).ToHashSet();
-        encounterPlacement = new EncounterPlacementResolver(definitions.EncounterPlacement).Resolve(floor.Seed, floor, Combat, definitions.Crowd, excluded);
-        if (!encounterPlacement.Accepted) throw new InvalidDataException("Encounter placement rejected: "
-            + string.Join(", ", encounterPlacement.Rejections.Select(r => r.Code + ": " + r.Detail)));
-        foreach (var placed in encounterPlacement.Instances)
-        {
-            var spawn = Combat.Encounter.Single(s => s.Id == placed.SpawnId);
-            EnemyDefinition definition = Combat.Enemy(spawn.Enemy);
-            GridPoint cell = placed.Cell;
-            ulong id = AllocateId(); string owner = EnemyOwner(id);
-            inventory!.RegisterOwner(new PackOwner(AllocateId(), owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
-            foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, AllocateId);
-            ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
-            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, cell, PatrolRoute(cell, spawn)).Capture(), spawn.Id, definitions.Magic.EnemyResource), definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
-            enemy.Motion.Bind(movement!, id, definition.Footprint, definition.Faction, definition.Share);
-            GameDefinitions.Require(enemy.Motion.Capture().Placement == placed.PlacementId, "resolved enemy crowd slot");
-            created.Add(enemy);
-        }
-        enemies = created.ToArray();
-        StartGeneratedSupplies();
-        StartMagic();
-        CombatMessage("Rifles start empty. Load with T; select a visible foe and attack with Space.");
-    }
+
     private SpatialEntityCollider[] CombatBodies()
     {
         List<SpatialEntityCollider> bodies = [];
@@ -311,7 +278,7 @@ public sealed partial class RiflesProduct
             enemy.Brain.Observe(null, exploration.Position); CombatMessage(enemy.Definition.Name + " took " + applied + " damage.");
             if (!enemy.Alive)
             {
-                magic!.Clear("enemy:" + enemy.Id); magic.Reward(enemy.Spawn);
+                magic!.Clear("enemy:" + enemy.Id); magic.Reward(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 enemy.Action.Cancel(); enemy.Motion.Stop(); movement!.Remove(enemy.Id); enemy.Motion.Detach();
                 drops[enemy.Owner] = enemy.Motion.Position;
                 // An enemy's loaded round stays with its unique rifle on death.

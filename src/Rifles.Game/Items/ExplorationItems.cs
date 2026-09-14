@@ -27,14 +27,14 @@ internal sealed record ItemExplorationDefinition(AnchorDefinition[] Anchors, int
 }
 internal sealed record WorldAnchor(ulong Id, string Key, GridPoint Cell);
 internal sealed record ItemExplorationSnapshot(WorldAnchor[] Anchors, ulong DoorId, GridPoint Door,
-    ulong LeverId, GridPoint Lever, ulong PlateId, bool Unlocked, bool LeverOn, bool DoorOpen, bool CrateOpened, ulong Revision);
+    ulong LeverId, GridPoint Lever, ulong PlateId, bool Unlocked, bool LeverOn, bool DoorOpen, bool CrateOpened, ulong Revision, string? OpenContainer = null);
 
 /// <summary>Resolved interaction anchors and puzzle meaning, independent of inventory contents and Engine presentation.</summary>
 internal sealed class ExplorationItems
 {
     private readonly ItemExplorationDefinition definition;
     private ItemExplorationSnapshot state;
-    internal string? OpenContainer { get; private set; }
+    internal string? OpenContainer => state.OpenContainer;
     internal ItemExplorationSnapshot Capture() => state;
     internal ItemExplorationDefinition Definition => definition;
     internal IReadOnlyList<WorldAnchor> Anchors => state.Anchors;
@@ -71,6 +71,7 @@ internal sealed class ExplorationItems
     }
     internal void Validate(DungeonFloor floor)
     {
+        GameDefinitions.Require(state.OpenContainer is null || state.OpenContainer == "crate" && state.CrateOpened, "saved open container");
         GameDefinitions.Require(state.Revision > 0 && state.Revision <= uint.MaxValue && state.Anchors.Select(a => a.Key).ToHashSet().SetEquals(definition.Anchors.Select(a => a.Key))
             && state.Anchors.Length == definition.Anchors.Length && state.Anchors.All(a => floor.Cells.Contains(a.Cell))
             && floor.Cells.Contains(state.Door) && floor.Cells.Contains(state.Lever) && state.Door.ManhattanDistance(state.Lever) == 1, "saved item anchors and gate");
@@ -98,10 +99,9 @@ internal sealed class ExplorationItems
     {
         if (AnchorDefinition(key).Placement != AnchorPlacement.Crate || !Reachable(key, party, scene))
             throw new InvalidDataException("The container is out of reach.");
-        OpenContainer = key;
-        state = state with { CrateOpened = true, Revision = checked(state.Revision + 1) };
+        state = state with { OpenContainer = key, CrateOpened = true, Revision = checked(state.Revision + 1) };
     }
-    internal void Close() => OpenContainer = null;
+    internal void Close() => state = state with { OpenContainer = null };
     internal void CheckOpen(ExplorationState party, DungeonScene scene)
     { if (OpenContainer is { } key && !Reachable(key, party, scene)) Close(); }
     internal void ToggleLever(ExplorationState party, DungeonScene scene, ulong revision)

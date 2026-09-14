@@ -164,6 +164,7 @@ System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);
 var decoded = codec.Decode(payload.WrittenSpan);
 var restored = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, definitions);
+RunStateChecks.Run(definitions, decoded);
 Require(decoded.Intent.Identity == snapshot.Intent.Identity
     && decoded.Intent.Connectors.SequenceEqual(snapshot.Intent.Connectors), "Resolved expedition and connector identities survive the save.");
 var changedGeneration = definitions with { Generation = definitions.Generation with { Seed = 999 } };
