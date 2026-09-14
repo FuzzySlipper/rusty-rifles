@@ -11,6 +11,7 @@ internal sealed class SessionProjection : IDisposable
     private readonly IUiService ui;
     private readonly UiStream stream;
     private ulong sequence;
+    private UiValue? previous;
     internal SessionProjection(IUiService ui)
     {
         this.ui = ui;
@@ -37,7 +38,7 @@ internal sealed class SessionProjection : IDisposable
             ("room", value.String(floor.Rooms.FirstOrDefault(r => r.Cells.Contains(exploration.Position))?.Title ?? "Passage")),
             ("x", value.Number(exploration.Position.X)), ("y", value.Number(exploration.Position.Y)),
             ("facing", value.String(exploration.Facing.ToString())),
-            ("seconds", value.Number(exploration.ElapsedSeconds)),
+            ("seconds", value.Number(Math.Floor(exploration.ElapsedSeconds))),
             ("status", value.String(paused ? "Paused" : exploration.Position == floor.Exit ? "Exit reached" : "Exploring")),
             ("focusLabel", value.String(selected?.Candidate.Label ?? focus?.Reason.ToString() ?? "No feature")),
             ("focusId", value.String(focus?.Selected?.Id.ToString() ?? "")),
@@ -60,7 +61,15 @@ internal sealed class SessionProjection : IDisposable
                 ("doorId", value.String(world.Capture().DoorId.ToString())), ("doorRevision", value.String(world.Revision.ToString())),
                 ("leverId", value.String(world.Capture().LeverId.ToString())), ("leverRevision", value.String(world.Revision.ToString())))));
 
-        ui.PublishProjection(new UiProjection(stream, checked(++sequence), value.Build(root)));
+        UiValue snapshot = value.Build(root);
+        // Engine retains the last complete projection for attachment/recovery.
+        // Do not send an identical full HUD merely because its refresh interval elapsed.
+        if (previous is not null && snapshot.Root == previous.Root
+            && snapshot.Nodes.Span.SequenceEqual(previous.Nodes.Span)
+            && snapshot.Edges.Span.SequenceEqual(previous.Edges.Span)
+            && snapshot.Utf8.Span.SequenceEqual(previous.Utf8.Span)) return;
+        ui.PublishProjection(new UiProjection(stream, checked(++sequence), snapshot));
+        previous = snapshot;
     }
     public void Dispose() => stream.Dispose();
 }

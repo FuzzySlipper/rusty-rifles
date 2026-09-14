@@ -31,18 +31,18 @@ internal sealed class DungeonScene : IDisposable
     private bool doorVoxels => closedDoors.Count > 0;
     private readonly List<(Light Owner, LightRequest Request)> roomLights = [];
     private readonly AppearanceDefinition appearance;
-    private readonly GeneratedArt art;
+    private readonly DungeonMaterialCache materialCache;
     private DungeonMaterials? materials;
     private VoxelScenePresentation? scene;
     internal string Style { get; private set; }
 
-    internal DungeonScene(IEngineContext engine, GeneratedArt art, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId, ItemExplorationDefinition? itemDefinition = null)
+    internal DungeonScene(IEngineContext engine, DungeonMaterialCache materialCache, DungeonFloor floor, ExplorationTuning tuning, AppearanceDefinition appearance, Func<ulong> allocateLightId, ItemExplorationDefinition? itemDefinition = null)
     {
         this.engine = engine;
-        this.art = art;
         this.floor = floor;
         this.tuning = tuning;
         this.appearance = appearance;
+        this.materialCache = materialCache ?? throw new ArgumentNullException(nameof(materialCache));
         Style = appearance.InitialStyle;
         spatial = engine.Spatial.CreateSession(new SpatialSessionConfig(VoxelCellSize,
             checked((uint)(tuning.ChunkSize * VoxelsPerCell)), VoxelSurfaceMode.GreedyCubes));
@@ -54,7 +54,7 @@ internal sealed class DungeonScene : IDisposable
                 doorMaterial = engine.Graphics.CreateMaterial(new MaterialRequest(new Color(color[0], color[1], color[2], color[3]),
                     default, 1, new Color(1, 1, 1, 1), Vector3.Zero, 0, false));
             }
-            materials = new DungeonMaterials(engine, art, appearance.Style(Style), VoxelCellSize);
+            materials = materialCache.Get(appearance.Style(Style), VoxelCellSize);
             IReadOnlySet<GridPoint> cells = floor.Cells.ToHashSet();
             HashSet<GridPoint> walls = cells.SelectMany(cell => CardinalDirections.Ordered.Select(d => cell + d.Offset()))
                 .Where(cell => !cells.Contains(cell)).ToHashSet();
@@ -178,25 +178,14 @@ internal sealed class DungeonScene : IDisposable
     internal InteractionVisibility Visibility(Vector3 origin, Vector3 target) => InteractionVisibilityQuery.Cast(engine.Spatial, spatial, origin, target, new SpatialQueryFilter(0, 0), ReadOnlyMemory<SpatialEntityCollider>.Empty, ReadOnlyMemory<ulong>.Empty);
     internal void Attach() => engine.VoxelScenePresentation.RefreshScene(scene!);
 
-    /// <summary>Rebinds only the retained voxel presentation to another admitted art treatment.</summary>
+    /// <summary>Rebinds only the retained voxel presentation to another cached art treatment.</summary>
     internal void SetStyle(string style)
     {
-        DungeonMaterials replacement = new(engine, art, appearance.Style(style), VoxelCellSize);
-        try
-        {
-            engine.VoxelScenePresentation.UpdateSceneDirectional(new UpdateVoxelScenePresentationDirectionalRequest(
-                scene!, MaterialBindings(replacement), FaceMaterialBindings(replacement)));
-        }
-        catch
-        {
-            replacement.Dispose();
-            throw;
-        }
-
-        DungeonMaterials previous = materials!;
+        DungeonMaterials replacement = materialCache.Get(appearance.Style(style), VoxelCellSize);
+        engine.VoxelScenePresentation.UpdateSceneDirectional(new UpdateVoxelScenePresentationDirectionalRequest(
+            scene!, MaterialBindings(replacement), FaceMaterialBindings(replacement)));
         materials = replacement;
         Style = style;
-        previous.Dispose();
     }
 
     /// <summary>Enables or disables the fixed room-fill lights without changing the lantern or simulation state.</summary>
@@ -281,7 +270,6 @@ internal sealed class DungeonScene : IDisposable
         roomLights.Clear();
         scene?.Dispose();
         scene = null;
-        materials?.Dispose();
         materials = null;
         doorMaterial?.Dispose();
         spatial.Dispose();

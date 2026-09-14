@@ -52,3 +52,18 @@ renderer submissions. The generation bank deliberately runs candidate and
 resolved generation separately; its total is not one product floor's cost.
 GPU timer values unavailable in Firefox must not be represented as zero-cost
 GPU rendering. See the evidence report for measured budgets and hardware.
+
+
+Dungeon material catalogs are now owned for the product lifetime and reused by
+art treatment and voxel size. Floor activation and preview construction borrow
+them; scene teardown releases scene owners, and product shutdown releases the
+catalogs before their source art. Identical complete HUD snapshots are skipped,
+and the elapsed time is projected at its displayed whole-second precision.
+Engine still retains the last complete projection for browser attachment.
+
+The owner confirmed native inventory transfers and responsive movement/clicks
+with the full HUD. Browser-local measurements separate DOM callback cost from
+Engine asset admission: steady DOM p95 0.6 ms and delivery p95 119 ms, while an
+initial resource-response callback took about eight seconds. See
+[evidence](evidence/milestone-9/browser-ui-timing.md); the latter remains an
+Engine startup/recovery cost, not a claimed downstream fix.

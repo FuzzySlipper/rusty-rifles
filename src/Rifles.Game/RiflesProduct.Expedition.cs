@@ -48,7 +48,7 @@ public sealed partial class RiflesProduct
         RetainedFloor destination;
         if (!inactiveFloors.TryGetValue(route.Destination, out destination!))
         {
-            var created = FloorFactory.Create(engine, generatedArt!, FloorDefinitions(progress.Difficulty), expedition, route.Destination,
+            var created = FloorFactory.Create(engine, dungeonMaterials!, FloorDefinitions(progress.Difficulty), expedition, route.Destination,
                 expeditionId, partyId, preset, ref next, AllocateLightId);
             destination = RetainedFloor.Capture(created);
         }
@@ -74,7 +74,7 @@ public sealed partial class RiflesProduct
         var generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition generation rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Detail)));
         ulong next = nextObjectId;
-        var initial = FloorFactory.Create(engine, generatedArt!, floorDefinitions, generated.Expedition!, generated.Expedition!.EntranceFloor,
+        var initial = FloorFactory.Create(engine, dungeonMaterials!, floorDefinitions, generated.Expedition!, generated.Expedition!.EntranceFloor,
             Guid.NewGuid(), next++, preset, ref next, AllocateLightId);
         Activate(initial, []);
         inactiveFloors.Clear();

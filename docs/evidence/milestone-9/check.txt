@@ -15,7 +15,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:03.52
+Time Elapsed 00:00:04.14
 Rifles.Procgen checks passed.
 Expedition graph checks passed: distinct roles, keyed progression, stable identities and bounded rejection.
 Room catalogue checks passed: 8 templates across four seeds, fit, thresholds, reorder and bounded failures.
@@ -33,8 +33,12 @@ Milestone checks passed: snapshot codec/validation, actor transit replay, contes
 Art checks passed: cardinal views, saved dressing, asset references and lighting admission.
 Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.
 accepted result=537ce426c2398a4ed1a0eca0bd1da180ec90d55a90d317b1896b626d2aa9304c identity=bce725a85a742137bd197f4b60cce85828e04018806bb02ad24af2cea819bfe4
+request rejected [invalid_request_json]: The JSON property 'unknown' could not be mapped to any .NET member contained in type 'Rifles.Procgen.Artifacts.ArtifactGenerationRequest'.
 generated workload corpus=bccc57b5647d14b8db4d93e0eca33faac8d727c7beee2088003a4081a5562811 identity=ba950eec0bdd039a85e2a5bbab9453556100be94eb3f064c6cd3477d2e3a1325
 repaired workbench candidate operation=restore-switch identity=5f043c0a4d428f7db141a76d0fc31bb56459d30b5a7d1f95805b5b7ed34a4363
+request rejected [workbench_repair_invalid]: The workbench repair 'restore-switch' is not applicable to this candidate.
+request rejected [repair_input_alias]: Repair input must be distinct from both result and receipt outputs.
+request rejected [repair_input_alias]: Repair input must be distinct from both result and receipt outputs.
 Rifles procgen artifact/tool self-check passed.
 MSBuild version 18.0.11 for .NET
     Determining projects to restore...
@@ -47,5 +51,5 @@ MSBuild version 18.0.11 for .NET
       0 Warning(s)
       0 Error(s)
   
-  Time Elapsed 00:00:06.66
+  Time Elapsed 00:00:05.11
   Rusty Engine CoreCLR Product staged atomically at /home/dev/rusty-rifles/src/Rifles.Game/obj/Rusty.Engine/Product

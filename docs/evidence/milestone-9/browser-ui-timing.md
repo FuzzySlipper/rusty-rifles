@@ -27,8 +27,8 @@ renderer animation-frame callback.
 
 The recent second-sample HUD delivery is steady. It does not establish that
 all gameplay is responsive, nor explain every earlier degraded attachment.
-Owner confirmation of ongoing responsiveness and upstream investigation remain
-pending. No performance fix is claimed from instrumentation alone.
+The owner subsequently confirmed movement and clicks are responsive. The
+upstream startup resource-admission investigation remains separate. No performance fix is claimed from instrumentation alone.
 
 The timing feature was pushed in aa45111. UI typecheck and CoreCLR staging
 passed. The broker required restart to serve changed UI modules; LAN readback

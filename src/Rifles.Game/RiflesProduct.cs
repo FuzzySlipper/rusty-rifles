@@ -23,6 +23,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private readonly GameDefinitions definitions;
     private readonly IEngineContext engine;
     private GeneratedArt? generatedArt;
+    private DungeonMaterialCache? dungeonMaterials;
     private GameAudio? audio;
     private DungeonFloor floor;
     private ProductStateStore<RunSnapshot>? saves;
@@ -68,8 +69,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 .Concat(definitions.Art.Styles.SelectMany(s => s.Images)
                     .Select(image => (image.Path, TextureFilter.Linear, TextureWrap.Clamp)))
                 .Append((definitions.ItemArt.Path, TextureFilter.Linear, TextureWrap.Clamp)));
+        dungeonMaterials = new DungeonMaterialCache(engine, generatedArt);
         try { audio = new GameAudio(context.Content, engine.Audio, definitions.Audio); }
-        catch { generatedArt.Dispose(); throw; }
+        catch { dungeonMaterials.Dispose(); generatedArt.Dispose(); throw; }
     }
 
     public void RegisterDebugCommands(IDebugCommandModuleRegistrar registrar)
@@ -122,7 +124,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
-            var initial = FloorFactory.Create(engine, generatedArt!, FloorDefinitions(progress.Difficulty), expedition, expedition.EntranceFloor,
+            var initial = FloorFactory.Create(engine, dungeonMaterials!, FloorDefinitions(progress.Difficulty), expedition, expedition.EntranceFloor,
                 expeditionId, partyId, preset, ref nextObjectId, AllocateLightId, floor);
             Activate(initial, []);
             spellLightId = AllocateLightId(); spellLight = engine.Graphics.CreateLight(SpellLightRequest());
@@ -329,7 +331,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
             new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, rewards, completionExperience);
         ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
-        DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
+        DungeonScene replacement = new(engine, dungeonMaterials!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
         MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
         try
         {
@@ -446,6 +448,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         projection?.Dispose();
         camera?.Dispose();
         scene?.Dispose();
+        dungeonMaterials?.Dispose();
         generatedArt?.Dispose();
         audio?.Dispose();
     }

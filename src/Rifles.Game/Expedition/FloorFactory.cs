@@ -15,12 +15,12 @@ namespace Rifles.Game.Expedition;
 /// <summary>Builds a complete, inactive floor snapshot without changing the active expedition.</summary>
 internal static class FloorFactory
 {
-    internal static ExpeditionSnapshot Create(IEngineContext engine, GeneratedArt art, GameDefinitions definitions,
+    internal static ExpeditionSnapshot Create(IEngineContext engine, DungeonMaterialCache materialCache, GameDefinitions definitions,
         ResolvedExpedition intent, string floorKey, Guid runId, ulong partyId, string preset,
         ref ulong nextObjectId, Func<ulong> allocateLightId, DungeonFloor? resolvedFloor = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
-        ArgumentNullException.ThrowIfNull(art);
+        ArgumentNullException.ThrowIfNull(materialCache);
         ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(intent);
         ArgumentException.ThrowIfNullOrWhiteSpace(floorKey);
@@ -50,7 +50,7 @@ internal static class FloorFactory
         PartyState party = new(definitions.Characters.GetPreset(preset));
         ExplorationState exploration = new(floor.Entrance, definitions.Exploration);
 
-        using DungeonScene scene = new(engine, art, floor, definitions.Exploration, definitions.Appearance,
+        using DungeonScene scene = new(engine, materialCache, floor, definitions.Exploration, definitions.Appearance,
             allocateLightId, definitions.ItemExploration);
 
         PatrolActor actor = PatrolActor.Create(Allocate(), floor,
