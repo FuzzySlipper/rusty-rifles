@@ -1,0 +1,112 @@
+{
+  "scriptId": "ad4f8c51-87e0-48ef-815b-7a9d89722cbb",
+  "checks": [
+    {
+      "label": "Last passage",
+      "captureId": "9dcad1fc-b43f-4ecb-817e-3accb51d6976",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/54a3f81e-d89f-420a-a85c-c43f906145ef.png",
+      "file": "stores-exit-1.png"
+    },
+    {
+      "label": "Position",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 523.15625,
+            "x": 25,
+            "y": -514.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (113, 84) \u00b7 121s \u00b7 Seed 6871969167356124647",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Targets",
+      "targets": [
+        {
+          "disabled": true,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -436.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 0/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -436.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 0/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -388.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -388.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -340.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 0/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -340.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

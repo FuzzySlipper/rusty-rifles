@@ -94,6 +94,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   let selectedItem: ItemSelection | null = null;
   let hoveredItem: ItemSelection | null = null;
   let selectedDestination: string | null = null;
+  let presentedRun = '';
   let previousRoster = '', previousPartyTools = '', previousInventory = '', previousInventoryControls = '', previousPuzzle = '', previousMagicSpells = '', previousMagicTargets = '';
   let drag: DragIntent | null = null;
   let uiFeedback = '';
@@ -486,6 +487,13 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const render = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
     state = record(envelope.value);
+    const nextRun = text(record(state.run).id, '');
+    if (presentedRun !== nextRun) {
+      presentedRun = nextRun;
+      cancelDrag(); selectedItem = null; hoveredItem = null; selectedDestination = null;
+      uiFeedback = ''; previousInventory = ''; previousInventoryControls = '';
+      previousMagicTargets = ''; allyTarget.value = '';
+    }
     runPanel.update(state.run);
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';

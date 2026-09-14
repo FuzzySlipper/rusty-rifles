@@ -1,0 +1,187 @@
+{
+  "scriptId": "42a827bd-8991-48d0-a480-22dc0c3d38ca",
+  "checks": [
+    {
+      "label": "Stores combat",
+      "captureId": "bcc10b3a-93ea-42ac-927a-04b50123fe18",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/771d8374-9330-407b-9add-a481c1b035e0.png",
+      "file": "stores-bulwark-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 338,
+            "x": 33,
+            "y": 496.265625
+          },
+          "tag": "output",
+          "text": "Garrison bulwark took 11 damage.\nWarden took 1 damage.\nTarget: Garrison bulwark\nBlade: Melee windup\nGarrison bulwark took 1 damage.\nGarrison bulwark fell. Belongings can be recovered.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Position",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 35.546875,
+            "width": 344.453125,
+            "x": 25,
+            "y": 74.234375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (113, 89) \u00b7 107s \u00b7 Seed 6871969167356124647",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Targets",
+      "targets": [
+        {
+          "disabled": true,
+          "index": 0,
+          "rect": {
+            "height": 45.09375,
+            "width": 167,
+            "x": 33,
+            "y": 169.421875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 0/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 45.09375,
+            "width": 167,
+            "x": 204,
+            "y": 169.421875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 0/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 167,
+            "x": 33,
+            "y": 235.359375
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 167,
+            "x": 204,
+            "y": 235.359375
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 167,
+            "x": 33,
+            "y": 298.59375
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 0/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 167,
+            "x": 204,
+            "y": 298.59375
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Party",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 25,
+            "y": 596.5
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 21/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 204.5,
+            "y": 596.5
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 25,
+            "y": 629.046875
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 5/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 204.5,
+            "y": 629.046875
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 8/20",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

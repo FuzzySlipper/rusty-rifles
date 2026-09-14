@@ -1,0 +1,80 @@
+{
+  "scriptId": "a60e79b7-3d99-4ccc-a24b-c39fbcbde6c9",
+  "checks": [
+    {
+      "label": "Rest",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 439.015625
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 31/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 439.015625
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 471.5625
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 10/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 471.5625
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 13/20",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Rest log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -174.0625
+          },
+          "tag": "output",
+          "text": "Target: Garrison bulwark\nBlade: Melee windup\nGarrison bulwark took 1 damage.\nGarrison bulwark fell. Belongings can be recovered.\nRest begun; remedy and recovery settle only on completion.\nRest complete; one remedy consumed. Fallen members still need reviva",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "scriptId": "99cf3092-48da-402d-9193-56af2b17d5f8",
+  "checks": [
+    {
+      "label": "Redoubt arrival",
+      "captureId": "d33217ce-b6a7-440f-a003-1ebc10739153",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/30ef175c-1fc7-4f12-8ad0-8dbd5caffbd5.png",
+      "file": "redoubt-arrival-1.png"
+    },
+    {
+      "label": "Position",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 500.671875,
+            "x": 25,
+            "y": -463.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 5s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Run",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 168.546875
+          },
+          "tag": "output",
+          "text": "Inner Redoubt \u00b7 redoubt",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

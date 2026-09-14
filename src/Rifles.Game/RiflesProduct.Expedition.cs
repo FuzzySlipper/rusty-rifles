@@ -117,7 +117,7 @@ public sealed partial class RiflesProduct
             ("title", value.String((c.Forward ? "Descend to " : "Return to ") + expedition.Floors.Single(f => f.Id == c.Destination).Title)),
             ("problem", value.String(TravelProblem(c.Departure) ?? "")),
             ("x", value.Number(c.Departure.X)), ("y", value.Number(c.Departure.Y))))).ToArray();
-        return value.Object(("title", value.String(expedition.Title)),
+        return value.Object(("id", value.String(expeditionId.ToString())), ("title", value.String(expedition.Title)),
             ("floor", value.String(expedition.Floors.Single(f => f.Id == floor.IntentFloorId).Title)),
             ("floorKey", value.String(floor.IntentFloorId)),
             ("seed", value.String(expedition.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture))),

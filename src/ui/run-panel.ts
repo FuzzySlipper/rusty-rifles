@@ -153,6 +153,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   let state: Values = {};
   let selectedFloor = '';
   let activeFloor = '';
+  let runIdentity = '';
   let floorSignature = '';
   let mapSignature = '';
   let notesSignature = '';
@@ -260,6 +261,11 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
 
   const update = (raw: unknown): void => {
     state = record(raw);
+    const nextRun = text(state.id, '');
+    if (runIdentity !== nextRun) {
+      runIdentity = nextRun; selectedFloor = ''; activeFloor = '';
+      mapSignature = ''; notesSignature = ''; suggestedSeedSignature = '';
+    }
     const nextActiveFloor = text(state.floorKey, '');
     if (activeFloor !== nextActiveFloor) { activeFloor = nextActiveFloor; selectedFloor = nextActiveFloor; }
     title.textContent = text(state.title, 'Expedition');
