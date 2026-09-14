@@ -85,6 +85,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "saved pack capacity");
             if (!combatOwner && !ItemInventory.IsMember(owner.Key)) GameDefinitions.Require(owner.Id == itemWorld.Anchor(owner.Key).Id, "saved anchor owner");
         }
+        ValidateWorldObstructions(saved);
         new PartyDefinition(saved.Roster).Validate();
         PartyState party = new(saved.Roster);
         party.Restore(saved.Members);
@@ -122,5 +123,21 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         GameDefinitions.Require(saved.ItemWorld.DoorOpen || !grid.Occupied(saved.ItemWorld.Door), "closed gate occupancy");
         GameDefinitions.Require(saved.GeneratedFeatures.Gates.All(g => g.Open || !grid.Occupied(g.Cell)), "closed generated gate occupancy");
         return (exploration, party, actor);
+    }
+
+    private static void ValidateWorldObstructions(ExpeditionSnapshot saved)
+    {
+        GridPoint[] staticObstacles = [saved.Actor.Start, saved.Actor.End, saved.Features.Dressing.Bench,
+            saved.Features.Dressing.Crate, saved.Features.Dressing.Observer];
+        GameDefinitions.Require(staticObstacles.Distinct().Count() == staticObstacles.Length
+            && DressingPlacement.CanBlock(saved.Floor, staticObstacles), "saved static obstacle placement");
+
+        GridPoint door = saved.ItemWorld.Door;
+        GameDefinitions.Require(door != saved.Floor.Entrance && door != saved.Floor.Exit
+            && !staticObstacles.Contains(door)
+            && !saved.GeneratedFeatures.Gates.Any(gate => gate.Cell == door)
+            && !saved.Floor.Grants.Any(grant => grant.Cell == door)
+            && !saved.Floor.Connectors.Any(connector => connector.From == door || connector.To == door),
+            "saved item gate placement");
     }
 }

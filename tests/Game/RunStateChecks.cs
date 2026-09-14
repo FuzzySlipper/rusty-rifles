@@ -16,6 +16,7 @@ internal static class RunStateChecks
         VerifyReloadRoundTrips(definitions, fixture);
         VerifyCastingEnemyAndProjectileRoundTrips(definitions, fixture);
         VerifyOpenContainerState(definitions, fixture);
+        VerifyBarrierSafeSaveAdmission(definitions, fixture);
         VerifyRunProgress(definitions, fixture);
         VerifyRetainedFloorKeepsOnlyFloorState(definitions, fixture);
         VerifyInvalidRunsAreRejected(definitions, fixture);
@@ -138,6 +139,34 @@ internal static class RunStateChecks
         };
         RequireRejected(() => RunCodec.Validate(CreateRun(definitions, invalidOpen), definitions),
             "An active run rejects an open-container state without an opened crate.");
+    }
+
+    private static void VerifyBarrierSafeSaveAdmission(GameDefinitions definitions, ExpeditionSnapshot fixture)
+    {
+        GridPoint exitNeighbor = CardinalDirections.Ordered.Select(direction => fixture.Floor.Exit + direction.Offset())
+            .First(fixture.Floor.Cells.Contains);
+        ExpeditionSnapshot exitGate = fixture with
+        {
+            ItemWorld = fixture.ItemWorld with { Door = fixture.Floor.Exit, Lever = exitNeighbor },
+        };
+        RequireRejected(() => RunCodec.Validate(CreateRun(definitions, exitGate), definitions),
+            "A save cannot recreate a closed item gate on the expedition exit.");
+
+        CardinalDirection patrolDirection = CardinalDirections.Ordered.First(direction =>
+            fixture.Floor.Cells.Contains(fixture.Floor.Exit + direction.Offset()));
+        PatrolSnapshot exitPatrol = fixture.Actor with
+        {
+            Start = fixture.Floor.Exit,
+            End = fixture.Floor.Exit + patrolDirection.Offset(),
+            Motion = new ExplorationState(fixture.Floor.Exit, definitions.Exploration with
+            {
+                StepSeconds = definitions.Features.ActorStepSeconds,
+                InitialFacing = patrolDirection,
+            }).Capture(),
+        };
+        ExpeditionSnapshot blockedExit = fixture with { Actor = exitPatrol };
+        RequireRejected(() => RunCodec.Validate(CreateRun(definitions, blockedExit), definitions),
+            "A save cannot move a retained patrol onto the expedition exit.");
     }
 
     private static void VerifyCastingEnemyAndProjectileRoundTrips(GameDefinitions definitions, ExpeditionSnapshot fixture)

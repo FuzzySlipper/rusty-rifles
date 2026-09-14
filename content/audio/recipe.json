@@ -1,0 +1,11 @@
+{
+  "sampleRate": 22050,
+  "seed": 29,
+  "cues": {
+    "rifle": { "seconds": 0.45, "frequency": 90, "endFrequency": 40, "noise": 0.85, "decay": 12, "pulses": [0] },
+    "reload": { "seconds": 0.32, "frequency": 1450, "endFrequency": 600, "noise": 0.65, "decay": 45, "pulses": [0, 0.16] },
+    "spell": { "seconds": 0.55, "frequency": 320, "endFrequency": 960, "noise": 0.1, "decay": 6, "pulses": [0] },
+    "impact": { "seconds": 0.2, "frequency": 130, "endFrequency": 55, "noise": 0.65, "decay": 28, "pulses": [0] },
+    "interaction": { "seconds": 0.2, "frequency": 520, "endFrequency": 240, "noise": 0.4, "decay": 32, "pulses": [0, 0.08] }
+  }
+}

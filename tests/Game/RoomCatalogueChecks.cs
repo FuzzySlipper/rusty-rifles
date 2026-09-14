@@ -22,7 +22,7 @@ internal static class RoomCatalogueChecks
                 Require(result.Accepted, $"Generation rejected {seed}/{floor.Id}: {result.Attempts.Last().Detail}");
                 var resolved = DungeonFloor.Generate(floor, definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation);
                 resolved.Validate();
-                FloorCompositionChecks.Check(resolved, definitions, result);
+                FloorCompositionChecks.Check(resolved, floor, definitions, result);
                 Require(resolved.Rooms.Length == floor.Candidate.Graph.Nodes.Count, "All graph features receive a resolved functional room.");
                 foreach (var room in resolved.Rooms)
                 {

@@ -25,6 +25,7 @@
     <ProjectReference Include="../Rifles.Procgen/Rifles.Procgen.csproj" />
     <PackageReference Include="Rusty.Engine" Version="[$(RustyEngineSdkPackageVersion)]" />
     <RustyEngineContentBundle Include="generated-art" Root="art/generated" />
+    <RustyEngineContentBundle Include="game-audio" Root="audio" />
     <RustyEngineProductInputIntent Include="rifles.use" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.use.keyboard" Intent="rifles.use" Trigger="key:key-f:pressed" />
     <RustyEngineProductInputIntent Include="rifles.cycle" Value="digital" />

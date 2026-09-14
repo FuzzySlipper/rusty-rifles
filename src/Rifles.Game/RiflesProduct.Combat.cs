@@ -1,3 +1,4 @@
+using Rifles.Game.Audio;
 using System.Numerics;
 using Rifles.Game.Combat;
 using Rifles.Game.Magic;
@@ -163,6 +164,7 @@ public sealed partial class RiflesProduct
         if (action.Kind == CombatActionKind.Reload)
         {
             inventory!.Consume(owner, Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
+            audio!.Play(SoundCue.Reload, Aim(exploration.Position));
             CombatMessage(member.Definition.Name + " loaded one round."); return;
         }
         if (action.Kind == CombatActionKind.Consume)
@@ -230,6 +232,7 @@ public sealed partial class RiflesProduct
         if (action.Kind == CombatActionKind.Reload)
         {
             inventory!.Consume(enemy.Owner, Combat.AmmunitionItem, 1); enemy.Loaded = true;
+            audio!.Play(SoundCue.Reload, EnemyAim(enemy));
             CombatMessage(enemy.Definition.Name + " loaded a round."); return;
         }
         if (action.Kind == CombatActionKind.Fire)
@@ -246,6 +249,7 @@ public sealed partial class RiflesProduct
     {
         if (!hit.Present) { CombatMessage(kind + " missed."); return; }
         if (hit.Kind != SpatialHitKind.Entity) { CombatMessage(kind + " blocked by masonry or a closed gate."); return; }
+        audio!.Play(SoundCue.Impact, hit.Entity == partyId ? Aim(exploration.Position) : Aim(enemies.FirstOrDefault(e => e.Id == hit.Entity)?.Motion.Position ?? exploration.Position));
         long damage = Combat.Action(kind).Damage + (member is null ? 0 : Member(member).Power);
         EnemyState? enemy = enemies.SingleOrDefault(e => e.Id == hit.Entity && e.Alive);
         if (enemy is not null)

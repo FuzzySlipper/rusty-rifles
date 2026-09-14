@@ -1,4 +1,5 @@
 using Rifles.Procgen.Expeditions;
+using Rifles.Game.Audio;
 using Rifles.Game.Debugging;
 using Rusty.Engine.Debugging;
 using Rifles.Procgen.Generation;
@@ -22,6 +23,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private readonly GameDefinitions definitions;
     private readonly IEngineContext engine;
     private GeneratedArt? generatedArt;
+    private GameAudio? audio;
     private DungeonFloor floor;
     private ProductStateStore<RunSnapshot>? saves;
     private Guid expeditionId = Guid.NewGuid();
@@ -66,6 +68,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 .Concat(definitions.Art.Styles.SelectMany(s => s.Images)
                     .Select(image => (image.Path, TextureFilter.Linear, TextureWrap.Clamp)))
                 .Append((definitions.ItemArt.Path, TextureFilter.Linear, TextureWrap.Clamp)));
+        try { audio = new GameAudio(context.Content, engine.Audio, definitions.Audio); }
+        catch { generatedArt.Dispose(); throw; }
     }
 
     public void RegisterDebugCommands(IDebugCommandModuleRegistrar registrar)
@@ -75,6 +79,15 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         result = registrar.Register(this);
         if (!result.Succeeded) throw new InvalidOperationException(result.Message);
     }
+
+    [DebugCommand("rifles.audio.read", Description = "Read Engine clip, signal and realization diagnostics without emitting audio.")]
+    public string ReadAudio() => System.Text.Json.JsonSerializer.Serialize(new
+    {
+        State = engine.Audio.Read(),
+        Realization = engine.Audio.ReadRealization(),
+        Diagnostics = Enumerable.Range(0, checked((int)engine.Audio.Read().RetainedDiagnosticCount))
+            .Select(index => engine.Audio.ReadDiagnosticAt(new((uint)index))).ToArray(),
+    });
 
     [DebugCommand("rifles.expedition.read", Description = "Read the resolved expedition graph, floor roles and connectors stored with this run. Does not travel or regenerate.")]
     public string ReadExpedition() => System.Text.Json.JsonSerializer.Serialize(expedition,
@@ -434,6 +447,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         camera?.Dispose();
         scene?.Dispose();
         generatedArt?.Dispose();
+        audio?.Dispose();
     }
     public void Dispose() => Shutdown();
 }

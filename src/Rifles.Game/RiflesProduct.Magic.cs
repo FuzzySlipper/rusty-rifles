@@ -1,3 +1,4 @@
+using Rifles.Game.Audio;
 using System.Numerics;
 using Rifles.Game.Combat;
 using Rifles.Game.Magic;
@@ -150,6 +151,7 @@ public sealed partial class RiflesProduct
             if (enemy is null || !enemy.Alive || enemy.Resource < action.Cost) return;
             enemy.SpendResource(action.Cost);
         }
+        audio!.Play(SoundCue.Spell, enemy is null ? Aim(exploration.Position) : EnemyAim(enemy));
         if (spell.Target == SpellTarget.Enemy)
         {
             Vector3 source = enemy is null ? Aim(exploration.Position) : EnemyAim(enemy);

@@ -1,3 +1,4 @@
+using Rifles.Game.Audio;
 using System.Numerics;
 using Rifles.Game.Combat;
 using Rifles.Game.Dungeon;
@@ -16,6 +17,7 @@ public sealed partial class RiflesProduct
 
     private void EmitNoise(GridPoint cell, NoiseKind kind, ulong emitter = 0)
     {
+        if (kind == NoiseKind.Gunfire) audio!.Play(SoundCue.Rifle, Aim(cell));
         // Events are consumed now on the active floor, never replayed from a save.
         foreach (EnemyState enemy in enemies.Where(e => e.Alive && e.Id != emitter))
         {

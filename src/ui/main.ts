@@ -38,7 +38,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const debugTools = mountDebugTools(root);
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Expedition'); panel.dataset.rustyUiInteractive = 'true';
-  panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 24px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
+  panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 80px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
   const title = document.createElement('strong'); title.textContent = 'Rusty Rifles';
   const help = document.createElement('p'); help.textContent = 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle · P pause · K save · L load'; help.style.cssText = 'font-size:11px;margin:3px 0;color:#c9c0ae';
 
@@ -75,14 +75,14 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const focus = document.createElement('p'); focus.style.cssText = 'margin:5px 0';
   const puzzle = document.createElement('section'); puzzle.dataset.puzzle = 'true'; puzzle.style.cssText = 'margin:5px 0';
   const partyTools = document.createElement('details'); partyTools.dataset.partyTools = 'true'; partyTools.open = false; partyTools.style.cssText = 'border-top:1px solid #574f3d;margin-top:8px;padding-top:7px';
-  const inventory = document.createElement('details'); inventory.dataset.inventory = 'true'; inventory.open = false; inventory.style.cssText = 'border-top:1px solid #574f3d;margin-top:8px;padding-top:7px';
+  const inventory = document.createElement('details'); inventory.dataset.inventory = 'true'; inventory.open = false; inventory.setAttribute('aria-label', 'Party inventory'); inventory.dataset.rustyUiInteractive = 'true'; inventory.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:2;box-sizing:border-box;width:min(620px,calc(100vw - 24px));max-height:65vh;overflow:auto;padding:10px 12px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
   const inventoryTitle = document.createElement('summary'); inventoryTitle.textContent = 'Inventory & equipment'; inventory.append(inventoryTitle);
   const inventoryFeedback = document.createElement('p'); inventoryFeedback.dataset.inventoryFeedback = 'true'; inventoryFeedback.setAttribute('role', 'status'); inventoryFeedback.style.cssText = 'min-height:1.35em;margin:5px 0;color:#ead27e';
   const inventoryBody = document.createElement('div'); inventoryBody.dataset.inventoryBody = 'true'; inventoryBody.style.cssText = 'max-height:36vh;overflow:auto;padding-right:3px';
   const inventoryControls = document.createElement('div'); inventoryControls.dataset.inventoryControls = 'true'; inventoryControls.style.cssText = 'background:#171914f5;border-top:1px solid #574f3d;bottom:0;margin-top:7px;padding-top:7px;position:sticky';
   inventory.append(inventoryFeedback, inventoryBody, inventoryControls);
   const syncPanelWidth = (): void => {
-    panel.style.width = inventory.open || partyTools.open || magicPanel.open
+    panel.style.width = partyTools.open || magicPanel.open
       ? 'min(620px,calc(100vw - 24px))'
       : 'min(380px,calc(100vw - 24px))';
   };
@@ -241,14 +241,26 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const members = record(state.party); const signature = JSON.stringify([members, state.selectedMember]); if (signature === previousRoster) return; previousRoster = signature;
     const slots = ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'];
     const sortedMembers: Array<Record<string, unknown>> = entries(members).map(([id, member]) => ({ id, ...member }));
-    roster.replaceChildren(...sortedMembers.sort((left, right) => slots.indexOf(text(left.slot)) - slots.indexOf(text(right.slot))).map(member => {
-      const card = button(`${text(member.name)} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`, () => command('select', { member: member.id }));
-      card.dataset.member = String(member.id); card.setAttribute('aria-pressed', String(member.id === state.selectedMember)); card.setAttribute('aria-label', `${text(member.name)}, ${text(member.slot)}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`); card.title = `Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · Melee ${text(member.melee, '0')} · Ranged ${text(member.ranged, '0')} · Casting ${text(member.casting, '0')}`;
-      if (member.id === state.selectedMember) card.style.borderColor = '#e4bd63'; return card;
-    }));
+    const present = new Set<string>();
+    for (const member of sortedMembers.sort((left, right) => slots.indexOf(text(left.slot)) - slots.indexOf(text(right.slot)))) {
+      const id = String(member.id); present.add(id);
+      let card = roster.querySelector<HTMLButtonElement>(`button[data-member="${CSS.escape(id)}"]`);
+      if (!card) { card = button('', () => command('select', { member: id })); card.dataset.member = id; }
+      card.textContent = `${text(member.name)} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`;
+      card.setAttribute('aria-pressed', String(id === state.selectedMember));
+      card.setAttribute('aria-label', `${text(member.name)}, ${text(member.slot)}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
+      card.title = `${text(member.slot)} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
+      card.style.borderColor = id === state.selectedMember ? '#e4bd63' : '#827556';
+      // Keep focused controls alive while health and recovery values change.
+      const index = sortedMembers.findIndex(candidate => candidate.id === member.id);
+      if (roster.children[index] !== card) roster.insertBefore(card, roster.children[index] ?? null);
+    }
+    roster.querySelectorAll<HTMLButtonElement>('button[data-member]').forEach(card => {
+      if (!present.has(card.dataset.member!)) card.remove();
+    });
   };
   const renderPartyTools = (): void => {
-    const signature = JSON.stringify([state.party, state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
+    const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name]), state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
     const members = entries(state.party); partyTools.replaceChildren();
     const partySummary = document.createElement('summary'); partySummary.textContent = 'Formation & party preset';
     partyTools.append(partySummary);
@@ -261,6 +273,9 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     if (presets.length > 0) { const presetTitle = document.createElement('strong'); presetTitle.textContent = 'Party preset'; presetTitle.style.marginLeft = '8px'; const select = document.createElement('select'); select.dataset.partyPreset = 'true'; for (const [id, preset] of presets) { const option = document.createElement('option'); option.value = id; option.textContent = text(preset.name, id); select.append(option); } select.value = text(state.preset, presets[0][0]); partyTools.append(presetTitle, select, button('Restart with party', () => command('choose-party', { preset: select.value }))); }
   };
   const renderInventory = (): void => {
+    // The drag captures revisions. Preserve its DOM source until drop/cancel;
+    // the authoritative command still rejects changed ownership or lost reach.
+    if (drag !== null) return;
     const inventoryState = inventoryOf(state);
     const signature = JSON.stringify([inventoryState, state.equipmentSlots]);
     if (signature === previousInventory) {
@@ -433,11 +448,13 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const defeated = numeric(combatState.defeated) === 1;
     combatStatus.textContent = defeated
       ? 'The party is defeated.'
-      : selectedTargetNumber > 0 ? `Target: ${text(selectedEnemy.name, selectedTarget)}` : 'Select a visible enemy.';
-    attack.disabled = defeated || selectedTargetNumber <= 0;
+      : selectedTargetNumber > 0 ? `Target: ${text(selectedEnemy.name, selectedTarget)}${numeric(selectedEnemy.visible) === 1 ? '' : ' · out of sight'}` : 'Select a visible enemy.';
+    const targetVisible = numeric(selectedEnemy.visible) === 1;
+    attack.disabled = defeated || !targetVisible;
+    attack.title = targetVisible ? 'Attack the selected enemy.' : 'Choose a living enemy in sight.';
     bolt.disabled = defeated;
     reload.disabled = defeated;
-    toss.disabled = defeated || selectedItem === null || selectedTargetNumber <= 0;
+    toss.disabled = defeated || selectedItem === null || !targetVisible;
     plate.disabled = defeated || selectedItem === null;
 
     const presentEnemies = new Set<string>();
@@ -457,6 +474,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       }
       const remaining = Math.max(0, numeric(enemy.remaining));
       row.target.textContent = `${text(enemy.name, id)} · ${text(enemy.vitality, '0')}/${text(enemy.maxVitality, '0')}`;
+      row.target.title = `${text(enemy.name, id)} · ${text(enemy.position)}${numeric(enemy.visible) === 1 ? '' : ' · out of sight'}`;
       row.target.dataset.target = id; row.target.setAttribute('aria-pressed', String(id === selectedTarget));
       row.target.disabled = numeric(enemy.visible) !== 1 || numeric(id, -1) <= 0 || defeated;
       row.details.textContent = `${text(enemy.kind)} · ${text(enemy.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(enemy.conditions)}`;
@@ -526,10 +544,11 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); if (event.code === 'Escape') cancelDrag(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
-  const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !panel.contains(event.target)) cancelDrag(); };
-  const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget)) cancelDrag(); };
+  const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !panel.contains(event.target) && !inventory.contains(event.target)) cancelDrag(); };
+  const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget) && !inventory.contains(event.relatedTarget)) cancelDrag(); };
+  inventory.addEventListener('keydown', stopGameplayKeys, true); inventory.addEventListener('keyup', stopGameplayKeys, true); inventory.addEventListener('focusout', focusOutside);
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, combat, magicPanel, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); const runPanel = mountRunPanel(root, command); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
+  panel.append(title, help, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
+  return { dispose() { runPanel.dispose(); debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); inventory.remove(); panel.remove(); } };
 }

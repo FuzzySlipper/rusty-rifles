@@ -1,3 +1,4 @@
+using Rifles.Game.Audio;
 using Rifles.Game.Items;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
@@ -60,6 +61,7 @@ public sealed partial class RiflesProduct
                 break;
         }
         ApplyEquipment();
+        if (command.Action != "consume") audio!.Play(SoundCue.Interaction, Aim(exploration.Position));
     }
     private IEnumerable<InteractionCandidate> ItemCandidates()
     {
@@ -89,7 +91,7 @@ public sealed partial class RiflesProduct
     {
         if (generatedFeatures.Gates.Any(g => g.Id == target.Id) || generatedFeatures.Hazards.Any(h => h.Id == target.Id) || generatedFeatures.Plates.Any(p => p.Id == target.Id)) return UseGeneratedFeature(target);
         ItemExplorationSnapshot state = itemWorld!.Capture();
-        if (target.Id == state.LeverId) { itemWorld.ToggleLever(exploration, scene!, target.Revision); return "Lever " + (itemWorld.LeverOn ? "on" : "off"); }
+        if (target.Id == state.LeverId) { itemWorld.ToggleLever(exploration, scene!, target.Revision); audio!.Play(SoundCue.Interaction, Aim(exploration.Position)); return "Lever " + (itemWorld.LeverOn ? "on" : "off"); }
         if (target.Id == state.DoorId) return state.Unlocked ? "Gate needs the lever and sufficient plate weight." : "Select the brass key and use it on the gate.";
         WorldAnchor anchor = itemWorld.Anchors.Single(a => a.Id == target.Id);
         if (anchor.Key == "crate")

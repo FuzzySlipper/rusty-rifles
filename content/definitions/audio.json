@@ -1,0 +1,12 @@
+{
+  "volume": 0.6,
+  "spatialBlend": 1,
+  "attenuation": 1,
+  "sounds": [
+    { "cue": "Rifle", "path": "rifle.wav", "volume": 0.9, "pitch": 1 },
+    { "cue": "Reload", "path": "reload.wav", "volume": 0.45, "pitch": 1 },
+    { "cue": "Spell", "path": "spell.wav", "volume": 0.55, "pitch": 1 },
+    { "cue": "Impact", "path": "impact.wav", "volume": 0.45, "pitch": 1 },
+    { "cue": "Interaction", "path": "interaction.wav", "volume": 0.4, "pitch": 1 }
+  ]
+}

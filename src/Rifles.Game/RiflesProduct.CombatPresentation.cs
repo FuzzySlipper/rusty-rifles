@@ -15,8 +15,9 @@ public sealed partial class RiflesProduct
         uint foes = value.Object(enemies.Select(enemy => (enemy.Id.ToString(), value.Object(
             ("name", value.String(enemy.Definition.Name)), ("vitality", value.Number(enemy.Vitality)),
             ("maxVitality", value.Number(enemy.Definition.Vitality)), ("visible", value.Number(Visible(enemy) ? 1 : 0)),
-            ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Brain.Mode + " · " + enemy.Brain.Reason + " · " + enemy.NavigationStatus : "Dead")),
+            ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Brain.Mode.ToString() : "Dead")),
             ("conditions", value.String(magic!.Describe("enemy:" + enemy.Id))),
+            ("position", value.String($"({enemy.Motion.Position.X}, {enemy.Motion.Position.Y}) · slot {enemy.Motion.CrowdOffset.X:0.##}, {enemy.Motion.CrowdOffset.Y:0.##}")),
             ("remaining", value.Number(enemy.Action.Current?.Remaining ?? 0)), ("kind", value.String(enemy.Definition.Attack.ToString()))))).ToArray());
         uint members = value.Object(party.Members.Select(member =>
         {
