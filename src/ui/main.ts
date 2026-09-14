@@ -506,7 +506,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     if (combatLog.textContent !== log) { combatLog.textContent = log; combatLog.scrollTop = combatLog.scrollHeight; }
   };
   const renderState = (envelope: Envelope | null): void => {
-    if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
+    if (!envelope) { status.textContent = 'Preparing the expedition…'; bottomBar.update({}); return; }
     state = record(envelope.value);
     const nextRun = text(record(state.run).id, '');
     if (presentedRun !== nextRun) {

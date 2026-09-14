@@ -3,7 +3,6 @@ type Values = Record<string, unknown>;
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 const formationSlots = ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'] as const;
-type FormationSlot = (typeof formationSlots)[number];
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -34,10 +33,14 @@ function slotLabel(slot: string): string {
   }
 }
 
+function facingRotation(facing: string): number {
+  return { north: 0, east: 90, south: 180, west: 270 }[facing.toLowerCase()] ?? 0;
+}
+
 /**
- * First game-UI pass: a fixed bottom bar with a current-floor minimap, a
- * combined event log, and a 2x2 formation display. Display plus member
- * selection only; all rules and inventory authority stay in C#.
+ * Game-UI bottom bar: current-floor minimap, combined event log, and a
+ * formation display with per-member facing. Display plus member selection
+ * only; all rules and inventory authority stay in C#.
  */
 export function mountBottomBar(root: Element, command: (action: string, fields?: Record<string, unknown>) => void): Readonly<{
   update(raw: unknown): void;
@@ -48,7 +51,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:210px minmax(0,1fr) 250px;gap:10px;align-items:stretch;padding:10px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(240px,36vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:200px minmax(0,1fr) minmax(320px,400px);gap:10px;align-items:stretch;padding:10px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(240px,36vh)';
 
   const mapSection = document.createElement('section');
   mapSection.setAttribute('aria-label', 'Minimap');
@@ -78,46 +81,66 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
+  const formationFacing = document.createElement('output');
+  formationFacing.dataset.barFacing = 'true';
+  formationFacing.textContent = 'Party faces North';
+  formationFacing.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px';
   const formationGrid = document.createElement('div');
   formationGrid.dataset.barFormation = 'true';
   formationGrid.tabIndex = -1;
-  formationGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px';
+  formationGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:158px;overflow:auto';
   const formationHint = document.createElement('p');
-  formationHint.textContent = 'Click a member to select them.';
+  formationHint.textContent = 'Click a member to select them. Chevron shows facing.';
   formationHint.style.cssText = 'margin:5px 0 0;color:#c9c0ae;font-size:11px';
-  formationSection.append(formationGrid, formationHint);
+  formationSection.append(formationFacing, formationGrid, formationHint);
 
   bar.append(mapSection, logSection, formationSection);
   root.append(bar);
 
-  const memberButtons = new Map<FormationSlot, { select: HTMLButtonElement; health: HTMLElement }>();
-  for (const slot of formationSlots) {
+  type Token = Readonly<{
+    select: HTMLButtonElement;
+    marker: SVGElement;
+    chevron: SVGElement;
+    name: HTMLElement;
+    detail: HTMLElement;
+    health: HTMLElement;
+  }>;
+  const createToken = (key: string): Token => {
     const select = document.createElement('button');
     select.type = 'button';
-    select.dataset.barMember = slot;
+    select.dataset.barMember = key;
     select.disabled = true;
-    select.setAttribute('aria-label', `${slotLabel(slot)}, empty`);
-    select.title = `${slotLabel(slot)} · empty`;
     select.style.cssText = 'background:#33392f;color:#eee6d5;border:1px solid #574f3d;border-radius:3px;padding:5px 6px;cursor:pointer;font:inherit;text-align:left;min-height:64px';
+    const head = document.createElement('span');
+    head.style.cssText = 'display:flex;gap:5px;align-items:center';
+    const chevron = document.createElementNS(svgNamespace, 'svg');
+    chevron.setAttribute('viewBox', '0 0 14 14');
+    chevron.setAttribute('aria-hidden', 'true');
+    (chevron as unknown as HTMLElement).style.cssText = 'flex:0 0 14px;height:14px;width:14px;visibility:hidden';
+    const marker = document.createElementNS(svgNamespace, 'path');
+    marker.setAttribute('d', 'M 7 1.5 L 12 12 L 7 9.8 L 2 12 Z');
+    marker.setAttribute('fill', '#c9b98a');
+    chevron.append(marker);
     const name = document.createElement('strong');
-    name.textContent = `${slotLabel(slot)} · empty`;
     name.style.cssText = 'display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    head.append(chevron as unknown as Node, name);
     const detail = document.createElement('span');
-    detail.textContent = 'No member here';
     detail.style.cssText = 'display:block;font-size:11px;color:#c9c0ae';
     const track = document.createElement('span');
     track.style.cssText = 'display:block;height:6px;border-radius:3px;background:#3a352a;margin-top:4px;overflow:hidden';
     const health = document.createElement('span');
     health.style.cssText = 'display:block;height:100%;width:0%;background:#8ca65c';
     track.append(health);
-    select.append(name, detail, track);
+    select.append(head, detail, track);
     select.addEventListener('click', () => {
       const memberId = select.dataset.memberId;
       if (memberId) command('select', { member: memberId });
     });
-    formationGrid.append(select);
-    memberButtons.set(slot, { select, health });
-  }
+    return { select, marker, chevron, name, detail, health };
+  };
+  // Keyed by member id while occupied, by `empty:<slot>` for baseline gaps.
+  // Tokens persist across renders so focus and scroll survive updates.
+  const memberTokens = new Map<string, Token>();
 
   let mapSignature = '';
   let formationSignature = '';
@@ -179,7 +202,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       mapView.append(mark);
     }
     const arrow = document.createElementNS(svgNamespace, 'path');
-    const rotation = { north: 0, east: 90, south: 180, west: 270 }[pose.facing.toLowerCase()] ?? 0;
+    const rotation = facingRotation(pose.facing);
     svgAttributes(arrow, { d: 'M 0.5 0.08 L 0.84 0.82 L 0.5 0.65 L 0.16 0.82 Z', fill: '#f5eee1', stroke: '#251914', 'stroke-width': 0.08, transform: `rotate(${rotation} ${pose.x + 0.5} ${pose.y + 0.5}) translate(${pose.x} ${pose.y})` });
     const partyLabel = document.createElementNS(svgNamespace, 'title');
     partyLabel.textContent = `Party facing ${pose.facing}`;
@@ -190,59 +213,96 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   const renderFormation = (state: Values): void => {
     const party = record(state.party);
     const selectedMember = text(state.selectedMember, '');
+    const partyFacing = text(state.facing, 'North');
+    const facingLine = `Party faces ${partyFacing}`;
+    if (formationFacing.textContent !== facingLine) formationFacing.textContent = facingLine;
     const signature = JSON.stringify([party, selectedMember]);
     if (signature === formationSignature) return;
     formationSignature = signature;
-    const bySlot = new Map<string, { id: string; member: Values }>();
-    // Overflow contract (see F3): the bar renders exactly the four baseline
-    // positions. First member wins a contested slot; members on unknown slots
-    // stay selectable through the legacy roster until a later pass designs a
-    // larger formation display. C# currently always emits the four baseline
-    // slots, so this only guards future definitions, never today's party.
-    for (const [id, member] of entries(party)) {
-      const key = text(member.slot, '');
-      if (!bySlot.has(key)) bySlot.set(key, { id, member });
-    }
+    // Data-driven placement: the four baseline positions first (with an empty
+    // gap token where unoccupied), then every other member in projection
+    // order. A larger future party renders every member with no layout change;
+    // C# still emits exactly the four baseline slots today.
+    const claimed = new Set<string>();
+    const placed: Array<{ key: string; id: string; member: Values } | { key: string; id: null; slot: string }> = [];
     for (const slot of formationSlots) {
-      const row = memberButtons.get(slot);
-      if (!row) continue;
-      const found = bySlot.get(slot);
-      const name = row.select.querySelector('strong');
-      const detail = row.select.querySelector('span');
-      if (!found) {
-        // Search BEFORE disabling would return this very button, so exclude
-        // it: it is about to become unfocusable. See re-review of F6.
-        if (document.activeElement === row.select) {
-          const fallback = formationSlots.map(candidate => memberButtons.get(candidate)?.select).find(button => button && button !== row.select && !button.disabled);
+      const found = entries(party).find(([id, member]) => !claimed.has(id) && text(member.slot, '') === slot);
+      if (found) {
+        claimed.add(found[0]);
+        placed.push({ key: found[0], id: found[0], member: found[1] });
+      } else {
+        placed.push({ key: `empty:${slot}`, id: null, slot });
+      }
+    }
+    for (const [id, member] of entries(party)) {
+      if (!claimed.has(id)) {
+        claimed.add(id);
+        placed.push({ key: id, id, member });
+      }
+    }
+    const hadFocus = formationGrid.contains(document.activeElement);
+    for (const [key, token] of memberTokens) {
+      if (!placed.some(item => item.key === key)) {
+        token.select.remove();
+        memberTokens.delete(key);
+      }
+    }
+    for (const item of placed) {
+      let token = memberTokens.get(item.key);
+      if (!token) {
+        token = createToken(item.key);
+        memberTokens.set(item.key, token);
+      }
+      if (item.id === null) {
+        if (document.activeElement === token.select) {
+          const fallback = [...memberTokens.values()].map(candidate => candidate.select).find(button => button !== token.select && !button.disabled);
           (fallback ?? formationGrid).focus();
         }
-        row.select.dataset.memberId = '';
-        row.select.disabled = true;
-        row.select.style.borderColor = '#574f3d';
-        row.select.title = `${slotLabel(slot)} · empty`;
+        token.select.dataset.barMember = item.key;
+        token.select.dataset.memberId = '';
+        token.select.disabled = true;
+        token.select.style.borderColor = '#574f3d';
+        token.select.title = `${slotLabel(item.slot)} · empty`;
         // Clear the occupied-state announcements too, or a screen reader keeps
         // describing the departed member. See F2.
-        row.select.removeAttribute('aria-pressed');
-        row.select.setAttribute('aria-label', `${slotLabel(slot)}, empty`);
-        if (name) name.textContent = `${slotLabel(slot)} · empty`;
-        if (detail) detail.textContent = 'No member here';
-        row.health.style.width = '0%';
-        row.health.style.background = '#8ca65c';
+        token.select.removeAttribute('aria-pressed');
+        token.select.setAttribute('aria-label', `${slotLabel(item.slot)}, empty`);
+        token.name.textContent = `${slotLabel(item.slot)} · empty`;
+        token.detail.textContent = 'No member here';
+        (token.chevron as unknown as HTMLElement).style.visibility = 'hidden';
+        token.health.style.width = '0%';
+        token.health.style.background = '#8ca65c';
+        formationGrid.append(token.select);
         continue;
       }
-      row.select.disabled = false;
-      row.select.dataset.memberId = found.id;
-      const vitality = number(found.member.vitality);
-      const maximum = Math.max(1, number(found.member.maximumVitality, 1));
+      const member = item.member;
+      const slot = text(member.slot, '');
+      const facing = text(member.facing, partyFacing);
+      const vitality = number(member.vitality);
+      const maximum = Math.max(1, number(member.maximumVitality, 1));
       const fraction = Math.min(1, Math.max(0, vitality / maximum));
-      row.select.setAttribute('aria-pressed', String(found.id === selectedMember));
-      row.select.setAttribute('aria-label', `${text(found.member.name, found.id)}, ${slotLabel(slot)}; vitality ${vitality} of ${maximum}`);
-      row.select.title = `${slotLabel(slot)} · Power ${text(found.member.power, '0')} · Defense ${text(found.member.defense, '0')}`;
-      row.select.style.borderColor = found.id === selectedMember ? '#e4bd63' : '#827556';
-      if (name) name.textContent = text(found.member.name, found.id);
-      if (detail) detail.textContent = `${slotLabel(slot)} · ${vitality}/${maximum}`;
-      row.health.style.width = `${Math.round(fraction * 100)}%`;
-      row.health.style.background = fraction > 0.5 ? '#8ca65c' : fraction > 0.25 ? '#e4bd63' : '#b0523c';
+      const selected = item.id === selectedMember;
+      token.select.dataset.barMember = item.id;
+      token.select.dataset.memberId = item.id;
+      token.select.disabled = false;
+      token.select.setAttribute('aria-pressed', String(selected));
+      token.select.setAttribute('aria-label', `${text(member.name, item.id)}, ${slotLabel(slot)}; facing ${facing}; vitality ${vitality} of ${maximum}`);
+      token.select.title = `${slotLabel(slot)} · facing ${facing} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
+      token.select.style.borderColor = selected ? '#e4bd63' : '#827556';
+      token.name.textContent = text(member.name, item.id);
+      token.detail.textContent = `${slotLabel(slot)} · ${vitality}/${maximum}`;
+      token.marker.setAttribute('transform', `rotate(${facingRotation(facing)} 7 7)`);
+      token.marker.setAttribute('fill', selected ? '#e4bd63' : '#c9b98a');
+      (token.chevron as unknown as HTMLElement).style.visibility = 'visible';
+      token.health.style.width = `${Math.round(fraction * 100)}%`;
+      token.health.style.background = fraction > 0.5 ? '#8ca65c' : fraction > 0.25 ? '#e4bd63' : '#b0523c';
+      formationGrid.append(token.select);
+    }
+    // Post-loop relocation: removing or disabling the focused token drops
+    // focus to the body, so restore it once every token is final.
+    if (hadFocus && !formationGrid.contains(document.activeElement)) {
+      const fallback = [...memberTokens.values()].map(candidate => candidate.select).find(button => !button.disabled);
+      (fallback ?? formationGrid).focus();
     }
   };
 

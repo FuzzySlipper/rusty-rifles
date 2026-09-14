@@ -24,6 +24,11 @@ internal sealed class SessionProjection : IDisposable
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
             ("name", value.String(member.Definition.Name)),
             ("slot", value.String(member.Slot.ToString())),
+            // Presentation only: the party moves as one blob, so every member
+            // currently faces the party direction. Projected per member so the
+            // formation display can show independent facings later without a
+            // projection change; no facing-dependent rules exist today.
+            ("facing", value.String(exploration.Facing.ToString())),
             ("vitality", value.Number(member.Vitality)),
             ("maximumVitality", value.Number(member.MaximumVitality)),
             ("power", value.Number(member.Power)), ("defense", value.Number(member.Defense)),
