@@ -6,7 +6,7 @@ import {
 } from '@rusty-engine/live-debug';
 
 /** Engine owns commands, diagnostics and metric sampling; Rifles only hosts the UI. */
-export function mountDebugTools(root: Element): Readonly<{ dispose(): void }> {
+export function mountDebugTools(root: Element, readUiTiming: () => string): Readonly<{ dispose(): void }> {
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Debug tools');
   panel.dataset.rustyUiInteractive = 'true';
@@ -29,7 +29,15 @@ export function mountDebugTools(root: Element): Readonly<{ dispose(): void }> {
   consoleButton.setAttribute('aria-controls', 'rifles-debug-console');
   const showMetrics = button('Show metrics');
   const hideMetrics = button('Hide metrics');
-  toolbar.append(title, consoleButton, showMetrics, hideMetrics);
+  const uiTiming = button('UI timing');
+  const uiTimingOutput = document.createElement('pre');
+  uiTimingOutput.hidden = true;
+  uiTimingOutput.style.cssText = 'white-space:pre-wrap;max-width:560px;font:12px/1.4 monospace';
+  uiTiming.addEventListener('click', () => {
+    uiTimingOutput.textContent = readUiTiming();
+    uiTimingOutput.hidden = false;
+  });
+  toolbar.append(title, consoleButton, showMetrics, hideMetrics, uiTiming);
   const status = document.createElement('p');
   status.setAttribute('role', 'status'); status.hidden = true;
   const metricsHost = document.createElement('div');
@@ -40,7 +48,7 @@ export function mountDebugTools(root: Element): Readonly<{ dispose(): void }> {
   consoleHost.style.cssText = 'width:min(600px,calc(100vw - 44px));margin-top:8px';
   const style = document.createElement('style');
   style.textContent = '#rifles-debug-console [aria-label="Command completions"] { max-height: 8rem; overflow: auto; }';
-  panel.append(style, toolbar, status, metricsHost, consoleHost);
+  panel.append(style, toolbar, status, uiTimingOutput, metricsHost, consoleHost);
   root.append(panel);
 
   const transport = createLiveDebugHttpTransport();

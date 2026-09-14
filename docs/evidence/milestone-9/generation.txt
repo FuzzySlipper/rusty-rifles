@@ -1,0 +1,18 @@
+0/arrival candidate=127.65ms resolved=139.11ms
+0/stores candidate=1050.21ms resolved=732.59ms
+0/redoubt candidate=198.26ms resolved=209.66ms
+1/arrival candidate=2.18ms resolved=8.30ms
+1/stores candidate=4650.99ms resolved=5518.78ms
+1/redoubt candidate=15.01ms resolved=22.94ms
+29/arrival candidate=2.64ms resolved=4.74ms
+29/stores candidate=97.71ms resolved=100.54ms
+29/redoubt candidate=880.29ms resolved=852.54ms
+83/arrival candidate=2.36ms resolved=4.45ms
+83/stores candidate=2254.28ms resolved=2206.64ms
+83/redoubt candidate=41.11ms resolved=53.89ms
+warmup-bank=0.00 ms
+expedition generation (4 seeds): n=1, median=50.40 ms, p95=50.40 ms, min=50.40 ms, max=50.40 ms
+candidate dungeon generation (12 floors): n=1, median=9322.68 ms, p95=9322.68 ms, min=9322.68 ms, max=9322.68 ms
+resolved dungeon + elevation + architecture (12 floors): n=1, median=9854.19 ms, p95=9854.19 ms, min=9854.19 ms, max=9854.19 ms
+generation bank total: n=1, median=19227.27 ms, p95=19227.27 ms, min=19227.27 ms, max=19227.27 ms
+resolved floor: n=12, median=139.11 ms, p95=5518.78 ms, min=4.45 ms, max=5518.78 ms

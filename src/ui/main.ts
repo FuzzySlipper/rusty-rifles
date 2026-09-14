@@ -1,3 +1,4 @@
+import { UiProfile } from './ui-profile.js';
 import { mountRunPanel } from './run-panel.js';
 import { mountDebugTools } from './debug.js';
 
@@ -35,7 +36,8 @@ function ownerRevision(owner: Record<string, unknown>): string | null { const re
  * projections remain the sole displayed-state owner.
  */
 export function mountProductUi(root: Element, context: UiContext): Readonly<{ dispose(): void }> {
-  const debugTools = mountDebugTools(root);
+  const uiProfile = new UiProfile();
+  const debugTools = mountDebugTools(root, () => uiProfile.read());
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Expedition'); panel.dataset.rustyUiInteractive = 'true';
   panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 80px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
@@ -502,7 +504,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const log = text(combatState.log, '');
     if (combatLog.textContent !== log) { combatLog.textContent = log; combatLog.scrollTop = combatLog.scrollHeight; }
   };
-  const render = (envelope: Envelope | null): void => {
+  const renderState = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
     state = record(envelope.value);
     const nextRun = text(record(state.run).id, '');
@@ -542,6 +544,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     renderRoster(); renderPartyTools(); renderInventory(); renderCombat(); renderMagic();
   };
+  const render = (envelope: Envelope | null): void => uiProfile.measure(() => renderState(envelope));
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); if (event.code === 'Escape') cancelDrag(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
   const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !panel.contains(event.target) && !inventory.contains(event.target)) cancelDrag(); };
@@ -550,5 +553,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
   panel.append(title, help, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); inventory.remove(); panel.remove(); } };
 }

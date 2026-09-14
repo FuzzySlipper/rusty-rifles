@@ -1,0 +1,68 @@
+using System.Diagnostics;
+using Rifles.Game.Content;
+using Rifles.Game.Dungeon;
+using Rifles.Procgen.Expeditions;
+using Rifles.Procgen.Generation;
+
+string contentRoot = "/home/dev/rusty-rifles/content";
+GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
+ulong[] seeds = [0, 1, 29, 83];
+
+static double Milliseconds(Action action)
+{
+    long started = Stopwatch.GetTimestamp();
+    action();
+    return Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+}
+
+void RunBank(List<double> expedition, List<double> candidate, List<double> floors)
+{
+    ExpeditionGenerator expeditions = new();
+    foreach (ulong seed in seeds)
+    {
+        ResolvedExpedition? intent = null;
+        expedition.Add(Milliseconds(() =>
+        {
+            var result = expeditions.Generate(definitions.Generation.Expedition, seed);
+            if (!result.Accepted) throw new InvalidOperationException("Expedition rejected.");
+            intent = result.Expedition;
+        }));
+        foreach (ResolvedFloorIntent floorIntent in intent!.Floors)
+        {
+            double candidateMilliseconds = Milliseconds(() =>
+            {
+                var result = new DungeonGenerator().Generate(floorIntent.Candidate, definitions.Generation.Policy,
+                    floorIntent.Candidate.Seed, definitions.Rooms.Shapes);
+                if (!result.Accepted) throw new InvalidOperationException("Candidate rejected.");
+            });
+            candidate.Add(candidateMilliseconds);
+            double resolvedMilliseconds = Milliseconds(() =>
+            {
+                DungeonFloor floor = DungeonFloor.Generate(floorIntent, definitions.Generation.Policy, definitions.Rooms,
+                    definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
+                floor.Validate();
+            });
+            floors.Add(resolvedMilliseconds);
+            Console.WriteLine($"{seed}/{floorIntent.Id} candidate={candidateMilliseconds:F2}ms resolved={resolvedMilliseconds:F2}ms");
+        }
+    }
+}
+
+List<double> warmExpedition = [], warmCandidate = [], warmFloors = [];
+if (!Environment.GetCommandLineArgs().Contains("--no-warmup")) RunBank(warmExpedition, warmCandidate, warmFloors);
+const int repetitions = 1;
+List<double> expedition = [], candidate = [], floors = [], banks = [];
+for (int i = 0; i < repetitions; i++)
+{
+    int beforeExpedition = expedition.Count, beforeCandidate = candidate.Count, beforeFloors = floors.Count;
+    RunBank(expedition, candidate, floors);
+    banks.Add(expedition.Skip(beforeExpedition).Sum() + candidate.Skip(beforeCandidate).Sum() + floors.Skip(beforeFloors).Sum());
+}
+
+static string Describe(string name, List<double> values) => $"{name}: n={values.Count}, median={values.Order().ElementAt(values.Count / 2):F2} ms, p95={values.Order().ElementAt((int)Math.Ceiling(values.Count * .95) - 1):F2} ms, min={values.Min():F2} ms, max={values.Max():F2} ms";
+Console.WriteLine("warmup-bank=" + (warmExpedition.Sum() + warmCandidate.Sum() + warmFloors.Sum()).ToString("F2") + " ms");
+Console.WriteLine(Describe("expedition generation (4 seeds)", expedition.Chunk(4).Select(values => values.Sum()).ToList()));
+Console.WriteLine(Describe("candidate dungeon generation (12 floors)", candidate.Chunk(12).Select(values => values.Sum()).ToList()));
+Console.WriteLine(Describe("resolved dungeon + elevation + architecture (12 floors)", floors.Chunk(12).Select(values => values.Sum()).ToList()));
+Console.WriteLine(Describe("generation bank total", banks));
+Console.WriteLine(Describe("resolved floor", floors));
