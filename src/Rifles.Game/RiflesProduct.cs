@@ -51,6 +51,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         engine = context.Engine;
         try { definitions = GameDefinitions.Load(context.Content); }
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
+        progress = new(definitions.Run.DefaultDifficulty, false, []);
         preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
         party = new PartyState(definitions.Characters.GetPreset(preset));
         selectedMember = party.Members[0].Definition.Id;
@@ -108,7 +109,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
-            var initial = FloorFactory.Create(engine, generatedArt!, definitions, expedition, expedition.EntranceFloor,
+            var initial = FloorFactory.Create(engine, generatedArt!, FloorDefinitions(progress.Difficulty), expedition, expedition.EntranceFloor,
                 expeditionId, partyId, preset, ref nextObjectId, AllocateLightId, floor);
             Activate(initial, []);
             spellLightId = AllocateLightId(); spellLight = engine.Graphics.CreateLight(SpellLightRequest());
@@ -179,7 +180,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (action is { } admitted) controls.Observe(admitted);
         }
         phaseStarted = updateProfile.Record(UpdatePhase.Input, phaseStarted);
-        if (!paused)
+        if (!paused && !progress.Completed)
         {
             for (uint step = 0; step < update.Facts.AdmittedStepCount; step++)
             {
@@ -244,6 +245,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             case "save": Save(); break;
             case "load": Load(); break;
             case "restart": Restart(); break;
+            case "complete": CompleteRun(); break;
+            case "new-run": NewRunCommand(command.Choice ?? ""); break;
             case "travel": Travel(command.Choice ?? ""); break;
             case "art-style":
                 string currentStyle = features!.Style;
@@ -259,7 +262,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
     private void SetPaused(bool value)
     {
-        paused = value; controls.Clear(); commandRevision = checked(commandRevision + 1);
+        paused = value || progress.Completed || Defeated; controls.Clear(); commandRevision = checked(commandRevision + 1);
         feedback = paused ? "Paused" : "Resumed";
     }
     public void Pause() { if (started && !shutdown) { SetPaused(true); Publish(); } }
@@ -280,6 +283,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         try
         {
             RunSnapshot saved = CaptureRun();
+            RunCodec.Validate(saved, definitions);
             PersistenceSaveReceipt receipt = saves!.Save("current", saved);
             if (receipt.Outcome != PersistenceSaveOutcome.Saved) throw new InvalidOperationException(receipt.Outcome.ToString());
             feedback = "Expedition saved";
@@ -295,7 +299,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (!loaded.Present) { feedback = "No saved expedition"; return; }
             RunSnapshot run = loaded.State!;
             RunCodec.Validate(run, definitions);
-            Activate(run.Active, RunCodec.Rewards(run), RunCodec.Items(run));
+            Activate(run.Active, RunCodec.Rewards(run), RunCodec.Items(run), run.Progress.Completed ? definitions.Run.FinaleExperience : 0);
+            progress = run.Progress;
+            mapObservation = null;
             inactiveFloors.Clear();
             foreach (var retained in run.Inactive) inactiveFloors.Add(retained.Floor.IntentFloorId, retained);
             feedback = "Expedition restored";
@@ -303,12 +309,12 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         catch (Exception error) { feedback = "Load rejected: " + error.Message; }
     }
 
-    private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null)
+    private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null, long completionExperience = 0)
     {
-        var restored = ExpeditionCodec.Validate(saved, definitions, rewards, allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition));
+        var restored = ExpeditionCodec.Validate(saved, definitions, rewards, allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition), completionExperience);
         ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
         RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
-            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, rewards);
+            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, rewards, completionExperience);
         ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
         DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
         MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
@@ -369,6 +375,11 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         if (target is { } stair && (stair.Id == features!.Capture().ExitId || stair.Id == floorId))
         {
             var routes = Connections().Where(c => c.Forward == (stair.Id == features.Capture().ExitId)).ToArray();
+            if (routes.Length == 0 && stair.Id == features.Capture().ExitId)
+            {
+                try { CompleteRun(); } catch (Exception error) { feedback = error.Message; }
+                return;
+            }
             if (routes.Length == 1)
             {
                 try { Travel(routes[0].Link.Id); }

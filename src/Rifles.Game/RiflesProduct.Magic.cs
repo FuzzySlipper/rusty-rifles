@@ -230,11 +230,12 @@ public sealed partial class RiflesProduct
         CombatMessage(spell.Name + " struck " + (foe?.Definition.Name ?? "the party") + ".");
         RecomputeMagic();
     }
-    private void DamageMember(PartyMemberState member, long damage)
+    private long DamageMember(PartyMemberState member, long damage)
     {
         CancelRest("Rest interrupted by injury.");
-        member.ApplyDamage(damage);
+        long applied = member.ApplyDamage(checked((long)Math.Ceiling(damage * definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier)));
         if (!member.IsLiving) { actions[member.Definition.Id].Cancel(); magic!.Clear("member:" + member.Definition.Id); }
+        return applied;
     }
     private void AdvanceMagic(double seconds)
     {

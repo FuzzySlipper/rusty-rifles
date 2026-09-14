@@ -7,11 +7,11 @@ using Rusty.Engine.Persistence;
 
 namespace Rifles.Game.Expedition;
 
-internal sealed record RunSnapshot(ExpeditionSnapshot Active, RetainedFloor[] Inactive);
+internal sealed record RunSnapshot(ExpeditionSnapshot Active, RetainedFloor[] Inactive, RunProgress Progress);
 
 internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
 {
-    public uint SchemaVersion => 10;
+    public uint SchemaVersion => 11;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -39,13 +39,30 @@ internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
     {
         GameDefinitions.Require(run.Inactive is not null, "retained floors");
         var active = run.Active;
+        GameDefinitions.Require(run.Progress is not null && run.Progress.Maps is not null, "run progress");
+        _ = definitions.Run.Difficulty(run.Progress.Difficulty);
+        var visited = new[] { active.Floor }.Concat(run.Inactive.Select(f => f.Floor)).ToArray();
+        GameDefinitions.Require(run.Progress.Maps.Select(m => m.FloorKey).Distinct().Count() == run.Progress.Maps.Length
+            && run.Progress.Maps.All(m => visited.Any(f => f.IntentFloorId == m.FloorKey)
+                && m.Cells.Distinct().Count() == m.Cells.Length
+                && m.Cells.All(visited.Single(f => f.IntentFloorId == m.FloorKey).Cells.Contains)), "discovered map cells");
+        if (run.Progress.Completed)
+        {
+            var finale = active.Floor.IntentFloorId == active.Intent.ObjectiveFloor
+                ? RetainedFloor.Capture(active) : run.Inactive.SingleOrDefault(f => f.Floor.IntentFloorId == active.Intent.ObjectiveFloor);
+            GameDefinitions.Require(finale is not null && finale.Enemies.All(e => e.Vitality == 0)
+                && finale.Features.ExitUsed && visited.Length == active.Intent.Floors.Length
+                && active.Floor.IntentFloorId == active.Intent.ObjectiveFloor && active.Paused
+                && active.Exploration.Position == active.Floor.Exit, "completed expedition objective");
+        }
+        long completionExperience = run.Progress.Completed ? definitions.Run.FinaleExperience : 0;
         string[] floorKeys = [active.Floor.IntentFloorId, .. run.Inactive.Select(f => f.Floor.IntentFloorId)];
         GameDefinitions.Require(floorKeys.Distinct().Count() == floorKeys.Length
             && floorKeys.All(k => active.Intent.Floors.Any(f => f.Id == k)), "visited floor identities");
         GameDefinitions.Require(run.Inactive.All(f => f.Inventory.Packs.All(p => !ItemInventory.IsMember(p.Owner.Key))), "retained floor inventory ownership");
         string[] rewards = Rewards(run);
         var items = Items(run);
-        ExpeditionCodec.Validate(active, definitions, rewards, items);
+        ExpeditionCodec.Validate(active, definitions, rewards, items, completionExperience);
         foreach (var floor in run.Inactive)
         {
             // Party actions belong only to the active floor. A resting floor has
@@ -55,7 +72,7 @@ internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
                 Members = active.Combat.Members.Select(m => m with { Action = null }).ToArray(),
                 Magic = active.Combat.Magic! with { RestRemaining = 0, RestOwner = "" },
             }};
-            ExpeditionCodec.Validate(floor.Join(idle, floor.Departure), definitions, rewards, items);
+            ExpeditionCodec.Validate(floor.Join(idle, floor.Departure), definitions, rewards, items, completionExperience);
         }
         var floors = new[] { RetainedFloor.Capture(active) }.Concat(run.Inactive).ToArray();
         var ids = floors.SelectMany(f => FloorIds(f)).Concat(active.Inventory.Packs

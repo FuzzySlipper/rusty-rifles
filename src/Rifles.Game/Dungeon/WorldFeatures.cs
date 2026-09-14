@@ -90,6 +90,8 @@ internal sealed class WorldFeatures : IDisposable
         state = state with { ExitUsed = true };
         return "Stand on the exit to continue the expedition.";
     }
+    internal void MarkExitUsed() => state = state with { ExitUsed = true };
+
     internal void Reset()
     {
         state = state with { LanternOn = true, ExitUsed = false, LanternRevision = 1 };

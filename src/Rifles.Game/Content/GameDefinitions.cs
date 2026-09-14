@@ -1,4 +1,5 @@
 using Rifles.Game.Generation;
+using Rifles.Game.Expedition;
 using Rifles.Procgen.Expeditions;
 using System.Text.Json;
 using Rifles.Game.Combat;
@@ -15,7 +16,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -61,7 +62,8 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<RouteSupplyDefinition>("definitions/route-supplies.json", x => x.Validate()),
             Read<HazardDefinition>("definitions/generated-hazards.json", x => x.Validate()),
             Read<EncounterPlacementDefinition>("definitions/encounter-placement.json", x => x.Validate()),
-            Read<ArchitectureDetailDefinition>("definitions/architecture-detail.json", x => x.Validate()));
+            Read<ArchitectureDetailDefinition>("definitions/architecture-detail.json", x => x.Validate()),
+            Read<RunDefinition>("definitions/expedition.json", x => x.Validate()));
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");

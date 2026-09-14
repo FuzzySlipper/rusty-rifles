@@ -218,6 +218,7 @@ public sealed partial class RiflesProduct
         if (Defeated)
         {
             magic!.Clear("party"); CancelRest("Party defeated.");
+            paused = true; controls.Clear(); feedback = definitions.Run.DefeatText;
             exploration.Stop(); movement!.Remove(partyId); exploration.Detach();
             foreach (ActionState action in actions.Values) action.Cancel();
         }
@@ -259,7 +260,7 @@ public sealed partial class RiflesProduct
             PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Slot).FirstOrDefault();
             if (target is null) return;
             CancelRest("Rest interrupted by damage.");
-            long applied = target.ApplyDamage(Math.Max(Combat.MinimumDamage, damage - target.Defense));
+            long applied = DamageMember(target, Math.Max(Combat.MinimumDamage, damage - target.Defense));
             CombatMessage(target.Definition.Name + " took " + applied + " damage" + (target.IsLiving ? "." : " and died. Pack retained."));
             if (!target.IsLiving) { actions[target.Definition.Id].Cancel(); magic!.Clear("member:" + target.Definition.Id); }
             return;

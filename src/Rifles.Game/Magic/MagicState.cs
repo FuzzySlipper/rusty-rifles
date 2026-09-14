@@ -109,6 +109,12 @@ internal sealed class MagicState
         return true;
     }
 
+    internal void AwardExperience(long amount)
+    {
+        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        foreach (var book in books.Values) book.Experience = checked(book.Experience + amount);
+    }
+
     internal long Power(string member) => SumChoices(For(member), choice => choice.Power);
 
     internal long Defense(string member) => SumChoices(For(member), choice => choice.Defense);
@@ -229,7 +235,7 @@ internal sealed class MagicState
         MagicDefinition definition,
         IEnumerable<string> members,
         IEnumerable<string> validTargets,
-        IEnumerable<string> validRewards)
+        IEnumerable<string> validRewards, long completionExperience = 0)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(validTargets);
@@ -238,7 +244,7 @@ internal sealed class MagicState
         MagicState state = new(definition, members);
         HashSet<string> targets = RequireDistinct(validTargets, "condition targets");
         HashSet<string> rewardKeys = RequireDistinct(validRewards, "reward identities");
-        ValidateSnapshotShape(snapshot, state, targets, rewardKeys);
+        ValidateSnapshotShape(snapshot, state, targets, rewardKeys, completionExperience);
 
         foreach (MagicBookSnapshot saved in snapshot.Books)
         {
@@ -383,7 +389,7 @@ internal sealed class MagicState
         MagicSnapshot snapshot,
         MagicState state,
         IReadOnlySet<string> validTargets,
-        IReadOnlySet<string> validRewards)
+        IReadOnlySet<string> validRewards, long completionExperience)
     {
         if (snapshot.Books is null || snapshot.Conditions is null || snapshot.Rewards is null
             || snapshot.RestOwner is null || !double.IsFinite(snapshot.RestRemaining)
@@ -405,7 +411,8 @@ internal sealed class MagicState
             || snapshot.RestRemaining == 0 && snapshot.RestOwner.Length != 0)
             throw new InvalidDataException("Magic snapshot rest owner is invalid.");
 
-        long expectedExperience = checked((long)snapshot.Rewards.Length * state.definition.ExperiencePerEnemy);
+        if (completionExperience < 0) throw new InvalidDataException("Invalid completion experience.");
+        long expectedExperience = checked((long)snapshot.Rewards.Length * state.definition.ExperiencePerEnemy + completionExperience);
         foreach (MagicBookSnapshot book in snapshot.Books)
         {
             if (book.Selected is null || book.Known is null || book.Hotbar is null || book.Choices is null

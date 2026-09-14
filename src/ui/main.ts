@@ -1,3 +1,4 @@
+import { mountRunPanel } from './run-panel.js';
 import { mountDebugTools } from './debug.js';
 
 type Envelope = Readonly<{ value: unknown }>;
@@ -40,8 +41,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 24px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
   const title = document.createElement('strong'); title.textContent = 'Rusty Rifles';
   const help = document.createElement('p'); help.textContent = 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle · P pause · K save · L load'; help.style.cssText = 'font-size:11px;margin:3px 0;color:#c9c0ae';
-  const travelPanel = document.createElement('section'); travelPanel.dataset.travelPanel = 'true';
-  let travelKey = '';
+
   const status = document.createElement('output'); status.dataset.inventoryStatus = 'true';
   const feedback = document.createElement('p'); feedback.dataset.inventoryFeedback = 'true'; feedback.setAttribute('role', 'status'); feedback.style.cssText = 'min-height:1.35em;margin:4px 0;color:#ead27e';
   const combat = document.createElement('section'); combat.dataset.combatHud = 'true'; combat.style.cssText = 'background:#251614ed;border:1px solid #aa6a4d;border-radius:4px;margin:8px 0;padding:7px';
@@ -486,18 +486,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const render = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; return; }
     state = record(envelope.value);
-    const run = record(state.run);
-    const nextTravelKey = JSON.stringify(run);
-    if (nextTravelKey !== travelKey) {
-      travelKey = nextTravelKey;
-      const heading = document.createElement('p'); heading.textContent = text(run.floor);
-      const controls = Object.entries(record(run.connections)).map(([id, raw]) => {
-        const route = record(raw); const action = button(text(route.title), () => command('travel', { choice: id }));
-        const problem = text(route.problem, ''); action.disabled = problem.length > 0; action.title = problem;
-        return action;
-      });
-      travelPanel.replaceChildren(heading, ...controls);
-    }
+    runPanel.update(state.run);
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';
     productFeedback = nextFeedback;
@@ -533,6 +522,6 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget)) cancelDrag(); };
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, travelPanel, combat, magicPanel, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
+  panel.append(title, help, status, combat, magicPanel, roster, actions, focus, puzzle, feedback, partyTools, inventory, art); root.append(panel); const runPanel = mountRunPanel(root, command); render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
+  return { dispose() { runPanel.dispose(); debugTools.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); panel.remove(); } };
 }

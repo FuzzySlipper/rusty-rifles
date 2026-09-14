@@ -1,0 +1,14 @@
+{
+  "goal": "Descend through the Stores, clear the Inner Redoubt, and secure its final exit. Keys and counterweights open protected routes; caches support the return journey.",
+  "finaleLabel": "Secure the redoubt",
+  "successText": "The expedition has secured the inner position. The route is open and the surviving party can withdraw.",
+  "defeatText": "The party has fallen. Load your last save, retry this seed, or start a new expedition. Your previous save is kept until you save again.",
+  "finaleExperience": 30,
+  "defaultDifficulty": "normal",
+  "difficulties": [
+    { "id": "normal", "name": "Normal", "description": "Standard enemy pressure with ammunition for missed shots and exploration.", "incomingDamageMultiplier": 1.0, "ammunitionAllowance": 2.2 },
+    { "id": "hard", "name": "Hard", "description": "Heavier incoming damage and tighter ammunition reserves; use cover and recovery carefully.", "incomingDamageMultiplier": 1.35, "ammunitionAllowance": 1.5 }
+  ],
+  "mapRevealCells": 2,
+  "seedIncrement": 1
+}
