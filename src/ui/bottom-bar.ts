@@ -97,7 +97,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     select.dataset.barMember = slot;
     select.disabled = true;
     select.setAttribute('aria-label', `${slotLabel(slot)}, empty`);
-    select.style.cssText = 'background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:5px 6px;cursor:pointer;font:inherit;text-align:left;min-height:64px';
+    select.title = `${slotLabel(slot)} · empty`;
+    select.style.cssText = 'background:#33392f;color:#eee6d5;border:1px solid #574f3d;border-radius:3px;padding:5px 6px;cursor:pointer;font:inherit;text-align:left;min-height:64px';
     const name = document.createElement('strong');
     name.textContent = `${slotLabel(slot)} · empty`;
     name.style.cssText = 'display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -107,7 +108,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const track = document.createElement('span');
     track.style.cssText = 'display:block;height:6px;border-radius:3px;background:#3a352a;margin-top:4px;overflow:hidden';
     const health = document.createElement('span');
-    health.style.cssText = 'display:block;height:100%;width:100%;background:#8ca65c';
+    health.style.cssText = 'display:block;height:100%;width:0%;background:#8ca65c';
     track.append(health);
     select.append(name, detail, track);
     select.addEventListener('click', () => {
@@ -209,8 +210,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const name = row.select.querySelector('strong');
       const detail = row.select.querySelector('span');
       if (!found) {
+        // Search BEFORE disabling would return this very button, so exclude
+        // it: it is about to become unfocusable. See re-review of F6.
         if (document.activeElement === row.select) {
-          const fallback = formationSlots.map(candidate => memberButtons.get(candidate)?.select).find(button => button && !button.disabled);
+          const fallback = formationSlots.map(candidate => memberButtons.get(candidate)?.select).find(button => button && button !== row.select && !button.disabled);
           (fallback ?? formationGrid).focus();
         }
         row.select.dataset.memberId = '';
