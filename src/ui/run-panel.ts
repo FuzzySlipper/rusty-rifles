@@ -152,6 +152,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
 
   let state: Values = {};
   let selectedFloor = '';
+  let activeFloor = '';
   let floorSignature = '';
   let mapSignature = '';
   let notesSignature = '';
@@ -259,6 +260,8 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
 
   const update = (raw: unknown): void => {
     state = record(raw);
+    const nextActiveFloor = text(state.floorKey, '');
+    if (activeFloor !== nextActiveFloor) { activeFloor = nextActiveFloor; selectedFloor = nextActiveFloor; }
     title.textContent = text(state.title, 'Expedition');
     location.textContent = `${text(state.floor, 'Unknown floor')} · ${text(state.floorKey, 'unknown')}`;
     const runStatus = text(state.status, 'Exploring');

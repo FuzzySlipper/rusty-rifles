@@ -124,7 +124,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const restCancel = button('Cancel rest', () => command('rest-cancel')); restCancel.dataset.restCancel = 'true';
   restControls.append(rest, restCancel);
   const pause = button('Pause', () => command('pause'));
-  const use = button('Use feature', () => command('use', { target: state.focusId, targetRevision: state.focusRevision }));
+  const use = button('Use feature', () => command('use', { target: numeric(state.focusId), targetRevision: numeric(state.focusRevision) }));
   actions.append(pause, button('Save', () => command('save')), button('Load', () => command('load')), button('Restart', () => command('restart')), use);
   const currentCombatTarget = (): number => numeric(record(state.combat).selectedTarget, -1);
   const throwSelectedItem = (destination?: 'plate'): void => {
