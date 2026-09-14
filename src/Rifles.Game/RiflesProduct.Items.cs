@@ -77,6 +77,7 @@ public sealed partial class RiflesProduct
     }
     private IEnumerable<InteractionCandidate> ItemCandidates()
     {
+        foreach (var generated in GeneratedCandidates()) yield return generated;
         foreach (WorldAnchor anchor in itemWorld!.Anchors)
         {
             bool container = anchor.Key == "crate";
@@ -95,6 +96,7 @@ public sealed partial class RiflesProduct
             scene!.Visibility(scene.Eye(exploration.Position), point), exploration.Moving ? InteractionAvailability.Unavailable : InteractionAvailability.Available);
     private string UseItemFeature(InteractionTarget target)
     {
+        if (generatedFeatures.Gates.Any(g => g.Id == target.Id) || generatedFeatures.Hazards.Any(h => h.Id == target.Id) || generatedFeatures.Plates.Any(p => p.Id == target.Id)) return UseGeneratedFeature(target);
         ItemExplorationSnapshot state = itemWorld!.Capture();
         if (target.Id == state.LeverId) { itemWorld.ToggleLever(exploration, scene!, target.Revision); return "Lever " + (itemWorld.LeverOn ? "on" : "off"); }
         if (target.Id == state.DoorId) return state.Unlocked ? "Gate needs the lever and sufficient plate weight." : "Select the brass key and use it on the gate.";

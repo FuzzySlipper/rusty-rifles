@@ -92,3 +92,14 @@ not regenerate or travel. See [milestone 7](milestone-7.md) for current scope.
 `rifles.floor.read` returns the played floor's resolved room functions, cells,
 thresholds and geometry identity. Use it to inspect room fit and reproduce
 layout issues; this is not a visibility or current-frame observation.
+
+## Generated-floor inspection
+
+`rifles.floor.read` returns the current saved geometry, routes, height edges and
+architecture. `rifles.floor.population` returns resolved feature and population
+facts. `rifles.floor.validate` checks the initial key/counterweight/handle
+progression model; it does not solve combat or move the party.
+`rifles.floor.navigation 20000` compares a bounded set of actual Engine step
+admissions with floor cells, heights and current closed barriers. A partial
+budget reports `Complete: false`; it must not be treated as a complete audit.
+See `docs/milestone-7.md` for offline JSON/SVG exports and evidence limits.

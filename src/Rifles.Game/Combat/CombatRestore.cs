@@ -56,10 +56,10 @@ internal static class CombatRestore
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor)
     {
-        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length == definitions.Combat.Encounter.Length
+        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length <= definitions.Combat.Encounter.Length
             && snapshots.Select(snapshot => snapshot.Spawn).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
             && snapshots.Select(snapshot => snapshot.Spawn).ToHashSet(StringComparer.Ordinal)
-                .SetEquals(definitions.Combat.Encounter.Select(spawn => spawn.Id)), "saved combat enemy definitions");
+                .IsSubsetOf(definitions.Combat.Encounter.Select(spawn => spawn.Id).ToHashSet(StringComparer.Ordinal)), "saved combat enemy definitions");
 
         EnemyState[] enemies = new EnemyState[snapshots.Length];
         for (int index = 0; index < snapshots.Length; index++)

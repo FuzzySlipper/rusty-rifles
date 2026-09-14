@@ -25,7 +25,7 @@ internal sealed class WorldFeatures : IDisposable
     internal int LightPosition => lightPosition;
     internal FeatureSnapshot Capture() => state;
     internal InteractionReadout? Readout { get; private set; }
-    private Vector3 Ground(GridPoint cell) => scene.Eye(cell) with { Y = scene.GroundHeight };
+    private Vector3 Ground(GridPoint cell) => scene.Eye(cell) with { Y = scene.GroundHeight(cell) };
     private Vector3 LanternPoint => Ground(floor.Entrance) + Vector(artDefinition.LanternOffset);
     private Vector3 LightPoint => Ground(floor.Entrance) + Vector(artDefinition.LightOffsets[lightPosition]);
     private static Vector3 Vector(float[] values) => new(values[0], values[1], values[2]);
@@ -105,7 +105,7 @@ internal sealed class WorldFeatures : IDisposable
         engine.Graphics.PublishSnapshot(new AppearanceFact[]
         {
             Fact(state.LanternId, LanternPoint, "lantern", 1),
-            Fact(actor.Id, scene.Eye(actor.Motion.VisualCell) with { Y = scene.GroundHeight }, actorView, actorScale),
+            Fact(actor.Id, scene.Eye(actor.Motion.VisualCell) with { Y = scene.GroundHeight(actor.Motion.VisualCell) }, actorView, actorScale),
             Fact(state.Dressing.BenchId, Ground(state.Dressing.Bench), "bench", 1),
             Fact(state.Dressing.CrateId, Ground(state.Dressing.Crate), "crate", 1),
             Fact(state.Dressing.ObserverId, Ground(state.Dressing.Observer), observerView, artDefinition.ObserverScale * observerScale),

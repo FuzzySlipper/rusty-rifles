@@ -19,17 +19,10 @@ internal static class RoomCatalogueChecks
             foreach (var floor in intent.Floors)
             {
                 var result = new DungeonGenerator().Generate(floor.Candidate, definitions.Generation.Policy, floor.Candidate.Seed, definitions.Rooms.Shapes);
-                if (!result.Accepted)
-                {
-                    var baseline = new DungeonGenerator().Generate(floor.Candidate, definitions.Generation.Policy, floor.Candidate.Seed);
-                    Require(floor.Id == "stores" && result.RejectionCode == "route_collision_or_exhaustion"
-                        && !baseline.Accepted && baseline.RejectionCode == result.RejectionCode,
-                        "Unexpected generation failure: " + result.Attempts.Last().Detail);
-                    Console.WriteLine($"Known G03 routing gap {seed}/{floor.Id}: {result.Attempts.Last().Detail}");
-                    continue;
-                }
-                var resolved = DungeonFloor.Generate(floor, definitions.Generation.Policy, definitions.Rooms);
+                Require(result.Accepted, $"Generation rejected {seed}/{floor.Id}: {result.Attempts.Last().Detail}");
+                var resolved = DungeonFloor.Generate(floor, definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation);
                 resolved.Validate();
+                FloorCompositionChecks.Check(resolved, definitions, result);
                 Require(resolved.Rooms.Length == floor.Candidate.Graph.Nodes.Count, "All graph features receive a resolved functional room.");
                 foreach (var room in resolved.Rooms)
                 {
@@ -40,7 +33,7 @@ internal static class RoomCatalogueChecks
                     Require(room.Thresholds.All(room.Cells.Contains), "Resolved thresholds stay in the room.");
                 }
                 var reordered = definitions.Rooms with { Rooms = definitions.Rooms.Rooms.Reverse().ToArray() };
-                Require(resolved.GenerationIdentity == DungeonFloor.Generate(floor, definitions.Generation.Policy, reordered).GenerationIdentity,
+                Require(resolved.GenerationIdentity == DungeonFloor.Generate(floor, definitions.Generation.Policy, reordered, definitions.Generation.Elevation).GenerationIdentity,
                     "Room selection does not depend on catalogue ordering.");
             }
         }

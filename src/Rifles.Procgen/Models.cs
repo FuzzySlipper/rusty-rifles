@@ -14,7 +14,7 @@ public sealed record SeedIntent(
 public enum NodeKind { Start, Goal, Gate, Key, Treasure, Shortcut, Hazard, Resource, Junction }
 public enum EdgeKind { CriticalPath, KeyBranch, OptionalBranch, Shortcut }
 public enum TraversalKind { Open, Locked, OneWayReturn, Hidden }
-public enum GraphRule { LockKeyLoop, DetourLoop, HubSpoke, HazardResource, BossPreparation, GatedBranch, Shortcut }
+public enum GraphRule { LockKeyLoop, DetourLoop, HubSpoke, HazardResource, BossPreparation, GatedBranch, Shortcut, SecretBranch }
 public enum DiagnosticSeverity { Info, Warning, Fatal }
 
 public sealed record GraphNode(

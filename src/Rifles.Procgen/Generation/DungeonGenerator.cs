@@ -9,6 +9,20 @@ public sealed class DungeonGenerator
 {
     public DungeonGenerationResult Generate(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog? catalog = null)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+        var attempts = new List<GenerationAttempt>();
+        DungeonGenerationResult result;
+        for (int layoutAttempt = 0; ; layoutAttempt++)
+        {
+            result = GenerateAttempt(candidate, policy, seed, catalog, layoutAttempt);
+            attempts.AddRange(result.Attempts.Select(attempt => attempt with { Attempt = layoutAttempt + 1 }));
+            if (result.Accepted || result.RejectionStage != "routing" || layoutAttempt + 1 >= policy.MaxLayoutAttempts)
+                return result with { Attempts = attempts.ToArray() };
+        }
+    }
+
+    private DungeonGenerationResult GenerateAttempt(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog? catalog, int layoutAttempt)
+    {
         ArgumentNullException.ThrowIfNull(candidate);
         ArgumentNullException.ThrowIfNull(policy);
         catalog ??= ShapeCatalog.Default;
@@ -22,9 +36,9 @@ public sealed class DungeonGenerator
             if (!validation.IsValid) throw new GenerationFailure("graph", "candidate_invalid", validation.Diagnostics.First(d => d.Severity == DiagnosticSeverity.Fatal).Detail);
             ValidateCatalog(catalog);
             var intermediate = Observe("intermediate", stages, counters, () => BuildIntermediate(candidate, counters));
-            var layout = Observe("layout", stages, counters, () => BuildLayout(intermediate, policy, seed, counters));
+            var layout = Observe("layout", stages, counters, () => BuildLayout(intermediate, policy, seed, counters, layoutAttempt));
             var requirements = Observe("requirements", stages, counters, () => BuildRequirements(intermediate));
-            var matches = Observe("matching", stages, counters, () => Match(layout, requirements, catalog, policy, seed, counters));
+            var matches = Observe("matching", stages, counters, () => Match(layout, requirements, catalog, policy, seed, counters, layoutAttempt));
             var pieces = Observe("placement", stages, counters, () => Place(layout, matches, catalog, policy, counters));
             EnsureMaterializedBounds(pieces.SelectMany(piece => piece.WalkableCells), policy, "placement");
             var routed = Observe("routing", stages, counters, () => Route(intermediate, pieces, policy, counters));
@@ -101,7 +115,7 @@ public sealed class DungeonGenerator
         return new IntermediateDungeon(candidate.Id, CanonicalIdentity.Hash(candidate), regions, connections);
     }
 
-    private static LayoutPlan BuildLayout(IntermediateDungeon dungeon, GenerationPolicy policy, ulong seed, MutableCounters counters)
+    private static LayoutPlan BuildLayout(IntermediateDungeon dungeon, GenerationPolicy policy, ulong seed, MutableCounters counters, int layoutAttempt)
     {
         var start = dungeon.Regions.SingleOrDefault(region => region.Kind == NodeKind.Start) ?? throw new GenerationFailure("layout", "start_region_missing", "Intermediate dungeon has no start region.");
         var adjacent = dungeon.Connections.SelectMany(connection => new[] { (connection.FromRegionId, connection.ToRegionId), (connection.ToRegionId, connection.FromRegionId) }).GroupBy(pair => pair.Item1, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.Select(pair => pair.Item2).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
@@ -114,6 +128,8 @@ public sealed class DungeonGenerator
             foreach (var target in neighbors)
             {
                 if (origins.ContainsKey(target)) continue;
+                if (layoutAttempt > 0)
+                    offset = Convert.ToInt32(ShapeRank(seed, target, layoutAttempt.ToString())[0].ToString(), 16) % 4;
                 var placed = false;
                 for (var radius = 1; radius <= policy.RoomCandidatesPerRegion && !placed; radius++)
                 foreach (var direction in CardinalDirections.Ordered.Select((direction, index) => CardinalDirections.Ordered[(index + offset) % 4]))
@@ -152,7 +168,7 @@ public sealed class DungeonGenerator
 
     private static IReadOnlyList<PieceRequirement> BuildRequirements(IntermediateDungeon dungeon) => dungeon.Regions.OrderBy(region => region.Id, StringComparer.Ordinal).Select(region => new PieceRequirement(region.Id, dungeon.Connections.Where(connection => connection.FromRegionId == region.Id || connection.ToRegionId == region.Id).OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).ToArray(), string.IsNullOrWhiteSpace(region.GrantsItem) ? Array.Empty<string>() : new[] { "content" }, region.Kind)).ToArray();
 
-    private static IReadOnlyList<MatchedShape> Match(LayoutPlan layout, IReadOnlyList<PieceRequirement> requirements, ShapeCatalog catalog, GenerationPolicy policy, ulong seed, MutableCounters counters)
+    private static IReadOnlyList<MatchedShape> Match(LayoutPlan layout, IReadOnlyList<PieceRequirement> requirements, ShapeCatalog catalog, GenerationPolicy policy, ulong seed, MutableCounters counters, int layoutAttempt)
     {
         var cache = new Dictionary<(string ShapeId, int Turns), TransformedShape>();
         var rooms = layout.Rooms.ToDictionary(room => room.RegionId, StringComparer.Ordinal);
@@ -174,16 +190,16 @@ public sealed class DungeonGenerator
                     if (catalog.ConstrainShapesToLayout && transformed.Cells.Any(c => c.X >= envelope.Width || c.Y >= envelope.Height)) continue;
                     if (transformed.Exits.Count < requirement.Connections.Count || requirement.RequiredSockets.Any(required => !transformed.Sockets.Any(socket => string.Equals(socket.Kind, required, StringComparison.Ordinal)))) continue;
                     var availableExits = transformed.Exits.OrderBy(exit => exit.Id, StringComparer.Ordinal).ToList();
-                    var chosenExits = new List<CatalogExit>();
-                    foreach (var connection in requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal))
+                    var exitMap = new Dictionary<string, CatalogExit>(StringComparer.Ordinal);
+                    var orderedConnections = requirement.Connections.OrderBy(connection => layoutAttempt == 0
+                        ? connection.SourceEdgeId : ShapeRank(seed, connection.SourceEdgeId, layoutAttempt.ToString()), StringComparer.Ordinal);
+                    foreach (var connection in orderedConnections)
                     {
                         var otherRegion = connection.FromRegionId == requirement.RegionId ? connection.ToRegionId : connection.FromRegionId;
                         var delta = new GridPoint(rooms[otherRegion].Origin.X - rooms[requirement.RegionId].Origin.X, rooms[otherRegion].Origin.Y - rooms[requirement.RegionId].Origin.Y);
                         var exit = availableExits.OrderByDescending(candidate => candidate.Direction.Offset().X * delta.X + candidate.Direction.Offset().Y * delta.Y).ThenBy(candidate => candidate.Id, StringComparer.Ordinal).First();
-                        availableExits.Remove(exit); chosenExits.Add(exit);
+                        availableExits.Remove(exit); exitMap.Add(connection.SourceEdgeId, exit);
                     }
-                    if (chosenExits.Count != requirement.Connections.Count) continue;
-                    var exitMap = requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).Select((connection, index) => (connection.SourceEdgeId, chosenExits[index])).ToDictionary(pair => pair.SourceEdgeId, pair => pair.Item2, StringComparer.Ordinal);
                     selected = new MatchedShape(requirement.RegionId, shape.Id, turns, new ReadOnlyDictionary<string, CatalogExit>(exitMap), new ReadOnlyDictionary<string, CatalogSocket>(transformed.Sockets.ToDictionary(socket => socket.Id, StringComparer.Ordinal)));
                     break;
                 }
@@ -229,44 +245,383 @@ public sealed class DungeonGenerator
 
     private static RouteOutcome Route(IntermediateDungeon dungeon, IReadOnlyList<PlacedPiece> pieces, GenerationPolicy policy, MutableCounters counters)
     {
-        var byRegion = pieces.ToDictionary(piece => piece.RegionId, StringComparer.Ordinal); var occupied = new HashSet<GridPoint>(pieces.SelectMany(piece => piece.WalkableCells)); var walkable = new HashSet<GridPoint>(occupied); var routes = new List<CorridorRoute>(); var portals = new List<PortalFact>();
-        foreach (var connection in dungeon.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal))
-        {
-            if (++counters.RouteAttempts > policy.MaxRouteAttempts * dungeon.Connections.Count) throw new GenerationFailure("routing", "route_attempt_quota_exhausted", "Route-attempt quota was exhausted.");
-            var fromExit = byRegion[connection.FromRegionId].Exits[connection.SourceEdgeId]; var toExit = byRegion[connection.ToRegionId].Exits[connection.SourceEdgeId];
-            var from = fromExit.Cell + fromExit.Direction.Offset(); var to = toExit.Cell + toExit.Direction.Offset();
-            var routedCells = FindPath(from, to, occupied, policy, counters);
-            if (routedCells is null) throw new GenerationFailure("routing", "route_collision_or_exhaustion", $"No bounded orthogonal route exists for '{connection.SourceEdgeId}' from {from} to {to}.");
-            var path = new[] { fromExit.Cell }.Concat(routedCells).Append(toExit.Cell).ToArray();
-            foreach (var cell in path) { occupied.Add(cell); walkable.Add(cell); }
-            counters.RoutedCells += path.Length; counters.RouteBends += CountBends(path);
-            routes.Add(new CorridorRoute($"route.{connection.SourceEdgeId}", connection.SourceEdgeId, connection.FromRegionId, connection.ToRegionId, path, connection.Traversal, connection.RequiredItem));
-            if (connection.Traversal is TraversalKind.Locked or TraversalKind.OneWayReturn or TraversalKind.Hidden) portals.Add(new PortalFact($"portal.{connection.SourceEdgeId}", connection.SourceEdgeId, path[path.Length / 2], connection.Traversal, connection.RequiredItem));
-        }
+        var byRegion = pieces.ToDictionary(piece => piece.RegionId, StringComparer.Ordinal);
+        var roomOwners = pieces.SelectMany(piece => piece.WalkableCells.Select(cell => (cell, piece.RegionId)))
+            .ToDictionary(pair => pair.cell, pair => pair.RegionId);
+        var occupied = new HashSet<GridPoint>(roomOwners.Keys);
+        var walkable = new HashSet<GridPoint>(occupied);
+        var routes = new List<CorridorRoute>();
+        var portals = new List<PortalFact>();
+        var remaining = dungeon.Connections
+            .OrderBy(connection => ConnectionAxis(connection, byRegion))
+            .ThenByDescending(connection => ConnectionPrimaryCoordinate(connection, byRegion))
+            .ThenBy(connection => ConnectionSecondaryCoordinate(connection, byRegion))
+            .ThenBy(connection => connection.SourceEdgeId, StringComparer.Ordinal)
+            .ToArray();
+        var search = new RouteSearchState(policy.MaxRouteOrderingAttempts, checked(policy.MaxRouteAttempts * dungeon.Connections.Count));
+        if (!TryRouteConnections(dungeon, byRegion, roomOwners, remaining, occupied, walkable, routes, portals, policy, counters, search))
+            throw new GenerationFailure("routing", "route_collision_or_exhaustion", "No bounded collision-free corridor plan satisfies every generated connection.");
+        WidenOpenRoutes(routes, walkable, roomOwners.Keys.ToHashSet(), policy);
         return new RouteOutcome(routes, portals, walkable);
     }
 
-    private static IReadOnlyList<GridPoint>? FindPath(GridPoint start, GridPoint goal, HashSet<GridPoint> occupied, GenerationPolicy policy, MutableCounters counters)
+    // Keep one-cell room thresholds and protected passages. Open runs may widen
+    // only into free space, retaining a solid separation from every other route.
+    private static void WidenOpenRoutes(List<CorridorRoute> routes, HashSet<GridPoint> walkable,
+        HashSet<GridPoint> roomCells, GenerationPolicy policy)
     {
-        var queue = new PriorityQueue<GridPoint, (int Cost, int Tie)>(); var cameFrom = new Dictionary<GridPoint, GridPoint>(); var cost = new Dictionary<GridPoint, int> { [start] = 0 }; var tie = 0; var localExpansions = 0; queue.Enqueue(start, (start.ManhattanDistance(goal), tie++));
+        for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
+        {
+            var route = routes[routeIndex];
+            if (route.Traversal != TraversalKind.Open || policy.CorridorWidth == 1) continue;
+            var otherCells = roomCells.Concat(routes.Where(r => r.Id != route.Id)
+                .SelectMany(r => r.Cells.Concat(r.AdditionalCells ?? []))).ToHashSet();
+            HashSet<GridPoint> extra = [];
+            int width = 1;
+            for (int index = 2; index < route.Cells.Count - 2; index++)
+            {
+                var previous = route.Cells[index - 1];
+                var cell = route.Cells[index];
+                var next = route.Cells[index + 1];
+                if (previous.X != next.X && previous.Y != next.Y) continue;
+                var side = previous.X == next.X ? new GridPoint(1, 0) : new GridPoint(0, 1);
+                for (int offset = 1; offset < policy.CorridorWidth; offset++)
+                {
+                    var expanded = cell + new GridPoint(side.X * offset, side.Y * offset);
+                    if (expanded.X < 0 || expanded.Y < 0 || expanded.X >= policy.MaxWidth || expanded.Y >= policy.MaxHeight
+                        || otherCells.Contains(expanded) || ClearanceNeighbors(expanded, 1).Any(otherCells.Contains)) break;
+                    if (!route.Cells.Contains(expanded)) extra.Add(expanded);
+                    width = Math.Max(width, offset + 1);
+                }
+            }
+            walkable.UnionWith(extra);
+            routes[routeIndex] = route with { Width = width, AdditionalCells = extra.OrderBy(c => c.Y).ThenBy(c => c.X).ToArray() };
+        }
+    }
+
+    private static bool TryRouteConnections(IntermediateDungeon dungeon, IReadOnlyDictionary<string, PlacedPiece> byRegion,
+        IReadOnlyDictionary<GridPoint, string> roomOwners, IReadOnlyList<IntermediateConnection> remaining,
+        HashSet<GridPoint> occupied, HashSet<GridPoint> walkable, List<CorridorRoute> routes,
+        List<PortalFact> portals, GenerationPolicy policy, MutableCounters counters, RouteSearchState search)
+    {
+        if (remaining.Count == 0) return true;
+        var options = remaining.Select(connection =>
+        {
+            var fromExit = byRegion[connection.FromRegionId].Exits[connection.SourceEdgeId];
+            var toExit = byRegion[connection.ToRegionId].Exits[connection.SourceEdgeId];
+            return (Connection: connection, FromExit: fromExit, ToExit: toExit,
+                Candidates: FindSafePaths(connection, fromExit, toExit, dungeon, roomOwners, routes, occupied, policy, counters, search));
+        })
+            .OrderBy(option => option.Candidates.Count)
+            .ThenBy(option => ConnectionAxis(option.Connection, byRegion))
+            .ThenByDescending(option => ConnectionPrimaryCoordinate(option.Connection, byRegion))
+            .ThenBy(option => ConnectionSecondaryCoordinate(option.Connection, byRegion))
+            .ThenBy(option => option.Connection.SourceEdgeId, StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (options.Connection is null || options.Candidates.Count == 0) return false;
+        foreach (var candidate in options.Candidates)
+        {
+            search.RecordOrderingAttempt();
+            var connection = options.Connection;
+            var path = candidate.Path;
+            var purpose = DeterminePurpose(connection, dungeon);
+            var route = new CorridorRoute($"route.{connection.SourceEdgeId}", connection.SourceEdgeId,
+                connection.FromRegionId, connection.ToRegionId, path, connection.Traversal,
+                connection.RequiredItem, 1, purpose, candidate.Score);
+            var added = path.Where(occupied.Add).ToArray();
+            foreach (var cell in added) walkable.Add(cell);
+            var oldRoutedCells = counters.RoutedCells;
+            var oldRouteBends = counters.RouteBends;
+            counters.RoutedCells += path.Count;
+            counters.RouteBends += candidate.Score.BendCount;
+            routes.Add(route);
+            PortalFact? portal = null;
+            if (connection.Traversal is TraversalKind.Locked or TraversalKind.OneWayReturn or TraversalKind.Hidden)
+            {
+                portal = new PortalFact($"portal.{connection.SourceEdgeId}", connection.SourceEdgeId,
+                path[path.Count / 2], connection.Traversal, connection.RequiredItem);
+                portals.Add(portal);
+            }
+            var next = remaining.Where(value => !StringComparer.Ordinal.Equals(value.SourceEdgeId, connection.SourceEdgeId)).ToArray();
+            if (TryRouteConnections(dungeon, byRegion, roomOwners, next, occupied, walkable, routes, portals, policy, counters, search)) return true;
+            if (portal is not null) portals.Remove(portal);
+            routes.RemoveAt(routes.Count - 1);
+            foreach (var cell in added)
+            {
+                occupied.Remove(cell);
+                walkable.Remove(cell);
+            }
+            counters.RoutedCells = oldRoutedCells;
+            counters.RouteBends = oldRouteBends;
+        }
+        return false;
+    }
+
+    private static IReadOnlyList<RouteCandidate> FindSafePaths(IntermediateConnection connection, CatalogExit fromExit,
+        CatalogExit toExit, IntermediateDungeon dungeon, IReadOnlyDictionary<GridPoint, string> roomOwners,
+        IReadOnlyList<CorridorRoute> existingRoutes, HashSet<GridPoint> occupied,
+        GenerationPolicy policy, MutableCounters counters, RouteSearchState search)
+    {
+        var start = fromExit.Cell + fromExit.Direction.Offset();
+        var goal = toExit.Cell + toExit.Direction.Offset();
+        var forbidden = new HashSet<GridPoint>();
+        var candidates = new List<RouteCandidate>();
+        var purpose = DeterminePurpose(connection, dungeon);
+        for (var variant = 0; variant < policy.MaxRouteAttempts; variant++)
+        {
+            search.RecordRouteAttempt();
+            counters.RouteAttempts++;
+            var routed = FindPath(start, goal, connection, roomOwners, existingRoutes, occupied, forbidden, policy, counters);
+            if (routed is null)
+            {
+                break;
+            }
+            var path = new[] { fromExit.Cell }.Concat(routed).Append(toExit.Cell).ToArray();
+            if (TryFindRouteViolation(path, connection, roomOwners, existingRoutes, policy, out var violation))
+            {
+                forbidden.Add(violation);
+                continue;
+            }
+            var score = ScoreRoute(path, connection, purpose);
+            var candidate = new RouteCandidate(path, score);
+            if (!candidates.Any(existing => existing.Path.SequenceEqual(path))) candidates.Add(candidate);
+            if (path.Length <= policy.MinCorridorLength + 1) break;
+            var variation = path[1 + (path.Length - 2) / 2];
+            if (!forbidden.Add(variation)) break;
+        }
+        return candidates
+            .OrderBy(candidate => candidate, Comparer<RouteCandidate>.Create((left, right) => CompareRouteCandidates(left, right, purpose)))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<GridPoint>? FindPath(GridPoint start, GridPoint goal, IntermediateConnection connection,
+        IReadOnlyDictionary<GridPoint, string> roomOwners, IReadOnlyList<CorridorRoute> existingRoutes,
+        HashSet<GridPoint> occupied, IReadOnlySet<GridPoint> forbidden, GenerationPolicy policy, MutableCounters counters)
+    {
+        var queue = new PriorityQueue<GridPoint, (int Cost, int Remaining, int Tie)>();
+        var cameFrom = new Dictionary<GridPoint, GridPoint>();
+        var cost = new Dictionary<GridPoint, int> { [start] = 0 };
+        var existingRouteCells = existingRoutes.SelectMany(InteriorCells).ToHashSet();
+        var safeCells = new Dictionary<GridPoint, bool>();
+        bool Safe(GridPoint cell)
+        {
+            if (!safeCells.TryGetValue(cell, out bool safe))
+                safeCells[cell] = safe = IsCandidateCellSafe(cell, 0, start, goal, connection, roomOwners, existingRoutes, existingRouteCells, policy);
+            return safe;
+        }
+        if (!Safe(start) || !Safe(goal)) return null;
+        var tie = 0;
+        var localExpansions = 0;
+        var maxSearchSteps = checked(policy.MaxCorridorLength - 2);
+        queue.Enqueue(start, (start.ManhattanDistance(goal), start.ManhattanDistance(goal), tie++));
         while (queue.TryDequeue(out var current, out _))
         {
             counters.RouteExpansions++;
-            if (++localExpansions > policy.MaxRouteExpansionsPerConnection) throw new GenerationFailure("routing", "route_expansion_quota_exhausted", "Route expansion quota was exhausted.");
+            if (++localExpansions > policy.MaxRouteExpansionsPerConnection)
+                throw new GenerationFailure("routing", "route_expansion_quota_exhausted", "Route expansion quota was exhausted.");
             if (current == goal)
             {
-                var path = new List<GridPoint> { current }; while (cameFrom.TryGetValue(path[^1], out var previous)) path.Add(previous); path.Reverse(); return path;
+                var path = new List<GridPoint> { current };
+                while (cameFrom.TryGetValue(path[^1], out var previous)) path.Add(previous);
+                path.Reverse();
+                return path;
             }
             foreach (var direction in CardinalDirections.Ordered)
             {
                 var next = current + direction.Offset();
-                if (next.X < 0 || next.Y < 0 || next.X >= policy.MaxWidth || next.Y >= policy.MaxHeight || (occupied.Contains(next) && next != goal && next != start)) continue;
+                if (next.X < 0 || next.Y < 0 || next.X >= policy.MaxWidth || next.Y >= policy.MaxHeight
+                    || forbidden.Contains(next) || (occupied.Contains(next) && next != goal && next != start)
+                    || !Safe(next)) continue;
                 var nextCost = checked(cost[current] + 1);
+                if (nextCost > maxSearchSteps) continue;
                 if (cost.TryGetValue(next, out var known) && known <= nextCost) continue;
-                cost[next] = nextCost; cameFrom[next] = current; queue.Enqueue(next, (checked(nextCost + next.ManhattanDistance(goal)), tie++));
+                cost[next] = nextCost;
+                cameFrom[next] = current;
+                queue.Enqueue(next, (checked(nextCost + next.ManhattanDistance(goal)), next.ManhattanDistance(goal), tie++));
             }
         }
         return null;
+    }
+
+    private static bool IsCandidateCellSafe(GridPoint cell, int nextCost, GridPoint start, GridPoint goal,
+        IntermediateConnection connection, IReadOnlyDictionary<GridPoint, string> roomOwners,
+        IReadOnlyList<CorridorRoute> existingRoutes, IReadOnlySet<GridPoint> existingRouteCells,
+        GenerationPolicy policy)
+    {
+        if (cell != start && cell != goal && (roomOwners.ContainsKey(cell) || existingRouteCells.Contains(cell))) return false;
+        var isSourceThreshold = cell == start;
+        var isTargetThreshold = cell == goal;
+        foreach (var neighbor in ClearanceNeighbors(cell, 1))
+        {
+            if (roomOwners.TryGetValue(neighbor, out var owner))
+            {
+                if ((!isSourceThreshold || owner != connection.FromRegionId)
+                    && (!isTargetThreshold || owner != connection.ToRegionId)) return false;
+            }
+            if (existingRouteCells.Contains(neighbor) && !OpenJunction(connection, existingRoutes, neighbor))
+                return false;
+        }
+        return nextCost <= policy.MaxCorridorLength - 2;
+    }
+
+    private static bool OpenJunction(IntermediateConnection connection, IReadOnlyList<CorridorRoute> routes, GridPoint cell) =>
+        connection.Traversal == TraversalKind.Open && routes.Where(r => InteriorCells(r).Contains(cell)).All(r =>
+            r.Traversal == TraversalKind.Open && (r.FromRegionId == connection.FromRegionId || r.FromRegionId == connection.ToRegionId
+                || r.ToRegionId == connection.FromRegionId || r.ToRegionId == connection.ToRegionId));
+
+    private static IEnumerable<GridPoint> InteriorCells(CorridorRoute route) => route.Cells.Skip(1).Take(route.Cells.Count - 2);
+
+    private static int ConnectionAxis(IntermediateConnection connection, IReadOnlyDictionary<string, PlacedPiece> pieces)
+    {
+        var delta = Delta(connection, pieces);
+        if (delta.Y == 0) return 0;
+        if (delta.X == 0) return 1;
+        return 2;
+    }
+
+    private static int ConnectionPrimaryCoordinate(IntermediateConnection connection, IReadOnlyDictionary<string, PlacedPiece> pieces)
+    {
+        var from = PieceCenter(pieces[connection.FromRegionId]);
+        var to = PieceCenter(pieces[connection.ToRegionId]);
+        return Math.Max(from.X, to.X);
+    }
+
+    private static int ConnectionSecondaryCoordinate(IntermediateConnection connection, IReadOnlyDictionary<string, PlacedPiece> pieces)
+    {
+        var from = PieceCenter(pieces[connection.FromRegionId]);
+        var to = PieceCenter(pieces[connection.ToRegionId]);
+        return Math.Min(from.Y, to.Y);
+    }
+
+    private static GridPoint Delta(IntermediateConnection connection, IReadOnlyDictionary<string, PlacedPiece> pieces)
+    {
+        var from = PieceCenter(pieces[connection.FromRegionId]);
+        var to = PieceCenter(pieces[connection.ToRegionId]);
+        return new GridPoint(to.X - from.X, to.Y - from.Y);
+    }
+
+    private static GridPoint PieceCenter(PlacedPiece piece)
+    {
+        var sumX = piece.WalkableCells.Sum(cell => (long)cell.X);
+        var sumY = piece.WalkableCells.Sum(cell => (long)cell.Y);
+        return new GridPoint(checked((int)(sumX / piece.WalkableCells.Count)), checked((int)(sumY / piece.WalkableCells.Count)));
+    }
+
+    private static CorridorPurpose DeterminePurpose(IntermediateConnection connection, IntermediateDungeon? dungeon)
+    {
+        if (connection.Tags.Any(tag => StringComparer.Ordinal.Equals(tag, "ambush"))) return CorridorPurpose.Ambush;
+        if (connection.Tags.Any(tag => StringComparer.Ordinal.Equals(tag, "flank"))) return CorridorPurpose.Flank;
+        return connection.Kind switch
+        {
+            EdgeKind.CriticalPath => CorridorPurpose.Critical,
+            EdgeKind.KeyBranch => CorridorPurpose.Flank,
+            EdgeKind.Shortcut => CorridorPurpose.Shortcut,
+            EdgeKind.OptionalBranch when dungeon is not null && !dungeon.Connections.Any(edge => edge.FromRegionId == connection.ToRegionId) => CorridorPurpose.DeadEnd,
+            EdgeKind.OptionalBranch => CorridorPurpose.Optional,
+            _ => CorridorPurpose.Standard,
+        };
+    }
+
+    private static CorridorScore ScoreRoute(IReadOnlyList<GridPoint> path, IntermediateConnection connection, CorridorPurpose purpose)
+    {
+        var bends = CountBends(path);
+        var straight = LongestStraightRun(path);
+        var flank = purpose is CorridorPurpose.Flank or CorridorPurpose.Ambush ? bends : 0;
+        var threshold = connection.Traversal is TraversalKind.Locked or TraversalKind.OneWayReturn or TraversalKind.Hidden ? 1 : 0;
+        var deadEnd = purpose == CorridorPurpose.DeadEnd ? 1 : 0;
+        return new CorridorScore(straight, bends, flank, threshold, deadEnd);
+    }
+
+    private static int LongestStraightRun(IReadOnlyList<GridPoint> path)
+    {
+        if (path.Count < 2) return 0;
+        var longest = 0;
+        var current = 0;
+        GridPoint? previousStep = null;
+        for (var index = 1; index < path.Count; index++)
+        {
+            var step = new GridPoint(path[index].X - path[index - 1].X, path[index].Y - path[index - 1].Y);
+            current = previousStep == step ? current + 1 : 1;
+            longest = Math.Max(longest, current);
+            previousStep = step;
+        }
+        return longest;
+    }
+
+    private static int CompareRouteCandidates(RouteCandidate left, RouteCandidate right, CorridorPurpose purpose)
+    {
+        if (purpose is CorridorPurpose.Flank or CorridorPurpose.Ambush)
+        {
+            var flank = right.Score.BendCount.CompareTo(left.Score.BendCount);
+            if (flank != 0) return flank;
+        }
+        else
+        {
+            var bends = left.Score.BendCount.CompareTo(right.Score.BendCount);
+            if (bends != 0) return bends;
+        }
+        var sightline = right.Score.LongestStraightRun.CompareTo(left.Score.LongestStraightRun);
+        return sightline != 0 ? sightline : left.Path.Count.CompareTo(right.Path.Count);
+    }
+
+    private static bool TryFindRouteViolation(IReadOnlyList<GridPoint> path, IntermediateConnection connection,
+        IReadOnlyDictionary<GridPoint, string> roomOwners, IReadOnlyList<CorridorRoute> existingRoutes,
+        GenerationPolicy policy, out GridPoint violation)
+    {
+        violation = default;
+        var routeSteps = path.Count - 1;
+        if (path.Count < 3 || routeSteps < policy.MinCorridorLength || routeSteps > policy.MaxCorridorLength)
+        {
+            violation = path.Count > 1 ? path[1] : default;
+            return true;
+        }
+        if (path.Distinct().Count() != path.Count)
+        {
+            violation = path[1];
+            return true;
+        }
+
+        var existingRouteCells = existingRoutes.SelectMany(InteriorCells).ToHashSet();
+        var lastInterior = path.Count - 2;
+        for (var index = 1; index < path.Count - 1; index++)
+        {
+            var cell = path[index];
+            if (roomOwners.ContainsKey(cell) || existingRouteCells.Contains(cell))
+            {
+                violation = cell;
+                return true;
+            }
+            foreach (var neighbor in ClearanceNeighbors(cell, 1))
+            {
+                if (roomOwners.TryGetValue(neighbor, out var owner))
+                {
+                    var isSourceThreshold = index == 1 && owner == connection.FromRegionId;
+                    var isTargetThreshold = index == lastInterior && owner == connection.ToRegionId;
+                    if (!isSourceThreshold && !isTargetThreshold)
+                    {
+                        violation = cell;
+                        return true;
+                    }
+                }
+                if (existingRouteCells.Contains(neighbor) && !OpenJunction(connection, existingRoutes, neighbor))
+                {
+                    violation = cell;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static IEnumerable<GridPoint> ClearanceNeighbors(GridPoint cell, int width)
+    {
+        var radius = Math.Max(0, width - 1);
+        var offsets = new HashSet<GridPoint>();
+        foreach (var direction in CardinalDirections.Ordered) offsets.Add(direction.Offset());
+        for (var y = -radius; y <= radius; y++)
+        for (var x = -radius; x <= radius; x++)
+            if (x != 0 || y != 0) offsets.Add(new GridPoint(x, y));
+        return offsets.Select(offset => cell + offset);
     }
 
     public BuiltFlowReport ValidateBuiltFlow(Candidate candidate, DungeonArtifacts artifacts)
@@ -292,7 +647,31 @@ public sealed class DungeonGenerator
         }
         var physicalNodes = reached.Select(region => regions[region].SourceNodeId).ToHashSet(StringComparer.Ordinal);
         if (!logical.SetEquals(physicalNodes)) diagnostics.Add(new Diagnostic("built_flow_reachability_mismatch", DiagnosticSeverity.Fatal, "Item-aware physical reachability does not match logical graph reachability."));
-        var expectedWalkable = artifacts.Pieces.SelectMany(piece => piece.WalkableCells).Concat(artifacts.Routes.SelectMany(route => route.Cells)).ToHashSet();
+        var roomOwners = artifacts.Pieces.SelectMany(p => p.WalkableCells.Select(c => (Cell: c, p.RegionId)))
+            .ToDictionary(p => p.Cell, p => p.RegionId);
+        foreach (var route in artifacts.Routes)
+        {
+            var connection = artifacts.Intermediate.Connections.Single(c => c.SourceEdgeId == route.SourceEdgeId);
+            var others = artifacts.Routes.Where(r => r.Id != route.Id).ToArray();
+            if (TryFindRouteViolation(route.Cells, connection, roomOwners, others, GenerationPolicy.Normal with { MaxCorridorLength = GenerationPolicyValidation.MaxCorridorLength }, out var violation))
+                diagnostics.Add(new Diagnostic("built_route_separation", DiagnosticSeverity.Fatal,
+                    $"Route '{route.Id}' violates threshold or route separation at {violation}.", EdgeId: route.SourceEdgeId));
+            var extra = route.AdditionalCells ?? [];
+            var forbidden = roomOwners.Keys.Concat(others.SelectMany(r => r.Cells.Concat(r.AdditionalCells ?? []))).ToHashSet();
+            bool malformed = route.Width < 1 || route.Width > GenerationPolicyValidation.MaxCorridorWidth
+                || (route.Traversal != TraversalKind.Open && extra.Count != 0)
+                || extra.Distinct().Count() != extra.Count
+                || extra.Any(c => c.X < 0 || c.Y < 0 || c.X >= GenerationPolicyValidation.MaxDimension || c.Y >= GenerationPolicyValidation.MaxDimension
+                    || forbidden.Contains(c) || ClearanceNeighbors(c, 1).Any(forbidden.Contains)
+                    || !route.Cells.Any(center => center.ManhattanDistance(c) < route.Width));
+            var connected = route.Cells.ToHashSet();
+            for (int pass = 1; pass < route.Width; pass++)
+                connected.UnionWith(extra.Where(c => CardinalDirections.Ordered.Any(d => connected.Contains(c + d.Offset()))).ToArray());
+            if (malformed || extra.Any(c => !connected.Contains(c)))
+                diagnostics.Add(new Diagnostic("built_route_width", DiagnosticSeverity.Fatal,
+                    $"Route '{route.Id}' has disconnected, overlapping or out-of-width floor cells.", EdgeId: route.SourceEdgeId));
+        }
+        var expectedWalkable = artifacts.Pieces.SelectMany(piece => piece.WalkableCells).Concat(artifacts.Routes.SelectMany(route => route.Cells.Concat(route.AdditionalCells ?? []))).ToHashSet();
         if (!expectedWalkable.SetEquals(artifacts.WalkableCells)) diagnostics.Add(new Diagnostic("built_flow_walkable_tampered", DiagnosticSeverity.Fatal, "Walkable projection does not match placed-piece and corridor facts."));
         var expectedPortalEdges = artifacts.Routes.Where(route => route.Traversal is TraversalKind.Locked or TraversalKind.OneWayReturn or TraversalKind.Hidden).Select(route => route.SourceEdgeId).ToHashSet(StringComparer.Ordinal);
         var portalsByEdge = artifacts.Portals.GroupBy(portal => portal.SourceEdgeId, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
@@ -467,8 +846,35 @@ public sealed class DungeonGenerator
         route.Cells.Count >= 3 && route.Cells[0] == fromExit.Cell && route.Cells[^1] == toExit.Cell && route.Cells[1] == fromExit.Cell + fromExit.Direction.Offset() && route.Cells[^2] == toExit.Cell + toExit.Direction.Offset();
 
     private sealed record TransformedShape(IReadOnlyList<GridPoint> Cells, IReadOnlyList<CatalogExit> Exits, IReadOnlyList<CatalogSocket> Sockets);
+    private sealed record RouteCandidate(IReadOnlyList<GridPoint> Path, CorridorScore Score);
     private sealed record RouteOutcome(IReadOnlyList<CorridorRoute> Routes, IReadOnlyList<PortalFact> Portals, IReadOnlySet<GridPoint> Walkable);
     private readonly record struct MaterializedBounds(int Width, int Height, int Area);
+    private sealed class RouteSearchState
+    {
+        private readonly int maxOrderingAttempts;
+        private readonly int maxRouteAttempts;
+        private long orderingAttempts;
+        private long routeAttempts;
+
+        public RouteSearchState(int maxOrderingAttempts, int maxRouteAttempts)
+        {
+            this.maxOrderingAttempts = maxOrderingAttempts;
+            this.maxRouteAttempts = maxRouteAttempts;
+        }
+
+        public void RecordOrderingAttempt()
+        {
+            if (++orderingAttempts > maxOrderingAttempts)
+                throw new GenerationFailure("routing", "route_order_quota_exhausted", "Route ordering quota was exhausted.");
+        }
+
+        public void RecordRouteAttempt()
+        {
+            routeAttempts++;
+            if (routeAttempts > (long)maxOrderingAttempts * maxRouteAttempts)
+                throw new GenerationFailure("routing", "route_attempt_quota_exhausted", "Route-attempt quota was exhausted.");
+        }
+    }
     private sealed class MutableCounters
     {
         public int Regions, Connections, LayoutExpansions, CatalogCandidates, PlacementDecisions, PlacementBacktracks, RouteAttempts, RouteExpansions, RoutedCells, RouteBends;

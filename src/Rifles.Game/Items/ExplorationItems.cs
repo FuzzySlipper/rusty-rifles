@@ -50,6 +50,10 @@ internal sealed class ExplorationItems
     {
         HashSet<GridPoint> floorCells = floor.Cells.ToHashSet();
         HashSet<GridPoint> unavailable = [floor.Entrance, floor.Exit, dressing.Bench, dressing.Crate, dressing.Observer, actor.Capture().Start, actor.Capture().End];
+        unavailable.UnionWith(floor.Routes.Where(r => r.Traversal != Rifles.Procgen.TraversalKind.Open).Select(r => r.Cells[r.Cells.Count / 2]));
+        unavailable.UnionWith(floor.Routes.Where(r => r.Traversal == Rifles.Procgen.TraversalKind.Locked).Select(r => r.Cells[0]));
+        unavailable.UnionWith(floor.Grants.Select(g => g.Cell));
+        unavailable.UnionWith(floor.Connectors.SelectMany(c => new[] { c.From, c.To }));
         GridPoint desired = floor.Entrance + new GridPoint(definition.PlateOffset[0], definition.PlateOffset[1]);
         GridPoint plate = floor.Cells.Where(c => !unavailable.Contains(c)).OrderBy(c => c.ManhattanDistance(desired)).ThenBy(c => c.Y).ThenBy(c => c.X).First();
         unavailable.Add(plate);
@@ -76,7 +80,7 @@ internal sealed class ExplorationItems
     internal Vector3 Point(string key, DungeonScene scene)
     {
         WorldAnchor anchor = Anchor(key); float[] offset = AnchorDefinition(key).Offset;
-        return (scene.Eye(anchor.Cell) with { Y = scene.GroundHeight }) + new Vector3(offset[0], offset[1], offset[2]);
+        return (scene.Eye(anchor.Cell) with { Y = scene.GroundHeight(anchor.Cell) }) + new Vector3(offset[0], offset[1], offset[2]);
     }
     internal Vector3 LeverPoint(DungeonScene scene) => scene.Eye(state.Lever);
     internal Vector3 DoorPoint(DungeonScene scene) => scene.Eye(state.Door);

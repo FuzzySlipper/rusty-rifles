@@ -4,7 +4,7 @@ using Rusty.Engine.Mechanics;
 
 namespace Rifles.Game.Items;
 
-internal sealed record PackOwner(ulong Id, string Key, ulong MassCapacity, ulong SpaceCapacity);
+internal sealed record PackOwner(ulong Id, string Key, ulong MassCapacity, ulong SpaceCapacity, string? Label = null);
 internal sealed record SavedStack(string Definition, ulong Quantity);
 internal sealed record SavedItem(ulong Id, string Definition);
 internal sealed record SavedEquipment(ulong Item, string[] Slots);

@@ -19,6 +19,15 @@ public static class GenerationProbe
         if (generator.Generate(candidate, GenerationPolicy.Normal, 99, oneExitCatalog).Accepted) throw new InvalidOperationException("An unmatched exit requirement must fail closed.");
         var tampered = first.Artifacts! with { WalkableCells = new HashSet<GridPoint>() };
         if (generator.ValidateBuiltFlow(candidate, tampered).Valid) throw new InvalidOperationException("Tampered placement walkability must fail built-flow validation.");
+        var detachedCell = new GridPoint(0, 0);
+        var alteredRoute = first.Artifacts.Routes[0] with { AdditionalCells = [detachedCell], Width = 2 };
+        var detached = first.Artifacts with
+        {
+            Routes = first.Artifacts.Routes.Select(r => r.Id == alteredRoute.Id ? alteredRoute : r).ToArray(),
+            WalkableCells = first.Artifacts.WalkableCells.Append(detachedCell).ToHashSet(),
+        };
+        if (generator.ValidateBuiltFlow(candidate, detached).Valid)
+            throw new InvalidOperationException("Detached widened cells must reject even when the walkable projection includes them.");
         var staleCandidate = candidate with { Graph = new CandidateGraph(candidate.Graph.Nodes, candidate.Graph.Edges.Select(edge => edge.Id == "edge.start.gate_1" ? edge with { Traversal = TraversalKind.Hidden } : edge).ToArray()) };
         if (generator.ValidateBuiltFlow(staleCandidate, first.Artifacts).Valid) throw new InvalidOperationException("A candidate whose edge traversal changed must fail stale built-flow provenance validation.");
         var staleMatchChain = first.Artifacts with { Matches = Array.Empty<MatchedShape>() };

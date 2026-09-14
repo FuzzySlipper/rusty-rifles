@@ -1,4 +1,5 @@
 using System.Numerics;
+using Rifles.Game.Generation;
 using Rusty.Engine;
 using Rusty.Engine.Interaction;
 using Rifles.Procgen.Generation;
@@ -19,13 +20,15 @@ internal sealed class DungeonScene : IDisposable
     private const int NavigationY = 1;
     private int CeilingY => tuning.CeilingCells;
     private const ulong GridId = 1;
-    private const uint StoneSlot = 1, ExitSlot = 2, DoorSlot = 3;
+    private const uint StoneSlot = 1, ExitSlot = 2, DoorSlot = 3, LimewashSlot = 4, FloorDetailSlot = 5;
     private const int EngineVoxelEditLimit = 4096;
     private readonly IEngineContext engine;
     private readonly SpatialSession spatial;
     private readonly DungeonFloor floor;
     private Material? doorMaterial;
-    private bool doorVoxels;
+    private readonly HashSet<GridPoint> closedDoors = [];
+    private readonly HashSet<uint> baseSlots = [];
+    private bool doorVoxels => closedDoors.Count > 0;
     private readonly List<(Light Owner, LightRequest Request)> roomLights = [];
     private readonly AppearanceDefinition appearance;
     private readonly GeneratedArt art;
@@ -58,19 +61,38 @@ internal sealed class DungeonScene : IDisposable
             List<VoxelEdit> edits = [];
             foreach (GridPoint cell in cells)
             {
-                AddLogicalVoxel(edits, cell, FloorY, cell == floor.Exit ? ExitSlot : StoneSlot);
-                AddLogicalVoxel(edits, cell, CeilingY, StoneSlot);
+                AddLogicalVoxel(edits, cell, FloorY + floor.Level(cell), cell == floor.Exit ? ExitSlot : StoneSlot);
+                AddLogicalVoxel(edits, cell, CeilingY + floor.Level(cell), StoneSlot);
             }
             foreach (GridPoint wall in walls)
-                for (int y = FloorY; y <= CeilingY; y++) AddLogicalVoxel(edits, wall, y, StoneSlot);
-            foreach (VoxelEdit[] batch in edits.Chunk(EngineVoxelEditLimit))
+            {
+                int[] neighbors = CardinalDirections.Ordered.Select(d => wall + d.Offset()).Where(cells.Contains).Select(floor.Level).ToArray();
+                for (int y = FloorY + neighbors.Min(); y <= CeilingY + neighbors.Max(); y++) AddLogicalVoxel(edits, wall, y, StoneSlot);
+            }
+            AddArchitecture(edits);
+            // Stair treads are explicit traversal geometry, not decorative occluders.
+            foreach (var connector in floor.Connectors.Where(c => floor.Level(c.From) >= 0 && floor.Level(c.To) == floor.Level(c.From) + 1))
+            {
+                int dx = connector.To.X - connector.From.X, dz = connector.To.Y - connector.From.Y;
+                for (int x = 0; x < VoxelsPerCell; x++)
+                    for (int z = 0; z < VoxelsPerCell; z++)
+                    {
+                        int treadHeight = FloorSurface.TreadHeight(x, z, dx, dz, VoxelsPerCell);
+                        for (int y = 0; y < treadHeight; y++)
+                            edits.Add(new VoxelEdit(VoxelEditKind.Set, new VoxelAddress(Subcell(connector.From.X, x),
+                                Subcell(NavigationY + floor.Level(connector.From), y), Subcell(connector.From.Y, z)), StoneSlot));
+                    }
+            }
+            var resolvedEdits = edits.GroupBy(edit => edit.Address).Select(group => group.Last()).ToArray();
+            baseSlots.UnionWith(resolvedEdits.Where(edit => edit.Kind == VoxelEditKind.Set).Select(edit => edit.MaterialSlot));
+            foreach (VoxelEdit[] batch in resolvedEdits.Chunk(EngineVoxelEditLimit))
             {
                 VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
                 engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, batch));
             }
             engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
                 new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
-                cells.Select(c => new PlanarNavCell(c.X, NavigationY, c.Y)).ToArray()));
+                cells.Select(c => NavigationCell(c)).ToArray()));
             scene = engine.VoxelScenePresentation.ProjectSceneDirectional(new ProjectVoxelSceneDirectionalRequest(
                 spatial, MaterialBindings(materials), FaceMaterialBindings(materials)));
             foreach (GridPoint room in floor.RoomCenters)
@@ -86,14 +108,14 @@ internal sealed class DungeonScene : IDisposable
     internal void SetDoor(GridPoint door, bool open)
     {
         List<VoxelEdit> edits = [];
-        for (int y = FloorY + 1; y < CeilingY; y++) AddLogicalVoxel(edits, door, y, doorMaterial is null ? StoneSlot : DoorSlot);
+        for (int y = FloorY + floor.Level(door) + 1; y < CeilingY + floor.Level(door); y++) AddLogicalVoxel(edits, door, y, doorMaterial is null ? StoneSlot : DoorSlot);
         if (open) edits = edits.Select(e => e with { Kind = VoxelEditKind.Clear }).ToList();
         VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
         engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, edits.ToArray()));
+        if (open) closedDoors.Remove(door); else closedDoors.Add(door);
         engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
             new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
-            floor.Cells.Where(c => open || c != door).Select(c => new PlanarNavCell(c.X, NavigationY, c.Y)).ToArray()));
-        doorVoxels = !open;
+            floor.Cells.Where(c => !closedDoors.Contains(c)).Select(c => NavigationCell(c)).ToArray()));
         engine.VoxelScenePresentation.UpdateSceneDirectional(new UpdateVoxelScenePresentationDirectionalRequest(
             scene!, MaterialBindings(materials!), FaceMaterialBindings(materials!)));
     }
@@ -102,9 +124,27 @@ internal sealed class DungeonScene : IDisposable
     {
         if (from.ManhattanDistance(destination) != 1) return false;
         NavigationStepReceipt step = engine.Spatial.EvaluateNavigationStep(new NavigationStepRequest(
-            spatial, NavigationCenter(from), NavigationCenter(destination), CellSize, tuning.NavigationBudget));
+            spatial, NavigationCenter(from), NavigationCenter(destination), Vector3.Distance(NavigationCenter(from), NavigationCenter(destination)), tuning.NavigationBudget));
         return step.Outcome == NavigationPathOutcome.Reached && step.Reached != 0
-            && step.NextPathCell == new PlanarNavCell(destination.X, NavigationY, destination.Y);
+            && step.NextPathCell == NavigationCell(destination);
+    }
+
+    internal (int Checked, bool Complete, string[] Mismatches) InspectNavigation(int maximumEdges)
+    {
+        if (maximumEdges <= 0) throw new ArgumentOutOfRangeException(nameof(maximumEdges));
+        int examined = 0;
+        List<string> mismatches = [];
+        var cells = floor.Cells.ToHashSet();
+        foreach (var from in floor.Cells.Where(c => !closedDoors.Contains(c)))
+            foreach (var direction in CardinalDirections.Ordered)
+            {
+                if (examined == maximumEdges) return (examined, false, mismatches.ToArray());
+                var to = from + direction.Offset();
+                bool expected = cells.Contains(to) && !closedDoors.Contains(to) && Math.Abs(floor.Level(from) - floor.Level(to)) <= 1;
+                if (AdmitStep(from, to) != expected) mismatches.Add($"navigation mismatch {from} -> {to}");
+                examined++;
+            }
+        return (examined, true, mismatches.ToArray());
     }
 
     internal SpatialHit Trace(Vector3 start, Vector3 end, SpatialEntityCollider[] bodies, ulong ignore) =>
@@ -112,14 +152,14 @@ internal sealed class DungeonScene : IDisposable
     internal GridPoint? NextStep(GridPoint from, IEnumerable<GridPoint> goals, IEnumerable<GridPoint> blocked)
     {
         NavigationTraversalCell[] overlay = blocked.Where(c => c != from).Distinct()
-            .Select(c => new NavigationTraversalCell(new PlanarNavCell(c.X, NavigationY, c.Y), false, 1)).ToArray();
+            .Select(c => new NavigationTraversalCell(NavigationCell(c), false, 1)).ToArray();
         engine.Spatial.ReplaceNavigationTraversal(new NavigationTraversalReplaceRequest(spatial, overlay));
         GridPoint? best = null;
         uint shortest = uint.MaxValue;
         foreach (GridPoint goal in goals)
         {
             NavigationWeightedPathReadout path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
-                spatial, new PlanarNavCell(from.X, NavigationY, from.Y), new PlanarNavCell(goal.X, NavigationY, goal.Y), tuning.NavigationBudget));
+                spatial, NavigationCell(from), NavigationCell(goal), tuning.NavigationBudget));
             if (path.Outcome != NavigationPathOutcome.Reached || path.PathLen <= 1 || path.PathLen >= shortest) continue;
             NavigationPathCellAtReceipt next = engine.Spatial.ReadNavigationPathCellAt(new NavigationPathCellAtRequest(spatial, 1));
             if (!next.Present) continue;
@@ -127,11 +167,13 @@ internal sealed class DungeonScene : IDisposable
         }
         return best;
     }
+    private PlanarNavCell NavigationCell(GridPoint cell) => new(cell.X, NavigationY + floor.Level(cell), cell.Y);
     private Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
-        (NavigationY + .5f) * CellSize, (cell.Y + .5f) * CellSize);
+        (NavigationY + floor.Level(cell) + .5f) * CellSize, (cell.Y + .5f) * CellSize);
     internal Vector3 Eye(GridPoint cell) => Eye(new Vector2(cell.X, cell.Y));
-    internal Vector3 Eye(Vector2 cell) => new((cell.X + .5f) * CellSize, CellSize + tuning.EyeHeight, (cell.Y + .5f) * CellSize);
-    internal float GroundHeight => CellSize;
+    internal Vector3 Eye(Vector2 cell) => new((cell.X + .5f) * CellSize, GroundHeight(cell) + tuning.EyeHeight, (cell.Y + .5f) * CellSize);
+    internal float GroundHeight(GridPoint cell) => GroundHeight(new Vector2(cell.X, cell.Y));
+    internal float GroundHeight(Vector2 cell) => FloorSurface.Height(floor, cell, CellSize, VoxelsPerCell);
     internal InteractionVisibility Visibility(Vector3 origin, Vector3 target) => InteractionVisibilityQuery.Cast(engine.Spatial, spatial, origin, target, new SpatialQueryFilter(0, 0), ReadOnlyMemory<SpatialEntityCollider>.Empty, ReadOnlyMemory<ulong>.Empty);
     internal void Attach() => engine.VoxelScenePresentation.RefreshScene(scene!);
 
@@ -183,18 +225,54 @@ internal sealed class DungeonScene : IDisposable
                         Subcell(cell.X, offsetX), Subcell(y, offsetY), Subcell(cell.Y, offsetZ)), material));
     }
 
+    private void AddArchitecture(List<VoxelEdit> edits)
+    {
+        if (floor.Architecture is not { } detail) return;
+        ArchitectureDetail.ValidateVoxelResolution(detail, floor, VoxelsPerCell, (CeilingY + 1) * VoxelsPerCell);
+        foreach (var fact in detail.Facts)
+        {
+            uint material = fact.Material switch { ArchitectureDetailMaterial.Limewash => LimewashSlot,
+                ArchitectureDetailMaterial.Floor => FloorDetailSlot, _ => StoneSlot };
+            if (fact.Kind == ArchitectureDetailKind.MaterialRegion)
+            {
+                AddLogicalVoxel(edits, fact.Cell, (fact.Surface == ArchitectureDetailSurface.Floor ? FloorY : CeilingY) + floor.Level(fact.Cell), material);
+                continue;
+            }
+            var side = fact.Side!.Value;
+            var wall = fact.Cell + side.Offset();
+            for (int depth = 0; depth < Math.Max(1, fact.Depth); depth++)
+                for (int across = 0; across < VoxelsPerCell; across++)
+                    for (int y = fact.Layer; y < fact.Layer + fact.Height; y++)
+                    {
+                        int x = side == CardinalDirection.East ? depth : side == CardinalDirection.West ? VoxelsPerCell - 1 - depth : across;
+                        int z = side == CardinalDirection.South ? depth : side == CardinalDirection.North ? VoxelsPerCell - 1 - depth : across;
+                        var kind = fact.Kind is ArchitectureDetailKind.Recess or ArchitectureDetailKind.Damage ? VoxelEditKind.Clear : VoxelEditKind.Set;
+                        edits.Add(new VoxelEdit(kind, new VoxelAddress(Subcell(wall.X, x), Subcell(floor.Level(fact.Cell), y), Subcell(wall.Y, z)), material));
+                    }
+        }
+    }
+
     private int Subcell(int logicalCoordinate, int offset) => checked(logicalCoordinate * VoxelsPerCell + offset);
 
-    private VoxelSceneMaterialBinding[] MaterialBindings(DungeonMaterials value) => doorMaterial is null || !doorVoxels
-        ? [new(StoneSlot, value.Wall), new(ExitSlot, value.Exit)]
-        : [new(StoneSlot, value.Wall), new(ExitSlot, value.Exit), new(DoorSlot, doorMaterial)];
+    private VoxelSceneMaterialBinding[] MaterialBindings(DungeonMaterials value)
+    {
+        var bindings = new List<VoxelSceneMaterialBinding>
+        {
+            new(StoneSlot, value.Wall), new(ExitSlot, value.Exit),
+            new(LimewashSlot, value.Ceiling), new(FloorDetailSlot, value.Floor),
+        };
+        bindings.RemoveAll(binding => !baseSlots.Contains(binding.MaterialSlot));
+        if (doorMaterial is not null && doorVoxels) bindings.Add(new(DoorSlot, doorMaterial));
+        return bindings.ToArray();
+    }
 
-    private static VoxelSceneFaceMaterialBinding[] FaceMaterialBindings(DungeonMaterials value) =>
-    [
-        new VoxelSceneFaceMaterialBinding(StoneSlot, SpatialFace.PosY, value.Floor),
-        new VoxelSceneFaceMaterialBinding(StoneSlot, SpatialFace.NegY, value.Ceiling),
-        new VoxelSceneFaceMaterialBinding(ExitSlot, SpatialFace.PosY, value.Exit),
-    ];
+    private VoxelSceneFaceMaterialBinding[] FaceMaterialBindings(DungeonMaterials value) =>
+        new VoxelSceneFaceMaterialBinding[]
+        {
+            new(StoneSlot, SpatialFace.PosY, value.Floor),
+            new(StoneSlot, SpatialFace.NegY, value.Ceiling),
+            new(ExitSlot, SpatialFace.PosY, value.Exit),
+        }.Where(binding => baseSlots.Contains(binding.MaterialSlot)).ToArray();
 
     public void Dispose()
     {

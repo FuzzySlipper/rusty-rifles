@@ -50,13 +50,16 @@ internal sealed class ItemArt : IDisposable
         }
         ItemExplorationSnapshot state = world.Capture();
         // The visible lever keeps a stable mechanism identity.
-        yield return Fact(state.LeverId, scene.Eye(state.Lever) with { Y = scene.GroundHeight }, images["lever"], Vector3.One);
+        yield return Fact(state.LeverId, scene.Eye(state.Lever) with { Y = scene.GroundHeight(state.Lever) }, images["lever"], Vector3.One);
         WorldAnchor plateAnchor = world.Anchors.Single(a => world.AnchorDefinition(a.Key).Placement == AnchorPlacement.Plate);
         Vector3 position = world.Point(plateAnchor.Key, scene);
         // Plate and any fungible pile have distinct rendering identities.
-        yield return Fact(state.PlateId, position with { Y = scene.GroundHeight + world.Definition.PlateHeight / 2 }, plate,
+        yield return Fact(state.PlateId, position with { Y = scene.GroundHeight(plateAnchor.Cell) + world.Definition.PlateHeight / 2 }, plate,
             new Vector3(scene.LogicalCellSize, world.Definition.PlateHeight, scene.LogicalCellSize));
     }
+    internal AppearanceFact PlateAt(ulong id, Rifles.Procgen.Generation.GridPoint cell, DungeonScene scene, float height) =>
+        Fact(id, scene.Eye(cell) with { Y = scene.GroundHeight(cell) + height / 2 }, plate,
+            new Vector3(scene.LogicalCellSize, height, scene.LogicalCellSize));
     internal AppearanceFact At(ulong id, Vector3 point, string image, float scale) => Fact(id, point, images[image], new Vector3(scale));
     private static AppearanceFact Fact(ulong id, Vector3 point, Appearance appearance, Vector3 scale) =>
         new(id, false, 0, new Transform(point, Quaternion.Identity, scale), appearance, true, RenderLayer.Scene);

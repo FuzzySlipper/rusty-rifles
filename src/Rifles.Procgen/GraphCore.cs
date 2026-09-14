@@ -217,6 +217,11 @@ public sealed class GraphCore
                 Edge("edge.treasure_key_1.treasure_1", "key.treasure_1", "treasure.gated_1", EdgeKind.OptionalBranch, TraversalKind.Locked, new[] { "branch", "locked" }, "item.treasure_key_1");
                 Edge("edge.treasure_1.goal", "treasure.gated_1", "goal", EdgeKind.OptionalBranch, TraversalKind.Locked, new[] { "locked", "rejoin" }, "item.treasure_key_1");
                 break;
+            case GraphRule.SecretBranch:
+                if (HasNode("treasure.secret_1")) return (null, Duplicate("treasure.secret_1"));
+                Node("treasure.secret_1", NodeKind.Treasure, "Concealed Stores", new[] { "optional", "reward", "secret" });
+                Edge("edge.start.secret_1", "start", "treasure.secret_1", EdgeKind.OptionalBranch, TraversalKind.Hidden, new[] { "secret", "clue", "purposeful-dead-end" });
+                break;
             case GraphRule.Shortcut:
                 if (HasEdge("edge.shortcut.return.start")) return (null, Duplicate("edge.shortcut.return.start"));
                 Node("shortcut.return_1", NodeKind.Shortcut, "Return Shortcut", new[] { "shortcut" });

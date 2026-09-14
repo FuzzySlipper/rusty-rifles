@@ -40,11 +40,16 @@ public sealed record GenerationPolicy(
     int MaxPlacementDecisions,
     int MaxPlacementBacktracks,
     int MaxCatalogCandidatesPerRequirement,
-    int MaxArtifactCells)
+    int MaxArtifactCells,
+    int CorridorWidth = 1,
+    int MinCorridorLength = 1,
+    int MaxCorridorLength = 32_768,
+    int MaxRouteOrderingAttempts = 256,
+    int MaxLayoutAttempts = 16)
 {
-    public static GenerationPolicy Tight { get; } = new("tight", 96, 96, 10, 5, 12, 384, 2, 10_000, 96, 48, 12, 8_192);
-    public static GenerationPolicy Normal { get; } = new("normal", 192, 192, 12, 5, 24, 2_048, 3, 40_000, 256, 128, 32, 32_768);
-    public static GenerationPolicy Spread { get; } = new("spread", 384, 384, 16, 5, 48, 8_192, 4, 160_000, 512, 256, 64, 131_072);
+    public static GenerationPolicy Tight { get; } = new("tight", 96, 96, 10, 5, 12, 384, 2, 10_000, 96, 48, 12, 8_192, 1, 1, 256, 64);
+    public static GenerationPolicy Normal { get; } = new("normal", 192, 192, 12, 5, 24, 2_048, 3, 40_000, 256, 128, 32, 32_768, 1, 1, 512, 256);
+    public static GenerationPolicy Spread { get; } = new("spread", 384, 384, 16, 5, 48, 8_192, 4, 160_000, 512, 256, 64, 131_072, 1, 1, 1_024, 1_024);
 }
 
 /// <summary>Current-schema policy admission shared by the generator and product adapters.</summary>
@@ -63,6 +68,9 @@ public static class GenerationPolicyValidation
     public const int MaxPlacementBacktracks = 16_000_000;
     public const int MaxCatalogCandidatesPerRequirement = 16_000_000;
     public const int MaxArtifactCells = 64_000_000;
+    public const int MaxCorridorWidth = 8;
+    public const int MaxCorridorLength = 32_768;
+    public const int MaxRouteOrderingAttempts = 65_536;
 
     public static bool IsValid(GenerationPolicy? policy)
     {
@@ -75,7 +83,11 @@ public static class GenerationPolicyValidation
             && policy.RoomCandidatesPerRegion is > 0 and <= MaxRoomCandidatesPerRegion && policy.MaxLayoutExpansions is > 0 and <= MaxLayoutExpansions
             && policy.MaxRouteAttempts is > 0 and <= MaxRouteAttempts && policy.MaxRouteExpansionsPerConnection is > 0 and <= MaxRouteExpansionsPerConnection
             && policy.MaxPlacementDecisions is > 0 and <= MaxPlacementDecisions && policy.MaxPlacementBacktracks is >= 0 and <= MaxPlacementBacktracks
-            && policy.MaxCatalogCandidatesPerRequirement is > 0 and <= MaxCatalogCandidatesPerRequirement && policy.MaxArtifactCells is > 0 and <= MaxArtifactCells;
+            && policy.MaxCatalogCandidatesPerRequirement is > 0 and <= MaxCatalogCandidatesPerRequirement && policy.MaxArtifactCells is > 0 and <= MaxArtifactCells
+            && policy.CorridorWidth is > 0 and <= MaxCorridorWidth
+            && policy.MinCorridorLength > 0 && policy.MinCorridorLength <= policy.MaxCorridorLength && policy.MaxCorridorLength <= MaxCorridorLength
+            && policy.MaxRouteOrderingAttempts is > 0 and <= MaxRouteOrderingAttempts
+            && policy.MaxLayoutAttempts is > 0 and <= 64;
     }
 
     public static void Validate(GenerationPolicy policy)
@@ -113,7 +125,14 @@ public sealed record LayoutPlan(IReadOnlyList<LayoutRoom> Rooms, int Width, int 
 public sealed record PieceRequirement(string RegionId, IReadOnlyList<IntermediateConnection> Connections, IReadOnlyList<string> RequiredSockets, NodeKind? Kind = null);
 public sealed record MatchedShape(string RegionId, string ShapeId, int QuarterTurns, IReadOnlyDictionary<string, CatalogExit> ExitMap, IReadOnlyDictionary<string, CatalogSocket> SocketMap);
 public sealed record PlacedPiece(string RegionId, string ShapeId, int QuarterTurns, GridPoint Origin, IReadOnlyList<GridPoint> WalkableCells, IReadOnlyDictionary<string, CatalogExit> Exits, IReadOnlyDictionary<string, CatalogSocket> Sockets);
-public sealed record CorridorRoute(string Id, string SourceEdgeId, string FromRegionId, string ToRegionId, IReadOnlyList<GridPoint> Cells, TraversalKind Traversal, string? RequiredItem);
+public enum CorridorPurpose { Standard, Critical, Flank, Ambush, Optional, Shortcut, DeadEnd }
+public sealed record CorridorScore(int LongestStraightRun, int BendCount, int FlankValue, int ThresholdValue, int DeadEndValue);
+/// <summary>
+/// A route's cells are its one-cell centerline. Width is the authored clearance
+/// band reserved while selecting that centerline; later realization can expand
+/// the band without changing the edge or threshold identity.
+/// </summary>
+public sealed record CorridorRoute(string Id, string SourceEdgeId, string FromRegionId, string ToRegionId, IReadOnlyList<GridPoint> Cells, TraversalKind Traversal, string? RequiredItem, int Width = 1, CorridorPurpose Purpose = CorridorPurpose.Standard, CorridorScore? Score = null, IReadOnlyList<GridPoint>? AdditionalCells = null);
 public sealed record PortalFact(string Id, string SourceEdgeId, GridPoint Cell, TraversalKind Traversal, string? RequiredItem);
 public sealed record SocketFact(string Id, string RegionId, string Kind, GridPoint Cell);
 public sealed record DungeonArtifacts(IntermediateDungeon Intermediate, LayoutPlan Layout, IReadOnlyList<PieceRequirement> Requirements, IReadOnlyList<MatchedShape> Matches, IReadOnlyList<PlacedPiece> Pieces, IReadOnlyList<CorridorRoute> Routes, IReadOnlyList<PortalFact> Portals, IReadOnlyList<SocketFact> Sockets, IReadOnlySet<GridPoint> WalkableCells);
@@ -153,14 +172,14 @@ internal static class GenerationIdentity
     {
         var text = new StringBuilder();
         void Add(params object?[] fields) { foreach (var field in fields) text.Append(field?.ToString() ?? string.Empty).Append('|'); text.Append('\n'); }
-        Add(CanonicalIdentity.Hash(candidate), policy.Id, policy.MaxWidth, policy.MaxHeight, policy.RoomStride, policy.RoomFootprintCells, policy.RoomCandidatesPerRegion, policy.MaxLayoutExpansions, policy.MaxRouteAttempts, policy.MaxRouteExpansionsPerConnection, policy.MaxPlacementDecisions, policy.MaxPlacementBacktracks, policy.MaxCatalogCandidatesPerRequirement, policy.MaxArtifactCells, seed, artifacts.Layout.Width, artifacts.Layout.Height);
+        Add(CanonicalIdentity.Hash(candidate), policy.Id, policy.MaxWidth, policy.MaxHeight, policy.RoomStride, policy.RoomFootprintCells, policy.RoomCandidatesPerRegion, policy.MaxLayoutExpansions, policy.MaxRouteAttempts, policy.MaxRouteExpansionsPerConnection, policy.MaxPlacementDecisions, policy.MaxPlacementBacktracks, policy.MaxCatalogCandidatesPerRequirement, policy.MaxArtifactCells, policy.CorridorWidth, policy.MinCorridorLength, policy.MaxCorridorLength, policy.MaxRouteOrderingAttempts, policy.MaxLayoutAttempts, seed, artifacts.Layout.Width, artifacts.Layout.Height);
         foreach (var piece in artifacts.Pieces.OrderBy(piece => piece.RegionId, StringComparer.Ordinal))
         {
             Add("piece", piece.RegionId, piece.ShapeId, piece.QuarterTurns, piece.Origin.X, piece.Origin.Y);
             foreach (var cell in piece.WalkableCells.OrderBy(c => c.Y).ThenBy(c => c.X)) Add("piece-cell", cell.X, cell.Y);
             foreach (var socket in piece.Sockets.Values.OrderBy(s => s.Id, StringComparer.Ordinal)) Add("socket", socket.Id, socket.Kind, socket.Cell.X, socket.Cell.Y);
         }
-        foreach (var route in artifacts.Routes.OrderBy(route => route.SourceEdgeId, StringComparer.Ordinal)) { Add("route", route.SourceEdgeId, route.Traversal, route.RequiredItem); foreach (var cell in route.Cells) Add("cell", cell.X, cell.Y); }
+        foreach (var route in artifacts.Routes.OrderBy(route => route.SourceEdgeId, StringComparer.Ordinal)) { Add("route", route.SourceEdgeId, route.Traversal, route.RequiredItem, route.Width, route.Purpose, route.Score?.LongestStraightRun, route.Score?.BendCount, route.Score?.FlankValue, route.Score?.ThresholdValue, route.Score?.DeadEndValue); foreach (var cell in route.Cells) Add("cell", cell.X, cell.Y); foreach (var cell in route.AdditionalCells ?? []) Add("wide-cell", cell.X, cell.Y); }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString()))).ToLowerInvariant();
     }
 }
@@ -189,7 +208,7 @@ public static class GenerationResultIdentity
             foreach (var requirement in artifacts.Requirements.OrderBy(value => value.RegionId, StringComparer.Ordinal)) { Add("requirement", requirement.RegionId); foreach (var connection in requirement.Connections.OrderBy(value => value.SourceEdgeId, StringComparer.Ordinal)) Add("requirement-connection", connection.SourceEdgeId); foreach (var socket in requirement.RequiredSockets.OrderBy(value => value, StringComparer.Ordinal)) Add("requirement-socket", socket); }
             foreach (var match in artifacts.Matches.OrderBy(value => value.RegionId, StringComparer.Ordinal)) { Add("match", match.RegionId, match.ShapeId, match.QuarterTurns); foreach (var entry in match.ExitMap.OrderBy(value => value.Key, StringComparer.Ordinal)) Add("match-exit", entry.Key, entry.Value.Id, entry.Value.Cell.X, entry.Value.Cell.Y, entry.Value.Direction); foreach (var entry in match.SocketMap.OrderBy(value => value.Key, StringComparer.Ordinal)) Add("match-socket", entry.Key, entry.Value.Id, entry.Value.Cell.X, entry.Value.Cell.Y, entry.Value.Kind); }
             foreach (var piece in artifacts.Pieces.OrderBy(value => value.RegionId, StringComparer.Ordinal)) { Add("piece", piece.RegionId, piece.ShapeId, piece.QuarterTurns, piece.Origin.X, piece.Origin.Y); foreach (var cell in piece.WalkableCells.OrderBy(value => value.X).ThenBy(value => value.Y)) Add("piece-cell", cell.X, cell.Y); }
-            foreach (var route in artifacts.Routes.OrderBy(value => value.SourceEdgeId, StringComparer.Ordinal)) { Add("route", route.Id, route.SourceEdgeId, route.FromRegionId, route.ToRegionId, route.Traversal, route.RequiredItem); foreach (var cell in route.Cells) Add("route-cell", cell.X, cell.Y); }
+            foreach (var route in artifacts.Routes.OrderBy(value => value.SourceEdgeId, StringComparer.Ordinal)) { Add("route", route.Id, route.SourceEdgeId, route.FromRegionId, route.ToRegionId, route.Traversal, route.RequiredItem, route.Width, route.Purpose, route.Score?.LongestStraightRun, route.Score?.BendCount, route.Score?.FlankValue, route.Score?.ThresholdValue, route.Score?.DeadEndValue); foreach (var cell in route.Cells) Add("route-cell", cell.X, cell.Y); foreach (var cell in route.AdditionalCells ?? []) Add("wide-cell", cell.X, cell.Y); }
             foreach (var portal in artifacts.Portals.OrderBy(value => value.Id, StringComparer.Ordinal)) Add("portal", portal.Id, portal.SourceEdgeId, portal.Cell.X, portal.Cell.Y, portal.Traversal, portal.RequiredItem);
             foreach (var socket in artifacts.Sockets.OrderBy(value => value.Id, StringComparer.Ordinal)) Add("socket", socket.Id, socket.RegionId, socket.Kind, socket.Cell.X, socket.Cell.Y);
             foreach (var cell in artifacts.WalkableCells.OrderBy(value => value.X).ThenBy(value => value.Y)) Add("walkable", cell.X, cell.Y);

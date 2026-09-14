@@ -1,0 +1,9 @@
+{
+  "keyItem": "key",
+  "gateClue": "A stamped lock matches a key held elsewhere in this garrison.",
+  "secretClue": "Scraped mortar and a cold draught mark a movable wall panel.",
+  "reach": 3.2,
+  "weightItem": "weight",
+  "plateWeight": 50,
+  "plateClue": "Leave an iron weight on this plate, then use the matching key at the gate. The latch stays open so the weight can be recovered."
+}

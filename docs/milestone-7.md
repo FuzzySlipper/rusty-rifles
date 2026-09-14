@@ -92,3 +92,96 @@ The shared party was already defeated. A normal reset attempt then hit the
 playtest service's command-channel EOF, so this batch does not claim a fresh
 living-party movement test. All owned sessions were released; see the
 [observation and limitation](evidence/milestone-7/g02-gpu-observation.md).
+
+## G03–G10: composed floor implementation
+
+The current schema is **9**. A save retains corridor centerlines and widened
+cells, room heights and directed step connectors, architecture facts, generated
+features and their state, accepted encounter placements, and initial supply
+placements. Runtime inventory, drops, enemy state and admitted hazard phase
+remain authoritative; loading does not generate replacements from a seed.
+
+### Routing and physical features
+
+Routing checks room thresholds, crossing and adjacency. Open passages sharing a
+room may form junctions; protected passage bodies stay separated. Bounded layout
+and exit-assignment repairs handle layouts that cannot be routed initially.
+`generation.json` authors the width, length, path, ordering and layout budgets.
+Width is the maximum realized width of an open straight run: room thresholds,
+bends and protected passages remain narrow. Every added floor cell is retained
+and checked for connection and separation. Route scores expose straight runs,
+bends, flanks, thresholds and purposeful dead ends.
+
+Non-open graph routes create real voxel barriers and navigation exclusions.
+A locked passage requires its matching reusable inventory key and weight on its
+counterweight plate. The supplied weight can be carried, placed or thrown; the
+latch stays open so it can be recovered. Concealed panels provide a mortar/draught
+clue, then a discover/open interaction. Reveal magic discovers nearby visible
+handles. Feature-targeted utility magic uses the same reach and prerequisites as
+normal use. Return shortcuts have a handle on their authored return side and
+latch open after use.
+
+Hazard rooms contain a timed scalding drain and reachable shutoff. Pulse period,
+active interval and damage are file-authored. Each pulse hits an occupying party
+once, using Engine-admitted time; its phase, hit flag and disabled state survive
+saving. The physical progression inspector checks access to keys, weight
+sources, plates, handles and the objective before accepting the composition.
+
+### Heights, architecture and population
+
+Raised rooms, raised bridge cells and lowered recoverable pits use adjacent
+planar Engine navigation cells at different Y coordinates. Connector clearance
+uses the existing shared movement reservations and actor footprints; narrow
+bridges exclude larger enemies. Entering a pit applies authored damage, and an
+adjacent step climbs out. Stair treads and lowered pit floors are voxel geometry.
+This stage supports one walkable height per X/Z coordinate, not simultaneously
+stacked rooms. Travel between the expedition's named floors remains M8 work.
+
+Budgeted architecture recipes add trim, recesses, supports, damage and material
+regions using the existing generated textures. Reserved thresholds, features and
+connectors remain clear; carved walls retain backing and cannot be attacked
+from multiple sides by competing detail cuts. Resolved facts are saved rather
+than regenerated on load.
+
+Encounter groups select suitable functional rooms, legal size placements and
+reachable attack positions. The melee patrol and ranged watch are required;
+the heavy guard is optional where no suitable room remains. Arrival safety,
+room/group limits, difficulty and search budgets are authored. Rejections are
+retained. Ammunition allowance follows the accepted enemies' vitality, with
+finite recovery supplies placed on useful routes. Insufficient resource budgets
+reject explicitly.
+
+### Inspection and evidence
+
+- `rifles.floor.read`: resolved floor, routes, heights and architecture.
+- `rifles.floor.population`: retained gates, keys, plates, hazards, supplies and encounter placements.
+- `rifles.floor.validate`: initial physical key/plate/handle progression model.
+- `rifles.floor.navigation 20000`: bounded comparison with live Engine step admission, including closed doors and heights.
+
+The [twelve-floor bank](evidence/milestone-7/floor-bank/README.md) contains actual
+resolved JSON, readable SVG plans and inspection reports for expedition seeds
+0, 1, 29 and 83. It exercises all eight room templates, repair attempts, heights,
+protected routes, required combat roles and supplies. This supersedes the G02
+Stores-routing limitation. These are offline plans, not game captures.
+
+Reproduce exports with:
+
+```sh
+dotnet run --project tests/Game -c Release -- --export-floors /tmp/rifles-floors
+python3 scripts/render-floor-plan.py /tmp/rifles-floors/29-arrival.json /tmp/arrival.svg
+```
+
+The full repository check passes. Live startup exposed and corrected duplicate
+voxel transaction addresses and unused material bindings. The served arrival
+floor matches the exported manifest. The retained [live navigation readback](evidence/milestone-7/m7-live-navigation.json)
+reports a complete comparison with no mismatches; [population](evidence/milestone-7/m7-live-population.json)
+and [progression](evidence/milestone-7/m7-live-progression.json) readbacks establish
+runtime integration separately from offline checks.
+
+**Visible acceptance is pending.** Both the Wolf GPU profile and the managed
+headless browser profile returned `pool_busy`; their two slots belong to other
+projects and were left untouched. No new M7 gameplay captures were obtained.
+This implementation/test evidence does not establish ordinary-control visual
+acceptance of the new stairs, generated item puzzles or hazards. The existing
+native inventory-drag and Engine browser-binding recovery limitations also
+remain separate from this milestone's floor generation work.

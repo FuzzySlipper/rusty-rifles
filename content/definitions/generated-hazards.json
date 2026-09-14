@@ -1,0 +1,6 @@
+{
+  "periodSeconds": 6,
+  "activeSeconds": 2,
+  "damage": 4,
+  "clue": "The drain hisses for two seconds, then falls quiet for four. Its shutoff is within reach."
+}

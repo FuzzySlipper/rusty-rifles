@@ -121,7 +121,10 @@ public sealed partial class RiflesProduct
             queries -= goals.Length;
             GridPoint door = itemWorld!.Capture().Door;
             bool tooWideForDoor = definitions.Crowd.Footprints[enemy.Definition.Footprint].EdgeClearance > Combat.DoorClearance;
-            IEnumerable<GridPoint> blocked = floor.Cells.Where(cell => !movement!.CanFit(enemy.Id, cell) || tooWideForDoor && cell == door);
+            var narrowLandings = floor.Connectors.Where(c => c.Clearance < definitions.Crowd.Footprints[enemy.Definition.Footprint].EdgeClearance)
+                .Select(c => c.To).ToHashSet();
+            IEnumerable<GridPoint> blocked = floor.Cells.Where(cell => !movement!.CanFit(enemy.Id, cell)
+                || tooWideForDoor && cell == door || narrowLandings.Contains(cell));
             GridPoint? next = scene!.NextStep(enemy.Motion.Position, goals, blocked);
             if (next is { } step && enemy.Motion.StepTo(step))
             {

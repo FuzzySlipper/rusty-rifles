@@ -29,7 +29,7 @@ public sealed partial class RiflesProduct
     private LightRequest SpellLightRequest()
     {
         MagicDefinition tuning = definitions.Magic;
-        Vector3 point = scene!.Eye(exploration.VisualCell) with { Y = scene.GroundHeight + tuning.LightHeight };
+        Vector3 point = scene!.Eye(exploration.VisualCell) with { Y = scene.GroundHeight(exploration.VisualCell) + tuning.LightHeight };
         return new(spellLightId, false, 0, new LightDescriptor(LightKind.Point,
             new(tuning.LightColor[0], tuning.LightColor[1], tuning.LightColor[2]),
             magic!.Has("party", SpellEffect.Light) && !Defeated ? tuning.LightIntensity : 0,
@@ -101,19 +101,34 @@ public sealed partial class RiflesProduct
             else if (!ally.IsLiving) throw new InvalidDataException("Choose a living ally.");
             if (spell.Effect == SpellEffect.Heal && ally.Vitality == ally.MaximumVitality) throw new InvalidDataException("Ally needs no healing.");
         }
-        if (spell.Target == SpellTarget.Feature && (!definitions.Magic.AllowLeverMagic
-            || featureRevision != itemWorld!.Revision || !itemWorld.Reachable(itemWorld.LeverPoint(scene!), exploration, scene!)
-            || Vector3.Distance(Aim(exploration.Position), itemWorld.LeverPoint(scene!)) > spell.Range))
-            throw new InvalidDataException("No permitted lever within reach, or the feature changed.");
+        if (spell.Target == SpellTarget.Feature)
+        {
+            bool generated = generatedFeatures.Gates.Any(g => g.Id == target) || generatedFeatures.Hazards.Any(h => h.Id == target);
+            if (generated && GeneratedUseProblem(target) is { } problem) throw new InvalidDataException(problem);
+            Vector3 point = generated ? GeneratedFeaturePoint(target) : itemWorld!.LeverPoint(scene!);
+            ulong revision = generated ? generatedFeatures.Revision : itemWorld!.Revision;
+            if (!definitions.Magic.AllowLeverMagic || featureRevision != revision
+                || !itemWorld!.Reachable(point, exploration, scene!) || Vector3.Distance(Aim(exploration.Position), point) > spell.Range)
+                throw new InvalidDataException("No permitted mechanism within reach, or the feature changed.");
+        }
     }
     private void BeginSpell(string member, SpellDefinition spell, string targetMember)
     {
-        ValidateSpell(member, spell, targetMember, selectedTarget, itemWorld!.Revision, false);
+        ulong targetId = selectedTarget;
+        ulong targetRevision = itemWorld!.Revision;
+        if (spell.Target == SpellTarget.Feature)
+        {
+            var focused = features!.Readout?.Selected;
+            targetId = focused is { } selected && (generatedFeatures.Gates.Any(g => g.Id == selected.Id)
+                || generatedFeatures.Hazards.Any(h => h.Id == selected.Id)) ? focused.Value.Id : itemWorld.Capture().LeverId;
+            targetRevision = targetId == itemWorld.Capture().LeverId ? itemWorld.Revision : generatedFeatures.Revision;
+        }
+        ValidateSpell(member, spell, targetMember, targetId, targetRevision, false);
         CancelRest("Rest interrupted by casting.");
         EnemyState? target = spell.Target == SpellTarget.Enemy ? enemies.Single(e => e.Id == selectedTarget) : null;
-        actions[member].Start(new(CombatActionKind.Cast, 0, null, null, target?.Id ?? 0, targetMember,
+        actions[member].Start(new(CombatActionKind.Cast, 0, null, null, spell.Target == SpellTarget.Feature ? targetId : target?.Id ?? 0, targetMember,
             spell.Windup, ActionPhase.Windup, spell.Recovery, target?.Motion.Position,
-            target?.Motion.CrowdOffset.X ?? 0, target?.Motion.CrowdOffset.Y ?? 0, spell.Id, SpellCost(member, spell), itemWorld.Revision));
+            target?.Motion.CrowdOffset.X ?? 0, target?.Motion.CrowdOffset.Y ?? 0, spell.Id, SpellCost(member, spell), targetRevision));
         CombatMessage(Member(member).Definition.Name + " prepares " + spell.Name + ".");
     }
     private bool TryEnemySpell(EnemyState enemy, float distance)
@@ -151,7 +166,11 @@ public sealed partial class RiflesProduct
                 source.X, source.Y, source.Z, direction.X, direction.Y, direction.Z, Math.Min(offset.Length(), spell.Range),
                 enemy?.Motion.Position ?? exploration.Position, null, null, spell.Id));
         }
-        else if (spell.Effect == SpellEffect.Lever) itemWorld!.ToggleLever(exploration, scene!, action.FeatureRevision);
+        else if (spell.Effect == SpellEffect.Lever)
+        {
+            if (action.Target == itemWorld!.Capture().LeverId) itemWorld.ToggleLever(exploration, scene!, action.FeatureRevision);
+            else CombatMessage(UseGeneratedFeature(new(action.Target, action.FeatureRevision)));
+        }
         else if (spell.Target == SpellTarget.Party) magic!.Apply("party", spell);
         else
         {

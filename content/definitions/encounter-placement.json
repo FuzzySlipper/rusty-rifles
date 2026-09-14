@@ -1,0 +1,98 @@
+{
+  "id": "garrison-encounters-v1",
+  "tuning": {
+    "maxGroups": 3,
+    "maxMembers": 6,
+    "maxGroupsPerRoom": 1,
+    "maxRoomCandidates": 8,
+    "maxCandidateCellsPerMember": 48,
+    "maxReachabilityCells": 32768,
+    "maxAttackPositionsPerMember": 12,
+    "minimumArrivalDistance": 4,
+    "minimumMeleeSpawnDistance": 3,
+    "minimumRangedSpawnDistance": 6,
+    "minimumRangedAttackDistance": 4,
+    "preferredRangedAttackDistance": 8,
+    "maximumRangedAttackDistance": 12,
+    "maximumTotalDifficulty": 48,
+    "rejectDirectArrivalLane": true
+  },
+  "groups": [
+    {
+      "id": "forward-patrol",
+      "roomFunctions": [
+        "guard-post",
+        "supply-receiving",
+        "mess",
+        "watch",
+        "drainage",
+        "defense"
+      ],
+      "roomTemplates": [],
+      "required": true,
+      "difficultyBudget": 12,
+      "members": [
+        {
+          "spawnId": "raider-patrol",
+          "role": "Melee",
+          "difficultyCost": 3
+        },
+        {
+          "spawnId": "runner-patrol",
+          "role": "Melee",
+          "difficultyCost": 2
+        }
+      ]
+    },
+    {
+      "id": "crossfire-watch",
+      "roomFunctions": [
+        "powder-storage",
+        "records-storage",
+        "supply-receiving",
+        "watch",
+        "defense"
+      ],
+      "roomTemplates": [],
+      "required": true,
+      "difficultyBudget": 16,
+      "members": [
+        {
+          "spawnId": "musketeer-patrol",
+          "role": "Ranged",
+          "difficultyCost": 4
+        },
+        {
+          "spawnId": "marksman-patrol",
+          "role": "Ranged",
+          "difficultyCost": 5
+        }
+      ]
+    },
+    {
+      "id": "heavy-guard",
+      "roomFunctions": [
+        "mess",
+        "watch",
+        "drainage",
+        "defense",
+        "guard-post"
+      ],
+      "roomTemplates": [],
+      "required": false,
+      "difficultyBudget": 16,
+      "members": [
+        {
+          "spawnId": "sapper-patrol",
+          "role": "Melee",
+          "difficultyCost": 3
+        },
+        {
+          "spawnId": "bulwark-patrol",
+          "role": "Melee",
+          "difficultyCost": 8
+        }
+      ]
+    }
+  ]
+}

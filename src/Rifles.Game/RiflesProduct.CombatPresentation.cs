@@ -36,7 +36,7 @@ public sealed partial class RiflesProduct
         {
             string image = SentryView.Select((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset), enemy.Motion.Facing, exploration.VisualCell);
             float scale = enemy.Definition.Scale * (!enemy.Alive ? Combat.CorpseScale : enemy.Action.Current?.Phase == ActionPhase.Windup ? Combat.WindupScale : 1);
-            Vector3 position = scene!.Eye((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset)) with { Y = scene.GroundHeight };
+            Vector3 position = scene!.Eye((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset)) with { Y = scene.GroundHeight(enemy.Motion.VisualCell) };
             yield return new(enemy.Id, false, 0, new Transform(position, Quaternion.Identity, new Vector3(scale)), combatArt!.Image(features!.Style, image), true, RenderLayer.Scene);
         }
         foreach (FlightSnapshot flight in flights)
@@ -50,7 +50,7 @@ public sealed partial class RiflesProduct
         foreach ((string owner, var cell) in drops)
             foreach (CarriedItem item in inventory!.Items(owner).Where(i => i.Entity != 0).Concat(inventory.Items(owner).Where(i => i.Entity == 0).Take(1)))
                 yield return itemArt!.At(item.Entity == 0 ? inventory.Owner(owner).Id : item.Entity,
-                    scene!.Eye(cell) with { Y = scene.GroundHeight }, definitions.Items.Item(item.Definition).Image, 1);
+                    scene!.Eye(cell) with { Y = scene.GroundHeight(cell) }, definitions.Items.Item(item.Definition).Image, 1);
     }
     private CombatSnapshot CaptureCombat() => new(enemies.Select(e => e.Capture()).ToArray(),
         actions.Select(a => new MemberActionSnapshot(a.Key, a.Value.Capture())).ToArray(), loadedWeapons.ToArray(), flights.ToArray(),

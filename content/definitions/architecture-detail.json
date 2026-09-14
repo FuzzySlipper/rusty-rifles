@@ -1,0 +1,72 @@
+{
+  "id": "garrison-architecture-detail-v1",
+  "maxFacts": 256,
+  "maxFactsPerRoom": 32,
+  "rules": [
+    {
+      "id": "wall-trim",
+      "functions": ["*"],
+      "kind": "Trim",
+      "surface": "Wall",
+      "material": "Brick",
+      "count": 4,
+      "layer": 2,
+      "height": 1,
+      "depth": 1,
+      "spacing": 3,
+      "deliberateOccluder": false
+    },
+    {
+      "id": "wall-recess",
+      "functions": ["records-storage", "powder-storage", "supply-receiving"],
+      "kind": "Recess",
+      "surface": "Wall",
+      "material": "Limewash",
+      "count": 2,
+      "layer": 1,
+      "height": 2,
+      "depth": 1,
+      "spacing": 3,
+      "deliberateOccluder": false
+    },
+    {
+      "id": "wall-support",
+      "functions": ["defense", "drainage", "watch"],
+      "kind": "Support",
+      "surface": "Wall",
+      "material": "Brick",
+      "count": 2,
+      "layer": 0,
+      "height": 2,
+      "depth": 1,
+      "spacing": 3,
+      "deliberateOccluder": false
+    },
+    {
+      "id": "wall-damage",
+      "functions": ["*"],
+      "kind": "Damage",
+      "surface": "Wall",
+      "material": "Limewash",
+      "count": 2,
+      "layer": 3,
+      "height": 1,
+      "depth": 1,
+      "spacing": 4,
+      "deliberateOccluder": false
+    },
+    {
+      "id": "worn-floor",
+      "functions": ["*"],
+      "kind": "MaterialRegion",
+      "surface": "Floor",
+      "material": "Floor",
+      "count": 2,
+      "layer": 0,
+      "height": 1,
+      "depth": 0,
+      "spacing": 2,
+      "deliberateOccluder": false
+    }
+  ]
+}

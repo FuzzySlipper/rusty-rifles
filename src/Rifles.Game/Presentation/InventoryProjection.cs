@@ -16,7 +16,7 @@ internal static class InventoryProjection
             bool reachable = member || (drop ? dropReachable(owner.Key) : world.Reachable(owner.Key, exploration, scene));
             bool opened = !container || world.OpenContainer == owner.Key;
             string name = member ? party.Members.Single(m => "member:" + m.Definition.Id == owner.Key).Definition.Name
-                : drop ? "Ground belongings" : world.AnchorDefinition(owner.Key).Name;
+                : drop ? owner.Label ?? "Ground belongings" : world.AnchorDefinition(owner.Key).Name;
             var view = inventory.View(owner.Key);
             uint items = value.Object((opened && reachable ? inventory.Items(owner.Key) : []).Select(item =>
             {

@@ -1,0 +1,12 @@
+{
+  "ammunition": "shot",
+  "expectedDamagePerShot": 6,
+  "ammunitionAllowance": 1.5,
+  "maximumAmmunition": 90,
+  "maximumPlacements": 8,
+  "supplies": [
+    { "item": "tonic", "quantity": 3, "roomFunction": "arrival" },
+    { "item": "cordial", "quantity": 1, "roomFunction": "arrival" },
+    { "item": "tonic", "quantity": 2, "roomFunction": "powder-storage" }
+  ]
+}

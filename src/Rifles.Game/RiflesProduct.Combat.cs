@@ -14,6 +14,7 @@ namespace Rifles.Game;
 public sealed partial class RiflesProduct
 {
     private EnemyState[] enemies = [];
+    private EncounterPlacementResult? encounterPlacement;
     private Dictionary<string, ActionState> actions = [];
     private readonly HashSet<ulong> loadedWeapons = [];
     private readonly List<FlightSnapshot> flights = [];
@@ -26,7 +27,7 @@ public sealed partial class RiflesProduct
     private CombatDefinition Combat => definitions.Combat;
     private int pathCursor;
     private bool Defeated => party.Members.All(m => !m.IsLiving);
-    private Vector3 Aim(GridPoint cell) => scene!.Eye(cell) with { Y = scene.GroundHeight + Combat.AimHeight };
+    private Vector3 Aim(GridPoint cell) => scene!.Eye(cell) with { Y = scene.GroundHeight(cell) + Combat.AimHeight };
     private static string EnemyOwner(ulong id) => "combat:enemy:" + id;
     private void CombatMessage(string message)
     {
@@ -40,21 +41,30 @@ public sealed partial class RiflesProduct
         actions = party.Members.ToDictionary(m => m.Definition.Id, _ => new ActionState());
         foreach (ulong id in new[] { actor!.Id, features!.Capture().Dressing.ObserverId })
             allies.Add(id, new PartyMemberState(new MemberDefinition(id.ToString(), "Garrison ally", FormationSlot.FrontLeft, Combat.AllyVitality)));
+        StartGeneratedFeatures();
         List<EnemyState> created = [];
-        foreach (EnemySpawnDefinition spawn in Combat.Encounter)
+        var excluded = floor.Cells.Where(c => movement!.Occupied(c)).Concat(generatedFeatures.Gates.Select(g => g.Cell))
+            .Concat(generatedFeatures.Hazards.Select(h => h.Cell)).Concat(floor.Grants.Select(g => g.Cell))
+            .Append(itemWorld!.Capture().Door).ToHashSet();
+        encounterPlacement = new EncounterPlacementResolver(definitions.EncounterPlacement).Resolve(floor.Seed, floor, Combat, definitions.Crowd, excluded);
+        if (!encounterPlacement.Accepted) throw new InvalidDataException("Encounter placement rejected: "
+            + string.Join(", ", encounterPlacement.Rejections.Select(r => r.Code + ": " + r.Detail)));
+        foreach (var placed in encounterPlacement.Instances)
         {
+            var spawn = Combat.Encounter.Single(s => s.Id == placed.SpawnId);
             EnemyDefinition definition = Combat.Enemy(spawn.Enemy);
-            GridPoint cell = floor.Cells.Where(c => movement!.CanFit(c, definition.Footprint, definition.Faction, definition.Share) && c != itemWorld!.Capture().Door && c != floor.Exit)
-                .OrderBy(c => Math.Abs(c.ManhattanDistance(floor.Entrance) - spawn.Distance))
-                .ThenBy(c => c.Y).ThenBy(c => c.X).First();
+            GridPoint cell = placed.Cell;
             ulong id = AllocateId(); string owner = EnemyOwner(id);
             inventory!.RegisterOwner(new PackOwner(AllocateId(), owner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
             foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, AllocateId);
             ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
             EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, cell, PatrolRoute(cell, spawn)).Capture(), spawn.Id, definitions.Magic.EnemyResource), definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
-            enemy.Motion.Bind(movement!, id, definition.Footprint, definition.Faction, definition.Share); created.Add(enemy);
+            enemy.Motion.Bind(movement!, id, definition.Footprint, definition.Faction, definition.Share);
+            GameDefinitions.Require(enemy.Motion.Capture().Placement == placed.PlacementId, "resolved enemy crowd slot");
+            created.Add(enemy);
         }
         enemies = created.ToArray();
+        StartGeneratedSupplies();
         StartMagic();
         CombatMessage("Rifles start empty. Load with T; select a visible foe and attack with Space.");
     }
@@ -65,7 +75,7 @@ public sealed partial class RiflesProduct
         {
             Vector3 center = Aim(cell) + new Vector3(offset.X, 0, offset.Y) * scene!.LogicalCellSize;
             width = width > 0 ? width : Combat.BodyWidth; depth = depth > 0 ? depth : Combat.BodyWidth;
-            Vector3 min = new(center.X - width / 2, scene!.GroundHeight, center.Z - depth / 2);
+            Vector3 min = new(center.X - width / 2, scene!.GroundHeight(cell), center.Z - depth / 2);
             bodies.Add(new(id, min, min + new Vector3(width, Combat.BodyHeight, depth), 0, 0, true, false, false));
         }
         if (!Defeated) Add(partyId, exploration.Position);
@@ -145,7 +155,12 @@ public sealed partial class RiflesProduct
                 targetMember = command.Member ?? selectedMember;
                 ValidateRemedy(source, token, targetMember);
             }
-            else if (command.Destination == "plate") aim = itemWorld!.Anchor("plate").Cell;
+            else if (command.Destination == "plate")
+            {
+                var focused = features!.Readout?.Selected;
+                aim = generatedFeatures.Plates.SingleOrDefault(p => focused is { } target && p.Id == target.Id)?.Cell
+                    ?? itemWorld!.Anchor("plate").Cell;
+            }
         }
         if (kind is CombatActionKind.Fire or CombatActionKind.Melee or CombatActionKind.Throw && aim is null)
         {
@@ -339,7 +354,8 @@ public sealed partial class RiflesProduct
                 }
                 if (flight.Spell is null) ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter);
             }
-            if (!floor.Cells.Contains(landed) || landed == itemWorld!.Capture().Door && !itemWorld.Capture().DoorOpen) landed = flight.LastCell;
+            if (!floor.Cells.Contains(landed) || landed == itemWorld!.Capture().Door && !itemWorld.Capture().DoorOpen
+                || generatedFeatures.Gates.Any(g => g.Cell == landed && !g.Open)) landed = flight.LastCell;
             flights.Remove(flight);
             if (hit.Present || travel >= flight.Remaining)
             {

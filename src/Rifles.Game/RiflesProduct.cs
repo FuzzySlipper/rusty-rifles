@@ -57,7 +57,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         ExpeditionGenerationResult generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, definitions.Generation.Seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Code + ": " + d.Detail)));
         expedition = generated.Expedition!;
-        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy, definitions.Rooms);
+        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
         exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
         generatedArt = new GeneratedArt(context.Content, engine.Graphics,
             definitions.Appearance.Styles.SelectMany(s => s.Textures)
@@ -82,6 +82,21 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     [DebugCommand("rifles.floor.read", Description = "Read the played floor cells, resolved room functions, architectural landmarks and thresholds.")]
     public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(floor,
         new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    [DebugCommand("rifles.floor.population", Description = "Read retained generated gate, key, hazard, supply and encounter placement facts.")]
+    public string ReadFloorPopulation() => System.Text.Json.JsonSerializer.Serialize(new { Features = generatedFeatures, Encounters = encounterPlacement },
+        new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
+
+    [DebugCommand("rifles.floor.validate", Description = "Inspect actual floor connectivity, generated key acquisition and gate-handle reachability.")]
+    public string ValidateFloor() => System.Text.Json.JsonSerializer.Serialize(
+        Rifles.Game.Generation.FloorProgression.Inspect(floor, generatedFeatures.Gates, generatedFeatures.Plates));
+
+    [DebugCommand("rifles.floor.navigation", Description = "Compare a bounded set of resolved steps against live Engine navigation, including barriers and heights.")]
+    public string InspectFloorNavigation(int maximumEdges)
+    {
+        var result = scene!.InspectNavigation(maximumEdges);
+        return System.Text.Json.JsonSerializer.Serialize(new { result.Checked, result.Complete, result.Mismatches });
+    }
 
     public void Start()
     {
@@ -175,9 +190,19 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 double seconds = update.Facts.FixedDeltaSeconds;
                 GridPoint previousCell = exploration.Position;
                 if (!Defeated) exploration.Advance(seconds, PartySpeed);
-                if (exploration.Position != previousCell) EmitNoise(exploration.Position, NoiseKind.Footstep);
+                if (exploration.Position != previousCell)
+                {
+                    EmitNoise(exploration.Position, NoiseKind.Footstep);
+                    var connector = floor.Connectors.SingleOrDefault(c => c.From == previousCell && c.To == exploration.Position);
+                    if (connector is { Damage: > 0 })
+                    {
+                        foreach (var member in party.Members.Where(m => m.IsLiving)) DamageMember(member, connector.Damage);
+                        CombatMessage("The party falls into the drain pit. Climb out by an adjacent step.");
+                    }
+                }
                 if (allies[actor!.Id].IsLiving) actor.Advance(seconds);
                 AdvanceCombat(seconds);
+                AdvanceGeneratedHazards(seconds);
             }
             if (!suppressMovement && !Defeated) controls.Apply(exploration);
         }
@@ -259,7 +284,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat(), expedition);
+        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat(), expedition, generatedFeatures, encounterPlacement!);
 
     private void Save()
     {
@@ -287,7 +312,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
             DungeonScene replacement = new(engine, generatedArt!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
+            foreach (var gate in saved.GeneratedFeatures.Gates) replacement.SetDoor(gate.Cell, gate.Open);
             MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
+            foreach (var connector in saved.Floor.Connectors) replacementGrid.SetClearance(connector.From, connector.To, connector.Clearance);
             foreach (var direction in CardinalDirections.Ordered)
                 if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
                     replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), Combat.DoorClearance);
@@ -320,6 +347,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             movement = replacementGrid;
             scene = replacement; floor = saved.Floor; exploration = restored.Exploration; party = restored.Party;
             expedition = saved.Intent;
+            generatedFeatures = saved.GeneratedFeatures;
+            encounterPlacement = saved.EncounterPlacement;
             expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
             inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
             ApplyEquipment();
@@ -346,6 +375,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private void BindMovement()
     {
         movement = new MovementGrid(floor.Cells.ToHashSet(), scene!.AdmitStep, definitions.Crowd);
+        foreach (var connector in floor.Connectors) movement.SetClearance(connector.From, connector.To, connector.Clearance);
         exploration.Bind(movement, partyId);
         actor!.Bind(movement);
         features!.Bind(movement);
@@ -368,7 +398,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         features!.SetExtraCandidates(ItemCandidates());
         features.Observe(exploration);
         phaseStarted = updateProfile.Record(UpdatePhase.FeatureFocus, phaseStarted);
-        features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()),
+        features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()).Concat(GeneratedFeatureFacts()),
             allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
             allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);

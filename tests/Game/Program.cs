@@ -31,6 +31,9 @@ foreach (double invalid in new[] { 0d, -1d, double.NaN, double.PositiveInfinity 
 }
 ExpeditionChecks.Run(definitions);
 RoomCatalogueChecks.Run(definitions);
+GeneratedFeatureChecks.Run(definitions);
+EncounterPlacementChecks.Run(definitions);
+ArchitectureDetailChecks.Run(definitions);
 ActionChecks.Run();
 MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();
@@ -114,7 +117,7 @@ catch (InvalidOperationException)
 Console.WriteLine("Game checks passed: generated connectivity/replay, grid actions/recovery, party vitality/snapshots.");
 
 // A resolved snapshot round-trips without invoking the generator on restore.
-DungeonFloor savedFloor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms);
+DungeonFloor savedFloor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms).WithArchitecture(definitions.Architecture);
 ExplorationState savePose = new(savedFloor.Entrance, definitions.Exploration);
 PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
     definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);
@@ -134,14 +137,19 @@ ItemInventory savedInventory = new(definitions.Items,
         a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));
 savedInventory.GrantStarting(AllocateDressingId);
 savedDressing.Bind(saveGrid);
+var savedGeneratedGates = Rifles.Game.Generation.GeneratedFeatures.Resolve(savedFloor, AllocateDressingId);
 List<EnemySnapshot> saveEnemies = [];
-foreach (EnemySpawnDefinition spawn in definitions.Combat.Encounter)
+var savedEncounterPlacement = new EncounterPlacementResolver(definitions.EncounterPlacement).Resolve(savedFloor.Seed, savedFloor,
+    definitions.Combat, definitions.Crowd, savedFloor.Cells.Where(saveGrid.Occupied).Append(savedItemWorld.Capture().Door).Concat(savedGeneratedGates.Select(g => g.Cell)).ToHashSet());
+Require(savedEncounterPlacement.Accepted, "Saved fixture encounter placement accepted.");
+foreach (var placed in savedEncounterPlacement.Instances)
 {
+    var spawn = definitions.Combat.Encounter.Single(s => s.Id == placed.SpawnId);
     EnemyDefinition enemy = definitions.Combat.Enemy(spawn.Enemy);
     ulong id = AllocateDressingId(); string owner = "combat:enemy:" + id;
     savedInventory.RegisterOwner(new PackOwner(AllocateDressingId(), owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
     foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(owner, loot.Definition, loot.Quantity, AllocateDressingId);
-    GridPoint cell = savedFloor.Cells.First(c => !saveGrid.Occupied(c) && c != savedItemWorld.Capture().Door);
+    GridPoint cell = placed.Cell;
     ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id, enemy.Footprint, enemy.Faction, enemy.Share);
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
@@ -150,7 +158,7 @@ CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
-    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!);
+    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!, new Rifles.Game.Generation.GeneratedFeatureSnapshot(1, savedGeneratedGates, [], [], [], []), savedEncounterPlacement);
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);

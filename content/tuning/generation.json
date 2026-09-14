@@ -15,7 +15,8 @@
           "optional-cache"
         ],
         "rules": [
-          "DetourLoop"
+          "DetourLoop",
+          "SecretBranch"
         ]
       },
       {
@@ -89,6 +90,25 @@
     "maxPlacementDecisions": 256,
     "maxPlacementBacktracks": 128,
     "maxCatalogCandidatesPerRequirement": 32,
-    "maxArtifactCells": 32768
+    "maxArtifactCells": 32768,
+    "corridorWidth": 2,
+    "minCorridorLength": 3,
+    "maxCorridorLength": 128,
+    "maxRouteOrderingAttempts": 32,
+    "maxLayoutAttempts": 32
+  },
+  "elevation": {
+    "raisedRoomFunctions": [
+      "watch",
+      "defense"
+    ],
+    "pitRoomFunctions": [
+      "drainage"
+    ],
+    "maximumBridges": 1,
+    "maximumPits": 1,
+    "bridgeClearance": 0.85,
+    "pitDamage": 4,
+    "stairClearance": 1
   }
 }
