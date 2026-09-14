@@ -1,0 +1,150 @@
+{
+  "scriptId": "03981f6c-1394-4f63-972e-da433f1acc7c",
+  "checks": [
+    {
+      "label": "Gate keyboard result",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": false
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 14.84375,
+            "width": 594,
+            "x": 25,
+            "y": -639.453125
+          },
+          "tag": "p",
+          "text": "W/S step \u00b7 A/D sidestep \u00b7 Q/E turn \u00b7 Space attack \u00b7 T reload \u00b7 F use \u00b7 R cycle \u00b7 P pause \u00b7 K save \u00b7 L load",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 379.015625
+          },
+          "tag": "p",
+          "text": "Garrison passage \u2014 open",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 434.109375
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Garrison passage opened. The key is retained.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 523.75
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Garrison passage opened. The key is retained.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 901.125
+          },
+          "tag": "p",
+          "text": "",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 70.1875,
+            "width": 308,
+            "x": 949,
+            "y": 211.640625
+          },
+          "tag": "p",
+          "text": "Descend through the Stores, clear the Inner Redoubt, and secure its final exit. Keys and counterweights open protected routes; caches support the return journey. Visited 2/3 floors.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": false
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 14.84375,
+            "width": 308,
+            "x": 949,
+            "y": 754.46875
+          },
+          "tag": "p",
+          "text": "Each square is one discovered cell \u00b7 \u25c6 landmark \u00b7 \u25b2 party",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 9,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 806.859375
+          },
+          "tag": "p",
+          "text": "",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Gate keyboard",
+      "captureId": "cc51f777-36ca-47d7-bb1e-f80c7b00a0c4",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/6ba088dd-ca5f-405a-bf73-65eb716a64ec.png",
+      "file": "gate-open-1.png"
+    }
+  ]
+}

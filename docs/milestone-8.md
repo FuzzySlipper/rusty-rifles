@@ -27,8 +27,8 @@ and Blade's 26 health persisted. Save/restart/load restored the same changed run
 Original captures and input scripts are in [milestone-8 evidence](evidence/milestone-8/).
 This is keyboard/DOM-assisted functional evidence, not GPU performance evidence.
 
-The remaining M8 work is objectives/finale, defeat/new-seed flow, difficulty,
-discovered maps/notes and complete three-floor play acceptance.
+The later implementation below adds the run rules and player panel. Complete
+three-floor visible acceptance is still being exercised.
 
 ## Run rules and player panel
 
@@ -73,3 +73,19 @@ cast windup/recovery and exactly-once resource cost; an active projectile and
 moving enemy; open-container state; map/profile retention; malformed floor/map
 references; and forged completion/experience rejection. Existing action, spell,
 combat and inventory checks remain the lower-level settlement coverage.
+
+
+## Integration corrections
+
+Ordinary play exposed a feature-button payload mismatch: projected feature IDs
+were strings but the command contract takes an unsigned integer. The button now
+passes the typed numeric target/revision, and a visible gate interaction confirms
+that the command is admitted. The map follows floor changes while preserving
+an explicit map selection within the current floor.
+
+The seed-29 redoubt's friendly patrol occupied a protected direct route out of
+the arrival room. An alternate route existed, but this was poor placement.
+Patrol endpoints and solid dressing now avoid routes, thresholds, grants and
+height connectors, and generation checks connectivity with all those objects
+occupied. A twelve-floor seed bank covers the resulting placements. Existing
+saved placements remain intact rather than being silently moved on load.

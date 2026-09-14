@@ -1,0 +1,169 @@
+{
+  "scriptId": "1bcd918b-3ab8-453c-b288-84767d56dd3f",
+  "checks": [
+    {
+      "label": "Targets",
+      "targets": [
+        {
+          "disabled": true,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -398.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 22/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -398.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 28/28",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 34.96875,
+            "width": 287,
+            "x": 33,
+            "y": -350.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -350.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -287.34375
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 60/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -287.34375
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Combat",
+      "captureId": "687f38ef-34e9-48de-b1c2-c4f99773a2c1",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/68638dd5-7371-4bea-a281-cb1f6abc8719.png",
+      "file": "rifle-fight-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -121.0625
+          },
+          "tag": "output",
+          "text": "Powder runner fell. Belongings can be recovered.\nWarden took 1 damage.\nWarden took 1 damage.\nWarden took 1 damage.\nWarden took 1 damage.\nWarden took 1 damage.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Party",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 439.375
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 19/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 439.375
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 471.921875
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 7/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 471.921875
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 20/20",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

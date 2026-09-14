@@ -120,8 +120,7 @@ adds generated art, lit sprites, texture mapping and comparison controls; see
 `docs/milestone-2.md`. Milestone 3 adds party presets, equipment, inventory, world items and a gate puzzle;
 see `docs/milestone-3.md`. Milestone 4 adds action phases, rifles, throws/bolts, mixed enemies and combat saves;
 see `docs/milestone-4.md`. Milestone 5 adds mixed-size crowd slots, bounded Engine paths,
-perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Richer procgen
-and multi-floor progression remain campaign work.
+perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Procgen and multi-floor progression are described below.
 Milestone 6 adds spellbooks, shared casts, conditions, utility magic, rest/revival,
 and advancement; see `docs/milestone-6.md`. Spell tuning lives in
 `content/definitions/spells.json`; retain Engine effect/stat/track ownership.
@@ -134,5 +133,10 @@ Milestone 7 now implements composed procedural floors: bounded routing repairs,
 protected item puzzles and hazards, planar height connectors, saved architecture,
 size-aware encounters and route supplies. See `docs/milestone-7.md` for the
 12-floor SVG/JSON bank, live inspection commands and bounded visible acceptance.
-Generation tuning and definitions remain file-authored. Named-floor expedition
-travel is M8 work; do not confuse an accepted floor bank with completed travel.
+Generation tuning and definitions remain file-authored.
+
+Milestone 8 implements named-floor travel with frozen retained worlds, whole-run
+saves, discovered maps, objectives, defeat/retry and normal/hard profiles. See
+`docs/milestone-8.md` for current acceptance evidence. Party state travels once;
+floor state retains its identity. Preserve the distinction between source checks
+and a visibly completed expedition.

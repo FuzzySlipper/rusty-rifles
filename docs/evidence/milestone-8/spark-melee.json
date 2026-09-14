@@ -1,0 +1,47 @@
+{
+  "scriptId": "75f84501-c963-4b80-b980-54d5b311083c",
+  "checks": [
+    {
+      "label": "Spell hit",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": 378.9375
+          },
+          "tag": "output",
+          "text": "Seeker prepares Spark.\nSeeker casts Spark.\nWarden took 1 damage.\nGarrison raider took 10 damage.\nSpark struck Garrison raider.\nWarden took 1 damage.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "After raider",
+      "captureId": "5d9fdcd9-50b6-4489-859f-61878ccc7109",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/998011a9-1e58-4e11-929a-03e7806889eb.png",
+      "file": "spark-melee-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -121.0625
+          },
+          "tag": "output",
+          "text": "Blade: Melee windup\nGarrison raider took 15 damage.\nWarden took 1 damage.\nBlade: Melee windup\nGarrison raider took 7 damage.\nGarrison raider fell. Belongings can be recovered.",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

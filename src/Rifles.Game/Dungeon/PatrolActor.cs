@@ -19,7 +19,7 @@ internal sealed class PatrolActor(ulong id, GridPoint start, GridPoint end, Expl
         foreach (CardinalDirection direction in CardinalDirections.Ordered)
         {
             GridPoint end = start + direction.Offset();
-            if (start == floor.Entrance || end == floor.Entrance || !cells.Contains(end)) continue;
+            if (!cells.Contains(end) || !DressingPlacement.CanBlock(floor, [start, end])) continue;
             return new(id, start, end, new ExplorationState(start, tuning with { InitialFacing = direction }));
         }
         throw new InvalidDataException("Floor has no adjacent porter patrol cells away from party entrance.");

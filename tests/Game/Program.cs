@@ -34,6 +34,7 @@ RoomCatalogueChecks.Run(definitions);
 GeneratedFeatureChecks.Run(definitions);
 EncounterPlacementChecks.Run(definitions);
 ArchitectureDetailChecks.Run(definitions);
+DressingPlacementChecks.Run(definitions);
 ActionChecks.Run();
 MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();

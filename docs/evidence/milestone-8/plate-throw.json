@@ -1,0 +1,47 @@
+{
+  "scriptId": "a4558be5-4e85-4e84-be90-f339c80c061d",
+  "checks": [
+    {
+      "label": "Weight on plate",
+      "captureId": "0fb7be1e-4044-44b9-841c-d7f20a0479c9",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/1d486ba3-6c0a-4af0-8d9e-81779df11884.png",
+      "file": "plate-throw-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -282.21875
+          },
+          "tag": "output",
+          "text": "Warden: Fire windup\nGarrison marksman took 22 damage.\nGarrison marksman fell. Belongings can be recovered.\nBlade: Throw windup\nBlade released Throw\nThrown item landed; recover it from nearby ground inventory.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Position",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 543.21875,
+            "x": 25,
+            "y": -637.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (113, 97) \u00b7 72s \u00b7 Seed 6871969167356124647",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

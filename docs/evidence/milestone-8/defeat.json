@@ -1,0 +1,86 @@
+{
+  "scriptId": "f8c07f84-6b90-481c-a1e9-27366a2ab636",
+  "checks": [
+    {
+      "label": "State",
+      "captureId": "bd0f0ec1-04c4-4438-bb78-3338339bb836",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/a1847fba-f691-4cbd-bd33-90fffc5986c6.png",
+      "file": "defeat-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 338,
+            "x": 33,
+            "y": 526.953125
+          },
+          "tag": "output",
+          "text": "Mender took 3 damage.\nMender took 3 damage.\nMender took 3 damage.\nMender took 3 damage.\nMender took 3 damage.\nMender took 1 damage and died. Pack retained.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Party",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 25,
+            "y": 627.1875
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 0/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 204.5,
+            "y": 627.1875
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 0/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 25,
+            "y": 659.734375
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 0/26 \u00b7 7/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 174.5,
+            "x": 204.5,
+            "y": 659.734375
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 0/28 \u00b7 20/20",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "scriptId": "e1179407-a835-410f-a850-59f6fd616652",
+  "checks": [
+    {
+      "label": "Recovery",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 506.015625
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 39/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 506.015625
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 538.5625
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 5/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 538.5625
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 12/20",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Stores",
+      "captureId": "e4a7bd09-e5c8-456e-8924-dbfbe994a2be",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/d02faa73-a3e3-42c1-8635-0dc417adb200.png",
+      "file": "stores-travel-1.png"
+    },
+    {
+      "label": "Location",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 500.671875,
+            "x": 25,
+            "y": -396.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 4s \u00b7 Seed 6871969167356124647",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Feedback",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 168.546875
+          },
+          "tag": "output",
+          "text": "Flooded Stores \u00b7 stores",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

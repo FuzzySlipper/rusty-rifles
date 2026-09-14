@@ -8,12 +8,14 @@ internal sealed record RoomDressing(ulong BenchId, GridPoint Bench, ulong CrateI
 {
     internal static RoomDressing Create(DungeonFloor floor, PatrolActor actor, WorldArtDefinition art, Func<ulong> allocate)
     {
-        HashSet<GridPoint> occupied = [floor.Entrance, floor.Exit, actor.Capture().Start, actor.Capture().End];
+        HashSet<GridPoint> occupied = [actor.Capture().Start, actor.Capture().End];
         GridPoint Place(int[] offset)
         {
             GridPoint desired = floor.Entrance + new GridPoint(offset[0], offset[1]);
             GridPoint cell = floor.Cells.Where(c => !occupied.Contains(c))
-                .OrderBy(c => c.ManhattanDistance(desired)).ThenBy(c => c.Y).ThenBy(c => c.X).First();
+                .OrderBy(c => c.ManhattanDistance(desired)).ThenBy(c => c.Y).ThenBy(c => c.X)
+                .Where(c => DressingPlacement.CanBlock(floor, occupied.Append(c))).Select(c => (GridPoint?)c).FirstOrDefault()
+                ?? throw new InvalidDataException("No route-preserving room dressing placement is available.");
             occupied.Add(cell);
             return cell;
         }

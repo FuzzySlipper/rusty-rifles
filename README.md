@@ -22,15 +22,20 @@ gate puzzle. [Milestone 4](docs/milestone-4.md) adds real-time rifle/melee comba
 throws, bolts and enemy loot. [Milestone 5](docs/milestone-5.md) adds mixed-size
 crowds, sight/noise awareness, patrol/search and tactical rifle enemies. Engine owns rendering, navigation, camera, input, inventory and
 the simulation clock. Game policy lives in ordinary C#.
+[Milestone 6](docs/milestone-6.md) adds spells, conditions, rest and advancement;
+[Milestone 7](docs/milestone-7.md) composes height-aware floors, encounters,
+item puzzles and route supplies. [Milestone 8](docs/milestone-8.md) connects
+three retained floors with whole-run saves, discovered maps, objectives,
+defeat/retry and file-authored difficulty profiles.
 
 ## Run
 
 Requires .NET 10, Node/pnpm, and the matched Rusty Engine SDK/runtime artifacts.
 The Engine pair is already installed locally in this checkout. On a fresh
-checkout, install version `0.1.0-dev.8c20a96d10ef` explicitly:
+checkout, install version `0.1.0-dev.03ac310b95c2` explicitly:
 
 ```bash
-bash scripts/install-engine.sh /absolute/path/to/runtime-pack /absolute/path/to/Rusty.Engine.0.1.0-dev.8c20a96d10ef.nupkg
+bash scripts/install-engine.sh /absolute/path/to/runtime-pack /absolute/path/to/Rusty.Engine.0.1.0-dev.03ac310b95c2.nupkg
 pnpm install --frozen-lockfile
 bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420
 ```
@@ -74,15 +79,9 @@ dotnet run --project src/Rifles.Procgen.Tool -c Release -- generate-workbench \
   --out artifacts/complex-29.json --receipt artifacts/complex-29.receipt.json
 ```
 
-The checks cover deterministic generation, validation and repair, artifact
-round-trips/rejection, connected game floors, directional actions and recovery,
-and party vitality/snapshot behavior. They also build and stage the normal
-Engine CoreCLR product. The offline toolkit's richer locked/stateful motifs
-are available for future level design; the game currently uses an open detour
-graph and its resolved room/corridor grid.
-
-The [first milestone](docs/milestone-1.md) adds file-authored tuning, smooth grid
-movement, a shared-grid porter actor, member selection and pause, Engine-backed
-save/load, and reachable lantern/exit interactions. Combat, enemy AI, inventory,
-spells, doors, multi-floor progression and the generated art ensemble remain
-scheduled campaign work.
+The checks cover deterministic generation and repair, artifact rejection,
+movement and occupancy, combat and spell settlement, inventory ownership,
+complete expedition saves and generated route preservation. They also build
+and stage the normal Engine CoreCLR product. The offline toolkit can export
+floor inspection artifacts; the game composes the authored expedition's floor
+roles, routes, mechanisms, encounters and supplies from the same definitions.

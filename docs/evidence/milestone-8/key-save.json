@@ -1,0 +1,149 @@
+{
+  "scriptId": "ae571b10-4298-4cdd-82dc-10aae1ef2569",
+  "checks": [
+    {
+      "label": "Key and weight carried",
+      "captureId": "fa6bd7a0-bd8b-4f65-87d4-113e0ffe107d",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/a3407fad-ca2d-430b-8ad4-0aa69cdff8cc.png",
+      "file": "key-save-1.png"
+    },
+    {
+      "label": "Blade items",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 58,
+            "width": 141.609375,
+            "x": 330,
+            "y": 432.484375
+          },
+          "tag": "button",
+          "text": "Belt knife \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 330,
+            "y": 494.484375
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 58,
+            "width": 154.6875,
+            "x": 330,
+            "y": 556.484375
+          },
+          "tag": "button",
+          "text": "Iron weight \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 58,
+            "width": 186.40625,
+            "x": 330,
+            "y": 618.484375
+          },
+          "tag": "button",
+          "text": "Restorative tonic \u00d72",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Run restored",
+      "captureId": "7b5d0178-d198-47aa-85c4-bf1d6c130015",
+      "original": "/home/agent/.local/state/crew-playtest/browser/62b536e3-1ece-48b8-8261-c6dd0be19951/fc8f1c00-4f39-49b0-9678-c12124215abe.png",
+      "file": "key-save-2.png"
+    },
+    {
+      "label": "Location",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 509.8125,
+            "x": 25,
+            "y": -782.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Powder Bays \u00b7 Level 0 \u00b7 North \u00b7 (99, 112) \u00b7 24s \u00b7 Seed 6871969167356124647",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Blade restored",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 58,
+            "width": 141.609375,
+            "x": 330,
+            "y": 432.796875
+          },
+          "tag": "button",
+          "text": "Belt knife \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 330,
+            "y": 494.796875
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 58,
+            "width": 154.6875,
+            "x": 330,
+            "y": 556.796875
+          },
+          "tag": "button",
+          "text": "Iron weight \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 58,
+            "width": 186.40625,
+            "x": 330,
+            "y": 618.796875
+          },
+          "tag": "button",
+          "text": "Restorative tonic \u00d72",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}
