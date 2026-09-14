@@ -5,8 +5,25 @@
   "maximumAmmunition": 90,
   "maximumPlacements": 8,
   "supplies": [
-    { "item": "tonic", "quantity": 3, "roomFunction": "arrival" },
-    { "item": "cordial", "quantity": 1, "roomFunction": "arrival" },
-    { "item": "tonic", "quantity": 2, "roomFunction": "powder-storage" }
+    {
+      "item": "tonic",
+      "quantity": 3,
+      "roomFunction": "arrival"
+    },
+    {
+      "item": "cordial",
+      "quantity": 1,
+      "roomFunction": "arrival"
+    },
+    {
+      "item": "tonic",
+      "quantity": 2,
+      "roomFunction": "powder-storage"
+    },
+    {
+      "item": "tonic",
+      "quantity": 2,
+      "roomFunction": "resource-cache"
+    }
   ]
 }

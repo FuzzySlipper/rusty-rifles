@@ -15,7 +15,7 @@ public sealed partial class RiflesProduct
         foreach (var old in generatedFeatures.Gates) scene!.SetDoor(old.Cell, true);
         var gates = GeneratedFeatures.Resolve(floor, AllocateId);
         List<GeneratedKey> keys = [];
-        foreach (var grant in floor.Grants)
+        foreach (var grant in GeneratedFeatures.RequiredKeys(floor))
         {
             ulong packId = AllocateId();
             string owner = "combat:flight:" + packId;

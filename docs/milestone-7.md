@@ -148,7 +148,8 @@ reachable attack positions. The melee patrol and ranged watch are required;
 the heavy guard is optional where no suitable room remains. Arrival safety,
 room/group limits, difficulty and search budgets are authored. Rejections are
 retained. Ammunition allowance follows the accepted enemies' vitality, with
-finite recovery supplies placed on useful routes. Insufficient resource budgets
+finite recovery supplies placed on useful routes. Unlocked resource-grant rooms
+receive recovery caches; only graph items required by a barrier become keys. Insufficient resource budgets
 reject explicitly.
 
 ### Inspection and evidence
@@ -178,10 +179,13 @@ reports a complete comparison with no mismatches; [population](evidence/mileston
 and [progression](evidence/milestone-7/m7-live-progression.json) readbacks establish
 runtime integration separately from offline checks.
 
-**Visible acceptance is pending.** Both the Wolf GPU profile and the managed
-headless browser profile returned `pool_busy`; their two slots belong to other
-projects and were left untouched. No new M7 gameplay captures were obtained.
-This implementation/test evidence does not establish ordinary-control visual
-acceptance of the new stairs, generated item puzzles or hazards. The existing
-native inventory-drag and Engine browser-binding recovery limitations also
-remain separate from this milestone's floor generation work.
+**Visible acceptance is pending.** The owner confirmed eastward height traversal
+but reported clipping. The support-height correction has regression coverage;
+a clean visible retest is still needed. A subsequent Wolf session rendered the
+textured floor, but native pointer/control attempts did not establish a fresh
+living-party reset. After releasing it, the managed-browser attempt returned
+`pool_busy`. See the [runtime observation](evidence/milestone-7/runtime/README.md).
+The requested four-slot expansion is tracked by crew-services #8266 and requires
+an idle provisioning/restart window. These are separate from source checks and
+live Engine navigation admission. The existing native inventory-drag and Engine
+browser-binding recovery limitations also remain open.

@@ -39,6 +39,12 @@ internal static class RouteSupplies
         if (ammunition > 0) result.Add(new(definition.Ammunition, ammunition, Place(arrival.Cells), "Arrival reserve based on accepted encounter vitality and authored shot allowance."));
         foreach (var rule in definition.Supplies)
         {
+            if (rule.RoomFunction == "resource-cache")
+            {
+                foreach (var grant in floor.Grants.Where(g => !floor.Routes.Any(r => r.RequiredItem == g.Item)))
+                    result.Add(new(rule.Item, rule.Quantity, grant.Cell, "Authored resource cache: " + grant.Item));
+                continue;
+            }
             var rooms = rule.RoomFunction == "arrival" ? new[] { arrival } : floor.Rooms.Where(r => r.Function == rule.RoomFunction).ToArray();
             if (rooms.Length == 0) continue; // This floor has no room with that optional supply role.
             result.Add(new(rule.Item, rule.Quantity, Place(rooms.SelectMany(r => r.Cells)), "Authored " + rule.RoomFunction + " supply."));

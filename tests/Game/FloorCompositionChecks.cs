@@ -14,7 +14,7 @@ internal static class FloorCompositionChecks
         floor.Validate();
         ulong nextId = 1;
         var gates = GeneratedFeatures.Resolve(floor, () => nextId++);
-        var keys = floor.Grants.Select(g => new GeneratedKey(g.Item, nextId++, "inspection:" + g.Item, g.Cell)).ToArray();
+        var keys = GeneratedFeatures.RequiredKeys(floor).Select(g => new GeneratedKey(g.Item, nextId++, "inspection:" + g.Item, g.Cell)).ToArray();
         var plates = gates.Where(g => g.Traversal == TraversalKind.Locked).Select(g => new GeneratedPlate(nextId++, g.Id,
             "inspection", floor.Routes.Single(r => r.Id == g.RouteId).Cells[0],
             keys.Single(k => k.Item == g.RequiredItem).Cell, definitions.GeneratedFeatures.PlateWeight)).ToArray();

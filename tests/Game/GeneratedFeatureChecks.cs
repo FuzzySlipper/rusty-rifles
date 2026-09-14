@@ -39,7 +39,7 @@ internal static class GeneratedFeatureChecks
         var gates = GeneratedFeatures.Resolve(floor, () => id++);
         if (!gates.Any(g => g.Traversal == TraversalKind.Locked) || !gates.Any(g => g.Traversal == TraversalKind.OneWayReturn))
             throw new Exception("Generated protected routes must become feature instances.");
-        var keys = floor.Grants.Select(g => new GeneratedKey(g.Item, id++, "test:" + g.Item, g.Cell)).ToArray();
+        var keys = GeneratedFeatures.RequiredKeys(floor).Select(g => new GeneratedKey(g.Item, id++, "test:" + g.Item, g.Cell)).ToArray();
         var plates = gates.Where(g => g.Traversal == TraversalKind.Locked).Select(g => new GeneratedPlate(id++, g.Id, "test",
             floor.Routes.Single(r => r.Id == g.RouteId).Cells[0], floor.Grants.Single(k => k.Item == g.RequiredItem).Cell, definitions.GeneratedFeatures.PlateWeight)).ToArray();
         var state = new GeneratedFeatureSnapshot(1, gates, keys, [], [], plates);

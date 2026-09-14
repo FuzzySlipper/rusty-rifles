@@ -20,6 +20,9 @@ internal sealed record GeneratedFeatureSnapshot(ulong Revision, GeneratedGate[] 
 
 internal static class GeneratedFeatures
 {
+    internal static FloorGrant[] RequiredKeys(DungeonFloor floor) => floor.Grants
+        .Where(g => floor.Routes.Any(r => r.RequiredItem == g.Item)).ToArray();
+
     internal static GeneratedGate[] Resolve(DungeonFloor floor, Func<ulong> allocate) => floor.Routes
         .Where(r => r.Traversal != TraversalKind.Open).Select(route =>
         {
@@ -57,9 +60,9 @@ internal static class GeneratedFeatures
             GameDefinitions.Require(plate.Cell == route.Cells[0]
                 && floor.Grants.Any(g => g.Item == gate.RequiredItem && g.Cell == plate.WeightSource), "generated plate binding");
         }
-        GameDefinitions.Require(state.Keys.Length == floor.Grants.Length
+        GameDefinitions.Require(state.Keys.Length == RequiredKeys(floor).Length
             && state.Keys.Select(k => k.Entity).Distinct().Count() == state.Keys.Length
-            && state.Keys.Select(k => k.Owner).Distinct().Count() == state.Keys.Length && state.Keys.Select(k => k.Item).ToHashSet().SetEquals(floor.Grants.Select(g => g.Item))
+            && state.Keys.Select(k => k.Owner).Distinct().Count() == state.Keys.Length && state.Keys.Select(k => k.Item).ToHashSet().SetEquals(RequiredKeys(floor).Select(g => g.Item))
             && state.Keys.All(k => floor.Grants.Any(g => g.Item == k.Item && g.Cell == k.Cell)), "generated key binding");
     }
 }
