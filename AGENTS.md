@@ -129,3 +129,8 @@ and advancement; see `docs/milestone-6.md`. Spell tuning lives in
 The top-right Debug toolbar hosts Engine's packaged live-debug console and
 renderer metrics. See `docs/debug-tools.md` for commands and runtime/input
 telemetry. Keep diagnostics and command transport owned by Engine.
+
+Milestone 7 is underway: G01/G02 retain a multi-floor graph intent and authored
+functional room catalogue (`content/definitions/rooms.json`). See
+`docs/milestone-7.md` for scope and live inspection commands. Graph acceptance
+is not physical routing acceptance; G03 owns the recorded stores routing case.

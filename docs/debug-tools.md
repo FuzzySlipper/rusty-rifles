@@ -88,3 +88,7 @@ camera and world presentation retain their original Engine-driven cadence.
 `rifles.expedition.read` returns the current resolved floor graphs, roles,
 connectors and identity. It reads the plan used by the expedition save and does
 not regenerate or travel. See [milestone 7](milestone-7.md) for current scope.
+
+`rifles.floor.read` returns the played floor's resolved room functions, cells,
+thresholds and geometry identity. Use it to inspect room fit and reproduce
+layout issues; this is not a visibility or current-frame observation.

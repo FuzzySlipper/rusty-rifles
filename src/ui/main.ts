@@ -487,7 +487,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';
     productFeedback = nextFeedback;
-    status.textContent = `${text(state.status)} · ${text(state.facing)} · (${text(state.x)}, ${text(state.y)}) · ${Math.floor(numeric(state.seconds))}s · Seed ${text(state.seed)}`;
+    status.textContent = `${text(state.status)} · ${text(state.room, 'Passage')} · ${text(state.facing)} · (${text(state.x)}, ${text(state.y)}) · ${Math.floor(numeric(state.seconds))}s · Seed ${text(state.seed)}`;
     focus.textContent = text(state.focusLabel);
     use.disabled = !state.focusId || numeric(state.paused) === 1;
     feedback.textContent = nextFeedback;

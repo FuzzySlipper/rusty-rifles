@@ -89,8 +89,8 @@ public static class GenerationPolicyValidation
 
 public sealed record CatalogExit(string Id, GridPoint Cell, CardinalDirection Direction, IReadOnlyList<string>? Tags = null);
 public sealed record CatalogSocket(string Id, GridPoint Cell, string Kind, IReadOnlyList<string>? Tags = null);
-public sealed record CatalogShape(string Id, IReadOnlyList<GridPoint> WalkableCells, IReadOnlyList<CatalogExit> Exits, IReadOnlyList<CatalogSocket>? Sockets = null, IReadOnlyList<string>? Tags = null);
-public sealed record ShapeCatalog(string Id, IReadOnlyList<CatalogShape> Shapes)
+public sealed record CatalogShape(string Id, IReadOnlyList<GridPoint> WalkableCells, IReadOnlyList<CatalogExit> Exits, IReadOnlyList<CatalogSocket>? Sockets = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<NodeKind>? NodeKinds = null);
+public sealed record ShapeCatalog(string Id, IReadOnlyList<CatalogShape> Shapes, bool ConstrainShapesToLayout = false)
 {
     public static ShapeCatalog Default { get; } = new("builtin.rooms.v1", new[]
     {
@@ -110,7 +110,7 @@ public sealed record IntermediateDungeon(string CandidateId, string CandidateHas
 
 public sealed record LayoutRoom(string RegionId, GridPoint Origin, int Width, int Height);
 public sealed record LayoutPlan(IReadOnlyList<LayoutRoom> Rooms, int Width, int Height, int Area);
-public sealed record PieceRequirement(string RegionId, IReadOnlyList<IntermediateConnection> Connections, IReadOnlyList<string> RequiredSockets);
+public sealed record PieceRequirement(string RegionId, IReadOnlyList<IntermediateConnection> Connections, IReadOnlyList<string> RequiredSockets, NodeKind? Kind = null);
 public sealed record MatchedShape(string RegionId, string ShapeId, int QuarterTurns, IReadOnlyDictionary<string, CatalogExit> ExitMap, IReadOnlyDictionary<string, CatalogSocket> SocketMap);
 public sealed record PlacedPiece(string RegionId, string ShapeId, int QuarterTurns, GridPoint Origin, IReadOnlyList<GridPoint> WalkableCells, IReadOnlyDictionary<string, CatalogExit> Exits, IReadOnlyDictionary<string, CatalogSocket> Sockets);
 public sealed record CorridorRoute(string Id, string SourceEdgeId, string FromRegionId, string ToRegionId, IReadOnlyList<GridPoint> Cells, TraversalKind Traversal, string? RequiredItem);
@@ -154,7 +154,12 @@ internal static class GenerationIdentity
         var text = new StringBuilder();
         void Add(params object?[] fields) { foreach (var field in fields) text.Append(field?.ToString() ?? string.Empty).Append('|'); text.Append('\n'); }
         Add(CanonicalIdentity.Hash(candidate), policy.Id, policy.MaxWidth, policy.MaxHeight, policy.RoomStride, policy.RoomFootprintCells, policy.RoomCandidatesPerRegion, policy.MaxLayoutExpansions, policy.MaxRouteAttempts, policy.MaxRouteExpansionsPerConnection, policy.MaxPlacementDecisions, policy.MaxPlacementBacktracks, policy.MaxCatalogCandidatesPerRequirement, policy.MaxArtifactCells, seed, artifacts.Layout.Width, artifacts.Layout.Height);
-        foreach (var piece in artifacts.Pieces.OrderBy(piece => piece.RegionId, StringComparer.Ordinal)) Add("piece", piece.RegionId, piece.ShapeId, piece.QuarterTurns, piece.Origin.X, piece.Origin.Y);
+        foreach (var piece in artifacts.Pieces.OrderBy(piece => piece.RegionId, StringComparer.Ordinal))
+        {
+            Add("piece", piece.RegionId, piece.ShapeId, piece.QuarterTurns, piece.Origin.X, piece.Origin.Y);
+            foreach (var cell in piece.WalkableCells.OrderBy(c => c.Y).ThenBy(c => c.X)) Add("piece-cell", cell.X, cell.Y);
+            foreach (var socket in piece.Sockets.Values.OrderBy(s => s.Id, StringComparer.Ordinal)) Add("socket", socket.Id, socket.Kind, socket.Cell.X, socket.Cell.Y);
+        }
         foreach (var route in artifacts.Routes.OrderBy(route => route.SourceEdgeId, StringComparer.Ordinal)) { Add("route", route.SourceEdgeId, route.Traversal, route.RequiredItem); foreach (var cell in route.Cells) Add("cell", cell.X, cell.Y); }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString()))).ToLowerInvariant();
     }

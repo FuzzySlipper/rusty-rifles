@@ -19,7 +19,7 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
-    public uint SchemaVersion => 7;
+    public uint SchemaVersion => 8;
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -46,6 +46,8 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         ResolvedFloorIntent? floorIntent = saved.Intent.Floors.SingleOrDefault(f => f.Id == saved.Floor.IntentFloorId);
         GameDefinitions.Require(floorIntent is not null && saved.Floor.Seed == floorIntent.Candidate.Seed
             && saved.Floor.IntentGraphIdentity == CanonicalIdentity.Hash(floorIntent.Candidate), "Save floor intent identity");
+        GameDefinitions.Require(saved.Floor.Rooms.Select(r => r.NodeId).ToHashSet(StringComparer.Ordinal)
+            .SetEquals(floorIntent!.Candidate.Graph.Nodes.Select(n => n.Id)), "Save room graph coverage");
         _ = definitions.Characters.GetPreset(saved.Preset);
         ExplorationItems itemWorld = new(definitions.ItemExploration, saved.ItemWorld);
         itemWorld.Validate(saved.Floor);

@@ -30,6 +30,7 @@ foreach (double invalid in new[] { 0d, -1d, double.NaN, double.PositiveInfinity 
     catch (InvalidDataException) { }
 }
 ExpeditionChecks.Run(definitions);
+RoomCatalogueChecks.Run(definitions);
 ActionChecks.Run();
 MagicChecks.Run(definitions);
 EnemyBrainChecks.Run();
@@ -55,8 +56,8 @@ Require(retuned.Exploration.StepSeconds == .44, "Authored tuning reaches the typ
 // Exercise the actual game's composition of graph intent and physical geometry.
 foreach (ulong seed in new ulong[] { 0, 1, 29, 83 })
 {
-    DungeonFloor floor = DungeonFloor.Generate(seed, definitions.Generation);
-    Require(floor.GenerationIdentity == DungeonFloor.Generate(seed, definitions.Generation).GenerationIdentity, "Same seed must replay.");
+    DungeonFloor floor = DungeonFloor.Generate(seed, definitions.Generation, definitions.Rooms);
+    Require(floor.GenerationIdentity == DungeonFloor.Generate(seed, definitions.Generation, definitions.Rooms).GenerationIdentity, "Same seed must replay.");
     HashSet<GridPoint> reached = [floor.Entrance];
     Queue<GridPoint> queue = new();
     queue.Enqueue(floor.Entrance);
@@ -113,7 +114,7 @@ catch (InvalidOperationException)
 Console.WriteLine("Game checks passed: generated connectivity/replay, grid actions/recovery, party vitality/snapshots.");
 
 // A resolved snapshot round-trips without invoking the generator on restore.
-DungeonFloor savedFloor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
+DungeonFloor savedFloor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms);
 ExplorationState savePose = new(savedFloor.Entrance, definitions.Exploration);
 PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
     definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);

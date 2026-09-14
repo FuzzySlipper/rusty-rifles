@@ -33,6 +33,7 @@ internal sealed class SessionProjection : IDisposable
         InteractionObservation? selected = focus?.Candidates.FirstOrDefault(c => c.Selected);
         uint root = value.Object(
             ("seed", value.String(floor.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+            ("room", value.String(floor.Rooms.FirstOrDefault(r => r.Cells.Contains(exploration.Position))?.Title ?? "Passage")),
             ("x", value.Number(exploration.Position.X)), ("y", value.Number(exploration.Position.Y)),
             ("facing", value.String(exploration.Facing.ToString())),
             ("seconds", value.Number(exploration.ElapsedSeconds)),

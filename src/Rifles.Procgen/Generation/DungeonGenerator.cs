@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Collections.ObjectModel;
 
 namespace Rifles.Procgen.Generation;
@@ -22,7 +24,7 @@ public sealed class DungeonGenerator
             var intermediate = Observe("intermediate", stages, counters, () => BuildIntermediate(candidate, counters));
             var layout = Observe("layout", stages, counters, () => BuildLayout(intermediate, policy, seed, counters));
             var requirements = Observe("requirements", stages, counters, () => BuildRequirements(intermediate));
-            var matches = Observe("matching", stages, counters, () => Match(layout, requirements, catalog, policy, counters));
+            var matches = Observe("matching", stages, counters, () => Match(layout, requirements, catalog, policy, seed, counters));
             var pieces = Observe("placement", stages, counters, () => Place(layout, matches, catalog, policy, counters));
             EnsureMaterializedBounds(pieces.SelectMany(piece => piece.WalkableCells), policy, "placement");
             var routed = Observe("routing", stages, counters, () => Route(intermediate, pieces, policy, counters));
@@ -71,8 +73,15 @@ public sealed class DungeonGenerator
             if (string.IsNullOrWhiteSpace(shape.Id) || !shapeIds.Add(shape.Id)) throw new GenerationFailure("catalog", "duplicate_shape_id", $"Catalog shape id '{shape.Id}' is duplicate or empty.");
             var cells = new HashSet<GridPoint>();
             if (shape.WalkableCells.Count == 0 || shape.WalkableCells.Any(cell => !cells.Add(cell))) throw new GenerationFailure("catalog", "shape_cells_invalid", $"Shape '{shape.Id}' has no cells or duplicate cells.");
+            int minX = cells.Min(c => c.X), maxX = cells.Max(c => c.X), minY = cells.Min(c => c.Y), maxY = cells.Max(c => c.Y);
+            bool Outward(CatalogExit exit)
+            {
+                if (!Enum.IsDefined(exit.Direction)) return false;
+                GridPoint next = exit.Cell + exit.Direction.Offset();
+                return next.X < minX || next.X > maxX || next.Y < minY || next.Y > maxY;
+            }
             var exits = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var exit in shape.Exits) if (string.IsNullOrWhiteSpace(exit.Id) || !exits.Add(exit.Id) || !cells.Contains(exit.Cell)) throw new GenerationFailure("catalog", "shape_exit_invalid", $"Shape '{shape.Id}' has an invalid exit '{exit.Id}'.");
+            foreach (var exit in shape.Exits) if (string.IsNullOrWhiteSpace(exit.Id) || !exits.Add(exit.Id) || !cells.Contains(exit.Cell) || !Outward(exit)) throw new GenerationFailure("catalog", "shape_exit_invalid", $"Shape '{shape.Id}' has an invalid exit '{exit.Id}'.");
             var sockets = new HashSet<string>(StringComparer.Ordinal);
             foreach (var socket in shape.Sockets ?? Array.Empty<CatalogSocket>()) if (string.IsNullOrWhiteSpace(socket.Id) || !sockets.Add(socket.Id) || !cells.Contains(socket.Cell)) throw new GenerationFailure("catalog", "shape_socket_invalid", $"Shape '{shape.Id}' has an invalid socket '{socket.Id}'.");
         }
@@ -141,9 +150,9 @@ public sealed class DungeonGenerator
         return new MaterializedBounds(width, height, area);
     }
 
-    private static IReadOnlyList<PieceRequirement> BuildRequirements(IntermediateDungeon dungeon) => dungeon.Regions.OrderBy(region => region.Id, StringComparer.Ordinal).Select(region => new PieceRequirement(region.Id, dungeon.Connections.Where(connection => connection.FromRegionId == region.Id || connection.ToRegionId == region.Id).OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).ToArray(), string.IsNullOrWhiteSpace(region.GrantsItem) ? Array.Empty<string>() : new[] { "content" })).ToArray();
+    private static IReadOnlyList<PieceRequirement> BuildRequirements(IntermediateDungeon dungeon) => dungeon.Regions.OrderBy(region => region.Id, StringComparer.Ordinal).Select(region => new PieceRequirement(region.Id, dungeon.Connections.Where(connection => connection.FromRegionId == region.Id || connection.ToRegionId == region.Id).OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).ToArray(), string.IsNullOrWhiteSpace(region.GrantsItem) ? Array.Empty<string>() : new[] { "content" }, region.Kind)).ToArray();
 
-    private static IReadOnlyList<MatchedShape> Match(LayoutPlan layout, IReadOnlyList<PieceRequirement> requirements, ShapeCatalog catalog, GenerationPolicy policy, MutableCounters counters)
+    private static IReadOnlyList<MatchedShape> Match(LayoutPlan layout, IReadOnlyList<PieceRequirement> requirements, ShapeCatalog catalog, GenerationPolicy policy, ulong seed, MutableCounters counters)
     {
         var cache = new Dictionary<(string ShapeId, int Turns), TransformedShape>();
         var rooms = layout.Rooms.ToDictionary(room => room.RegionId, StringComparer.Ordinal);
@@ -151,31 +160,43 @@ public sealed class DungeonGenerator
         foreach (var requirement in requirements.OrderBy(requirement => requirement.RegionId, StringComparer.Ordinal))
         {
             var selected = default(MatchedShape);
-            foreach (var shape in catalog.Shapes.OrderBy(shape => shape.Id, StringComparer.Ordinal))
-            for (var turns = 0; turns < 4; turns++)
+            int candidates = 0;
+            var eligible = catalog.Shapes.Where(shape => shape.NodeKinds is null || requirement.Kind is null
+                || shape.NodeKinds.Contains(requirement.Kind.Value));
+            foreach (var shape in eligible.OrderBy(shape => ShapeRank(seed, requirement.RegionId, shape.Id), StringComparer.Ordinal))
             {
-                if (++counters.CatalogCandidates > policy.MaxCatalogCandidatesPerRequirement * requirements.Count) throw new GenerationFailure("matching", "catalog_candidate_quota_exhausted", "Catalog matching candidate quota was exhausted.");
-                if (!cache.TryGetValue((shape.Id, turns), out var transformed)) cache[(shape.Id, turns)] = transformed = Transform(shape, turns);
-                if (transformed.Exits.Count < requirement.Connections.Count || requirement.RequiredSockets.Any(required => !transformed.Sockets.Any(socket => string.Equals(socket.Kind, required, StringComparison.Ordinal)))) continue;
-                var availableExits = transformed.Exits.OrderBy(exit => exit.Id, StringComparer.Ordinal).ToList();
-                var chosenExits = new List<CatalogExit>();
-                foreach (var connection in requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal))
+                for (var turns = 0; turns < 4; turns++)
                 {
-                    var otherRegion = connection.FromRegionId == requirement.RegionId ? connection.ToRegionId : connection.FromRegionId;
-                    var delta = new GridPoint(rooms[otherRegion].Origin.X - rooms[requirement.RegionId].Origin.X, rooms[otherRegion].Origin.Y - rooms[requirement.RegionId].Origin.Y);
-                    var exit = availableExits.OrderByDescending(candidate => candidate.Direction.Offset().X * delta.X + candidate.Direction.Offset().Y * delta.Y).ThenBy(candidate => candidate.Id, StringComparer.Ordinal).First();
-                    availableExits.Remove(exit); chosenExits.Add(exit);
+                    counters.CatalogCandidates++;
+                    if (++candidates > policy.MaxCatalogCandidatesPerRequirement) throw new GenerationFailure("matching", "catalog_candidate_quota_exhausted", "Catalog matching candidate quota was exhausted.");
+                    if (!cache.TryGetValue((shape.Id, turns), out var transformed)) cache[(shape.Id, turns)] = transformed = Transform(shape, turns);
+                    LayoutRoom envelope = rooms[requirement.RegionId];
+                    if (catalog.ConstrainShapesToLayout && transformed.Cells.Any(c => c.X >= envelope.Width || c.Y >= envelope.Height)) continue;
+                    if (transformed.Exits.Count < requirement.Connections.Count || requirement.RequiredSockets.Any(required => !transformed.Sockets.Any(socket => string.Equals(socket.Kind, required, StringComparison.Ordinal)))) continue;
+                    var availableExits = transformed.Exits.OrderBy(exit => exit.Id, StringComparer.Ordinal).ToList();
+                    var chosenExits = new List<CatalogExit>();
+                    foreach (var connection in requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal))
+                    {
+                        var otherRegion = connection.FromRegionId == requirement.RegionId ? connection.ToRegionId : connection.FromRegionId;
+                        var delta = new GridPoint(rooms[otherRegion].Origin.X - rooms[requirement.RegionId].Origin.X, rooms[otherRegion].Origin.Y - rooms[requirement.RegionId].Origin.Y);
+                        var exit = availableExits.OrderByDescending(candidate => candidate.Direction.Offset().X * delta.X + candidate.Direction.Offset().Y * delta.Y).ThenBy(candidate => candidate.Id, StringComparer.Ordinal).First();
+                        availableExits.Remove(exit); chosenExits.Add(exit);
+                    }
+                    if (chosenExits.Count != requirement.Connections.Count) continue;
+                    var exitMap = requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).Select((connection, index) => (connection.SourceEdgeId, chosenExits[index])).ToDictionary(pair => pair.SourceEdgeId, pair => pair.Item2, StringComparer.Ordinal);
+                    selected = new MatchedShape(requirement.RegionId, shape.Id, turns, new ReadOnlyDictionary<string, CatalogExit>(exitMap), new ReadOnlyDictionary<string, CatalogSocket>(transformed.Sockets.ToDictionary(socket => socket.Id, StringComparer.Ordinal)));
+                    break;
                 }
-                if (chosenExits.Count != requirement.Connections.Count) continue;
-                var exitMap = requirement.Connections.OrderBy(connection => connection.SourceEdgeId, StringComparer.Ordinal).Select((connection, index) => (connection.SourceEdgeId, chosenExits[index])).ToDictionary(pair => pair.SourceEdgeId, pair => pair.Item2, StringComparer.Ordinal);
-                selected = new MatchedShape(requirement.RegionId, shape.Id, turns, new ReadOnlyDictionary<string, CatalogExit>(exitMap), new ReadOnlyDictionary<string, CatalogSocket>(transformed.Sockets.ToDictionary(socket => socket.Id, StringComparer.Ordinal)));
-                break;
+                if (selected is not null) break;
             }
-            if (selected is null) throw new GenerationFailure("matching", "no_matching_exits", $"No catalog shape has enough exits for '{requirement.RegionId}'.");
+            if (selected is null) throw new GenerationFailure("matching", "no_matching_exits", $"No eligible catalog shape fits the room envelope, exits and sockets for '{requirement.RegionId}'.");
             result.Add(selected);
         }
         return result;
     }
+
+    private static string ShapeRank(ulong seed, string region, string shape) => Convert.ToHexString(SHA256.HashData(
+        Encoding.UTF8.GetBytes(seed.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/" + region + "/" + shape)));
 
     private static TransformedShape Transform(CatalogShape shape, int turns)
     {

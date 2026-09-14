@@ -132,7 +132,7 @@ internal static class CombatSaveChecks
     {
         internal static CombatFixture Create(GameDefinitions definitions)
         {
-            DungeonFloor floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation);
+            DungeonFloor floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms);
             PartyState party = new(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
             ulong partyId = 1;
             ulong[] allyIds = [2, 3];

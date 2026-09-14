@@ -165,7 +165,7 @@ internal static class InventoryChecks
     {
         foreach (ulong seed in new ulong[] { 0, 1, definitions.Generation.Seed, 83 }.Distinct())
         {
-            DungeonFloor floor = DungeonFloor.Generate(seed, definitions.Generation);
+            DungeonFloor floor = DungeonFloor.Generate(seed, definitions.Generation, definitions.Rooms);
             ulong id = 1;
             PatrolActor actor = PatrolActor.Create(id++, floor,
                 definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);

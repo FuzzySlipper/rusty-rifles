@@ -57,7 +57,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         ExpeditionGenerationResult generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, definitions.Generation.Seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Code + ": " + d.Detail)));
         expedition = generated.Expedition!;
-        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy);
+        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy, definitions.Rooms);
         exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
         generatedArt = new GeneratedArt(context.Content, engine.Graphics,
             definitions.Appearance.Styles.SelectMany(s => s.Textures)
@@ -78,6 +78,10 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     [DebugCommand("rifles.expedition.read", Description = "Read the resolved expedition graph, floor roles and connectors stored with this run. Does not travel or regenerate.")]
     public string ReadExpedition() => System.Text.Json.JsonSerializer.Serialize(expedition,
         new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
+
+    [DebugCommand("rifles.floor.read", Description = "Read the played floor cells, resolved room functions, architectural landmarks and thresholds.")]
+    public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(floor,
+        new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
     public void Start()
     {

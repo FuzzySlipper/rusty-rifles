@@ -1,0 +1,455 @@
+{
+  "id": "garrison-rooms-v1",
+  "rooms": [
+    {
+      "id": "guard-hall",
+      "title": "Guard Hall",
+      "function": "guard-post",
+      "landmark": "Twin side recesses",
+      "nodeKinds": [
+        "Start",
+        "Junction"
+      ],
+      "plan": [
+        "##...##",
+        ".......",
+        ".......",
+        ".......",
+        "##...##"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 2
+      }
+    },
+    {
+      "id": "receiving-bay",
+      "title": "Receiving Bay",
+      "function": "supply-receiving",
+      "landmark": "Long central loading aisle",
+      "nodeKinds": [
+        "Start",
+        "Resource"
+      ],
+      "plan": [
+        ".....",
+        ".....",
+        "##.##",
+        ".....",
+        ".....",
+        "##.##",
+        "....."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 3
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 6
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 3
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 3
+      }
+    },
+    {
+      "id": "powder-bays",
+      "title": "Powder Bays",
+      "function": "powder-storage",
+      "landmark": "Separated magazine recesses",
+      "nodeKinds": [
+        "Treasure",
+        "Key"
+      ],
+      "plan": [
+        ".......",
+        "..#.#..",
+        ".......",
+        "..#.#..",
+        "......."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 2
+      }
+    },
+    {
+      "id": "records-alcove",
+      "title": "Records Alcove",
+      "function": "records-storage",
+      "landmark": "Sheltered rear alcove",
+      "nodeKinds": [
+        "Treasure",
+        "Key",
+        "Resource"
+      ],
+      "plan": [
+        "#...#",
+        ".....",
+        ".....",
+        ".....",
+        "##.##"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 2
+      }
+    },
+    {
+      "id": "mess-room",
+      "title": "Mess Room",
+      "function": "mess",
+      "landmark": "Broad chamber with paired side niches",
+      "nodeKinds": [
+        "Resource",
+        "Goal"
+      ],
+      "plan": [
+        "##...##",
+        ".......",
+        ".......",
+        ".......",
+        "##...##"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 2
+      }
+    },
+    {
+      "id": "watch-gallery",
+      "title": "Watch Gallery",
+      "function": "watch",
+      "landmark": "Narrow gallery with a central crossing",
+      "nodeKinds": [
+        "Gate",
+        "Goal",
+        "Shortcut"
+      ],
+      "plan": [
+        "##...##",
+        "##...##",
+        ".......",
+        "##...##",
+        "##...##",
+        "##...##",
+        "##...##"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 6
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 2
+      }
+    },
+    {
+      "id": "drain-crossing",
+      "title": "Drain Crossing",
+      "function": "drainage",
+      "landmark": "Four approaches around a central pier",
+      "nodeKinds": [
+        "Hazard",
+        "Junction"
+      ],
+      "plan": [
+        "##...##",
+        "##...##",
+        ".......",
+        "...#...",
+        ".......",
+        "##...##",
+        "##...##"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 3
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 6
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 3
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 2
+      }
+    },
+    {
+      "id": "redoubt-chamber",
+      "title": "Redoubt Chamber",
+      "function": "defense",
+      "landmark": "Four solid piers with a clear axial approach",
+      "nodeKinds": [
+        "Gate",
+        "Goal"
+      ],
+      "plan": [
+        ".......",
+        ".#...#.",
+        ".......",
+        ".......",
+        ".......",
+        ".#...#.",
+        "......."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 3,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 6,
+            "y": 3
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 3,
+            "y": 6
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 3
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 3,
+        "y": 3
+      }
+    }
+  ]
+}
