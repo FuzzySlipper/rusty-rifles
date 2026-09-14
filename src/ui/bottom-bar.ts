@@ -229,7 +229,9 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const found = entries(party).find(([id, member]) => !claimed.has(id) && text(member.slot, '') === slot);
       if (found) {
         claimed.add(found[0]);
-        placed.push({ key: found[0], id: found[0], member: found[1] });
+        // Member keys live in a separate namespace from `empty:<slot>` gap
+        // keys so a hostile member id can never alias a gap token. See F7.
+        placed.push({ key: `member:${found[0]}`, id: found[0], member: found[1] });
       } else {
         placed.push({ key: `empty:${slot}`, id: null, slot });
       }
@@ -237,7 +239,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     for (const [id, member] of entries(party)) {
       if (!claimed.has(id)) {
         claimed.add(id);
-        placed.push({ key: id, id, member });
+        placed.push({ key: `member:${id}`, id, member });
       }
     }
     const hadFocus = formationGrid.contains(document.activeElement);
