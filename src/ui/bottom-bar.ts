@@ -54,6 +54,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   mapSection.setAttribute('aria-label', 'Minimap');
   const mapLocation = document.createElement('output');
   mapLocation.dataset.barLocation = 'true';
+  mapLocation.textContent = 'No map yet';
   mapLocation.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
   const mapView = document.createElementNS(svgNamespace, 'svg');
   mapView.setAttribute('role', 'img');
@@ -66,10 +67,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   logSection.setAttribute('aria-label', 'Event log');
   const logStatus = document.createElement('output');
   logStatus.dataset.barStatus = 'true';
+  logStatus.textContent = 'Preparing…';
   logStatus.style.cssText = 'display:block;margin-bottom:4px;color:#ead27e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
   const logView = document.createElement('output');
   logView.dataset.barLog = 'true';
   logView.setAttribute('role', 'log');
+  logView.textContent = 'No events yet.';
   logView.style.cssText = 'display:block;height:140px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
   logSection.append(logStatus, logView);
 
@@ -77,6 +80,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationSection.setAttribute('aria-label', 'Formation');
   const formationGrid = document.createElement('div');
   formationGrid.dataset.barFormation = 'true';
+  formationGrid.tabIndex = -1;
   formationGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:5px';
   const formationHint = document.createElement('p');
   formationHint.textContent = 'Click a member to select them.';
@@ -91,10 +95,14 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const select = document.createElement('button');
     select.type = 'button';
     select.dataset.barMember = slot;
+    select.disabled = true;
+    select.setAttribute('aria-label', `${slotLabel(slot)}, empty`);
     select.style.cssText = 'background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:5px 6px;cursor:pointer;font:inherit;text-align:left;min-height:64px';
     const name = document.createElement('strong');
+    name.textContent = `${slotLabel(slot)} · empty`;
     name.style.cssText = 'display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
     const detail = document.createElement('span');
+    detail.textContent = 'No member here';
     detail.style.cssText = 'display:block;font-size:11px;color:#c9c0ae';
     const track = document.createElement('span');
     track.style.cssText = 'display:block;height:6px;border-radius:3px;background:#3a352a;margin-top:4px;overflow:hidden';
@@ -113,6 +121,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   let mapSignature = '';
   let formationSignature = '';
   let logSignature = '';
+  // True before the first paint and after a run change, so the log DOM is
+  // repainted (back to the placeholder when empty) even if the new render
+  // equals the old signature. See F1.
+  let logNeedsPaint = true;
   let seenRun = '';
   let lastFeedback = '';
   const feedbackHistory: string[] = [];
@@ -181,7 +193,15 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     if (signature === formationSignature) return;
     formationSignature = signature;
     const bySlot = new Map<string, { id: string; member: Values }>();
-    for (const [id, member] of entries(party)) bySlot.set(text(member.slot, ''), { id, member });
+    // Overflow contract (see F3): the bar renders exactly the four baseline
+    // positions. First member wins a contested slot; members on unknown slots
+    // stay selectable through the legacy roster until a later pass designs a
+    // larger formation display. C# currently always emits the four baseline
+    // slots, so this only guards future definitions, never today's party.
+    for (const [id, member] of entries(party)) {
+      const key = text(member.slot, '');
+      if (!bySlot.has(key)) bySlot.set(key, { id, member });
+    }
     for (const slot of formationSlots) {
       const row = memberButtons.get(slot);
       if (!row) continue;
@@ -189,13 +209,22 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const name = row.select.querySelector('strong');
       const detail = row.select.querySelector('span');
       if (!found) {
+        if (document.activeElement === row.select) {
+          const fallback = formationSlots.map(candidate => memberButtons.get(candidate)?.select).find(button => button && !button.disabled);
+          (fallback ?? formationGrid).focus();
+        }
         row.select.dataset.memberId = '';
         row.select.disabled = true;
         row.select.style.borderColor = '#574f3d';
         row.select.title = `${slotLabel(slot)} · empty`;
+        // Clear the occupied-state announcements too, or a screen reader keeps
+        // describing the departed member. See F2.
+        row.select.removeAttribute('aria-pressed');
+        row.select.setAttribute('aria-label', `${slotLabel(slot)}, empty`);
         if (name) name.textContent = `${slotLabel(slot)} · empty`;
         if (detail) detail.textContent = 'No member here';
         row.health.style.width = '0%';
+        row.health.style.background = '#8ca65c';
         continue;
       }
       row.select.disabled = false;
@@ -217,6 +246,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   const renderLog = (state: Values): void => {
     const combat = record(state.combat);
     const feedback = text(state.feedback, '');
+    // Contract (see F5): feedback is a snapshot level, not an event stream —
+    // the projection only carries the latest string, so a repeat is
+    // indistinguishable from steady state and intentionally stored once.
+    // Genuine repeats of distinct events live in combat.log, kept verbatim.
     if (feedback && feedback !== lastFeedback) {
       lastFeedback = feedback;
       if (feedbackHistory[feedbackHistory.length - 1] !== feedback) {
@@ -228,8 +261,9 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const statusLine = `${text(state.status, 'Exploring')} · ${text(state.room, 'Passage')}`;
     if (logStatus.textContent !== statusLine) logStatus.textContent = statusLine;
     const combined = [...feedbackHistory, combatLog].filter(line => line.length > 0).join('\n').slice(-maxLogRenderChars);
-    if (combined !== logSignature) {
+    if (logNeedsPaint || combined !== logSignature) {
       logSignature = combined;
+      logNeedsPaint = false;
       logView.textContent = combined || 'No events yet.';
       logView.scrollTop = logView.scrollHeight;
     }
@@ -245,7 +279,9 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       feedbackHistory.length = 0;
       mapSignature = '';
       formationSignature = '';
-      logSignature = '';
+      // Forces the log DOM back to the placeholder when the new run starts
+      // with no events. See F1.
+      logNeedsPaint = true;
     }
     drawMap(run);
     renderFormation(state);

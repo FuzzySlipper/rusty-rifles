@@ -558,8 +558,14 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   // First game-UI pass: the bottom bar is the default player view. Legacy
   // agent panels stay in the DOM behind one toggle so existing dataset hooks
   // and exercised commands keep working while the dropdown layout is hidden.
-  const legacyToggle = document.createElement('button'); legacyToggle.type = 'button'; legacyToggle.textContent = 'Show legacy panels'; legacyToggle.dataset.legacyToggle = 'true'; legacyToggle.setAttribute('aria-expanded', 'false');
+  const legacyToggle = document.createElement('button'); legacyToggle.type = 'button'; legacyToggle.textContent = 'Show legacy panels'; legacyToggle.dataset.legacyToggle = 'true'; legacyToggle.dataset.rustyUiInteractive = 'true'; legacyToggle.setAttribute('aria-expanded', 'false');
   legacyToggle.style.cssText = 'position:fixed;left:12px;top:12px;z-index:3;background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:4px 6px;cursor:pointer;font:12px/1.35 system-ui';
+  // Host-input guard (see F4): stop gameplay keys here so the Engine host
+  // never sees them, but do NOT preventDefault — Space/Enter must still
+  // activate the button through the default action.
+  const stopToggleKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.stopPropagation(); };
+  legacyToggle.addEventListener('keydown', stopToggleKeys, true);
+  legacyToggle.addEventListener('keyup', stopToggleKeys, true);
   const setLegacyVisible = (visible: boolean): void => {
     panel.hidden = !visible; inventory.hidden = !visible; runPanel.element.hidden = !visible;
     inventory.style.bottom = visible ? '250px' : '12px';
@@ -570,5 +576,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   root.append(legacyToggle);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); legacyToggle.remove(); inventory.remove(); panel.remove(); } };
 }
