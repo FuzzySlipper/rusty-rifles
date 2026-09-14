@@ -1,0 +1,87 @@
+{
+  "available": true,
+  "canvas": {
+    "backingHeight": 720,
+    "backingWidth": 1280,
+    "cssHeight": 720,
+    "cssWidth": 1280,
+    "effectivePixelRatio": 1
+  },
+  "frame": {
+    "intervalMs": 17.080000000016298,
+    "intervalStatus": "available",
+    "renderSequence": 18013,
+    "submissionRateHz": 58.53488999556387,
+    "syncSubmissionMs": 1,
+    "syncSubmissionStatus": "available"
+  },
+  "pacing": {
+    "completionAgeMs": 17,
+    "completionFenceMode": "active",
+    "effectiveDurationMs": 0,
+    "mode": "completionOnly",
+    "pendingMeasurementCount": 0,
+    "pendingSubmissionCount": 1,
+    "state": "measuring",
+    "timerDurationMs": null
+  },
+  "renderer": {
+    "class": "accelerated",
+    "name": "Radeon HD 3200 Graphics, or similar",
+    "vendor": "AMD"
+  },
+  "resources": {
+    "definedTextureCount": 40,
+    "materialFallbackCount": 0,
+    "skyBackground": {
+      "contentHash": null,
+      "resource": null,
+      "textureId": null
+    },
+    "spriteAtlasCount": 36,
+    "spriteFallbackCount": 0,
+    "voxelSpecializedMaterialCount": 4
+  },
+  "schemaVersion": 1,
+  "statistics": {
+    "animatedInstanceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 0
+    },
+    "drawCallCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 21
+    },
+    "geometryResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 26
+    },
+    "materialResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 23
+    },
+    "renderHandleCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 33
+    },
+    "schemaVersion": 1,
+    "textureResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 40
+    },
+    "triangleCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 696
+    }
+  },
+  "widget": {
+    "visible": false
+  }
+}

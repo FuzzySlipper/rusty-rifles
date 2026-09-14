@@ -97,3 +97,8 @@ inventory can cover lower combat controls; collapsing it preserves selection.
 The owner-observed startup resource stall is tracked in Engine #8278; steady
 full-HUD play is owner-confirmed responsive. Earlier control-replacement failures
 remain a separate Engine recovery limitation, not a claimed product fix.
+
+The final [Wolf GPU observation](evidence/milestone-9/gpu-observation.md) shows
+the warm Guard Hall at 1280×720 with a grounded cutout sprite. Sole-client
+accelerated readings advanced at 58.5–58.8 submissions/s. This bounded pass
+was not a new full directional-lighting sweep; its limitations are explicit.

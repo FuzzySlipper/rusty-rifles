@@ -54,3 +54,16 @@ the previous scene; FloorFactory temporary previews are scoped with `using`.
 Inactive floors retain snapshots rather than a second live SpatialSession.
 This source check complements the live travel/resource checks above; it is not
 reported as an independently sampled native allocation count.
+
+## Final accelerated sample
+
+With the root software client stopped and only the Wolf GPU observer active,
+`gpu-metrics.json` reports accelerated AMD rendering at 1280×720 backing/CSS,
+58.77 submissions/s, 17.06 ms last interval and 1 ms synchronous submission.
+The browser exposes the generic adapter string “Radeon HD 3200 Graphics, or
+similar”; that string is not asserted to identify the physical card. GPU timer
+availability remains separate from submission pacing. This is a warm sample,
+not a startup-stall measurement or a sustained worst-case benchmark.
+A later same-client sample (`gpu-metrics-later.json`) advanced render sequence
+12123 → 18013 and remained at 58.53 submissions/s, 17.08 ms interval and 1 ms
+synchronous submission. Thus the readout was advancing, not one stale GPU sample.
