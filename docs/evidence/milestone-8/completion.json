@@ -1,0 +1,267 @@
+{
+  "scriptId": "331e9a85-48c2-48e7-9239-3138ee18052f",
+  "checks": [
+    {
+      "label": "completed facts",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 691.3125
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 745.40625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 799.5
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 853.59375
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 35.09375,
+            "width": 594,
+            "x": 25,
+            "y": 1066.421875
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "The expedition has secured the inner position. The route is open and the surviving party can withdraw.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 35.09375,
+            "width": 594,
+            "x": 25,
+            "y": 1173.609375
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 190.09375
+          },
+          "tag": "output",
+          "text": "Complete",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 285.828125
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Secure the redoubt \u00b7 The expedition has secured the inner position. The route is open and the surviving party can withdraw.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 449.015625
+          },
+          "tag": "output",
+          "text": "Expedition already complete.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "completed expedition",
+      "captureId": "21d9f98a-e8c7-4257-82f0-994fef73fe39",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/1e4d8058-a2f4-4ede-80be-624379872c35.png",
+      "file": "completion-1.png"
+    },
+    {
+      "label": "restored completion",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 219.3125
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 273.40625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 327.5
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 381.59375
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 594.421875
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "New expedition started.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 684.0625
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 190.09375
+          },
+          "tag": "output",
+          "text": "Exploring",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": false
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 392.375
+          },
+          "tag": "output",
+          "text": "Reach Inner Redoubt.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "completed reload",
+      "captureId": "865d9991-a5ff-4246-b645-a94ba6b87eed",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/2fc574b6-5559-4c08-8112-dbb4998e8e92.png",
+      "file": "completion-2.png"
+    }
+  ]
+}

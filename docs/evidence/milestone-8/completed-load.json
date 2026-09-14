@@ -1,0 +1,120 @@
+{
+  "scriptId": "2339d816-bda9-4422-a3a8-1032e653927c",
+  "checks": [
+    {
+      "label": "loaded ending checkpoint",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 550.65625,
+            "x": 25,
+            "y": -410.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (113, 85) \u00b7 314s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -332.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 0/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -332.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 0/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -284.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 0/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -284.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 0/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -236.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 0/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 6,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -236.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 190.09375
+          },
+          "tag": "output",
+          "text": "Complete",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "restored cleared floor",
+      "captureId": "9ca67bdf-1a72-463c-8990-5ba3f73d8354",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/0a779e69-3f2f-4bc6-a4b2-8ebec8d546f7.png",
+      "file": "completed-load-1.png"
+    }
+  ]
+}

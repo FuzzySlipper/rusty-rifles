@@ -27,8 +27,8 @@ and Blade's 26 health persisted. Save/restart/load restored the same changed run
 Original captures and input scripts are in [milestone-8 evidence](evidence/milestone-8/).
 This is keyboard/DOM-assisted functional evidence, not GPU performance evidence.
 
-The later implementation below adds the run rules and player panel. Complete
-three-floor visible acceptance is still being exercised.
+The later implementation below adds the run rules and player panel. The full
+three-floor visible run and completion-save sequence are accepted below.
 
 ## Run rules and player panel
 
@@ -89,3 +89,45 @@ Patrol endpoints and solid dressing now avoid routes, thresholds, grants and
 height connectors, and generation checks connectivity with all those objects
 occupied. A twelve-floor seed bank covers the resulting placements. Existing
 saved placements remain intact rather than being silently moved on load.
+
+
+## Complete-run acceptance
+
+The normal seed-29 expedition was completed through keyboard movement and DOM
+controls in the managed Chromium session. The party visited Supply Approach,
+Flooded Stores and Inner Redoubt; used rifles, melee, Spark, Mend and rest;
+collected and carried keys; threw counterweights onto generated plates; opened
+both protected gates; and cleared all six final-floor enemies. Earlier floors
+retained their changed encounters, items and maps. All four members survived
+at the final exit (113,85): Warden 26/40, Blade 32/32, Seeker 26/26, Mender 28/28.
+
+Completion raised experience from 104 to 134 exactly once. Save, restart and
+load restored `Complete`, the final exit and 134 XP. The first immediate load
+attempt after restart did not restore before its observation; a separate settled
+Load did. A new seed-314159 expedition started with fresh party development and
+left the completed save intact. Loading recovered the prior 134-XP ending.
+Then explicitly selecting Hard and saving replaced that save; restart/load
+retained Hard, seed 314159 and the same party state. Fresh-floor movement reached
+the east passage at (104,98), beyond the arrival-room dressing.
+
+The normal run used its starting rifle ammunition plus a partial floor-cache
+pickup; it finished with the rifle empty, while other members still held reserve
+shots. Reloads, front-member healing, melee and rest were useful choices. Normal
+and hard supply/damage parameters are file-authored; Hard received a short
+movement/reload and persistence check, not a complete-run balance certification.
+The replay set is seeds 29, 30, 67 and 314159 for placement checks, with the
+complete normal run and hard seed-314159 recovery flow retained visibly.
+
+Development-watch reloads interrupted the run, and the long-lived managed
+browser eventually crashed. Recovery loaded the saved changed floor each time;
+failed or interrupted scripts are not counted as completed gameplay. This was
+an assisted functional playtest with read-only floor facts for route planning.
+It does not certify unaided puzzle discovery, GPU performance, final visual
+quality, or continuous clipping behavior. Some bright untextured floor regions
+remain visible in the prototype. The existing arrival puzzle is now labelled
+separately from generated route gates to avoid contradictory-looking readouts.
+
+See the [evidence index](evidence/milestone-8/README.md) for original captures,
+script IDs and observations. Full repository checks pass, including twelve
+route-preserving dressing floors, cross-domain save checks, UI typechecking,
+solution build, offline artifact checks and CoreCLR staging.

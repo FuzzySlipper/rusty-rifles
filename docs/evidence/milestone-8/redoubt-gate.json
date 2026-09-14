@@ -1,0 +1,57 @@
+{
+  "scriptId": "ab6ced15-6559-4a46-bbef-28caa03ed749",
+  "checks": [
+    {
+      "label": "gate",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 478.71875,
+            "x": 25,
+            "y": -622.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Passage \u00b7 Level 0 \u00b7 East \u00b7 (105, 85) \u00b7 193s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 434.109375
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Expedition saved",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 523.75
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Expedition saved",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "final gate",
+      "captureId": "d6346c75-df35-4d06-8c74-b41b851f8e17",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/ba51a204-8211-440b-8773-a649c4bcd517.png",
+      "file": "redoubt-gate-1.png"
+    }
+  ]
+}

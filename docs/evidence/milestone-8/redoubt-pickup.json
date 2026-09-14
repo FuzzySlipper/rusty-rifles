@@ -1,0 +1,77 @@
+{
+  "scriptId": "be4d6aac-648a-4890-9d6b-65a3f216ef2a",
+  "checks": [
+    {
+      "label": "pickup",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 397.75
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Expedition saved",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 487.390625
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Expedition saved",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 330,
+            "y": 616.484375
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 330,
+            "y": 678.484375
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 58,
+            "width": 154.6875,
+            "x": 330,
+            "y": 740.484375
+          },
+          "tag": "button",
+          "text": "Iron weight \u00d71",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

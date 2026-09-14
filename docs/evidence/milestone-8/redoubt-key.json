@@ -1,0 +1,120 @@
+{
+  "scriptId": "b30e511c-4d3f-4969-9d61-fb5d32a66968",
+  "checks": [
+    {
+      "label": "key cache",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 499.421875,
+            "x": 25,
+            "y": -675.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Mess Room \u00b7 Level 0 \u00b7 East \u00b7 (114, 98) \u00b7 140s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 278.015625
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 31/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 278.015625
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 310.5625
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 10/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 310.5625
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 5/20",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 330,
+            "y": 522.484375
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 58,
+            "width": 172.28125,
+            "x": 31,
+            "y": 945.125
+          },
+          "tag": "button",
+          "text": "Brass gate key \u00d71",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 58,
+            "width": 154.6875,
+            "x": 31,
+            "y": 1007.125
+          },
+          "tag": "button",
+          "text": "Iron weight \u00d71",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "cache",
+      "captureId": "b09c2a12-9d93-494a-9904-77220e1699d5",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/1e9a0734-84e7-4ced-ba46-f2570203a309.png",
+      "file": "redoubt-key-1.png"
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "scriptId": "fb8c77bf-071c-4d47-85ed-0a18d8af94b9",
+  "checks": [
+    {
+      "label": "north targets",
+      "targets": [
+        {
+          "disabled": true,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 22/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 28/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 60/60",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 24/24",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 489.125,
+            "x": 25,
+            "y": -622.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (107, 99) \u00b7 117s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 22/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 28/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 60/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 6,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -282.0625
+          },
+          "tag": "output",
+          "text": "Warden took 1 damage.\nTarget: Garrison sapper\nWarden: Fire windup\nWarden took 1 damage.\nGarrison sapper took 24 damage.\nGarrison sapper fell. Belongings can be recovered.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "north",
+      "captureId": "30d9f6b4-d304-4081-819f-5b5ec4fd4554",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/cbc515b0-97d6-400b-bc66-3525db72cb32.png",
+      "file": "redoubt-sapper-1.png"
+    }
+  ]
+}

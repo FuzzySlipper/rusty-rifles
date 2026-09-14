@@ -1,0 +1,47 @@
+{
+  "scriptId": "1a91cb40-b7ae-43d8-9afc-e4aa84cd7eb6",
+  "checks": [
+    {
+      "label": "Weight on plate",
+      "captureId": "f6389f11-507b-4764-8f15-979b8061cc55",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/f035524b-8f3a-4338-9d6f-b6e574a0fc3d.png",
+      "file": "redoubt-plate-1.png"
+    },
+    {
+      "label": "Log",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -282.0625
+          },
+          "tag": "output",
+          "text": "Blade: Melee windup\nGarrison raider took 2 damage.\nGarrison raider fell. Belongings can be recovered.\nBlade: Throw windup\nBlade released Throw\nThrown item landed; recover it from nearby ground inventory.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "Position",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 550.65625,
+            "x": 25,
+            "y": -622.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Redoubt Chamber \u00b7 Level 1 \u00b7 North \u00b7 (102, 86) \u00b7 186s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        }
+      ]
+    }
+  ]
+}

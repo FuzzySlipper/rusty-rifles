@@ -1,0 +1,205 @@
+{
+  "scriptId": "5474d333-7440-41b9-9052-2a44c62b13c6",
+  "checks": [
+    {
+      "label": "hard profile",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 404,
+            "x": 25,
+            "y": -362.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 4s \u00b7 Seed 314159",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 554.5625
+          },
+          "tag": "output",
+          "text": "Saved profile: Hard \u2014 Heavier incoming damage and tighter ammunition reserves; use cover and recovery carefully.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "hard restored",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 404,
+            "x": 25,
+            "y": -362.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 4s \u00b7 Seed 314159",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 219.921875
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 274.015625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 328.109375
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 382.203125
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 439.296875
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 28/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 439.296875
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 471.84375
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 7/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 471.84375
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 20/20",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 9,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 595.03125
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "Expedition restored",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 10,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 684.671875
+          },
+          "role": "status",
+          "tag": "p",
+          "text": "",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 11,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 554.5625
+          },
+          "tag": "output",
+          "text": "Saved profile: Hard \u2014 Heavier incoming damage and tighter ammunition reserves; use cover and recovery carefully.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "hard restored original",
+      "captureId": "dd9fe1a4-30cc-4ea5-90f5-218b5c16786f",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/75d5e48d-2e5b-4766-bde5-bdc019596731.png",
+      "file": "hard-profile-1.png"
+    }
+  ]
+}

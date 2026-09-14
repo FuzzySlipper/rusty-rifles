@@ -1,0 +1,159 @@
+{
+  "scriptId": "160e2b3f-d8c6-4792-8309-6063eaf8589e",
+  "checks": [
+    {
+      "label": "fight",
+      "targets": [
+        {
+          "disabled": true,
+          "index": 0,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 22/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 28/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 0/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 0/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 0/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -282.0625
+          },
+          "tag": "output",
+          "text": "Garrison raider took 15 damage.\nWarden took 1 damage.\nTarget: Garrison raider\nBlade: Melee windup\nGarrison raider took 2 damage.\nGarrison raider fell. Belongings can be recovered.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 278.375
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 21/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 278.375
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 9,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 310.921875
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 10/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 10,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 310.921875
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 5/20",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "bulwark",
+      "captureId": "1878eac9-8019-4383-bdcc-f7ec7baf8e9e",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/33bce8ac-79a3-4ec4-b71d-314cf2741820.png",
+      "file": "redoubt-raider-1.png"
+    }
+  ]
+}

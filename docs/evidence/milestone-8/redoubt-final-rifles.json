@@ -1,0 +1,172 @@
+{
+  "scriptId": "a2b4c8a1-973e-4cfd-a0e3-72189fded244",
+  "checks": [
+    {
+      "label": "last foe",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 523.15625,
+            "x": 25,
+            "y": -622.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Watch Gallery \u00b7 Level 1 \u00b7 North \u00b7 (99, 112) \u00b7 265s \u00b7 Seed 5681767263628933845",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 0/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -544.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 0/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 0/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -496.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 0/18",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison bulwark \u00b7 0/60",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 6,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -448.1875
+          },
+          "tag": "button",
+          "text": "Garrison sapper \u00b7 0/24",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 50.6875,
+            "width": 578,
+            "x": 33,
+            "y": -282.0625
+          },
+          "tag": "output",
+          "text": "Warden took 7 damage.\nWarden loaded one round.\nTarget: Garrison musketeer\nWarden: Fire windup\nGarrison musketeer took 28 damage.\nGarrison musketeer fell. Belongings can be recovered.",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 278.375
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 26/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 9,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 278.375
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 10,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 310.921875
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 10/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 11,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 310.921875
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 1/20",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "last rifle",
+      "captureId": "f98a503d-29f2-4de3-b10e-8563e9bf36f4",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4f7de33e-5bd7-4847-99fe-b6ee8ea52a29/8e2436d0-120a-4727-81e3-9da234c3840d.png",
+      "file": "redoubt-final-rifles-1.png"
+    }
+  ]
+}

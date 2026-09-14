@@ -1,0 +1,94 @@
+{
+  "scriptId": "8288b1f6-c392-4980-ad71-003f5937d5a1",
+  "checks": [
+    {
+      "label": "fresh route",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 385.015625,
+            "x": 25,
+            "y": -397.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Passage \u00b7 Level 0 \u00b7 North \u00b7 (104, 98) \u00b7 23s \u00b7 Seed 314159",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 1,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -319.96875
+          },
+          "tag": "button",
+          "text": "Garrison marksman \u00b7 22/22",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 2,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -319.96875
+          },
+          "tag": "button",
+          "text": "Garrison musketeer \u00b7 28/28",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 3,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 33,
+            "y": -271.578125
+          },
+          "tag": "button",
+          "text": "Garrison raider \u00b7 32/32",
+          "visible": true
+        },
+        {
+          "disabled": true,
+          "index": 4,
+          "rect": {
+            "height": 27.546875,
+            "width": 287,
+            "x": 324,
+            "y": -271.578125
+          },
+          "tag": "button",
+          "text": "Powder runner \u00b7 18/18",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 554.5625
+          },
+          "tag": "output",
+          "text": "Saved profile: Hard \u2014 Heavier incoming damage and tighter ammunition reserves; use cover and recovery carefully.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "fresh route view",
+      "captureId": "4b9fea3a-4505-4520-bcc1-ef81856090f7",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/c1c151c1-f9ae-433f-ad6d-8a8dfb41259c.png",
+      "file": "fresh-placement-1.png"
+    }
+  ]
+}

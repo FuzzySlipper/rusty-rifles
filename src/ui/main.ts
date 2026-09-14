@@ -513,7 +513,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       previousPuzzle = puzzleSignature;
       puzzle.replaceChildren();
       const puzzleStatus = document.createElement('span');
-      puzzleStatus.textContent = `Puzzle: ${text(puzzleState.status, 'No nearby puzzle')}`;
+      puzzleStatus.textContent = `Arrival-room puzzle: ${text(puzzleState.status, 'No nearby puzzle')}`;
       puzzle.append(puzzleStatus);
       if (leverTarget > 0 && leverRevision > 0) {
         const lever = button('Use nearby lever', () => command('use', { target: leverTarget, targetRevision: leverRevision }));

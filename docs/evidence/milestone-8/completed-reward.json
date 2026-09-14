@@ -1,0 +1,324 @@
+{
+  "scriptId": "623ef28e-6867-4cb4-b20f-145527e812dc",
+  "checks": [
+    {
+      "label": "restored reward",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 220.3125
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 274.40625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 328.5
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 382.59375
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 190.09375
+          },
+          "tag": "output",
+          "text": "Complete",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 449.015625
+          },
+          "tag": "output",
+          "text": "Expedition already complete.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "restored reward original",
+      "captureId": "2db62628-2e2e-4b1c-ad9f-83f564042c95",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/b83d7971-f027-4248-8b36-3ef61f40eaf9.png",
+      "file": "completed-reward-1.png"
+    },
+    {
+      "label": "hard new run",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 18,
+            "width": 404,
+            "x": 25,
+            "y": -362.609375
+          },
+          "tag": "output",
+          "text": "Paused \u00b7 Receiving Bay \u00b7 Level 0 \u00b7 North \u00b7 (98, 98) \u00b7 4s \u00b7 Seed 314159",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 219.921875
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 274.015625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 328.109375
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 382.203125
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 0 XP \u00b7 0 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 439.296875
+          },
+          "tag": "button",
+          "text": "Warden \u00b7 28/40 \u00b7 12/12",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 6,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 439.296875
+          },
+          "tag": "button",
+          "text": "Blade \u00b7 32/32 \u00b7 8/8",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 7,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 25,
+            "y": 471.84375
+          },
+          "tag": "button",
+          "text": "Seeker \u00b7 26/26 \u00b7 7/16",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 8,
+          "rect": {
+            "height": 27.546875,
+            "width": 294.5,
+            "x": 324.5,
+            "y": 471.84375
+          },
+          "tag": "button",
+          "text": "Mender \u00b7 28/28 \u00b7 20/20",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 9,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 554.5625
+          },
+          "tag": "output",
+          "text": "Saved profile: Normal \u2014 Standard enemy pressure with ammunition for missed shots and exploration.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "hard run",
+      "captureId": "aedf26af-eae3-4009-a46f-0b39c378d4f3",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/173a9638-a57e-4558-bf8b-b14338f7eadd.png",
+      "file": "completed-reward-2.png"
+    },
+    {
+      "label": "prior completion preserved",
+      "targets": [
+        {
+          "disabled": false,
+          "index": 0,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 220.3125
+          },
+          "tag": "output",
+          "text": "Blade \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 1,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 274.40625
+          },
+          "tag": "output",
+          "text": "Mender \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 2,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 328.5
+          },
+          "tag": "output",
+          "text": "Seeker \u00b7 Healthy \u00b7 134 XP \u00b7 8 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 3,
+          "rect": {
+            "height": 17.546875,
+            "width": 594,
+            "x": 25,
+            "y": 382.59375
+          },
+          "tag": "output",
+          "text": "Warden \u00b7 Healthy \u00b7 134 XP \u00b7 7 unspent \u00b7 2 revivals",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 4,
+          "rect": {
+            "height": 17.546875,
+            "width": 308,
+            "x": 949,
+            "y": 190.09375
+          },
+          "tag": "output",
+          "text": "Complete",
+          "visible": true
+        },
+        {
+          "disabled": false,
+          "index": 5,
+          "rect": {
+            "height": 52.640625,
+            "width": 308,
+            "x": 949,
+            "y": 611.203125
+          },
+          "tag": "output",
+          "text": "Saved profile: Normal \u2014 Standard enemy pressure with ammunition for missed shots and exploration.",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "label": "prior saved ending",
+      "captureId": "63d07d48-ebd3-4c7e-b1bb-e12dab593636",
+      "original": "/home/agent/.local/state/crew-playtest/browser/4e5310f9-6566-410a-871c-a7549d84a24c/3adcb0d0-5c87-4276-9658-b1f5be4a49bb.png",
+      "file": "completed-reward-3.png"
+    }
+  ]
+}
