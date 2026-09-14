@@ -11,4 +11,10 @@ not navigation into Watch Gallery or Powder Bays.
 Native movement/turn commands did not move the already-defeated party. Wolf
 has no pointer-lock or game-consumption readback; this is not evidence of a
 new input regression. Both sessions stopped with released=true, errors=[],
-local_capture_stopped=true. A living-party observation follows separately.
+local_capture_stopped=true. A final browser preparation attempt used session
+`4248e025-e7f9-481f-8110-83b7a0b9cde4`. Normal Restart/Pause and coordinate
+clicks returned `Post http://127.0.0.1:48200/command: EOF`; captures still showed
+the defeated party. No living-party movement acceptance is claimed. The session
+closed with browser_closed=true and released=true; no additional GPU session
+was started. This last obstacle is a test-service command-channel failure, not
+evidence that the product rejected a delivered Restart command.

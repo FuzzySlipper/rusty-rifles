@@ -86,3 +86,9 @@ from the source layout identity. Room metadata, graph/region associations,
 thresholds and cells are covered without consulting a changed live catalogue.
 Internal-pier exits and edited saved manifests have dedicated rejection checks.
 The full check suite passed after these corrections.
+
+GPU observation confirmed the textured Guard Hall and its wall return/recess.
+The shared party was already defeated. A normal reset attempt then hit the
+playtest service's command-channel EOF, so this batch does not claim a fresh
+living-party movement test. All owned sessions were released; see the
+[observation and limitation](evidence/milestone-7/g02-gpu-observation.md).
