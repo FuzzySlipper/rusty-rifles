@@ -37,7 +37,7 @@ projectile, cast, reward and retained-floor checks remain in the normal suite.
 
 `bash scripts/check.sh` passes: UI typecheck, solution build, procgen/game
 checks, offline tool self-check and CoreCLR staging. The build uses SDK/runtime
-`0.1.0-dev.03ac310b95c2`. Evidence and the remaining runtime acceptance are
+`0.1.0-dev.03ac310b95c2`. Evidence and runtime acceptance are
 recorded in `docs/evidence/milestone-9/`.
 
 A live click transfer moved two rounds from Warden's eight to Blade's pack,
@@ -67,3 +67,33 @@ Engine asset admission: steady DOM p95 0.6 ms and delivery p95 119 ms, while an
 initial resource-response callback took about eight seconds. See
 [evidence](evidence/milestone-9/browser-ui-timing.md); the latter remains an
 Engine startup/recovery cost, not a claimed downstream fix.
+
+## Integrated acceptance
+
+The final Normal seed-29 expedition was completed through ordinary controls
+with all four members alive. A full broker stop/restart mid-run restored the
+saved Stores floor and items. The completed ending then survived a new-run
+reset and load with 118 XP / 7 unspent points per member, without another reward.
+A second seed (314159, observed Normal profile) exercised a different route,
+rifle and melee kills, another populated Stores floor and two return trips.
+See [the expedition record](evidence/milestone-9/expedition.md).
+
+Three settled restarts retained 26 geometries / 23 materials / 40 textures /
+33 handles. The alternate Stores floor retained 35 / 29 / 40 / 44 across two
+return trips. Completed Redoubt restoration retained 42 / 38 / 40 / 50, while
+starting the other seed released those scene owners. Different floors naturally
+have different counts. See [performance](evidence/milestone-9/performance.md).
+
+Native inventory transfer was owner-confirmed. Escape cancellation was checked
+in the proposal-only UI path and inventory transaction checks; the available
+automation did not independently capture a held-pointer Escape gesture.
+Audio admission reports five clips, committed emissions and no diagnostics;
+this establishes integration, not a remote listening assessment.
+
+The foundation remains deliberately provisional: illustrated still sprites,
+short synthesized cues, a plain pressure-plate marker, and expandable controls
+rather than the eventual formation-focused player HUD. At 720p expanded
+inventory can cover lower combat controls; collapsing it preserves selection.
+The owner-observed startup resource stall is tracked in Engine #8278; steady
+full-HUD play is owner-confirmed responsive. Earlier control-replacement failures
+remain a separate Engine recovery limitation, not a claimed product fix.

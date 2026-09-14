@@ -27,6 +27,9 @@ the simulation clock. Game policy lives in ordinary C#.
 item puzzles and route supplies. [Milestone 8](docs/milestone-8.md) connects
 three retained floors with whole-run saves, discovered maps, objectives,
 defeat/retry and file-authored difficulty profiles.
+[Milestone 9](docs/milestone-9.md) refines the separate inventory panel, stable
+party controls, target readability, bundled sound cues and resource reuse.
+Its evidence distinguishes source checks, visible play and owner-browser tests.
 
 ## Run
 
@@ -42,7 +45,12 @@ bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420
 
 Open the URL printed by the host. Click the game view to focus it.
 W/S step forward/back; A/D sidestep; Q/E turn 90 degrees. Each key press
-requests one action with a short recovery interval. The green floor tile
+requests one action with a short recovery interval. Select a member and a visible
+enemy, reload with T, and attack with Space; rifles start empty. Use the separate
+inventory panel to transfer or equip items by drag or by select/quantity/click.
+Escape cancels a pending drag. P pauses explicitly; opening inventory does not.
+K saves and L loads. The expedition panel holds travel, the discovered map,
+retry and new-run controls. The green floor tile
 marks the exit. The initial seed is configured in `content/tuning/generation.json`.
 
 For broker-owned serving, `.den-serve.json` uses the same development command:

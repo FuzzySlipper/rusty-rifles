@@ -140,3 +140,9 @@ saves, discovered maps, objectives, defeat/retry and normal/hard profiles. See
 `docs/milestone-8.md` for current acceptance evidence. Party state travels once;
 floor state retains its identity. Preserve the distinction between source checks
 and a visibly completed expedition.
+
+Milestone 9 closes the playable foundation with inventory/usability refinement,
+bundled action sounds, stable material ownership and bounded HUD projection.
+See `docs/milestone-9.md` for source, expedition and visual evidence and retained
+limitations. Future gameplay customization should extend these real owners;
+the provisional UI/art treatment is not a mandatory final design.

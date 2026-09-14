@@ -103,3 +103,22 @@ progression model; it does not solve combat or move the party.
 admissions with floor cells, heights and current closed barriers. A partial
 budget reports `Complete: false`; it must not be treated as a complete audit.
 See `docs/milestone-7.md` for offline JSON/SVG exports and evidence limits.
+
+## Browser-local UI timing
+
+The Debug toolbar's **UI timing** button samples this browser's product DOM
+callback and delivery intervals. Click again to refresh the readout. Where the
+browser supports Long Animation Frames, it also lists the five longest frames,
+script locations, forced layout time and frame age. These are local observations;
+they do not use the shared renderer-metrics snapshot. Large old startup samples
+must not be mistaken for a current per-frame cost.
+
+The callback timer excludes Engine decoding and later layout/paint/GPU work.
+An increasing callback age can mean no projected state changed (including a
+paused run), or stalled delivery; inspect host diagnostics and actual game
+response before deciding which. Identical full projections are suppressed.
+
+If changed UI files are staged but a normal refresh still displays old controls,
+read `/product-ui/debug.js` from the demo URL. Restart the broker-owned session
+with `den-serve restart rusty-rifles -repo /absolute/path/to/rusty-rifles` when
+the host still serves old modules; do not launch a competing host.

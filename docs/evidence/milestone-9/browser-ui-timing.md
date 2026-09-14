@@ -35,3 +35,8 @@ passed. The broker required restart to serve changed UI modules; LAN readback
 confirmed the new code after restart. No automated clients were opened for
 these owner measurements. Renderer metrics shared by multiple clients were
 not used to infer this browser's performance.
+
+Upstream follow-up: Engine task #8278 tracks bounded resource-verification
+work and obsolete-generation admission. Same-generation resource caching already
+exists; recurring same-generation attachment failures are not explained by
+hashing without further evidence.

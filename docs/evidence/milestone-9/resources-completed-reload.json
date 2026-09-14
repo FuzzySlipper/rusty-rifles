@@ -1,0 +1,87 @@
+{
+  "available": true,
+  "canvas": {
+    "backingHeight": 180,
+    "backingWidth": 320,
+    "cssHeight": 720,
+    "cssWidth": 1280,
+    "effectivePixelRatio": 0.25
+  },
+  "frame": {
+    "intervalMs": 83.39999999990687,
+    "intervalStatus": "available",
+    "renderSequence": 21592,
+    "submissionRateHz": 10.35774686637705,
+    "syncSubmissionMs": 0.7000000476837158,
+    "syncSubmissionStatus": "available"
+  },
+  "pacing": {
+    "completionAgeMs": 16.399999976158142,
+    "completionFenceMode": "active",
+    "effectiveDurationMs": 16.399999976158142,
+    "mode": "completionOnly",
+    "pendingMeasurementCount": 0,
+    "pendingSubmissionCount": 1,
+    "state": "measuring",
+    "timerDurationMs": null
+  },
+  "renderer": {
+    "class": "software",
+    "name": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)"
+  },
+  "resources": {
+    "definedTextureCount": 40,
+    "materialFallbackCount": 0,
+    "skyBackground": {
+      "contentHash": null,
+      "resource": null,
+      "textureId": null
+    },
+    "spriteAtlasCount": 36,
+    "spriteFallbackCount": 0,
+    "voxelSpecializedMaterialCount": 4
+  },
+  "schemaVersion": 1,
+  "statistics": {
+    "animatedInstanceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 0
+    },
+    "drawCallCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 12
+    },
+    "geometryResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 42
+    },
+    "materialResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 38
+    },
+    "renderHandleCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 50
+    },
+    "schemaVersion": 1,
+    "textureResourceCount": {
+      "scope": "liveResident",
+      "status": "available",
+      "value": 40
+    },
+    "triangleCount": {
+      "scope": "perSubmission",
+      "status": "available",
+      "value": 760
+    }
+  },
+  "widget": {
+    "visible": false
+  }
+}
