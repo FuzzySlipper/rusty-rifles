@@ -85,7 +85,33 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:200px minmax(0,1fr) minmax(360px,420px);gap:10px;align-items:stretch;padding:10px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(300px,44vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:48px 200px minmax(0,1fr) minmax(360px,420px);gap:10px;align-items:stretch;padding:10px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(300px,44vh)';
+
+  const railSection = document.createElement('nav');
+  railSection.setAttribute('aria-label', 'Quick actions');
+  railSection.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:stretch;justify-content:flex-start';
+  const railButtons: HTMLButtonElement[] = [];
+  const railAction = (label: string, glyph: string, title: string, action: string): void => {
+    const shortcut = document.createElement('button');
+    shortcut.type = 'button';
+    shortcut.textContent = glyph;
+    shortcut.title = title;
+    shortcut.setAttribute('aria-label', title);
+    shortcut.dataset.barAction = action;
+    shortcut.style.cssText = 'height:36px;width:100%;padding:0;background:#33392f;color:#e4bd63;border:1px solid #574f3d;border-radius:3px;cursor:pointer;font:700 11px/1 system-ui;letter-spacing:0.04em';
+    shortcut.addEventListener('click', () => command(action));
+    railSection.append(shortcut);
+    railButtons.push(shortcut);
+  };
+  // Intent shortcuts only: every action below already exists in C# and
+  // reports its own feedback (including rejection reasons). The rail adds
+  // no authority — it is the mockup's icon column over existing commands.
+  railAction('pause', 'II', 'Pause or resume (P)', 'pause');
+  railAction('attack', 'ATK', 'Attack selected enemy (Space)', 'attack');
+  railAction('reload', 'RLD', 'Reload (T)', 'reload');
+  railAction('rest', 'RST', 'Rest and recover', 'rest');
+  railAction('save', 'SAV', 'Save expedition (K)', 'save');
+  railAction('load', 'LOD', 'Load saved expedition (L)', 'load');
 
   const mapSection = document.createElement('section');
   mapSection.setAttribute('aria-label', 'Minimap');
@@ -97,8 +123,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   mapView.setAttribute('role', 'img');
   mapView.setAttribute('aria-label', 'Discovered floor map');
   (mapView as unknown as HTMLElement).dataset.barMap = 'true';
-  (mapView as unknown as HTMLElement).style.cssText = 'display:block;width:100%;height:140px;background:#10120f;border:1px solid #574f3d;border-radius:3px';
-  mapSection.append(mapLocation, mapView as unknown as Node);
+  (mapView as unknown as HTMLElement).style.cssText = 'display:block;width:100%;height:118px;background:#10120f;border:1px solid #574f3d;border-radius:3px';
+  const vitalsLine = document.createElement('output');
+  vitalsLine.dataset.barVitals = 'true';
+  vitalsLine.textContent = 'Load — · —';
+  vitalsLine.style.cssText = 'display:block;margin-top:4px;color:#c9c0ae;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  mapSection.append(mapLocation, mapView as unknown as Node, vitalsLine);
 
   const logSection = document.createElement('section');
   logSection.setAttribute('aria-label', 'Event log');
@@ -136,7 +166,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationOverflow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;min-height:0';
   formationSection.append(formationTitle, formationFacing, formationGrid, formationOverflow, formationHint);
 
-  bar.append(mapSection, logSection, formationSection);
+  bar.append(railSection, mapSection, logSection, formationSection);
   root.append(bar);
 
   type Token = Readonly<{
@@ -475,6 +505,24 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     }
   };
 
+  const renderVitals = (state: Values): void => {
+    // Display only: party load summed over member-owned inventories plus
+    // the expedition clock. No wealth line — the game has no currency yet,
+    // and inventing a gold figure would be fiction, not projection.
+    let mass = 0, capacity = 0;
+    for (const [, owner] of entries(record(state.inventory).owners)) {
+      if (text(owner.kind, '') !== 'member') continue;
+      mass += number(owner.mass);
+      capacity += number(owner.maxMass);
+    }
+    const total = Math.floor(number(state.seconds));
+    const clock = `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    const line = `Load ${mass}/${capacity} · ${clock}`;
+    if (vitalsLine.textContent !== line) vitalsLine.textContent = line;
+    const pausedLabel = number(state.paused) === 1 ? 'GO' : 'II';
+    if (railButtons[0]?.textContent !== pausedLabel) railButtons[0].textContent = pausedLabel;
+  };
+
   const renderLog = (state: Values): void => {
     const combat = record(state.combat);
     const feedback = text(state.feedback, '');
@@ -517,6 +565,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     }
     drawMap(run);
     renderFormation(state);
+    renderVitals(state);
     renderLog(state);
   };
 
