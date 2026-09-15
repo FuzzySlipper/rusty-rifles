@@ -422,11 +422,11 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
           token = createToken(item.key);
           memberTokens.set(item.key, token);
         }
-        if (document.activeElement === token.select) {
-          const fallback = [...memberTokens.values()].map(candidate => candidate.select).find(button => button !== token.select && !button.disabled);
-          (fallback ?? formationGrid).focus();
-        }
         const point = boardPoint(item.position.offsetForward, item.position.offsetLeft, partyFacing);
+        // Re-append like occupied tokens so DOM/Tab/SR order tracks rank
+        // order, not creation order. Re-appending a focused node preserves
+        // focus; true removals were already swept, with post-loop fallback.
+        formationGrid.append(token.anchor);
         token.anchor.style.left = `${point.x}%`;
         token.anchor.style.top = `${point.y}%`;
         token.anchor.style.position = 'absolute';
@@ -437,7 +437,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         token.select.dataset.gapPosition = item.position.id;
         // Gaps stay enabled so they remain drop targets and the click
         // alternative (move selected member here) works by keyboard too.
+        // aria-disabled announces the no-selection inert state to AT
+        // without disabling (which would also kill drop targeting).
         token.select.disabled = false;
+        token.select.setAttribute('aria-disabled', selectedMember ? 'false' : 'true');
         token.select.draggable = false;
         token.select.removeAttribute('aria-pressed');
         const hint = selectedMember ? `Activate to move ${selectedMember} here` : 'Empty position';
