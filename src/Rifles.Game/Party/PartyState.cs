@@ -7,16 +7,56 @@ internal enum PartyReach { Melee, Ranged, Casting }
 /// <summary>
 /// One authored formation position. Rank 0 is the front rank; higher ranks
 /// sit behind it. Reach and damage order derive from rank, never from roster
-/// order or array index.
+/// order or array index. Offsets are formation-local cell fractions —
+/// forward toward the party facing, left from the party's point of view —
+/// rotated into the world by the facing at use time, so the same authored
+/// layout reads correctly no matter which way the party faces.
 /// </summary>
-internal sealed record FormationPositionDefinition(string Id, string Name, int Rank)
+internal sealed record FormationPositionDefinition(string Id, string Name, int Rank, float OffsetForward = 0, float OffsetLeft = 0)
 {
     internal void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name) || Rank < 0)
+        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name) || Rank < 0
+            || !float.IsFinite(OffsetForward) || !float.IsFinite(OffsetLeft)
+            || Math.Abs(OffsetForward) > 0.5f || Math.Abs(OffsetLeft) > 0.5f)
         {
             throw new InvalidDataException($"Invalid formation position '{Id}'.");
         }
+    }
+
+    /// <summary>
+    /// Picks the living member first encountered by a ray in formation-local
+    /// direction, or null when the direction is degenerate. Ties break by
+    /// position id, then member id, so frontal attacks keep the old
+    /// front-left-first order deterministically.
+    /// </summary>
+    internal static string? FirstEncountered(float directionForward, float directionLeft,
+        IEnumerable<(string Id, string Position, float Forward, float Left, bool Living)> members)
+    {
+        float length = MathF.Sqrt(directionForward * directionForward + directionLeft * directionLeft);
+        if (!(length > 0)) return null;
+        float forward = directionForward / length, left = directionLeft / length;
+        string? best = null;
+        float bestAlong = 0;
+        string bestPosition = "", bestId = "";
+        foreach ((string id, string position, float memberForward, float memberLeft, bool living) in members)
+        {
+            if (!living) continue;
+            float along = memberForward * forward + memberLeft * left;
+            if (best is not null && (along > bestAlong
+                || (along == bestAlong && (string.Compare(position, bestPosition, StringComparison.Ordinal) > 0
+                    || (position == bestPosition && string.Compare(id, bestId, StringComparison.Ordinal) > 0)))))
+            {
+                continue;
+            }
+
+            best = id;
+            bestAlong = along;
+            bestPosition = position;
+            bestId = id;
+        }
+
+        return best;
     }
 }
 
@@ -314,6 +354,14 @@ internal sealed class PartyState
     {
         PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
         return member is not null && member.IsLiving && IsReachAllowed(member.Rank, reach);
+    }
+
+    internal FormationPositionDefinition PositionOf(string memberId)
+    {
+        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        return member is not null && positions.TryGetValue(member.Position, out FormationPositionDefinition? position)
+            ? position
+            : throw new InvalidDataException($"Unknown party member '{memberId}'.");
     }
 
     internal IReadOnlyList<PartyMemberState> EligibleMembers(PartyReach reach) => members

@@ -60,7 +60,8 @@ internal sealed class SessionProjection : IDisposable
             ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster),
             ("positions", value.Object(party.Positions.Select(p => (p.Id, value.Object(
-                ("name", value.String(p.Name)), ("rank", value.Number(p.Rank))))).ToArray())),
+                ("name", value.String(p.Name)), ("rank", value.Number(p.Rank)),
+                ("offsetForward", value.Number(p.OffsetForward)), ("offsetLeft", value.Number(p.OffsetLeft))))).ToArray())),
             ("combat", combat(value)),
             ("run", run(value)),
             ("inventory", InventoryProjection.Build(value, inventory, world, scene, exploration, party, selectedMember, art, dropReachable)),

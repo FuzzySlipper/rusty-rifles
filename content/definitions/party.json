@@ -1,10 +1,10 @@
 {
   "maxPartySize": 10,
   "positions": [
-    { "id": "front-left", "name": "Front left", "rank": 0 },
-    { "id": "front-right", "name": "Front right", "rank": 0 },
-    { "id": "rear-left", "name": "Rear left", "rank": 1 },
-    { "id": "rear-right", "name": "Rear right", "rank": 1 }
+    { "id": "front-left", "name": "Front left", "rank": 0, "offsetForward": 0.25, "offsetLeft": 0.25 },
+    { "id": "front-right", "name": "Front right", "rank": 0, "offsetForward": 0.25, "offsetLeft": -0.25 },
+    { "id": "rear-left", "name": "Rear left", "rank": 1, "offsetForward": -0.25, "offsetLeft": 0.25 },
+    { "id": "rear-right", "name": "Rear right", "rank": 1, "offsetForward": -0.25, "offsetLeft": -0.25 }
   ],
   "members": [
     {

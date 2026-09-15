@@ -197,7 +197,7 @@ public sealed partial class RiflesProduct
         Vector3 start = Aim(exploration.Position), end = Aim(cell) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scene!.LogicalCellSize;
         if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage("Attack missed — target outside reach."); return; }
         SpatialHit hit = scene!.Trace(start, end, CombatBodies(), partyId);
-        ResolveHit(hit, action.Kind, memberId, partyId);
+        ResolveHit(hit, action.Kind, memberId, partyId, end - start);
     }
     private void AdvanceCombat(double seconds)
     {
@@ -243,9 +243,9 @@ public sealed partial class RiflesProduct
         }
         Vector3 start = EnemyAim(enemy), end = Aim(action.AimCell!.Value);
         if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage(enemy.Definition.Name + " missed."); return; }
-        ResolveHit(scene!.Trace(start, end, CombatBodies(), enemy.Id), action.Kind, null, enemy.Id);
+        ResolveHit(scene!.Trace(start, end, CombatBodies(), enemy.Id), action.Kind, null, enemy.Id, end - start);
     }
-    private void ResolveHit(SpatialHit hit, CombatActionKind kind, string? member, ulong shooter)
+    private void ResolveHit(SpatialHit hit, CombatActionKind kind, string? member, ulong shooter, Vector3 direction)
     {
         if (!hit.Present) { CombatMessage(kind + " missed."); return; }
         if (hit.Kind != SpatialHitKind.Entity) { CombatMessage(kind + " blocked by masonry or a closed gate."); return; }
@@ -261,7 +261,10 @@ public sealed partial class RiflesProduct
         if (hit.Entity == partyId)
         {
             if (shooter == partyId && !Combat.FriendlyFire) return;
-            PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
+            // Directional hits meet whoever stands closest to the incoming
+            // side; directionless cases fall back to front-rank order.
+            PartyMemberState? target = MemberInLineOfFire(direction)
+                ?? party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
             if (target is null) return;
             CancelRest("Rest interrupted by damage.");
             long applied = DamageMember(target, Math.Max(Combat.MinimumDamage, damage - target.Defense));
@@ -324,7 +327,8 @@ public sealed partial class RiflesProduct
                     landed = new((int)MathF.Floor(Before(hit.Point.X, flight.DirectionX) / scene.LogicalCellSize),
                         (int)MathF.Floor(Before(hit.Point.Z, flight.DirectionZ) / scene.LogicalCellSize));
                 }
-                if (flight.Spell is null) ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter);
+                if (flight.Spell is null) ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter,
+                    new Vector3(flight.DirectionX, flight.DirectionY, flight.DirectionZ));
             }
             if (!floor.Cells.Contains(landed) || landed == itemWorld!.Capture().Door && !itemWorld.Capture().DoorOpen
                 || generatedFeatures.Gates.Any(g => g.Cell == landed && !g.Open)) landed = flight.LastCell;
@@ -355,6 +359,27 @@ public sealed partial class RiflesProduct
     }
     private bool DropReachable(string owner) => drops.TryGetValue(owner, out GridPoint cell)
         && itemWorld!.Reachable(Aim(cell), exploration, scene!);
+    /// <summary>
+    /// Whoever stands closest to the incoming side of the party cell meets a
+    /// directional hit. Formation offsets are authored facing-relative, so the
+    /// ray converts to facing-relative axes first: the same layout reads
+    /// correctly whether the attack comes from the front, flank, or rear.
+    /// Null means degenerate direction — the caller keeps rank order.
+    /// </summary>
+    private PartyMemberState? MemberInLineOfFire(Vector3 direction)
+    {
+        Rifles.Procgen.Generation.GridPoint facing = exploration.Facing.Offset();
+        float forwardX = facing.X, forwardZ = facing.Y, leftX = facing.Y, leftZ = -facing.X;
+        string? id = FormationPositionDefinition.FirstEncountered(
+            direction.X * forwardX + direction.Z * forwardZ,
+            direction.X * leftX + direction.Z * leftZ,
+            party.Members.Select(member =>
+            {
+                FormationPositionDefinition position = party.PositionOf(member.Definition.Id);
+                return (member.Definition.Id, member.Position, position.OffsetForward, position.OffsetLeft, member.IsLiving);
+            }));
+        return id is null ? null : party.Members.Single(member => member.Definition.Id == id);
+    }
     private void RequireItemAccess(string owner)
     {
         if (!owner.StartsWith("combat:", StringComparison.Ordinal)) { itemWorld!.RequireAccess(owner, exploration, scene!); return; }
