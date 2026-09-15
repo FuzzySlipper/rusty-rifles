@@ -443,7 +443,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         token.select.setAttribute('aria-disabled', selectedMember ? 'false' : 'true');
         token.select.draggable = false;
         token.select.removeAttribute('aria-pressed');
-        const hint = selectedMember ? `Activate to move ${selectedMember} here` : 'Empty position';
+        const selectedName = selectedMember ? text(record(party[selectedMember]).name, selectedMember) : '';
+        const hint = selectedMember ? `Activate to move ${selectedName} here` : 'Empty position';
         token.select.setAttribute('aria-label', `${item.position.name}, empty. ${hint}. Or drop a member here to move them.`);
         token.select.title = `${item.position.name} · empty · drop to move here`;
         token.select.style.borderColor = '#574f3d';
@@ -453,7 +454,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         // Clear the occupied-state announcements too, or a screen reader keeps
         // describing the departed member. See F2.
         token.name.textContent = item.position.name;
-        token.detail.textContent = selectedMember ? `Move ${selectedMember} ▸` : 'Empty';
+        token.detail.textContent = selectedMember ? `Move ${selectedName} ▸` : 'Empty';
         (token.chevron as unknown as HTMLElement).style.visibility = 'hidden';
         token.health.style.width = '0%';
         token.health.style.background = '#8ca65c';
