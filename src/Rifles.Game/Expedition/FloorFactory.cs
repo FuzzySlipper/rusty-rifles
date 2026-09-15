@@ -47,7 +47,7 @@ internal static class FloorFactory
         if (floor.IntentFloorId != resolved.Id || floor.Seed != resolved.Candidate.Seed
             || floor.IntentGraphIdentity != Rifles.Procgen.CanonicalIdentity.Hash(resolved.Candidate))
             throw new InvalidDataException("Resolved floor does not belong to the requested expedition floor.");
-        PartyState party = new(definitions.Characters.GetPreset(preset));
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(preset));
         ExplorationState exploration = new(floor.Entrance, definitions.Exploration);
 
         using DungeonScene scene = new(engine, materialCache, floor, definitions.Exploration, definitions.Appearance,

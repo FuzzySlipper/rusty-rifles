@@ -63,7 +63,9 @@ public sealed partial class RiflesProduct
         flights.Clear(); flights.AddRange(restored.Flights);
         drops.Clear(); foreach (DropSnapshot drop in restored.Drops) drops.Add(drop.Owner, drop.Cell);
         allies.Clear(); foreach (AllySnapshot ally in restored.Allies)
-            allies.Add(ally.Id, new PartyMemberState(new MemberDefinition(ally.Id.ToString(), "Garrison ally", FormationSlot.FrontLeft, Combat.AllyVitality, StartingVitality: ally.Vitality)));
+            allies.Add(ally.Id, new PartyMemberState(new MemberDefinition(ally.Id.ToString(), "Garrison ally",
+                definitions.Party.Positions.OrderBy(p => p.Rank).First().Id, Combat.AllyVitality, StartingVitality: ally.Vitality),
+                definitions.Party.Positions.OrderBy(p => p.Rank).First().Rank));
         selectedTarget = restored.SelectedTarget; combatLog.Clear();
         magic = restored.Magic; RecomputeMagic();
     }

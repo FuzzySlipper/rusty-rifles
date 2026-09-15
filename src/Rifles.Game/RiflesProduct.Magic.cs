@@ -223,7 +223,7 @@ public sealed partial class RiflesProduct
         }
         else if (target == partyId && (shooter != partyId || Combat.FriendlyFire))
         {
-            PartyMemberState? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Slot).FirstOrDefault();
+            PartyMemberState? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).FirstOrDefault();
             if (member is null) return;
             CancelRest("Rest interrupted by hostile magic.");
             if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Id));

@@ -192,7 +192,7 @@ internal static class RunStateChecks
         Require(decodedEnemy.Motion.Action is ExplorationAction.Forward && decodedEnemy.Motion.Destination != decodedEnemy.Motion.Position
             && decodedCast == cast, "Run save preserves an in-transit enemy and an uncommitted cast together.");
 
-        PartyState party = new(decodedWindup.Active.Roster);
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, decodedWindup.Active.Roster);
         party.Restore(decodedWindup.Active.Members);
         PartyMemberState caster = party.Members.Single(saved => saved.Definition.Id == member);
         long resourceBefore = caster.Resource;

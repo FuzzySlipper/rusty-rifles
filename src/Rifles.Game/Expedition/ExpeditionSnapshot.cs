@@ -86,8 +86,8 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             if (!combatOwner && !ItemInventory.IsMember(owner.Key)) GameDefinitions.Require(owner.Id == itemWorld.Anchor(owner.Key).Id, "saved anchor owner");
         }
         ValidateWorldObstructions(saved);
-        new PartyDefinition(saved.Roster).Validate();
-        PartyState party = new(saved.Roster);
+        new PartyDefinition(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster).Validate();
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
         party.Restore(saved.Members);
         foreach (PartyMemberState member in party.Members)
         {

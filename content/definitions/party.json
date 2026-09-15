@@ -1,27 +1,34 @@
 {
+  "maxPartySize": 10,
+  "positions": [
+    { "id": "front-left", "name": "Front left", "rank": 0 },
+    { "id": "front-right", "name": "Front right", "rank": 0 },
+    { "id": "rear-left", "name": "Rear left", "rank": 1 },
+    { "id": "rear-right", "name": "Rear right", "rank": 1 }
+  ],
   "members": [
     {
       "id": "warden",
       "name": "Warden",
-      "slot": "FrontLeft",
+      "position": "front-left",
       "maximumVitality": 40
     },
     {
       "id": "blade",
       "name": "Blade",
-      "slot": "FrontRight",
+      "position": "front-right",
       "maximumVitality": 32
     },
     {
       "id": "seeker",
       "name": "Seeker",
-      "slot": "RearLeft",
+      "position": "rear-left",
       "maximumVitality": 26
     },
     {
       "id": "mender",
       "name": "Mender",
-      "slot": "RearRight",
+      "position": "rear-right",
       "maximumVitality": 28
     }
   ]

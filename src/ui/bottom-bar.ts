@@ -2,7 +2,6 @@ type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
-const formationSlots = ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'] as const;
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -14,8 +13,9 @@ function entries(value: unknown): Array<[string, Values]> {
   return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]);
 }
 
-function text(value: unknown, fallback = ''): string {
-  return value === null || value === undefined || value === '' ? fallback : String(value);
+function text(value: unknown, fallback: unknown = ''): string {
+  const pick = value === null || value === undefined || value === '' ? fallback : value;
+  return pick === null || pick === undefined ? '' : String(pick);
 }
 
 function number(value: unknown, fallback = 0): number {
@@ -23,14 +23,10 @@ function number(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function slotLabel(slot: string): string {
-  switch (slot) {
-    case 'FrontLeft': return 'Front left';
-    case 'FrontRight': return 'Front right';
-    case 'RearLeft': return 'Rear left';
-    case 'RearRight': return 'Rear right';
-    default: return slot;
-  }
+function authoredPositions(state: Values): Array<{ id: string; name: string; rank: number }> {
+  return entries(state.positions)
+    .map(([id, position]) => ({ id, name: text(position.name, id), rank: number(position.rank) }))
+    .sort((left, right) => left.rank - right.rank || left.id.localeCompare(right.id));
 }
 
 function facingRotation(facing: string): number {
@@ -219,21 +215,22 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const signature = JSON.stringify([party, selectedMember]);
     if (signature === formationSignature) return;
     formationSignature = signature;
-    // Data-driven placement: the four baseline positions first (with an empty
-    // gap token where unoccupied), then every other member in projection
-    // order. A larger future party renders every member with no layout change;
-    // C# still emits exactly the four baseline slots today.
+    // Data-driven placement: every authored position renders in rank order
+    // (with an empty gap token where unoccupied), then any member on an
+    // unauthored position follows in projection order. A larger future party
+    // renders every member with no layout change.
     const claimed = new Set<string>();
-    const placed: Array<{ key: string; id: string; member: Values } | { key: string; id: null; slot: string }> = [];
-    for (const slot of formationSlots) {
-      const found = entries(party).find(([id, member]) => !claimed.has(id) && text(member.slot, '') === slot);
+    const placed: Array<{ key: string; id: string; member: Values } | { key: string; id: null; position: { id: string; name: string } }> = [];
+    const layout = authoredPositions(state);
+    for (const position of layout) {
+      const found = entries(party).find(([id, member]) => !claimed.has(id) && text(member.position, '') === position.id);
       if (found) {
         claimed.add(found[0]);
-        // Member keys live in a separate namespace from `empty:<slot>` gap
+        // Member keys live in a separate namespace from `empty:<id>` gap
         // keys so a hostile member id can never alias a gap token. See F7.
         placed.push({ key: `member:${found[0]}`, id: found[0], member: found[1] });
       } else {
-        placed.push({ key: `empty:${slot}`, id: null, slot });
+        placed.push({ key: `empty:${position.id}`, id: null, position });
       }
     }
     for (const [id, member] of entries(party)) {
@@ -264,12 +261,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         token.select.dataset.memberId = '';
         token.select.disabled = true;
         token.select.style.borderColor = '#574f3d';
-        token.select.title = `${slotLabel(item.slot)} · empty`;
+        token.select.title = `${item.position.name} · empty`;
         // Clear the occupied-state announcements too, or a screen reader keeps
         // describing the departed member. See F2.
         token.select.removeAttribute('aria-pressed');
-        token.select.setAttribute('aria-label', `${slotLabel(item.slot)}, empty`);
-        token.name.textContent = `${slotLabel(item.slot)} · empty`;
+        token.select.setAttribute('aria-label', `${item.position.name}, empty`);
+        token.name.textContent = `${item.position.name} · empty`;
         token.detail.textContent = 'No member here';
         (token.chevron as unknown as HTMLElement).style.visibility = 'hidden';
         token.health.style.width = '0%';
@@ -278,7 +275,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         continue;
       }
       const member = item.member;
-      const slot = text(member.slot, '');
+      const positionName = text(member.positionName, member.position);
       const facing = text(member.facing, partyFacing);
       const vitality = number(member.vitality);
       const maximum = Math.max(1, number(member.maximumVitality, 1));
@@ -288,11 +285,11 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.select.dataset.memberId = item.id;
       token.select.disabled = false;
       token.select.setAttribute('aria-pressed', String(selected));
-      token.select.setAttribute('aria-label', `${text(member.name, item.id)}, ${slotLabel(slot)}; facing ${facing}; vitality ${vitality} of ${maximum}`);
-      token.select.title = `${slotLabel(slot)} · facing ${facing} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
+      token.select.setAttribute('aria-label', `${text(member.name, item.id)}, ${positionName}; facing ${facing}; vitality ${vitality} of ${maximum}`);
+      token.select.title = `${positionName} · facing ${facing} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
       token.select.style.borderColor = selected ? '#e4bd63' : '#827556';
       token.name.textContent = text(member.name, item.id);
-      token.detail.textContent = `${slotLabel(slot)} · ${vitality}/${maximum}`;
+      token.detail.textContent = `${positionName} · ${vitality}/${maximum}`;
       token.marker.setAttribute('transform', `rotate(${facingRotation(facing)} 7 7)`);
       token.marker.setAttribute('fill', selected ? '#e4bd63' : '#c9b98a');
       (token.chevron as unknown as HTMLElement).style.visibility = 'visible';

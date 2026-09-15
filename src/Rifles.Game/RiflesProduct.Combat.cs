@@ -261,7 +261,7 @@ public sealed partial class RiflesProduct
         if (hit.Entity == partyId)
         {
             if (shooter == partyId && !Combat.FriendlyFire) return;
-            PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Slot).FirstOrDefault();
+            PartyMemberState? target = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).FirstOrDefault();
             if (target is null) return;
             CancelRest("Rest interrupted by damage.");
             long applied = DamageMember(target, Math.Max(Combat.MinimumDamage, damage - target.Defense));

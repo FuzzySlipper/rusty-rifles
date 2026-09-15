@@ -2,13 +2,28 @@ using Rusty.Engine.Mechanics;
 
 namespace Rifles.Game.Party;
 
-internal enum FormationSlot { FrontLeft, FrontRight, RearLeft, RearRight }
 internal enum PartyReach { Melee, Ranged, Casting }
+
+/// <summary>
+/// One authored formation position. Rank 0 is the front rank; higher ranks
+/// sit behind it. Reach and damage order derive from rank, never from roster
+/// order or array index.
+/// </summary>
+internal sealed record FormationPositionDefinition(string Id, string Name, int Rank)
+{
+    internal void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name) || Rank < 0)
+        {
+            throw new InvalidDataException($"Invalid formation position '{Id}'.");
+        }
+    }
+}
 
 internal sealed record MemberDefinition(
     string Id,
     string Name,
-    FormationSlot Slot,
+    string Position,
     long MaximumVitality,
     long BasePower = 0,
     long BaseDefense = 0,
@@ -22,7 +37,7 @@ internal sealed record MemberDefinition(
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
-            || !Enum.IsDefined(Slot) || MaximumVitality <= 0 || MaximumResource < 0
+            || string.IsNullOrWhiteSpace(Position) || MaximumVitality <= 0 || MaximumResource < 0
             || MaximumVitality > ExactValue.MaximumAbsolute || MaximumResource > ExactValue.MaximumAbsolute
             || BasePower < 0 || BaseDefense < 0
             || BasePower > ExactValue.MaximumAbsolute || BaseDefense > ExactValue.MaximumAbsolute
@@ -34,13 +49,13 @@ internal sealed record MemberDefinition(
     }
 }
 
-/// <summary>One authored, complete starter party. Loadout ownership stays with Inventory.</summary>
+/// <summary>One authored starter party. Loadout ownership stays with Inventory.</summary>
 internal sealed record StarterPartyPresetDefinition(string Id, string Name, MemberDefinition[] Members)
 {
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
-            || Members is not { Length: PartySize })
+            || Members is not { Length: > 0 })
         {
             throw new InvalidDataException($"Invalid starter party preset '{Id}'.");
         }
@@ -51,14 +66,12 @@ internal sealed record StarterPartyPresetDefinition(string Id, string Name, Memb
             member.Validate();
         }
 
-        if (Members.Select(member => member.Id).Distinct(StringComparer.Ordinal).Count() != PartySize
-            || Members.Select(member => member.Slot).Distinct().Count() != PartySize)
+        if (Members.Select(member => member.Id).Distinct(StringComparer.Ordinal).Count() != Members.Length
+            || Members.Select(member => member.Position).Distinct(StringComparer.Ordinal).Count() != Members.Length)
         {
-            throw new InvalidDataException($"Starter party preset '{Id}' must contain four distinct members and formation slots.");
+            throw new InvalidDataException($"Starter party preset '{Id}' must contain distinct members and formation positions.");
         }
     }
-
-    private const int PartySize = 4;
 }
 
 /// <summary>Authored starter choices; a preset is chosen only when an expedition begins.</summary>
@@ -99,7 +112,7 @@ internal sealed record CharacterOptionsDefinition(string DefaultPresetId, Starte
 /// Saved party-member state. Nullable fields admit pre-formation/pre-resource
 /// snapshots; all newly captured snapshots provide both values.
 /// </summary>
-internal sealed record MemberSnapshot(string Id, long Vitality, FormationSlot? Slot = null, long? Resource = null);
+internal sealed record MemberSnapshot(string Id, long Vitality, string? Position = null, long? Resource = null);
 
 internal sealed record EquipmentStatBonuses(long Power, long Defense);
 
@@ -117,11 +130,13 @@ internal sealed class PartyMemberState
     private EquipmentStatBonuses equipmentBonuses = new(0, 0);
     private EquipmentStatBonuses developmentBonuses = new(0, 0);
 
-    internal PartyMemberState(MemberDefinition definition)
+    internal PartyMemberState(MemberDefinition definition, int rank)
     {
         definition.Validate();
+        if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
         Definition = definition;
-        Slot = definition.Slot;
+        Position = definition.Position;
+        Rank = rank;
         vitality = new ExactTrack(new ExactTrackDefinition(VitalityId, ExactValue.Zero,
             new ExactTrackMaximum.Fixed(new ExactValue(definition.MaximumVitality))), new ExactValue(definition.InitialVitality));
         if (definition.MaximumResource > 0)
@@ -132,7 +147,8 @@ internal sealed class PartyMemberState
     }
 
     internal MemberDefinition Definition { get; }
-    internal FormationSlot Slot { get; private set; }
+    internal string Position { get; private set; }
+    internal int Rank { get; private set; }
     internal long Vitality => vitality.Current.Raw;
     internal long MaximumVitality => vitality.Bounds.Maximum.Raw;
     internal long Resource => resource?.Current.Raw ?? 0;
@@ -188,10 +204,12 @@ internal sealed class PartyMemberState
         developmentBonuses = new(power, defense);
     }
 
-    internal void SetSlot(FormationSlot slot)
+    internal void SetPosition(string position, int rank)
     {
-        if (!Enum.IsDefined(slot)) throw new ArgumentOutOfRangeException(nameof(slot));
-        Slot = slot;
+        if (string.IsNullOrWhiteSpace(position)) throw new ArgumentOutOfRangeException(nameof(position));
+        if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
+        Position = position;
+        Rank = rank;
     }
 
     private static ExactStatDefinition CreateStatDefinition(StatId id) => new(
@@ -216,27 +234,34 @@ internal sealed class PartyMemberState
 
 internal sealed class PartyState
 {
+    private const int FrontRank = 0;
     private readonly MemberDefinition[] roster;
+    private readonly Dictionary<string, FormationPositionDefinition> positions;
+    private readonly int maxSize;
     private PartyMemberState[] members;
 
-    internal PartyState(IReadOnlyList<MemberDefinition> definitions)
-        : this(null, definitions)
+    internal PartyState(IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions)
+        : this(null, positions, maxSize, definitions)
     {
     }
 
-    internal PartyState(StarterPartyPresetDefinition preset)
-        : this(GetPresetId(preset), GetPresetMembers(preset))
+    internal PartyState(IReadOnlyList<FormationPositionDefinition> positions, int maxSize, StarterPartyPresetDefinition preset)
+        : this(GetPresetId(preset), positions, maxSize, GetPresetMembers(preset))
     {
         preset.Validate();
     }
 
-    private PartyState(string? presetId, IReadOnlyList<MemberDefinition> definitions)
+    private PartyState(string? presetId, IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions)
     {
+        ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(definitions);
+        this.positions = ValidatePositions(positions);
+        if (maxSize < 1) throw new InvalidDataException("Party capacity must be positive.");
+        this.maxSize = maxSize;
         roster = definitions.ToArray();
         ValidateRoster(roster);
         PresetId = presetId;
-        members = roster.Select(definition => new PartyMemberState(definition)).ToArray();
+        members = roster.Select(definition => new PartyMemberState(definition, RankOf(definition.Position))).ToArray();
     }
 
     private static string GetPresetId(StarterPartyPresetDefinition? preset) => preset?.Id
@@ -248,8 +273,9 @@ internal sealed class PartyState
     /// <summary>Set for a starter-preset party and immutable for its expedition.</summary>
     internal string? PresetId { get; }
     internal IReadOnlyList<PartyMemberState> Members => Array.AsReadOnly(members);
+    internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members
-        .Select(member => new MemberSnapshot(member.Definition.Id, member.Vitality, member.Slot, member.Resource)).ToArray();
+        .Select(member => new MemberSnapshot(member.Definition.Id, member.Vitality, member.Position, member.Resource)).ToArray();
 
     internal bool SwapFormation(string memberId, string otherMemberId)
     {
@@ -260,82 +286,128 @@ internal sealed class PartyState
             return false;
         }
 
-        FormationSlot memberSlot = member.Slot;
-        member.SetSlot(other.Slot);
-        other.SetSlot(memberSlot);
+        (string position, int rank) = (member.Position, member.Rank);
+        member.SetPosition(other.Position, other.Rank);
+        other.SetPosition(position, rank);
+        return true;
+    }
+
+    internal bool MoveFormation(string memberId, string position)
+    {
+        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        if (member is null || !member.IsLiving || !positions.TryGetValue(position, out FormationPositionDefinition? target))
+        {
+            return false;
+        }
+
+        if (members.Any(candidate => !ReferenceEquals(candidate, member) && candidate.Position == position))
+        {
+            return false;
+        }
+
+        member.SetPosition(target.Id, target.Rank);
         return true;
     }
 
     internal bool CanUseReach(string memberId, PartyReach reach)
     {
         PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        return member is not null && member.IsLiving && IsReachAllowed(member.Slot, reach);
+        return member is not null && member.IsLiving && IsReachAllowed(member.Rank, reach);
     }
 
     internal IReadOnlyList<PartyMemberState> EligibleMembers(PartyReach reach) => members
-        .Where(member => member.IsLiving && IsReachAllowed(member.Slot, reach)).ToArray();
+        .Where(member => member.IsLiving && IsReachAllowed(member.Rank, reach)).ToArray();
 
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
     {
         ArgumentNullException.ThrowIfNull(saved);
-        if (saved.Count != roster.Length || saved.Any(snapshot => snapshot is null)
+        if (saved.Any(snapshot => snapshot is null)
             || saved.Select(snapshot => snapshot.Id).Distinct(StringComparer.Ordinal).Count() != saved.Count)
         {
             throw new InvalidOperationException("Party snapshot roster mismatch.");
         }
 
-        PartyMemberState[] restored = roster.Select(definition =>
+        PartyMemberState[] restored = saved.Select(value =>
         {
-            MemberSnapshot value = saved.SingleOrDefault(snapshot => snapshot.Id == definition.Id)
+            MemberDefinition definition = roster.SingleOrDefault(candidate => candidate.Id == value.Id)
                 ?? throw new InvalidOperationException("Party snapshot member missing.");
-            FormationSlot slot = value.Slot ?? definition.Slot;
+            string position = value.Position ?? definition.Position;
+            if (!positions.TryGetValue(position, out FormationPositionDefinition? target))
+            {
+                throw new InvalidOperationException("Party snapshot formation position is unknown.");
+            }
+
             long resourceValue = value.Resource ?? definition.MaximumResource;
             if (value.Vitality < 0 || value.Vitality > definition.MaximumVitality
-                || resourceValue < 0 || resourceValue > definition.MaximumResource || !Enum.IsDefined(slot))
+                || resourceValue < 0 || resourceValue > definition.MaximumResource)
             {
                 throw new InvalidOperationException("Party snapshot member state is out of range.");
             }
 
-            PartyMemberState member = new(definition);
+            PartyMemberState member = new(definition, target.Rank);
             member.Heal(definition.MaximumVitality);
             member.ApplyDamage(definition.MaximumVitality - value.Vitality);
             member.RecoverResource(definition.MaximumResource);
             member.SpendResource(definition.MaximumResource - resourceValue);
-            member.SetSlot(slot);
+            member.SetPosition(target.Id, target.Rank);
             return member;
         }).ToArray();
-        if (restored.Select(member => member.Slot).Distinct().Count() != restored.Length)
+        if (restored.Length < 1 || restored.Length > maxSize
+            || restored.Select(member => member.Position).Distinct(StringComparer.Ordinal).Count() != restored.Length)
         {
-            throw new InvalidOperationException("Party snapshot formation slots must be distinct.");
+            throw new InvalidOperationException("Party snapshot formation positions must be distinct and within capacity.");
         }
 
         members = restored;
     }
 
-    private static bool IsReachAllowed(FormationSlot slot, PartyReach reach) => reach switch
+    private int RankOf(string position) => positions.TryGetValue(position, out FormationPositionDefinition? target)
+        ? target.Rank
+        : throw new InvalidDataException($"Unknown formation position '{position}'.");
+
+    private static bool IsReachAllowed(int rank, PartyReach reach) => reach switch
     {
-        PartyReach.Melee => slot is FormationSlot.FrontLeft or FormationSlot.FrontRight,
+        PartyReach.Melee => rank == FrontRank,
         PartyReach.Ranged or PartyReach.Casting => true,
         _ => throw new ArgumentOutOfRangeException(nameof(reach)),
     };
 
-    private static void ValidateRoster(IReadOnlyList<MemberDefinition> definitions)
+    private static Dictionary<string, FormationPositionDefinition> ValidatePositions(IReadOnlyList<FormationPositionDefinition> positions)
     {
-        if (definitions.Count != 4)
+        Dictionary<string, FormationPositionDefinition> map = new(StringComparer.Ordinal);
+        foreach (FormationPositionDefinition position in positions)
         {
-            throw new InvalidDataException("A party needs exactly four members.");
+            if (position is null) throw new InvalidDataException("A formation position cannot be null.");
+            position.Validate();
+            if (!map.TryAdd(position.Id, position)) throw new InvalidDataException($"Duplicate formation position '{position.Id}'.");
+        }
+
+        if (!map.Values.Any(position => position.Rank == FrontRank))
+        {
+            throw new InvalidDataException("Formation positions need a front rank.");
+        }
+
+        return map;
+    }
+
+    private void ValidateRoster(IReadOnlyList<MemberDefinition> definitions)
+    {
+        if (definitions.Count < 1 || definitions.Count > maxSize)
+        {
+            throw new InvalidDataException($"A party needs between one and {maxSize} members.");
         }
 
         foreach (MemberDefinition definition in definitions)
         {
             if (definition is null) throw new InvalidDataException("A party cannot contain a null member.");
             definition.Validate();
+            _ = RankOf(definition.Position);
         }
 
         if (definitions.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != definitions.Count
-            || definitions.Select(definition => definition.Slot).Distinct().Count() != definitions.Count)
+            || definitions.Select(definition => definition.Position).Distinct(StringComparer.Ordinal).Count() != definitions.Count)
         {
-            throw new InvalidDataException("Party members and formation slots must be distinct.");
+            throw new InvalidDataException("Party members and formation positions must be distinct.");
         }
     }
 }

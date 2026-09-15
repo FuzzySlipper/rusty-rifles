@@ -85,6 +85,12 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
                 && result.Items.Item(l.Definition).Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "ranged enemy rifle");
         }
         string[] memberIds = result.Characters.Presets[0].Members.Select(m => m.Id).ToArray();
+        HashSet<string> positionIds = result.Party.Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var preset in result.Characters.Presets)
+        {
+            Require(preset.Members.Length >= 1 && preset.Members.Length <= result.Party.MaxPartySize, "preset party capacity");
+            Require(preset.Members.All(m => positionIds.Contains(m.Position)), "preset formation positions");
+        }
         Require(result.Magic.StartingSpells.Keys.ToHashSet().SetEquals(memberIds), "starting spell roster");
         Require(memberIds.Concat(result.Combat.Enemies.Select(e => e.Id)).All(result.Magic.Resistances.ContainsKey), "magic resistance profiles");
         Require(result.Magic.EnemySpells.Keys.All(id => result.Combat.Enemies.Any(e => e.Id == id)), "enemy spell profiles");
@@ -119,14 +125,21 @@ internal sealed record GenerationDefinition(ulong Seed, ExpeditionDefinition Exp
     }
 }
 
-internal sealed record PartyDefinition(MemberDefinition[] Members)
+internal sealed record PartyDefinition(FormationPositionDefinition[] Positions, int MaxPartySize, MemberDefinition[] Members)
 {
     internal void Validate()
     {
-        GameDefinitions.Require(Members is { Length: 4 }, nameof(Members));
+        GameDefinitions.Require(Positions is { Length: > 0 }
+            && Positions.All(p => p is not null)
+            && Positions.Select(p => p.Id).Distinct(StringComparer.Ordinal).Count() == Positions.Length
+            && Positions.Any(p => p.Rank == 0), "Positions fields");
+        foreach (FormationPositionDefinition position in Positions) position.Validate();
+        GameDefinitions.Require(MaxPartySize >= 1, "MaxPartySize capacity");
+        GameDefinitions.Require(Members is { Length: > 0 } && Members.Length <= MaxPartySize, "Members capacity");
         GameDefinitions.Require(Members.All(m => m is not null && !string.IsNullOrWhiteSpace(m.Id)
-            && !string.IsNullOrWhiteSpace(m.Name) && Enum.IsDefined(m.Slot) && m.MaximumVitality > 0), "Members fields");
+            && !string.IsNullOrWhiteSpace(m.Name) && !string.IsNullOrWhiteSpace(m.Position) && m.MaximumVitality > 0), "Members fields");
+        GameDefinitions.Require(Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal).IsSupersetOf(Members.Select(m => m.Position)), "Members positions");
         GameDefinitions.Require(Members.Select(m => m.Id).Distinct(StringComparer.Ordinal).Count() == Members.Length, "Members.Id uniqueness");
-        GameDefinitions.Require(Members.Select(m => m.Slot).Distinct().Count() == Members.Length, "Members.Slot uniqueness");
+        GameDefinitions.Require(Members.Select(m => m.Position).Distinct(StringComparer.Ordinal).Count() == Members.Length, "Members.Position uniqueness");
     }
 }

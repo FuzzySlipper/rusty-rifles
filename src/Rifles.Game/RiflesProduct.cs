@@ -56,7 +56,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
         progress = new(definitions.Run.DefaultDifficulty, false, []);
         preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
-        party = new PartyState(definitions.Characters.GetPreset(preset));
+        party = new PartyState(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(preset));
         selectedMember = party.Members[0].Definition.Id;
         ExpeditionGenerationResult generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, definitions.Generation.Seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Code + ": " + d.Detail)));

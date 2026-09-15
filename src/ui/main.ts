@@ -14,7 +14,7 @@ const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', '
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
-function text(value: unknown, fallback = '—'): string { return value === null || value === undefined || value === '' ? fallback : String(value); }
+function text(value: unknown, fallback: unknown = '—'): string { const pick = value === null || value === undefined || value === '' ? fallback : value; return pick === null || pick === undefined ? '—' : String(pick); }
 function numeric(value: unknown, fallback = 0): number { const number = Number(value); return Number.isFinite(number) ? number : fallback; }
 function inventoryOf(state: Record<string, unknown>): Record<string, unknown> { return record(state.inventory); }
 function ownerEntries(state: Record<string, unknown>): Array<[string, Record<string, unknown>]> {
@@ -242,17 +242,16 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const renderRoster = (): void => {
     const members = record(state.party); const signature = JSON.stringify([members, state.selectedMember]); if (signature === previousRoster) return; previousRoster = signature;
-    const slots = ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'];
     const sortedMembers: Array<Record<string, unknown>> = entries(members).map(([id, member]) => ({ id, ...member }));
     const present = new Set<string>();
-    for (const member of sortedMembers.sort((left, right) => slots.indexOf(text(left.slot)) - slots.indexOf(text(right.slot)))) {
+    for (const member of sortedMembers.sort((left, right) => numeric(left.rank) - numeric(right.rank) || text(left.name).localeCompare(text(right.name)))) {
       const id = String(member.id); present.add(id);
       let card = roster.querySelector<HTMLButtonElement>(`button[data-member="${CSS.escape(id)}"]`);
       if (!card) { card = button('', () => command('select', { member: id })); card.dataset.member = id; }
       card.textContent = `${text(member.name)} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`;
       card.setAttribute('aria-pressed', String(id === state.selectedMember));
-      card.setAttribute('aria-label', `${text(member.name)}, ${text(member.slot)}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
-      card.title = `${text(member.slot)} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
+      card.setAttribute('aria-label', `${text(member.name)}, ${text(member.positionName, member.position)}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
+      card.title = `${text(member.positionName, member.position)} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
       card.style.borderColor = id === state.selectedMember ? '#e4bd63' : '#827556';
       // Keep focused controls alive while health and recovery values change.
       const index = sortedMembers.findIndex(candidate => candidate.id === member.id);

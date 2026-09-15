@@ -98,8 +98,21 @@ Require(grid.TryReserve(1, new(10, 10)), "Cancellation releases reservation.");
 grid.SetBlocked(new(10, 10), new(11, 10), true);
 Require(!grid.Commit(1) && grid.Position(1) == new GridPoint(11, 10), "Closing edge cancels move without displacing actor.");
 
-PartyState party = new(definitions.Party.Members);
-Require(party.Members.Count == 4 && party.Members.Select(m => m.Definition.Slot).Distinct().Count() == 4, "Four distinct formation slots.");
+PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Party.Members);
+Require(party.Members.Select(m => m.Definition.Position).Distinct(StringComparer.Ordinal).Count() == party.Members.Count, "Authored formation positions are distinct.");
+List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
+    new FormationPositionDefinition("reserve-a", "Reserve A", 1),
+    new FormationPositionDefinition("reserve-b", "Reserve B", 2)];
+List<MemberDefinition> six = [.. definitions.Party.Members,
+    new MemberDefinition("fifth", "Fifth", "reserve-a", 20),
+    new MemberDefinition("sixth", "Sixth", "reserve-b", 20)];
+PartyState large = new(openPositions, definitions.Party.MaxPartySize, six);
+Require(large.Members.Count == 6 && large.EligibleMembers(PartyReach.Melee).Count() == 2
+    && large.CanUseReach("fifth", PartyReach.Ranged) && !large.CanUseReach("sixth", PartyReach.Melee),
+    "Party size follows construction and melee reach follows rank, not roster order.");
+PartyState pair = new(openPositions, definitions.Party.MaxPartySize, six.Take(2).ToArray());
+Require(pair.Members.Count == 2 && pair.MoveFormation("warden", "reserve-b") && pair.Members[0].Position == "reserve-b",
+    "Smaller parties construct and move within the same authored positions.");
 party.Members[0].ApplyDamage(7);
 var saved = party.Capture();
 party.Members[0].ApplyDamage(long.MaxValue);
@@ -125,7 +138,7 @@ PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
 MovementGrid saveGrid = new(savedFloor.Cells.ToHashSet(), (_, _) => true, definitions.Crowd);
 savePose.Bind(saveGrid, 2); saveActor.Bind(saveGrid);
 saveActor.Advance(.1);
-PartyState saveParty = new(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+PartyState saveParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
 saveParty.Members[0].ApplyDamage(9);
 ulong dressingId = 6;
 ulong AllocateDressingId() => dressingId++;

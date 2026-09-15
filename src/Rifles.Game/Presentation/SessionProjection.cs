@@ -21,9 +21,12 @@ internal sealed class SessionProjection : IDisposable
     internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run)
     {
         SessionValueBuilder value = new();
+        Dictionary<string, string> positionNames = party.Positions.ToDictionary(p => p.Id, p => p.Name);
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
             ("name", value.String(member.Definition.Name)),
-            ("slot", value.String(member.Slot.ToString())),
+            ("position", value.String(member.Position)),
+            ("positionName", value.String(positionNames.GetValueOrDefault(member.Position, member.Position))),
+            ("rank", value.Number(member.Rank)),
             // Presentation only: the party moves as one blob, so every member
             // currently faces the party direction. Projected per member so the
             // formation display can show independent facings later without a
@@ -56,6 +59,8 @@ internal sealed class SessionProjection : IDisposable
             ("roomLights", value.Number(roomLights ? 1 : 0)),
             ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster),
+            ("positions", value.Object(party.Positions.Select(p => (p.Id, value.Object(
+                ("name", value.String(p.Name)), ("rank", value.Number(p.Rank))))).ToArray())),
             ("combat", combat(value)),
             ("run", run(value)),
             ("inventory", InventoryProjection.Build(value, inventory, world, scene, exploration, party, selectedMember, art, dropReachable)),

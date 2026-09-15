@@ -5,20 +5,20 @@
       "id": "balanced",
       "name": "Balanced patrol",
       "members": [
-        { "id": "warden", "name": "Warden", "slot": "FrontLeft", "maximumVitality": 40, "basePower": 7, "baseDefense": 5, "maximumResource": 12, "startingVitality": 28 },
-        { "id": "blade", "name": "Blade", "slot": "FrontRight", "maximumVitality": 32, "basePower": 8, "baseDefense": 3, "maximumResource": 8 },
-        { "id": "seeker", "name": "Seeker", "slot": "RearLeft", "maximumVitality": 26, "basePower": 5, "baseDefense": 2, "maximumResource": 16, "startingResource": 7 },
-        { "id": "mender", "name": "Mender", "slot": "RearRight", "maximumVitality": 28, "basePower": 4, "baseDefense": 3, "maximumResource": 20 }
+        { "id": "warden", "name": "Warden", "position": "front-left", "maximumVitality": 40, "basePower": 7, "baseDefense": 5, "maximumResource": 12, "startingVitality": 28 },
+        { "id": "blade", "name": "Blade", "position": "front-right", "maximumVitality": 32, "basePower": 8, "baseDefense": 3, "maximumResource": 8 },
+        { "id": "seeker", "name": "Seeker", "position": "rear-left", "maximumVitality": 26, "basePower": 5, "baseDefense": 2, "maximumResource": 16, "startingResource": 7 },
+        { "id": "mender", "name": "Mender", "position": "rear-right", "maximumVitality": 28, "basePower": 4, "baseDefense": 3, "maximumResource": 20 }
       ]
     },
     {
       "id": "rifle-drill",
       "name": "Rifle drill",
       "members": [
-        { "id": "warden", "name": "Warden", "slot": "FrontLeft", "maximumVitality": 36, "basePower": 6, "baseDefense": 4, "maximumResource": 10 },
-        { "id": "blade", "name": "Blade", "slot": "FrontRight", "maximumVitality": 30, "basePower": 7, "baseDefense": 2, "maximumResource": 8 },
-        { "id": "seeker", "name": "Seeker", "slot": "RearLeft", "maximumVitality": 30, "basePower": 8, "baseDefense": 2, "maximumResource": 18 },
-        { "id": "mender", "name": "Mender", "slot": "RearRight", "maximumVitality": 26, "basePower": 6, "baseDefense": 2, "maximumResource": 16 }
+        { "id": "warden", "name": "Warden", "position": "front-left", "maximumVitality": 36, "basePower": 6, "baseDefense": 4, "maximumResource": 10 },
+        { "id": "blade", "name": "Blade", "position": "front-right", "maximumVitality": 30, "basePower": 7, "baseDefense": 2, "maximumResource": 8 },
+        { "id": "seeker", "name": "Seeker", "position": "rear-left", "maximumVitality": 30, "basePower": 8, "baseDefense": 2, "maximumResource": 18 },
+        { "id": "mender", "name": "Mender", "position": "rear-right", "maximumVitality": 26, "basePower": 6, "baseDefense": 2, "maximumResource": 16 }
       ]
     }
   ]

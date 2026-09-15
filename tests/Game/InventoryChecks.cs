@@ -14,7 +14,7 @@ internal static class InventoryChecks
         VerifyEquipmentViewsAndStats(definitions, inventory);
         VerifyCapacityFailureKeepsEquipment(definitions.Items);
         VerifySaveRestore(definitions.Items, inventory);
-        VerifyPartyFormationAndAuthoredResources(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+        VerifyPartyFormationAndAuthoredResources(definitions, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
         VerifyExplorationCreation(definitions);
 
         Console.WriteLine("Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.");
@@ -63,7 +63,7 @@ internal static class InventoryChecks
 
     private static void VerifyEquipmentViewsAndStats(GameDefinitions definitions, ItemInventory inventory)
     {
-        PartyState party = new(definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
         PartyMemberState warden = Member(party, "warden");
         ApplyEquipment(inventory, warden);
         Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
@@ -128,9 +128,9 @@ internal static class InventoryChecks
         Require(Describe(restored) == beforeStaleRestore, "A stale reconstructed-world proposal leaves inventory untouched.");
     }
 
-    private static void VerifyPartyFormationAndAuthoredResources(StarterPartyPresetDefinition preset)
+    private static void VerifyPartyFormationAndAuthoredResources(GameDefinitions definitions, StarterPartyPresetDefinition preset)
     {
-        PartyState party = new(preset);
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, preset);
         Require(party.Members.All(member => member.Vitality == member.Definition.InitialVitality
             && member.Resource == member.Definition.InitialResource), "Authored starting injuries and resources initialize party state.");
         Require(party.Members.Any(member => member.Vitality < member.MaximumVitality)
@@ -139,15 +139,27 @@ internal static class InventoryChecks
         PartyMemberState warden = Member(party, "warden");
         PartyMemberState blade = Member(party, "blade");
         PartyMemberState seeker = Member(party, "seeker");
-        FormationSlot seekerSlot = seeker.Slot;
-        Require(party.SwapFormation("warden", "seeker") && warden.Slot == seekerSlot,
+        string seekerPosition = seeker.Position;
+        Require(party.SwapFormation("warden", "seeker") && warden.Position == seekerPosition,
             "Living members can change the authored formation.");
-        FormationSlot wardenSlot = warden.Slot;
+        string wardenPosition = warden.Position;
         blade.ApplyDamage(long.MaxValue);
-        Require(!party.SwapFormation("warden", "blade") && warden.Slot == wardenSlot && !party.CanUseReach("blade", PartyReach.Melee),
+        Require(!party.SwapFormation("warden", "blade") && warden.Position == wardenPosition && !party.CanUseReach("blade", PartyReach.Melee),
             "Dead members cannot change formation or become eligible for actions.");
         Require(!party.EligibleMembers(PartyReach.Melee).Any(member => member.Definition.Id == "blade"),
             "Dead members are excluded from reach eligibility.");
+
+        List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
+            new FormationPositionDefinition("reserve", "Reserve", 1)];
+        PartyState openParty = new(openPositions, definitions.Party.MaxPartySize, preset.Members);
+        Require(openParty.MoveFormation("warden", "reserve") && Member(openParty, "warden").Position == "reserve",
+            "Living members can move into an unoccupied formation position.");
+        Require(!openParty.MoveFormation("warden", "rear-left") && !openParty.MoveFormation("no-such-member", "reserve")
+            && !openParty.MoveFormation("warden", "no-such-position"),
+            "Occupied, unknown-member, and unknown-position formation moves are rejected.");
+        Member(openParty, "blade").ApplyDamage(long.MaxValue);
+        Require(!openParty.MoveFormation("blade", "front-left"),
+            "Dead members cannot change formation positions.");
 
         IReadOnlyList<MemberSnapshot> saved = party.Capture();
         warden.ApplyDamage(long.MaxValue);
