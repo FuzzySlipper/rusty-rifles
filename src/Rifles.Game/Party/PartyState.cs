@@ -295,7 +295,8 @@ internal sealed class PartyState
     internal bool MoveFormation(string memberId, string position)
     {
         PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        if (member is null || !member.IsLiving || !positions.TryGetValue(position, out FormationPositionDefinition? target))
+        if (member is null || !member.IsLiving || string.IsNullOrEmpty(position)
+            || !positions.TryGetValue(position, out FormationPositionDefinition? target))
         {
             return false;
         }
@@ -321,7 +322,11 @@ internal sealed class PartyState
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
     {
         ArgumentNullException.ThrowIfNull(saved);
-        if (saved.Any(snapshot => snapshot is null)
+        // Roster membership is exact: a shorter snapshot would silently drop a
+        // member while their inventory pack survives, corrupting the next save.
+        // Size changes happen by rebuilding the roster, never by shrinking it
+        // here. See F2.
+        if (saved.Count != roster.Length || saved.Any(snapshot => snapshot is null)
             || saved.Select(snapshot => snapshot.Id).Distinct(StringComparer.Ordinal).Count() != saved.Count)
         {
             throw new InvalidOperationException("Party snapshot roster mismatch.");

@@ -245,6 +245,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 MagicCommand(command); break;
             case "formation":
                 feedback = party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "") ? "Formation changed" : "Choose two living members"; break;
+            case "move":
+                feedback = party.MoveFormation(command.Member ?? selectedMember, command.Position ?? "") ? "Formation changed" : "Choose a living member and an empty position"; break;
             case "choose-party":
                 _ = definitions.Characters.GetPreset(command.Preset ?? "");
                 preset = command.Preset!; Restart(); break;
