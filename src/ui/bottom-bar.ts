@@ -515,12 +515,13 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       mass += number(owner.mass);
       capacity += number(owner.maxMass);
     }
-    const total = Math.floor(number(state.seconds));
+    const total = Math.max(0, Math.floor(number(state.seconds)));
     const clock = `${Math.floor(total / 3600)}:${String(Math.floor(total / 60) % 60).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
     const line = `Load ${mass}/${capacity} · ${clock}`;
     if (vitalsLine.textContent !== line) vitalsLine.textContent = line;
+    const pauseButton = railButtons[0];
     const pausedLabel = number(state.paused) === 1 ? 'GO' : 'II';
-    if (railButtons[0]?.textContent !== pausedLabel) railButtons[0].textContent = pausedLabel;
+    if (pauseButton && pauseButton.textContent !== pausedLabel) pauseButton.textContent = pausedLabel;
   };
 
   const renderLog = (state: Values): void => {
