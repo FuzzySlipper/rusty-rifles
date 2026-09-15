@@ -34,15 +34,22 @@ internal sealed record FormationPositionDefinition(string Id, string Name, int R
         IEnumerable<(string Id, string Position, float Forward, float Left, bool Living)> members)
     {
         float length = MathF.Sqrt(directionForward * directionForward + directionLeft * directionLeft);
-        if (!(length > 0)) return null;
+        if (!float.IsFinite(length) || !(length > 0)) return null;
         float forward = directionForward / length, left = directionLeft / length;
         string? best = null;
         float bestAlong = 0;
         string bestPosition = "", bestId = "";
+        // When no living member's projection differs (e.g. content without
+        // discriminating offsets), geometry says nothing: return null so the
+        // caller keeps rank order instead of silently switching to id order.
+        bool discriminates = false, haveLiving = false;
+        float firstAlong = 0;
         foreach ((string id, string position, float memberForward, float memberLeft, bool living) in members)
         {
             if (!living) continue;
             float along = memberForward * forward + memberLeft * left;
+            if (!haveLiving) { haveLiving = true; firstAlong = along; }
+            else if (along != firstAlong) discriminates = true;
             if (best is not null && (along > bestAlong
                 || (along == bestAlong && (string.Compare(position, bestPosition, StringComparison.Ordinal) > 0
                     || (position == bestPosition && string.Compare(id, bestId, StringComparison.Ordinal) > 0)))))
@@ -56,7 +63,7 @@ internal sealed record FormationPositionDefinition(string Id, string Name, int R
             bestId = id;
         }
 
-        return best;
+        return best is not null && discriminates ? best : null;
     }
 }
 

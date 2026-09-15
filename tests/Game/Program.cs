@@ -122,6 +122,8 @@ Require(FormationPositionDefinition.FirstEncountered(0, 1, line) == "front-right
 Require(FormationPositionDefinition.FirstEncountered(0, 0, line) is null, "A degenerate ray selects nobody.");
 Require(FormationPositionDefinition.FirstEncountered(-1, 0, line.Select(m => m.Id == "front-left" ? (m.Id, m.Position, m.Forward, m.Left, false) : m).ToList()) == "front-right",
     "Fallen members no longer block incoming fire.");
+Require(FormationPositionDefinition.FirstEncountered(1, 0, line.Select(m => (m.Id, m.Position, 0f, 0f, m.Living)).ToList()) is null,
+    "Content without discriminating offsets falls back to rank order.");
 party.Members[0].ApplyDamage(7);
 var saved = party.Capture();
 party.Members[0].ApplyDamage(long.MaxValue);
