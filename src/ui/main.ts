@@ -262,7 +262,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     });
   };
   const renderPartyTools = (): void => {
-    const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name]), state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
+    const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name, member.position]), state.positions, state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
     const members = entries(state.party); partyTools.replaceChildren();
     const partySummary = document.createElement('summary'); partySummary.textContent = 'Formation & party preset';
     partyTools.append(partySummary);
@@ -271,6 +271,18 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     for (const [id, member] of members) for (const select of [first, second]) { const option = document.createElement('option'); option.value = id; option.textContent = text(member.name, id); select.append(option); }
     first.value = text(state.selectedMember, members[0]?.[0] ?? ''); second.value = members.find(([id]) => id !== first.value)?.[0] ?? first.value;
     partyTools.append(formationTitle, first, second, button('Swap positions', () => command('formation', { member: first.value, otherMember: second.value })));
+    // Move backing for drag-and-drop: same `move` intent the future drop
+    // targets will send, operable here so agents can exercise gaps meanwhile.
+    const moveTarget = document.createElement('select'); moveTarget.dataset.formationPosition = 'true'; moveTarget.setAttribute('aria-label', 'Formation position');
+    for (const [id, position] of entries(state.positions)) {
+      const occupant = members.find(([, member]) => text(member.position) === id)?.[1];
+      const option = document.createElement('option'); option.value = id;
+      option.textContent = occupant ? `${text(position.name, id)} · ${text(occupant.name)}` : `${text(position.name, id)} · empty`;
+      moveTarget.append(option);
+    }
+    const firstEmpty = entries(state.positions).find(([id]) => !members.some(([, member]) => text(member.position) === id))?.[0];
+    if (firstEmpty !== undefined) moveTarget.value = firstEmpty;
+    partyTools.append(moveTarget, button('Move to position', () => command('move', { member: first.value, position: moveTarget.value })));
     const presets = entries(state.presets);
     if (presets.length > 0) { const presetTitle = document.createElement('strong'); presetTitle.textContent = 'Party preset'; presetTitle.style.marginLeft = '8px'; const select = document.createElement('select'); select.dataset.partyPreset = 'true'; for (const [id, preset] of presets) { const option = document.createElement('option'); option.value = id; option.textContent = text(preset.name, id); select.append(option); } select.value = text(state.preset, presets[0][0]); partyTools.append(presetTitle, select, button('Restart with party', () => command('choose-party', { preset: select.value }))); }
   };
