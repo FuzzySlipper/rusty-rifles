@@ -27,7 +27,7 @@ existing build checks cover its current narrow voxel/navigation/party usage.
 | --- | --- | --- |
 | Shared-grid travel and enemy routing | `ISpatialService.ReplaceNavigation`, `EvaluateNavigationStep`, `RequestNavigationPath`, `RequestWeightedNavigationPath`, `ReplaceNavigationTraversal` | Size-dependent passability, per-query occupancy policy, doors, path-result ownership, and bounded replanning under congestion |
 | Firing lanes and awareness | `ISpatialService.CastRay`, `IPerceptionService` | Consistent actor/feature occlusion, partial-cell enemy footprints, ally blocking and perception policy |
-| Item conservation and equipment | `Mechanics.InventoryWorld`, `InventoryWorldCandidate`, `EquipmentService`, `ItemState` | Adapt inventory owners to characters, containers and world placements; confirm grouped transfer/equip/use settlement and save representation |
+| Item conservation and equipment | `Mechanics.InventoryStore`, `InventoryEdit`, `EquipmentService`, `ItemState` | Adapt inventory owners to characters, containers and world placements; confirm grouped transfer/equip/use settlement and save representation |
 | Timed behavior | Engine update facts; `Application.SimulationScheduler` | Product action phases, cancellation/interruption and save/resume; do not introduce a competing timer loop |
 | Textured voxel rooms | `VoxelScenePresentation.ProjectSceneDirectional`, material bindings, `Graphics.CreateMaterial` | Image admission, texture repetition/scale, material-face selection and retained resource lifecycle in the chosen art treatment |
 | Directional still enemies and prop billboards | `Graphics.CreateSprite`, atlas APIs, `ReplaceSprite`, `ReadSprite` | Ground anchor, facing/identity consistency, world sizing, alpha/depth/occlusion, individual selection and crowded-cell rendering |
@@ -42,7 +42,7 @@ If the paired SDK lacks the necessary control, scope the owning Engine addition
 rather than introducing a downstream renderer. No lighting implementation or
 visual acceptance is claimed by these planning notes.
 
-`InventoryWorld.Prepare` produces a candidate with `Validate` and `Publish`;
+`InventoryStore.Prepare` produces a candidate with `Validate` and `Publish`;
 inspect that contract before writing product-owned rollback or duplicate
 inventory bookkeeping. Game policy still owns which operations belong together.
 An Engine service call is not automatically a transaction with every other
