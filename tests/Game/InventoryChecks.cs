@@ -153,8 +153,8 @@ internal static class InventoryChecks
         Require(openParty.MoveFormation("warden", "r0c0") && Member(openParty, "warden").Position == "r0c0",
             "Living members can move into an unoccupied formation position.");
         Require(!openParty.MoveFormation("warden", "r0c3") && !openParty.MoveFormation("no-such-member", "r0c0")
-            && !openParty.MoveFormation("warden", "no-such-position"),
-            "Occupied, unknown-member, and unknown-position formation moves are rejected.");
+            && !openParty.MoveFormation("warden", "no-such-position") && !openParty.MoveFormation("warden", "r2c2"),
+            "Occupied, unknown-member, unknown-position, and reserved-center formation moves are rejected.");
         Member(openParty, "blade").ApplyDamage(long.MaxValue);
         Require(!openParty.MoveFormation("blade", "r0c2"),
             "Dead members cannot change formation positions.");

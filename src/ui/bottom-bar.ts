@@ -39,6 +39,8 @@ function authoredPositions(state: Values): Array<{ id: string; name: string; ran
 // 0.25 step around (forward 0, left 0); col grows to the party's right,
 // row grows toward the rear. Returns null outside the 5×5 board (including
 // non-finite input) so stray positions overflow instead of throwing.
+// INVARIANT: the bank uses exact 0.25 steps, so every authored cell maps
+// 1:1 with no rounding collisions; update this if the lattice ever changes.
 function gridCell(offsetForward: number, offsetLeft: number): { col: number; row: number } | null {
   if (!Number.isFinite(offsetForward) || !Number.isFinite(offsetLeft)) return null;
   const col = Math.round(2 - offsetLeft / 0.25);
@@ -182,7 +184,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const chevron = document.createElementNS(svgNamespace, 'svg');
     chevron.setAttribute('viewBox', '0 0 14 14');
     chevron.setAttribute('aria-hidden', 'true');
-    (chevron as unknown as HTMLElement).style.cssText = 'position:absolute;top:-4px;left:50%;transform:translateX(-50%);height:8px;width:8px;visibility:hidden;z-index:3';
+    (chevron as unknown as HTMLElement).style.cssText = 'position:absolute;top:-4px;left:50%;transform:translateX(-50%);height:8px;width:8px;visibility:hidden;z-index:3;pointer-events:none';
     const marker = document.createElementNS(svgNamespace, 'path');
     marker.setAttribute('d', 'M 7 1 L 12.5 12 L 7 9.6 L 1.5 12 Z');
     marker.setAttribute('fill', '#c9b98a');
@@ -212,7 +214,11 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         return;
       }
       // Click alternative to dragging: an empty cell moves the selected
-      // member there. Dragged swaps keep the legacy Swap button as backup.
+      // member there. The blocked middle cell refuses clicks too, so the
+      // guard holds even if a future bank authors it (drops are guarded
+      // separately). Dragged swaps keep the legacy Swap button as backup.
+      const at = select.parentElement?.dataset.gridCell?.split(',').map(Number) ?? [];
+      if (at.length === 2 && isBlockedCell(at[0], at[1])) return;
       if (gapPosition && selectedMemberId) command('move', { member: selectedMemberId, position: gapPosition });
     });
     select.addEventListener('dragstart', event => {
@@ -241,7 +247,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const dragged = readFormationDrag(event);
       if (!dragged) return;
       // The middle cell is reserved for later rules: never accept a drop
-      // there, even if a future bank authors it. C# rejects it too.
+      // there. C# rejects the unauthored id today via TryGetValue; if a bank
+      // ever authors it, only this UI guard blocks drops.
       const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
       if (at.length === 2 && isBlockedCell(at[0], at[1])) {
         formationDragId = null;
@@ -424,6 +431,9 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.select.disabled = false;
       token.select.draggable = true;
       token.select.setAttribute('aria-pressed', String(selected));
+      // paintOccupied never leaves a stale gap announcement: tokens are
+      // keyed by role, but idempotence is cheap. See F4.
+      token.select.removeAttribute('aria-disabled');
       token.select.setAttribute('aria-label', `${name}, ${positionName}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another cell to swap.`);
       token.select.title = `${name} · ${positionName} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
       token.select.style.borderColor = selected ? '#e4bd63' : item.color;
@@ -437,7 +447,22 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.health.style.background = fraction > 0.5 ? '#8ca65c' : fraction > 0.25 ? '#e4bd63' : '#b0523c';
     };
     for (const item of placed) {
+      // The blocked middle cell never takes a token: the static × marks it,
+      // and an occupant there (only possible if a future bank authors it)
+      // renders in the overflow strip so no member is ever hidden. Off-board
+      // gap cells have nothing to show and are skipped the same way.
+      const blocked = item.cell !== null && isBlockedCell(item.cell.col, item.cell.row);
       if (item.id === null) {
+        if (item.cell === null || blocked) {
+          // No UI for these: the post-loop relocation below restores focus
+          // if the removed token had it.
+          const stale = memberTokens.get(item.key);
+          if (stale) {
+            stale.anchor.remove();
+            memberTokens.delete(item.key);
+          }
+          continue;
+        }
         let token = memberTokens.get(item.key);
         if (!token) {
           token = createToken(item.key);
@@ -481,9 +506,11 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         continue;
       }
       // Authored cells place by their own offsets; an occupant on an
-      // off-board position (or a bank the UI predates) falls to overflow.
+      // off-board or blocked position (only possible if a future bank
+      // changes the lattice) falls to overflow so members stay visible.
       const authored = layout.find(position => position.id === item.positionId);
-      const cell = authored ? gridCell(authored.offsetForward, authored.offsetLeft) : null;
+      const raw = authored ? gridCell(authored.offsetForward, authored.offsetLeft) : null;
+      const cell = raw !== null && isBlockedCell(raw.col, raw.row) ? null : raw;
       paintOccupied(item, cell);
     }
     // Appending moves live nodes, so re-appending in order keeps the strip
