@@ -540,6 +540,10 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     inventoryFeedback.textContent = uiFeedback || nextFeedback;
     menuStatus.textContent = uiFeedback || nextFeedback;
     menuPause.textContent = numeric(state.paused) === 1 ? 'Pause: on' : 'Pause: off';
+    // A detour carry only means "menu-caused pause outstanding" while the
+    // game stays paused. Any observed live projection retires it, so a stale
+    // carry can never disarm a later manually-paused entry.
+    if (numeric(state.paused) !== 1) menuDetourLive = false;
     artStatus.textContent = `${text(state.artStyle)} · Light ${text(state.lightPosition)} · ${numeric(state.roomLights) === 1 ? 'Room lights on' : 'Room fill off'}`;
     const puzzleState = record(state.puzzle);
     const leverTarget = numeric(puzzleState.leverId, -1);
@@ -651,6 +655,12 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   // must be honored at close, so close compares live state to entry state
   // instead of trusting a flag set at open. See F1/F2.
   let menuEntryPaused = false;
+  // Detour carry: Inventory/Formation close the menu to reveal legacy panels
+  // while the menu-caused pause is still outstanding. The next open would
+  // re-snapshot "paused" and disarm Resume, so the detour carries the
+  // entered-live bit across one reopen. Consumed on open; close still
+  // compares live state, so intervening flips stay honored.
+  let menuDetourLive = false;
   let menuReturnFocus: Element | null = null;
   const closeMenu = (resume: boolean): void => {
     if (!menuOpen) return;
@@ -661,22 +671,24 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     menuList.hidden = false;
     menuList.style.display = 'grid';
     // Resume only a menu-observed live game: entered live and still paused.
-    // Entered-paused games, and anything Load/Restart rebuilt, are untouched.
+    // Entered-paused games are never resumed; entered-live games resume iff
+    // still paused at close, whatever paused them (menu, Load, P key).
     if (resume && !menuEntryPaused && numeric(state.paused) === 1) command('pause');
     if (menuReturnFocus instanceof HTMLElement && document.contains(menuReturnFocus)) menuReturnFocus.focus();
   };
   const openMenu = (): void => {
     if (menuOpen) return;
     menuOpen = true;
-    menuEntryPaused = numeric(state.paused) === 1;
+    menuEntryPaused = numeric(state.paused) === 1 && !menuDetourLive;
+    menuDetourLive = false;
     menuReturnFocus = document.activeElement instanceof Element ? document.activeElement : null;
     menu.hidden = false;
     if (!menuEntryPaused) command('pause');
     resumeButton.focus();
   };
   menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
-  menuButton('Inventory & equipment', () => { setLegacyVisible(true); inventory.open = true; closeMenu(false); });
-  menuButton('Formation & party', () => { setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
+  menuButton('Inventory & equipment', () => { menuDetourLive = !menuEntryPaused; setLegacyVisible(true); inventory.open = true; closeMenu(false); });
+  menuButton('Formation & party', () => { menuDetourLive = !menuEntryPaused; setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
   const menuPause = menuButton('Pause', () => command('pause'));
   menuButton('Rest', () => command('rest'));
   menuButton('Save', () => command('save'));
