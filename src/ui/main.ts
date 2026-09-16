@@ -393,7 +393,9 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       const unavailable = selectedAvailable ? 'Available' : `Unavailable: ${text(selected.reason, 'No reason reported')}`;
       spellInfo.textContent = `${text(selected.name, selectedSpell)} · ${text(selected.target, 'target unknown')}\n${text(selected.description, 'No description')}\nCost ${text(selected.cost, '0')} · windup ${text(selected.windup, '0')}s · recovery ${text(selected.recovery, '0')}s\n${unavailable}`;
     }
-    spellTarget.hidden = !selectedKnown;
+    // display, not hidden: the label carries display:block, which overrides
+    // the hidden attribute (see the readme view NOTE). See F10.
+    spellTarget.style.display = selectedKnown ? 'block' : 'none';
     spellCancel.disabled = !selectedKnown;
     spellCast.disabled = !selectedKnown || !selectedAvailable;
     for (const assign of spellAssign) assign.disabled = !selectedKnown;
@@ -559,7 +561,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     renderRoster(); renderPartyTools(); renderInventory(); renderCombat(); renderMagic();
   };
   const render = (envelope: Envelope | null): void => uiProfile.measure(() => renderState(envelope));
-  const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); if (event.code === 'Escape') cancelDrag(); };
+  const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
   const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !panel.contains(event.target) && !inventory.contains(event.target)) cancelDrag(); };
   const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget) && !inventory.contains(event.relatedTarget)) cancelDrag(); };
@@ -628,16 +630,27 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc menu.');
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
   readmeSection('Formation', 'The left panel shows party positions with the party facing. The chevron marks each member\u2019s facing. Drag a member onto another ring to swap them. Drop a member onto a dashed gap \u2014 or click the gap with a member selected \u2014 to move them there.');
   readmeSection('Inventory', 'Open it from this menu. Select an item, then choose a destination, an equipment slot, or a use action. Drag items between owners to transfer them.');
-  readmeSection('Menu', 'Esc pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
+  readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
   (readmeView.lastChild as HTMLElement).style.textAlign = 'center';
   menu.append(menuHead, menuStatus, menuList, readmeView);
+  // Gameplay-key guard like every other panel (F7): stop propagation so the
+  // Engine host never sees menu keypresses, without preventDefault so
+  // Space/Enter still activate focused buttons. Escape is not a gameplay
+  // key and passes through to the window menuEscape handler.
+  menu.addEventListener('keydown', stopToggleKeys, true);
+  menu.addEventListener('keyup', stopToggleKeys, true);
   root.append(menu);
+  const resumeButton = menuButton('Resume', () => closeMenu(true));
   let menuOpen = false;
-  let menuPaused = false;
+  // Entry-state snapshot, not a write-once flag: any pause flip while the
+  // menu is open (menu Pause button, Load restoring paused state, P key)
+  // must be honored at close, so close compares live state to entry state
+  // instead of trusting a flag set at open. See F1/F2.
+  let menuEntryPaused = false;
   let menuReturnFocus: Element | null = null;
   const closeMenu = (resume: boolean): void => {
     if (!menuOpen) return;
@@ -647,22 +660,20 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     readmeView.style.display = 'none';
     menuList.hidden = false;
     menuList.style.display = 'grid';
-    if (resume && menuPaused) command('pause');
-    menuPaused = false;
-    if (menuReturnFocus instanceof HTMLElement) menuReturnFocus.focus();
+    // Resume only a menu-observed live game: entered live and still paused.
+    // Entered-paused games, and anything Load/Restart rebuilt, are untouched.
+    if (resume && !menuEntryPaused && numeric(state.paused) === 1) command('pause');
+    if (menuReturnFocus instanceof HTMLElement && document.contains(menuReturnFocus)) menuReturnFocus.focus();
   };
   const openMenu = (): void => {
     if (menuOpen) return;
     menuOpen = true;
+    menuEntryPaused = numeric(state.paused) === 1;
     menuReturnFocus = document.activeElement instanceof Element ? document.activeElement : null;
     menu.hidden = false;
-    if (numeric(state.paused) !== 1) {
-      command('pause');
-      menuPaused = true;
-    }
+    if (!menuEntryPaused) command('pause');
     resumeButton.focus();
   };
-  const resumeButton = menuButton('Resume', () => closeMenu(true));
   menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
   menuButton('Inventory & equipment', () => { setLegacyVisible(true); inventory.open = true; closeMenu(false); });
   menuButton('Formation & party', () => { setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
@@ -670,15 +681,35 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   menuButton('Rest', () => command('rest'));
   menuButton('Save', () => command('save'));
   menuButton('Load', () => command('load'));
-  menuButton('Restart', () => { menuPaused = false; command('restart'); closeMenu(false); });
+  menuButton('Restart', () => { command('restart'); closeMenu(false); });
   const menuEscape = (event: KeyboardEvent): void => {
     if (event.code !== 'Escape') return;
+    // Never steal Escape from the Engine debug console (its bubble-phase
+    // isolation runs after this window-capture listener) or from editable
+    // fields. Menu-focus Escape still toggles: the menu holds no inputs.
+    if (event.target instanceof Node) {
+      if (event.target instanceof HTMLElement && event.target.closest('input,textarea,select,[contenteditable="true"],#rifles-debug-console')) return;
+      if (document.querySelector('[aria-label="Debug tools"]')?.contains(event.target)) return;
+    }
     event.preventDefault();
     event.stopPropagation();
     if (menu.hidden) openMenu(); else closeMenu(true);
   };
   window.addEventListener('keydown', menuEscape, true);
+  // Non-Escape opener (pointer-lock and remapped keyboards may never deliver
+  // Esc): small fixed Menu button where the legacy toggle used to live. See F6.
+  const menuButtonTop = document.createElement('button');
+  menuButtonTop.type = 'button';
+  menuButtonTop.textContent = 'Menu';
+  menuButtonTop.title = 'Open the game menu (Esc)';
+  menuButtonTop.setAttribute('aria-label', 'Open the game menu');
+  menuButtonTop.dataset.rustyUiInteractive = 'true';
+  menuButtonTop.style.cssText = 'position:fixed;left:12px;top:12px;z-index:3;background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:4px 6px;cursor:pointer;font:12px/1.35 system-ui';
+  menuButtonTop.addEventListener('keydown', stopToggleKeys, true);
+  menuButtonTop.addEventListener('keyup', stopToggleKeys, true);
+  menuButtonTop.addEventListener('click', openMenu);
+  root.append(menuButtonTop);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); menu.remove(); inventory.remove(); panel.remove(); } };
 }
