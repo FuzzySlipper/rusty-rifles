@@ -38,12 +38,11 @@ function ownerRevision(owner: Record<string, unknown>): string | null { const re
  */
 export function mountProductUi(root: Element, context: UiContext): Readonly<{ dispose(): void }> {
   const uiProfile = new UiProfile();
-  const debugTools = mountDebugTools(root, () => uiProfile.read());
+  const debugTools = mountDebugTools(root);
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Expedition'); panel.dataset.rustyUiInteractive = 'true';
   panel.style.cssText = 'box-sizing:border-box;color:#eee6d5;background:#171914e8;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;left:12px;margin:0;max-height:calc(100vh - 80px);overflow:auto;padding:10px 12px;pointer-events:auto;position:fixed;top:12px;width:min(380px,calc(100vw - 24px))';
   const title = document.createElement('strong'); title.textContent = 'Rusty Rifles';
-  const help = document.createElement('p'); help.textContent = 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle · P pause · K save · L load'; help.style.cssText = 'font-size:11px;margin:3px 0;color:#c9c0ae';
 
   const status = document.createElement('output'); status.dataset.inventoryStatus = 'true';
   const feedback = document.createElement('p'); feedback.dataset.inventoryFeedback = 'true'; feedback.setAttribute('role', 'status'); feedback.style.cssText = 'min-height:1.35em;margin:4px 0;color:#ead27e';
@@ -537,6 +536,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     feedback.textContent = nextFeedback;
     pause.textContent = numeric(state.paused) === 1 ? 'Resume' : 'Pause';
     inventoryFeedback.textContent = uiFeedback || nextFeedback;
+    menuStatus.textContent = uiFeedback || nextFeedback;
+    menuPause.textContent = numeric(state.paused) === 1 ? 'Pause: on' : 'Pause: off';
     artStatus.textContent = `${text(state.artStyle)} · Light ${text(state.lightPosition)} · ${numeric(state.roomLights) === 1 ? 'Room lights on' : 'Room fill off'}`;
     const puzzleState = record(state.puzzle);
     const leverTarget = numeric(puzzleState.leverId, -1);
@@ -565,12 +566,25 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   inventory.addEventListener('keydown', stopGameplayKeys, true); inventory.addEventListener('keyup', stopGameplayKeys, true); inventory.addEventListener('focusout', focusOutside);
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, help, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
-  // First game-UI pass: the bottom bar is the default player view. Legacy
-  // agent panels stay in the DOM behind one toggle so existing dataset hooks
-  // and exercised commands keep working while the dropdown layout is hidden.
+  panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
+  // Escape menu: the game-UI front door. Centered button list; opening it
+  // pauses a live expedition, closing via Resume restores only a
+  // menu-caused pause. Legacy agent panels stay in the DOM behind the menu
+  // toggle so existing dataset hooks and exercised commands keep working.
+  const menu = document.createElement('div');
+  menu.dataset.gameMenu = 'true';
+  menu.hidden = true;
+  menu.setAttribute('role', 'dialog');
+  menu.setAttribute('aria-label', 'Game menu');
+  menu.dataset.rustyUiInteractive = 'true';
+  menu.style.cssText = 'box-sizing:border-box;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;width:min(360px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;padding:14px 16px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:6px;font:13px/1.4 system-ui;pointer-events:auto;box-shadow:0 12px 48px #000000cc';
+  const menuHead = document.createElement('div');
+  menuHead.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px';
   const legacyToggle = document.createElement('button'); legacyToggle.type = 'button'; legacyToggle.textContent = 'Show legacy panels'; legacyToggle.dataset.legacyToggle = 'true'; legacyToggle.dataset.rustyUiInteractive = 'true'; legacyToggle.setAttribute('aria-expanded', 'false');
-  legacyToggle.style.cssText = 'position:fixed;left:12px;top:12px;z-index:3;background:#33392f;color:#eee6d5;border:1px solid #827556;border-radius:3px;padding:4px 6px;cursor:pointer;font:12px/1.35 system-ui';
+  legacyToggle.style.cssText = 'background:none;color:#c9c0ae;border:1px solid #574f3d;border-radius:3px;padding:3px 6px;cursor:pointer;font:11px/1.35 system-ui';
+  const menuTitle = document.createElement('strong'); menuTitle.textContent = 'Menu'; menuTitle.style.cssText = 'color:#e4bd63;letter-spacing:0.12em;text-transform:uppercase;font-size:12px';
+  const menuHeadSpacer = document.createElement('span'); menuHeadSpacer.style.cssText = 'width:40px';
+  menuHead.append(legacyToggle, menuTitle, menuHeadSpacer);
   // Host-input guard (see F4): stop gameplay keys here so the Engine host
   // never sees them, but do NOT preventDefault — Space/Enter must still
   // activate the button through the default action.
@@ -584,8 +598,87 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     legacyToggle.setAttribute('aria-expanded', String(visible));
   };
   legacyToggle.addEventListener('click', () => setLegacyVisible(panel.hidden));
-  root.append(legacyToggle);
+  const menuStatus = document.createElement('output');
+  menuStatus.dataset.menuFeedback = 'true';
+  menuStatus.setAttribute('role', 'status');
+  menuStatus.style.cssText = 'display:block;min-height:1.4em;margin:0 0 8px;color:#ead27e;text-align:center';
+  const menuList = document.createElement('div');
+  menuList.style.cssText = 'display:grid;gap:6px';
+  const menuButton = (label: string, action: () => void): HTMLButtonElement => {
+    const element = button(label, action);
+    element.style.textAlign = 'center';
+    element.style.padding = '7px 6px';
+    menuList.append(element);
+    return element;
+  };
+  const readmeView = document.createElement('div');
+  readmeView.hidden = true;
+  // NOTE: do not put display:grid in cssText — inline display overrides the
+  // hidden attribute (UA display:none loses), so the view would always show.
+  // Visibility is driven by style.display in the toggle handlers below.
+  readmeView.style.cssText = 'gap:8px';
+  readmeView.style.display = 'none';
+  const readmeTitle = document.createElement('strong'); readmeTitle.textContent = 'Field guide'; readmeTitle.style.cssText = 'text-align:center;color:#e4bd63';
+  const readmeBody = document.createElement('div');
+  readmeBody.style.cssText = 'display:grid;gap:6px;color:#e7dcc4;font-size:12px;white-space:pre-line';
+  const readmeSection = (heading: string, body: string): void => {
+    const section = document.createElement('section');
+    const title = document.createElement('strong'); title.textContent = heading; title.style.cssText = 'display:block;color:#e4bd63;margin-bottom:2px';
+    const text = document.createElement('span'); text.textContent = body;
+    section.append(title, text);
+    readmeBody.append(section);
+  };
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc menu.');
+  readmeSection('Formation', 'The left panel shows party positions with the party facing. The chevron marks each member\u2019s facing. Drag a member onto another ring to swap them. Drop a member onto a dashed gap \u2014 or click the gap with a member selected \u2014 to move them there.');
+  readmeSection('Inventory', 'Open it from this menu. Select an item, then choose a destination, an equipment slot, or a use action. Drag items between owners to transfer them.');
+  readmeSection('Menu', 'Esc pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
+  readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
+  (readmeView.lastChild as HTMLElement).style.textAlign = 'center';
+  menu.append(menuHead, menuStatus, menuList, readmeView);
+  root.append(menu);
+  let menuOpen = false;
+  let menuPaused = false;
+  let menuReturnFocus: Element | null = null;
+  const closeMenu = (resume: boolean): void => {
+    if (!menuOpen) return;
+    menuOpen = false;
+    menu.hidden = true;
+    readmeView.hidden = true;
+    readmeView.style.display = 'none';
+    menuList.hidden = false;
+    menuList.style.display = 'grid';
+    if (resume && menuPaused) command('pause');
+    menuPaused = false;
+    if (menuReturnFocus instanceof HTMLElement) menuReturnFocus.focus();
+  };
+  const openMenu = (): void => {
+    if (menuOpen) return;
+    menuOpen = true;
+    menuReturnFocus = document.activeElement instanceof Element ? document.activeElement : null;
+    menu.hidden = false;
+    if (numeric(state.paused) !== 1) {
+      command('pause');
+      menuPaused = true;
+    }
+    resumeButton.focus();
+  };
+  const resumeButton = menuButton('Resume', () => closeMenu(true));
+  menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
+  menuButton('Inventory & equipment', () => { setLegacyVisible(true); inventory.open = true; closeMenu(false); });
+  menuButton('Formation & party', () => { setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
+  const menuPause = menuButton('Pause', () => command('pause'));
+  menuButton('Rest', () => command('rest'));
+  menuButton('Save', () => command('save'));
+  menuButton('Load', () => command('load'));
+  menuButton('Restart', () => { menuPaused = false; command('restart'); closeMenu(false); });
+  const menuEscape = (event: KeyboardEvent): void => {
+    if (event.code !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (menu.hidden) openMenu(); else closeMenu(true);
+  };
+  window.addEventListener('keydown', menuEscape, true);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); legacyToggle.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); inventory.remove(); panel.remove(); } };
 }

@@ -1,9 +1,11 @@
 # Runtime debug tools
 
 The top-right **Debug** toolbar hosts the packaged Engine UI. Press Escape to
-release the game cursor, then use **Open debug console** or **Show metrics**.
-The buttons are also keyboard accessible with Tab and Enter. **Hide metrics**
-and **Close debug console** remove the readouts when finished.
+pause and open the game menu (this also releases the game cursor), then use
+**console** or **metrics**.
+The buttons are also keyboard accessible with Tab and Enter. **metrics**
+toggles the readout (aria-pressed tracks visibility) and **close** removes
+the console when finished.
 
 The console provides Engine's generated command catalog, completion, response
 transcript with Copy, diagnostics, and product/runtime lane telemetry. Useful
@@ -106,8 +108,9 @@ See `docs/milestone-7.md` for offline JSON/SVG exports and evidence limits.
 
 ## Browser-local UI timing
 
-The Debug toolbar's **UI timing** button samples this browser's product DOM
-callback and delivery intervals. Click again to refresh the readout. Where the
+The product UI samples this browser's DOM callback and delivery intervals
+(via `UiProfile`; no toolbar button — the readout is a development aid, not a
+player feature). Where the
 browser supports Long Animation Frames, it also lists the five longest frames,
 script locations, forced layout time and frame age. These are local observations;
 they do not use the shared renderer-metrics snapshot. Large old startup samples

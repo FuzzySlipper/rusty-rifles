@@ -6,7 +6,7 @@ import {
 } from '@rusty-engine/live-debug';
 
 /** Engine owns commands, diagnostics and metric sampling; Rifles only hosts the UI. */
-export function mountDebugTools(root: Element, readUiTiming: () => string): Readonly<{ dispose(): void }> {
+export function mountDebugTools(root: Element): Readonly<{ dispose(): void }> {
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Debug tools');
   panel.dataset.rustyUiInteractive = 'true';
@@ -24,20 +24,12 @@ export function mountDebugTools(root: Element, readUiTiming: () => string): Read
     element.type = 'button'; element.textContent = label;
     return element;
   };
-  const consoleButton = button('Open debug console');
+  const consoleButton = button('console');
   consoleButton.setAttribute('aria-expanded', 'false');
   consoleButton.setAttribute('aria-controls', 'rifles-debug-console');
-  const showMetrics = button('Show metrics');
-  const hideMetrics = button('Hide metrics');
-  const uiTiming = button('UI timing');
-  const uiTimingOutput = document.createElement('pre');
-  uiTimingOutput.hidden = true;
-  uiTimingOutput.style.cssText = 'white-space:pre-wrap;max-width:560px;font:12px/1.4 monospace';
-  uiTiming.addEventListener('click', () => {
-    uiTimingOutput.textContent = readUiTiming();
-    uiTimingOutput.hidden = false;
-  });
-  toolbar.append(title, consoleButton, showMetrics, hideMetrics, uiTiming);
+  const metricsButton = button('metrics');
+  metricsButton.setAttribute('aria-pressed', 'false');
+  toolbar.append(title, consoleButton, metricsButton);
   const status = document.createElement('p');
   status.setAttribute('role', 'status'); status.hidden = true;
   const metricsHost = document.createElement('div');
@@ -48,7 +40,7 @@ export function mountDebugTools(root: Element, readUiTiming: () => string): Read
   consoleHost.style.cssText = 'width:min(600px,calc(100vw - 44px));margin-top:8px';
   const style = document.createElement('style');
   style.textContent = '#rifles-debug-console [aria-label="Command completions"] { max-height: 8rem; overflow: auto; }';
-  panel.append(style, toolbar, status, uiTimingOutput, metricsHost, consoleHost);
+  panel.append(style, toolbar, status, metricsHost, consoleHost);
   root.append(panel);
 
   const transport = createLiveDebugHttpTransport();
@@ -62,24 +54,26 @@ export function mountDebugTools(root: Element, readUiTiming: () => string): Read
     status.textContent = error instanceof Error ? error.message : String(error);
     status.hidden = false;
   };
+  let metricsVisible = false;
   const setMetrics = async (visible: boolean): Promise<void> => {
-    showMetrics.disabled = hideMetrics.disabled = true;
+    metricsButton.disabled = true;
     status.hidden = false; status.textContent = 'Waiting for Engine metrics command…';
     try {
       const result = await transport.execute(visible ? 'engine.renderer.show' : 'engine.renderer.hide', requests.signal);
       if (disposed) return;
       if (!result.succeeded) throw new Error(result.message);
+      metricsVisible = visible;
+      metricsButton.setAttribute('aria-pressed', String(visible));
       status.hidden = true;
     } catch (error) { report(error); }
-    finally { if (!disposed) showMetrics.disabled = hideMetrics.disabled = false; }
+    finally { if (!disposed) metricsButton.disabled = false; }
   };
-  showMetrics.addEventListener('click', () => { void setMetrics(true); });
-  hideMetrics.addEventListener('click', () => { void setMetrics(false); });
+  metricsButton.addEventListener('click', () => { void setMetrics(!metricsVisible); });
   consoleButton.addEventListener('click', () => {
     if (consolePanel !== null) {
       consolePanel.dispose(); consolePanel = null;
       consoleHost.replaceChildren(); consoleHost.hidden = true;
-      consoleButton.textContent = 'Open debug console';
+      consoleButton.textContent = 'console';
       consoleButton.setAttribute('aria-expanded', 'false');
       return;
     }
@@ -89,7 +83,7 @@ export function mountDebugTools(root: Element, readUiTiming: () => string): Read
     void mountLiveDebugPanel(consoleHost, { enabled: true, presentation: 'inline', transport }).then((mounted) => {
       if (disposed) { mounted.dispose(); return; }
       consolePanel = mounted;
-      consoleButton.textContent = 'Close debug console';
+      consoleButton.textContent = 'close';
       consoleButton.setAttribute('aria-expanded', 'true');
       status.hidden = true;
     }).catch((error: unknown) => {
