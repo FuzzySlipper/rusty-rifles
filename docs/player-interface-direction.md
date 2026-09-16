@@ -41,3 +41,12 @@ When extending the relevant code:
 The campaign's four-member 2×2 baseline remains valid. Apply these boundaries
 when touching formation and player UI, and revisit concrete layout and rules
 with the owner before implementing the broader positional design.
+
+## Decided 2026-09-16: 5×5 formation grid (owner-directed)
+- The position bank (`content/definitions/party.json`) is a 5×5 formation-local
+  grid (ids `r{row}c{col}`), 24 authored cells; the center cell (2,2) is
+  intentionally unauthored and blocked in the UI — its gameplay use comes later.
+- Rank is provisionally the grid row (front row rank 0). Only row 0 reaches
+  melee today; retune when positional combat rules land. No new combat bonuses
+  or targeting rules were inferred: reach, damage order, and hit geometry all
+  still derive from rank and offsets exactly as before.

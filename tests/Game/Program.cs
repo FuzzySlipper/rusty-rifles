@@ -115,12 +115,12 @@ Require(pair.Members.Count == 2 && pair.MoveFormation("warden", "reserve-b") && 
     "Smaller parties construct and move within the same authored positions.");
 List<(string Id, string Position, float Forward, float Left, bool Living)> line = definitions.Party.Positions
     .Select(p => (Id: p.Id, Position: p.Id, Forward: p.OffsetForward, Left: p.OffsetLeft, Living: true)).ToList();
-Require(FormationPositionDefinition.FirstEncountered(-1, 0, line) == "front-left", "A frontal ray meets the front-left member first.");
-Require(FormationPositionDefinition.FirstEncountered(1, 0, line) == "rear-left", "A rear ray meets the rear rank first.");
-Require(FormationPositionDefinition.FirstEncountered(0, -1, line) == "front-left", "A flank ray meets the near side first.");
-Require(FormationPositionDefinition.FirstEncountered(0, 1, line) == "front-right", "The far flank meets its own side first.");
+Require(FormationPositionDefinition.FirstEncountered(-1, 0, line) == "r0c0", "A frontal ray meets the front-row first cell first.");
+Require(FormationPositionDefinition.FirstEncountered(1, 0, line) == "r4c0", "A rear ray meets the rear rank first.");
+Require(FormationPositionDefinition.FirstEncountered(0, -1, line) == "r0c0", "A flank ray meets the near side first.");
+Require(FormationPositionDefinition.FirstEncountered(0, 1, line) == "r0c4", "The far flank meets its own side first.");
 Require(FormationPositionDefinition.FirstEncountered(0, 0, line) is null, "A degenerate ray selects nobody.");
-Require(FormationPositionDefinition.FirstEncountered(-1, 0, line.Select(m => m.Id == "front-left" ? (m.Id, m.Position, m.Forward, m.Left, false) : m).ToList()) == "front-right",
+Require(FormationPositionDefinition.FirstEncountered(-1, 0, line.Select(m => m.Id == "r0c0" ? (m.Id, m.Position, m.Forward, m.Left, false) : m).ToList()) == "r0c1",
     "Fallen members no longer block incoming fire.");
 Require(FormationPositionDefinition.FirstEncountered(1, 0, line.Select(m => (m.Id, m.Position, 0f, 0f, m.Living)).ToList()) is null,
     "Content without discriminating offsets falls back to rank order.");

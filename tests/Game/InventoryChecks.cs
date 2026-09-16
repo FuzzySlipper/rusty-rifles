@@ -149,16 +149,14 @@ internal static class InventoryChecks
         Require(!party.EligibleMembers(PartyReach.Melee).Any(member => member.Definition.Id == "blade"),
             "Dead members are excluded from reach eligibility.");
 
-        List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
-            new FormationPositionDefinition("reserve", "Reserve", 1)];
-        PartyState openParty = new(openPositions, definitions.Party.MaxPartySize, preset.Members);
-        Require(openParty.MoveFormation("warden", "reserve") && Member(openParty, "warden").Position == "reserve",
+        PartyState openParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, preset.Members);
+        Require(openParty.MoveFormation("warden", "r0c0") && Member(openParty, "warden").Position == "r0c0",
             "Living members can move into an unoccupied formation position.");
-        Require(!openParty.MoveFormation("warden", "rear-left") && !openParty.MoveFormation("no-such-member", "reserve")
+        Require(!openParty.MoveFormation("warden", "r0c3") && !openParty.MoveFormation("no-such-member", "r0c0")
             && !openParty.MoveFormation("warden", "no-such-position"),
             "Occupied, unknown-member, and unknown-position formation moves are rejected.");
         Member(openParty, "blade").ApplyDamage(long.MaxValue);
-        Require(!openParty.MoveFormation("blade", "front-left"),
+        Require(!openParty.MoveFormation("blade", "r0c2"),
             "Dead members cannot change formation positions.");
 
         IReadOnlyList<MemberSnapshot> saved = party.Capture();

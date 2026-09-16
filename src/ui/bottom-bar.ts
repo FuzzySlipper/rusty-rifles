@@ -35,27 +35,22 @@ function authoredPositions(state: Values): Array<{ id: string; name: string; ran
     .sort((left, right) => left.rank - right.rank || left.id.localeCompare(right.id));
 }
 
-function facingVector(facing: string): { x: number; y: number } {
-  switch (facing.toLowerCase()) {
-    case 'east': return { x: 1, y: 0 };
-    case 'south': return { x: 0, y: 1 };
-    case 'west': return { x: -1, y: 0 };
-    default: return { x: 0, y: -1 };
-  }
+// Formation-local grid cell from authored offsets. The bank lays cells on a
+// 0.25 step around (forward 0, left 0); col grows to the party's right,
+// row grows toward the rear. Returns null outside the 5×5 board (including
+// non-finite input) so stray positions overflow instead of throwing.
+function gridCell(offsetForward: number, offsetLeft: number): { col: number; row: number } | null {
+  if (!Number.isFinite(offsetForward) || !Number.isFinite(offsetLeft)) return null;
+  const col = Math.round(2 - offsetLeft / 0.25);
+  const row = Math.round(2 - offsetForward / 0.25);
+  if (col < 0 || col > 4 || row < 0 || row > 4) return null;
+  return { col, row };
 }
 
-// World-aligned compass placement: formation-local (forward, left) offsets are
-// rotated by the party facing into world dx (east+)/dy (south+) deltas, then
-// mapped onto the north-up board. Front of a north-facing party lands at the
-// top; turning east swings it to the right rim.
-function boardPoint(forward: number, left: number, facing: string): { x: number; y: number } {
-  const front = facingVector(facing);
-  const side = { x: front.y, y: -front.x };
-  const dx = front.x * forward + side.x * left;
-  const dy = front.y * forward + side.y * left;
-  const scale = 85;
-  const clamp = (value: number): number => Math.min(90, Math.max(10, value));
-  return { x: clamp(50 + dx * scale), y: clamp(50 + dy * scale) };
+// The middle cell is reserved for later rules: unauthored in C#, blocked in
+// the UI. Both sides reject it independently (defense in depth).
+function isBlockedCell(col: number, row: number): boolean {
+  return col === 2 && row === 2;
 }
 
 const tokenPalette = ['#7fb3d5', '#8ca65c', '#e4bd63', '#c96a5a', '#9b7bd5', '#6fc2b4', '#d58cc0', '#a5c65c', '#6a9ae0', '#e08c5a'];
@@ -85,7 +80,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr) 220px;gap:10px;align-items:stretch;padding:10px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(320px,46vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:8px 14px;background:#141610f2;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(240px,34vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
@@ -100,8 +95,21 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationGrid.dataset.barFormation = 'true';
   formationGrid.tabIndex = -1;
   formationGrid.setAttribute('role', 'group');
-  formationGrid.setAttribute('aria-label', 'Formation positions. Drag a member onto another ring to swap, onto a dashed gap to move.');
-  formationGrid.style.cssText = 'position:relative;width:min(100%,216px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610),repeating-linear-gradient(0deg,transparent 0 calc(25% - 1px),#ffffff10 calc(25% - 1px) 25%),repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),#ffffff10 calc(25% - 1px) 25%);box-shadow:inset 0 0 24px #000000aa';
+  formationGrid.setAttribute('aria-label', 'Formation grid. Drag a member onto another cell to swap, onto an empty cell to move.');
+  formationGrid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;width:min(100%,170px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
+  // Blocked middle cell: static, inert, never a token. C# leaves it
+  // unauthored too, so even a forged move intent is rejected server-side.
+  const blockedCell = document.createElement('div');
+  blockedCell.style.cssText = 'position:relative;grid-row:3;grid-column:3;display:flex;align-items:center;justify-content:center;min-height:0';
+  const blockedMark = document.createElement('button');
+  blockedMark.type = 'button';
+  blockedMark.disabled = true;
+  blockedMark.textContent = '×';
+  blockedMark.title = 'Blocked slot (reserved for later rules)';
+  blockedMark.setAttribute('aria-label', 'Blocked formation slot, reserved for later rules');
+  blockedMark.style.cssText = 'height:24px;width:24px;border-radius:50%;border:1px dashed #4a4438;background:#10120f;color:#5a5348;font:14px/1 system-ui;cursor:not-allowed';
+  blockedCell.append(blockedMark);
+  formationGrid.append(blockedCell);
   const formationOverflow = document.createElement('div');
   formationOverflow.dataset.barFormationOverflow = 'true';
   formationOverflow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;min-height:0';
@@ -128,7 +136,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   mapLocation.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center';
   const mapDial = document.createElement('div');
   mapDial.dataset.barDial = 'true';
-  mapDial.style.cssText = 'position:relative;width:min(100%,188px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
+  mapDial.style.cssText = 'position:relative;width:min(100%,150px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
   const mapView = document.createElementNS(svgNamespace, 'svg');
   mapView.setAttribute('role', 'img');
   mapView.setAttribute('aria-label', 'Discovered floor map');
@@ -150,8 +158,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     marker: SVGElement;
     chevron: SVGElement;
     emblem: HTMLElement;
-    name: HTMLElement;
-    detail: HTMLElement;
     health: HTMLElement;
   }>;
   // HTML5 drag source: the dragged member id. dataTransfer carries it too,
@@ -167,13 +173,16 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     }
   };
   const createToken = (key: string): Token => {
+    // Grid cell: compact medallion + facing chevron overlay + health bar.
+    // Names live in title/aria-label (cells are ~34px; captions wrapped and
+    // broke the old dial layout).
     const anchor = document.createElement('div');
     anchor.dataset.barAnchor = key;
-    anchor.style.cssText = 'position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:76px;z-index:2';
+    anchor.style.cssText = 'position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;min-width:0';
     const chevron = document.createElementNS(svgNamespace, 'svg');
     chevron.setAttribute('viewBox', '0 0 14 14');
     chevron.setAttribute('aria-hidden', 'true');
-    (chevron as unknown as HTMLElement).style.cssText = 'height:13px;width:13px;visibility:hidden;margin-bottom:-2px';
+    (chevron as unknown as HTMLElement).style.cssText = 'position:absolute;top:-4px;left:50%;transform:translateX(-50%);height:8px;width:8px;visibility:hidden;z-index:3';
     const marker = document.createElementNS(svgNamespace, 'path');
     marker.setAttribute('d', 'M 7 1 L 12.5 12 L 7 9.6 L 1.5 12 Z');
     marker.setAttribute('fill', '#c9b98a');
@@ -184,20 +193,16 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     select.type = 'button';
     select.dataset.barMember = key;
     select.disabled = true;
-    select.style.cssText = 'height:40px;width:40px;border-radius:50%;border:2px solid #574f3d;background:radial-gradient(circle at 50% 35%,#3d4338,#22251f 75%);color:#f0e6d2;cursor:pointer;font:700 13px/1 system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #00000088';
+    select.style.cssText = 'height:24px;width:24px;border-radius:50%;border:2px solid #574f3d;background:radial-gradient(circle at 50% 35%,#3d4338,#22251f 75%);color:#f0e6d2;cursor:pointer;font:700 10px/1 system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #00000088;padding:0';
     const emblem = document.createElement('span');
     emblem.setAttribute('aria-hidden', 'true');
     select.append(emblem);
-    const name = document.createElement('strong');
-    name.style.cssText = 'display:block;font-size:10px;max-width:74px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;text-shadow:0 1px 2px #000';
-    const detail = document.createElement('span');
-    detail.style.cssText = 'display:block;font-size:10px;color:#c9c0ae;text-shadow:0 1px 2px #000';
     const track = document.createElement('span');
-    track.style.cssText = 'display:block;height:4px;width:40px;border-radius:2px;background:#3a352a;margin-top:2px;overflow:hidden';
+    track.style.cssText = 'display:block;height:3px;width:22px;border-radius:2px;background:#3a352a;margin-top:2px;overflow:hidden';
     const health = document.createElement('span');
     health.style.cssText = 'display:block;height:100%;width:0%;background:#8ca65c';
     track.append(health);
-    anchor.append(chevron as unknown as Node, select, name, detail, track);
+    anchor.append(chevron as unknown as Node, select, track);
     formationGrid.append(anchor);
     select.addEventListener('click', () => {
       const memberId = select.dataset.memberId;
@@ -206,7 +211,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         command('select', { member: memberId });
         return;
       }
-      // Click alternative to dragging: a dashed gap moves the selected
+      // Click alternative to dragging: an empty cell moves the selected
       // member there. Dragged swaps keep the legacy Swap button as backup.
       if (gapPosition && selectedMemberId) command('move', { member: selectedMemberId, position: gapPosition });
     });
@@ -235,6 +240,13 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       event.stopPropagation();
       const dragged = readFormationDrag(event);
       if (!dragged) return;
+      // The middle cell is reserved for later rules: never accept a drop
+      // there, even if a future bank authors it. C# rejects it too.
+      const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
+      if (at.length === 2 && isBlockedCell(at[0], at[1])) {
+        formationDragId = null;
+        return;
+      }
       const targetMember = select.dataset.memberId;
       const gapPosition = select.dataset.gapPosition;
       if (targetMember) {
@@ -244,7 +256,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       }
       formationDragId = null;
     });
-    return { anchor, select, marker, chevron, emblem, name, detail, health };
+    return { anchor, select, marker, chevron, emblem, health };
   };
   // Keyed by member id while occupied, by `empty:<slot>` for baseline gaps.
   // Tokens persist across renders so focus and drag state survive updates.
@@ -341,23 +353,26 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const signature = JSON.stringify([party, selectedMember, state.positions, partyFacing]);
     if (signature === formationSignature) return;
     formationSignature = signature;
-    // Compass placement: every authored position renders at its rotated
-    // (forward, left) offset on the north-up board, with a dashed gap where
-    // unoccupied. Members on unauthored positions overflow into the strip
-    // below the dial so a larger future party never breaks the layout.
+    // Grid placement: every authored position renders in its formation-local
+    // cell (row 0 = front, always at the top — turning the party never
+    // shuffles the board; world rotation lives in C# hit geometry), with an
+    // empty gap cell where unoccupied. Offsets outside the 5x5 board, and
+    // members on unauthored positions, overflow into the strip below so a
+    // larger future party never breaks the layout.
     const claimed = new Set<string>();
-    const placed: Array<{ key: string; id: string; member: Values; positionId: string; color: string } | { key: string; id: null; position: { id: string; name: string; offsetForward: number; offsetLeft: number } }> = [];
+    const placed: Array<{ key: string; id: string; member: Values; positionId: string; color: string; cell: { col: number; row: number } | null } | { key: string; id: null; position: { id: string; name: string }; cell: { col: number; row: number } | null }> = [];
     const layout = authoredPositions(state);
     const colorFor = (index: number): string => tokenPalette[index % tokenPalette.length];
     for (const [index, position] of layout.entries()) {
+      const cell = gridCell(position.offsetForward, position.offsetLeft);
       const found = entries(party).find(([id, member]) => !claimed.has(id) && text(member.position, '') === position.id);
       if (found) {
         claimed.add(found[0]);
         // Member keys live in a separate namespace from `empty:<id>` gap
         // keys so a hostile member id can never alias a gap token. See F7.
-        placed.push({ key: `member:${found[0]}`, id: found[0], member: found[1], positionId: position.id, color: colorFor(index) });
+        placed.push({ key: `member:${found[0]}`, id: found[0], member: found[1], positionId: position.id, color: colorFor(index), cell });
       } else {
-        placed.push({ key: `empty:${position.id}`, id: null, position });
+        placed.push({ key: `empty:${position.id}`, id: null, position, cell });
       }
     }
     const overflow: Array<{ key: string; id: string; member: Values; color: string }> = [];
@@ -377,7 +392,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     }
     const paintOccupied = (
       item: { key: string; id: string; member: Values; color: string },
-      point: { x: number; y: number } | null,
+      cell: { col: number; row: number } | null,
     ): void => {
       let token = memberTokens.get(item.key);
       if (!token) {
@@ -392,28 +407,29 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const fraction = Math.min(1, Math.max(0, vitality / maximum));
       const selected = item.id === selectedMember;
       const name = text(member.name, item.id);
-      token.anchor.style.left = point ? `${point.x}%` : '';
-      token.anchor.style.top = point ? `${point.y}%` : '';
-      token.anchor.style.position = point ? 'absolute' : 'static';
-      token.anchor.style.transform = point ? 'translate(-50%,-50%)' : 'none';
-      token.anchor.style.width = point ? '76px' : 'auto';
-      if (point) formationGrid.append(token.anchor);
-      else formationOverflow.append(token.anchor);
+      if (cell) {
+        token.anchor.style.gridRow = String(cell.row + 1);
+        token.anchor.style.gridColumn = String(cell.col + 1);
+        token.anchor.dataset.gridCell = `${cell.col},${cell.row}`;
+        formationGrid.append(token.anchor);
+      } else {
+        token.anchor.style.gridRow = '';
+        token.anchor.style.gridColumn = '';
+        delete token.anchor.dataset.gridCell;
+        formationOverflow.append(token.anchor);
+      }
       token.select.dataset.barMember = item.id;
       token.select.dataset.memberId = item.id;
       delete token.select.dataset.gapPosition;
       token.select.disabled = false;
       token.select.draggable = true;
       token.select.setAttribute('aria-pressed', String(selected));
-      token.select.setAttribute('aria-label', `${name}, ${positionName}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another member to swap.`);
-      token.select.title = `${positionName} · facing ${facing} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
+      token.select.setAttribute('aria-label', `${name}, ${positionName}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another cell to swap.`);
+      token.select.title = `${name} · ${positionName} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
       token.select.style.borderColor = selected ? '#e4bd63' : item.color;
+      token.select.style.borderStyle = 'solid';
       token.select.style.boxShadow = selected ? `0 0 0 2px #e4bd63,0 2px 6px #00000088` : '0 2px 6px #00000088';
       token.emblem.textContent = initials(name);
-      token.name.textContent = name;
-      // Vitality only: the position name lives in title/aria-label, since
-      // the 76px caption wraps a combined line and pushes the dial over.
-      token.detail.textContent = `${vitality}/${maximum}`;
       token.marker.setAttribute('transform', `rotate(${facingRotation(facing)} 7 7)`);
       token.marker.setAttribute('fill', item.color);
       (token.chevron as unknown as HTMLElement).style.visibility = 'visible';
@@ -427,16 +443,19 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
           token = createToken(item.key);
           memberTokens.set(item.key, token);
         }
-        const point = boardPoint(item.position.offsetForward, item.position.offsetLeft, partyFacing);
-        // Re-append like occupied tokens so DOM/Tab/SR order tracks rank
-        // order, not creation order. Re-appending a focused node preserves
-        // focus; true removals were already swept, with post-loop fallback.
+        if (item.cell) {
+          token.anchor.style.gridRow = String(item.cell.row + 1);
+          token.anchor.style.gridColumn = String(item.cell.col + 1);
+          token.anchor.dataset.gridCell = `${item.cell.col},${item.cell.row}`;
+        } else {
+          token.anchor.style.gridRow = '';
+          token.anchor.style.gridColumn = '';
+          delete token.anchor.dataset.gridCell;
+        }
+        // Re-append in layout (row-major) order so DOM/Tab/SR order tracks
+        // the visual grid. Re-appending a focused node preserves focus;
+        // true removals were already swept, with post-loop fallback.
         formationGrid.append(token.anchor);
-        token.anchor.style.left = `${point.x}%`;
-        token.anchor.style.top = `${point.y}%`;
-        token.anchor.style.position = 'absolute';
-        token.anchor.style.transform = 'translate(-50%,-50%)';
-        token.anchor.style.width = '76px';
         token.select.dataset.barMember = item.key;
         token.select.dataset.memberId = '';
         token.select.dataset.gapPosition = item.position.id;
@@ -449,25 +468,23 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         token.select.draggable = false;
         token.select.removeAttribute('aria-pressed');
         const selectedName = selectedMember ? text(record(party[selectedMember]).name, selectedMember) : '';
-        const hint = selectedMember ? `Activate to move ${selectedName} here` : 'Empty position';
+        const hint = selectedMember ? `Activate to move ${selectedName} here` : 'Empty cell';
         token.select.setAttribute('aria-label', `${item.position.name}, empty. ${hint}. Or drop a member here to move them.`);
         token.select.title = `${item.position.name} · empty · drop to move here`;
         token.select.style.borderColor = '#574f3d';
         token.select.style.borderStyle = 'dashed';
         token.select.style.boxShadow = 'none';
-        token.emblem.textContent = '·';
-        // Clear the occupied-state announcements too, or a screen reader keeps
-        // describing the departed member. See F2.
-        token.name.textContent = item.position.name;
-        token.detail.textContent = selectedMember ? `Move ${selectedName} ▸` : 'Empty';
+        token.emblem.textContent = '+';
         (token.chevron as unknown as HTMLElement).style.visibility = 'hidden';
         token.health.style.width = '0%';
         token.health.style.background = '#8ca65c';
         continue;
       }
+      // Authored cells place by their own offsets; an occupant on an
+      // off-board position (or a bank the UI predates) falls to overflow.
       const authored = layout.find(position => position.id === item.positionId);
-      const point = authored ? boardPoint(authored.offsetForward, authored.offsetLeft, partyFacing) : null;
-      paintOccupied(item, point);
+      const cell = authored ? gridCell(authored.offsetForward, authored.offsetLeft) : null;
+      paintOccupied(item, cell);
     }
     // Appending moves live nodes, so re-appending in order keeps the strip
     // sorted without detaching focus the way a full clear would.

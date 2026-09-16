@@ -635,7 +635,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     readmeBody.append(section);
   };
   readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
-  readmeSection('Formation', 'The left panel shows party positions with the party facing. The chevron marks each member\u2019s facing. Drag a member onto another ring to swap them. Drop a member onto a dashed gap \u2014 or click the gap with a member selected \u2014 to move them there.');
+  readmeSection('Formation', 'The left panel is a 5×5 formation grid, front row at the top. The chevron marks each member\u2019s facing. Drag a member onto another cell to swap them. Drop a member onto an empty cell \u2014 or click the cell with a member selected \u2014 to move them there. The middle cell is blocked for later rules.');
   readmeSection('Inventory', 'Open it from this menu. Select an item, then choose a destination, an equipment slot, or a use action. Drag items between owners to transfer them.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));

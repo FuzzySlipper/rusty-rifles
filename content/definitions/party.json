@@ -1,34 +1,54 @@
 {
   "maxPartySize": 10,
   "positions": [
-    { "id": "front-left", "name": "Front left", "rank": 0, "offsetForward": 0.25, "offsetLeft": 0.25 },
-    { "id": "front-right", "name": "Front right", "rank": 0, "offsetForward": 0.25, "offsetLeft": -0.25 },
-    { "id": "rear-left", "name": "Rear left", "rank": 1, "offsetForward": -0.25, "offsetLeft": 0.25 },
-    { "id": "rear-right", "name": "Rear right", "rank": 1, "offsetForward": -0.25, "offsetLeft": -0.25 }
+    { "id": "r0c0", "name": "Front far left", "rank": 0, "offsetForward": 0.5, "offsetLeft": 0.5 },
+    { "id": "r0c1", "name": "Front left", "rank": 0, "offsetForward": 0.5, "offsetLeft": 0.25 },
+    { "id": "r0c2", "name": "Front center", "rank": 0, "offsetForward": 0.5, "offsetLeft": 0.0 },
+    { "id": "r0c3", "name": "Front right", "rank": 0, "offsetForward": 0.5, "offsetLeft": -0.25 },
+    { "id": "r0c4", "name": "Front far right", "rank": 0, "offsetForward": 0.5, "offsetLeft": -0.5 },
+    { "id": "r1c0", "name": "Forward far left", "rank": 1, "offsetForward": 0.25, "offsetLeft": 0.5 },
+    { "id": "r1c1", "name": "Forward left", "rank": 1, "offsetForward": 0.25, "offsetLeft": 0.25 },
+    { "id": "r1c2", "name": "Forward center", "rank": 1, "offsetForward": 0.25, "offsetLeft": 0.0 },
+    { "id": "r1c3", "name": "Forward right", "rank": 1, "offsetForward": 0.25, "offsetLeft": -0.25 },
+    { "id": "r1c4", "name": "Forward far right", "rank": 1, "offsetForward": 0.25, "offsetLeft": -0.5 },
+    { "id": "r2c0", "name": "Middle far left", "rank": 2, "offsetForward": 0.0, "offsetLeft": 0.5 },
+    { "id": "r2c1", "name": "Middle left", "rank": 2, "offsetForward": 0.0, "offsetLeft": 0.25 },
+    { "id": "r2c3", "name": "Middle right", "rank": 2, "offsetForward": 0.0, "offsetLeft": -0.25 },
+    { "id": "r2c4", "name": "Middle far right", "rank": 2, "offsetForward": 0.0, "offsetLeft": -0.5 },
+    { "id": "r3c0", "name": "Rearward far left", "rank": 3, "offsetForward": -0.25, "offsetLeft": 0.5 },
+    { "id": "r3c1", "name": "Rearward left", "rank": 3, "offsetForward": -0.25, "offsetLeft": 0.25 },
+    { "id": "r3c2", "name": "Rearward center", "rank": 3, "offsetForward": -0.25, "offsetLeft": 0.0 },
+    { "id": "r3c3", "name": "Rearward right", "rank": 3, "offsetForward": -0.25, "offsetLeft": -0.25 },
+    { "id": "r3c4", "name": "Rearward far right", "rank": 3, "offsetForward": -0.25, "offsetLeft": -0.5 },
+    { "id": "r4c0", "name": "Rear far left", "rank": 4, "offsetForward": -0.5, "offsetLeft": 0.5 },
+    { "id": "r4c1", "name": "Rear left", "rank": 4, "offsetForward": -0.5, "offsetLeft": 0.25 },
+    { "id": "r4c2", "name": "Rear center", "rank": 4, "offsetForward": -0.5, "offsetLeft": 0.0 },
+    { "id": "r4c3", "name": "Rear right", "rank": 4, "offsetForward": -0.5, "offsetLeft": -0.25 },
+    { "id": "r4c4", "name": "Rear far right", "rank": 4, "offsetForward": -0.5, "offsetLeft": -0.5 }
   ],
   "members": [
     {
       "id": "warden",
       "name": "Warden",
-      "position": "front-left",
+      "position": "r0c1",
       "maximumVitality": 40
     },
     {
       "id": "blade",
       "name": "Blade",
-      "position": "front-right",
+      "position": "r0c3",
       "maximumVitality": 32
     },
     {
       "id": "seeker",
       "name": "Seeker",
-      "position": "rear-left",
+      "position": "r4c1",
       "maximumVitality": 26
     },
     {
       "id": "mender",
       "name": "Mender",
-      "position": "rear-right",
+      "position": "r4c3",
       "maximumVitality": 28
     }
   ]

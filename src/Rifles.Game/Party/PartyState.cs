@@ -27,8 +27,8 @@ internal sealed record FormationPositionDefinition(string Id, string Name, int R
     /// <summary>
     /// Picks the living member first encountered by a ray in formation-local
     /// direction, or null when the direction is degenerate. Ties break by
-    /// position id, then member id, so frontal attacks keep the old
-    /// front-left-first order deterministically.
+    /// position id, then member id, so frontal attacks keep row-major order
+    /// deterministically.
     /// </summary>
     internal static string? FirstEncountered(float directionForward, float directionLeft,
         IEnumerable<(string Id, string Position, float Forward, float Left, bool Living)> members)
