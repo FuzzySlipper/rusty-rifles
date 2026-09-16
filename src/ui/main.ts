@@ -683,7 +683,10 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     menuDetourLive = false;
     menuReturnFocus = document.activeElement instanceof Element ? document.activeElement : null;
     menu.hidden = false;
-    if (!menuEntryPaused) command('pause');
+    // Gate the toggle on actual live state, not the entry flag: a detour
+    // carry can force entry-live while the game is already paused, and
+    // pause is a toggle — firing here would unpause under the open menu.
+    if (numeric(state.paused) !== 1) command('pause');
     resumeButton.focus();
   };
   menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
