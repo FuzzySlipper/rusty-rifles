@@ -471,7 +471,7 @@ internal sealed class MagicState
 
     private sealed class TargetConditions
     {
-        internal EffectState Effects { get; } = new();
+        internal EffectsComponent Effects { get; } = new();
         internal Dictionary<string, Condition> BySpell { get; } = new(StringComparer.Ordinal);
     }
 

@@ -47,7 +47,7 @@ Once that resource is exhausted it continues its ordinary rifle/melee policy.
 Body placement, crowd capacity, movement admission and pathfinding remain shared
 with the existing encounter.
 
-Engine `EffectState` enforces one refreshable instance of each condition per
+Engine `EffectsComponent` enforces one refreshable instance of each condition per
 target. Refresh renews duration without postponing an injury's next tick. Rifles
 advances duration and periodic consequences only on admitted simulation time.
 Engine evaluates defense and speed contributions; slow changes movement/action
