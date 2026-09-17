@@ -23,7 +23,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Rifles.Procgen/Rifles.Procgen.csproj" />
-    <PackageReference Include="Rusty.Engine" Version="[$(RustyEngineSdkPackageVersion)]" />
+    <PackageReference Include="Rusty.Engine" Version="[$(RustyEngineSdkPackageVersion)]">
+      <ExcludeAssets Condition="'$(RustyEngineUseSourceDevelopment)' == 'true'">compile;runtime</ExcludeAssets>
+    </PackageReference>
     <RustyEngineContentBundle Include="generated-art" Root="art/generated" />
     <RustyEngineContentBundle Include="game-audio" Root="audio" />
     <RustyEngineProductInputIntent Include="rifles.use" Value="digital" />

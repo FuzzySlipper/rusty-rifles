@@ -17,7 +17,7 @@ internal sealed class ItemInventory
 {
     internal static readonly CapacityMetricId MassMetric = CapacityMetricId.Parse("mass");
     internal static readonly CapacityMetricId SpaceMetric = CapacityMetricId.Parse("space");
-    private readonly InventoryWorld world = new();
+    private readonly InventoryStore world = new();
     private readonly ItemDefinitions definitions;
     private readonly Dictionary<string, PackOwner> owners;
     internal ulong Revision => world.Revision;
@@ -57,7 +57,7 @@ internal sealed class ItemInventory
         new EquipmentSlotDefinition(EquipmentSlotId.Parse(s), [ItemClassificationId.Parse("gear")])).ToArray();
     internal void GrantStarting(Func<ulong> allocate, string? preset = null)
     {
-        InventoryWorldCandidate candidate = world.Prepare();
+        InventoryEdit candidate = world.Prepare();
         foreach (StartingItem grant in definitions.StartingItems.Where(g => g.Preset is null || g.Preset == preset))
         {
             GearDefinition definition = definitions.Item(grant.Definition);
@@ -77,7 +77,7 @@ internal sealed class ItemInventory
         GearDefinition item = definitions.Item(definition);
         if (quantity == 0 || quantity > item.MaximumQuantity) throw new InvalidDataException("Choose an available quantity.");
         EntityId destination = new(Owner(owner).Id);
-        InventoryWorldCandidate candidate = world.Prepare();
+        InventoryEdit candidate = world.Prepare();
         if (item.Kind == ItemKind.Fungible) candidate.Grant(destination, item.Mechanical, quantity);
         else
         {
@@ -90,7 +90,7 @@ internal sealed class ItemInventory
     {
         GearDefinition item = definitions.Item(definition);
         if (item.Kind != ItemKind.Fungible || quantity == 0) throw new InvalidDataException("Choose available ammunition.");
-        InventoryWorldCandidate candidate = world.Prepare();
+        InventoryEdit candidate = world.Prepare();
         candidate.Consume(new(Owner(owner).Id), item.Mechanical, quantity);
         candidate.Publish();
     }
@@ -106,7 +106,7 @@ internal sealed class ItemInventory
             if (existing.Any(i => i.Entity != 0 || item.Entity != 0 || i.Definition != item.Definition))
                 throw new InvalidDataException("That anchor is occupied.");
         }
-        InventoryWorldCandidate candidate = world.Prepare(expectedRevision);
+        InventoryEdit candidate = world.Prepare(expectedRevision);
         EntityId source = new(Owner(from).Id), destination = new(Owner(to).Id);
         if (item.Entity == 0) candidate.TransferFungible(source, destination, definitions.Item(item.Definition).Mechanical, quantity);
         else
@@ -126,7 +126,7 @@ internal sealed class ItemInventory
         if (!definition.Slots.Contains(slot)) throw new InvalidDataException("This item cannot use that slot.");
         if (basePower < definition.MinimumPower) throw new InvalidDataException("This character needs more power to use that gear.");
         EntityId id = new(Owner(destination).Id);
-        InventoryWorldCandidate candidate = world.Prepare(expectedRevision);
+        InventoryEdit candidate = world.Prepare(expectedRevision);
         if (owner != destination)
         {
             if (item.Slots.Length > 0) candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
@@ -141,15 +141,15 @@ internal sealed class ItemInventory
     {
         CarriedItem item = Find(owner, token);
         if (item.Slots.Length == 0) throw new InvalidDataException("That item is not equipped.");
-        InventoryWorldCandidate candidate = world.Prepare(expectedRevision);
+        InventoryEdit candidate = world.Prepare(expectedRevision);
         candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
         candidate.Publish();
     }
-    internal InventoryWorldCandidate PrepareUse(string owner, string token, ulong expectedRevision)
+    internal InventoryEdit PrepareUse(string owner, string token, ulong expectedRevision)
     {
         CarriedItem item = Find(owner, token);
         GearDefinition definition = definitions.Item(item.Definition);
-        InventoryWorldCandidate candidate = world.Prepare(expectedRevision);
+        InventoryEdit candidate = world.Prepare(expectedRevision);
         if (definition.Cost > 0)
         {
             if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definition.Mechanical, definition.Cost);
@@ -162,7 +162,7 @@ internal sealed class ItemInventory
     internal void Destroy(string owner, string token)
     {
         CarriedItem item = Find(owner, token);
-        InventoryWorldCandidate candidate = world.Prepare();
+        InventoryEdit candidate = world.Prepare();
         if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definitions.Item(item.Definition).Mechanical, item.Quantity);
         else candidate.DestroyUnique(new(item.Entity));
         candidate.Publish();
@@ -183,7 +183,7 @@ internal sealed class ItemInventory
     internal static ItemInventory Restore(ItemDefinitions definitions, InventorySnapshot snapshot)
     {
         ItemInventory result = new(definitions, snapshot.Packs.Select(p => p.Owner));
-        InventoryWorldCandidate candidate = result.world.Prepare();
+        InventoryEdit candidate = result.world.Prepare();
         foreach (SavedPack pack in snapshot.Packs)
         {
             EntityId owner = new(pack.Owner.Id);

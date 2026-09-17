@@ -78,6 +78,8 @@ internal sealed record MemberDefinition(
     long? StartingVitality = null,
     long? StartingResource = null)
 {
+    private const long MaximumTrackValue = 1_000_000_000_000;
+
     internal long InitialVitality => StartingVitality ?? MaximumVitality;
     internal long InitialResource => StartingResource ?? MaximumResource;
 
@@ -85,9 +87,9 @@ internal sealed record MemberDefinition(
     {
         if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
             || string.IsNullOrWhiteSpace(Position) || MaximumVitality <= 0 || MaximumResource < 0
-            || MaximumVitality > ExactValue.MaximumAbsolute || MaximumResource > ExactValue.MaximumAbsolute
+            || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
             || BasePower < 0 || BaseDefense < 0
-            || BasePower > ExactValue.MaximumAbsolute || BaseDefense > ExactValue.MaximumAbsolute
+            || BasePower > PartyMemberState.MaximumDerivedStatistic || BaseDefense > PartyMemberState.MaximumDerivedStatistic
             || StartingVitality is long startingVitality && (startingVitality < 0 || startingVitality > MaximumVitality)
             || StartingResource is long startingResource && (startingResource < 0 || startingResource > MaximumResource))
         {
@@ -165,17 +167,17 @@ internal sealed record EquipmentStatBonuses(long Power, long Defense);
 
 internal sealed class PartyMemberState
 {
-    private const long MaximumDerivedStatistic = ExactValue.MaximumAbsolute;
-    private static readonly StatId PowerId = StatId.Parse("rifles.power");
-    private static readonly StatId DefenseId = StatId.Parse("rifles.defense");
-    private static readonly TrackId VitalityId = TrackId.Parse("rifles.vitality");
-    private static readonly TrackId ResourceId = TrackId.Parse("rifles.resource");
-    private static readonly ExactStatDefinition PowerDefinition = CreateStatDefinition(PowerId);
-    private static readonly ExactStatDefinition DefenseDefinition = CreateStatDefinition(DefenseId);
-    private readonly ExactTrack vitality;
-    private readonly ExactTrack? resource;
+    internal const long MaximumDerivedStatistic = 1_000_000_000_000;
+    private readonly Track vitality;
+    private readonly Track? resource;
+    private readonly Stat powerStatistic;
+    private readonly Stat defenseStatistic;
     private EquipmentStatBonuses equipmentBonuses = new(0, 0);
     private EquipmentStatBonuses developmentBonuses = new(0, 0);
+    private StatModifierHandle? equipmentPowerModifier;
+    private StatModifierHandle? equipmentDefenseModifier;
+    private StatModifierHandle? developmentPowerModifier;
+    private StatModifierHandle? developmentDefenseModifier;
 
     internal PartyMemberState(MemberDefinition definition, int rank)
     {
@@ -184,39 +186,41 @@ internal sealed class PartyMemberState
         Definition = definition;
         Position = definition.Position;
         Rank = rank;
-        vitality = new ExactTrack(new ExactTrackDefinition(VitalityId, ExactValue.Zero,
-            new ExactTrackMaximum.Fixed(new ExactValue(definition.MaximumVitality))), new ExactValue(definition.InitialVitality));
+        powerStatistic = CreateDerivedStatistic(definition.BasePower);
+        defenseStatistic = CreateDerivedStatistic(definition.BaseDefense);
+        vitality = new Track(definition.MaximumVitality, definition.InitialVitality,
+            quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         if (definition.MaximumResource > 0)
         {
-            resource = new ExactTrack(new ExactTrackDefinition(ResourceId, ExactValue.Zero,
-                new ExactTrackMaximum.Fixed(new ExactValue(definition.MaximumResource))), new ExactValue(definition.InitialResource));
+            resource = new Track(definition.MaximumResource, definition.InitialResource,
+                quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         }
     }
 
     internal MemberDefinition Definition { get; }
     internal string Position { get; private set; }
     internal int Rank { get; private set; }
-    internal long Vitality => vitality.Current.Raw;
-    internal long MaximumVitality => vitality.Bounds.Maximum.Raw;
-    internal long Resource => resource?.Current.Raw ?? 0;
-    internal long MaximumResource => resource?.Bounds.Maximum.Raw ?? 0;
+    internal long Vitality => vitality.ValueInt64;
+    internal long MaximumVitality => checked((long)vitality.MaximumValue);
+    internal long Resource => resource?.ValueInt64 ?? 0;
+    internal long MaximumResource => resource is null ? 0 : checked((long)resource.MaximumValue);
     internal bool IsLiving => Vitality > 0;
-    internal long Power => Evaluate(PowerDefinition, Definition.BasePower, equipmentBonuses.Power, developmentBonuses.Power).Value.Raw;
-    internal long Defense => Evaluate(DefenseDefinition, Definition.BaseDefense, equipmentBonuses.Defense, developmentBonuses.Defense).Value.Raw;
+    internal long Power => powerStatistic.ValueInt64;
+    internal long Defense => defenseStatistic.ValueInt64;
     internal EquipmentStatBonuses EquipmentBonuses => equipmentBonuses;
 
     internal long ApplyDamage(long requested)
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
         long applied = Math.Min(Vitality, requested);
-        vitality.Spend(new ExactValue(applied));
+        vitality.Spend(applied);
         return applied;
     }
 
     internal long Heal(long requested)
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return vitality.Restore(new ExactValue(requested)).AppliedAmount.Raw;
+        return checked((long)vitality.Restore(requested));
     }
 
     internal long SpendResource(long requested)
@@ -224,30 +228,32 @@ internal sealed class PartyMemberState
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
         if (resource is null) return 0;
         long applied = Math.Min(Resource, requested);
-        resource.Spend(new ExactValue(applied));
+        resource.Spend(applied);
         return applied;
     }
 
     internal long RecoverResource(long requested)
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return resource?.Restore(new ExactValue(requested)).AppliedAmount.Raw ?? 0;
+        return resource is null ? 0 : checked((long)resource.Restore(requested));
     }
 
     /// <summary>Receives the current aggregate from authoritative equipped items.</summary>
     internal void SetEquipmentBonuses(long power, long defense)
     {
-        // Evaluate both prospective values before replacing the aggregate so an
-        // invalid aggregate cannot leave one displayed statistic updated.
-        _ = Evaluate(PowerDefinition, Definition.BasePower, power);
-        _ = Evaluate(DefenseDefinition, Definition.BaseDefense, defense);
+        ValidateDerivedBonus(power, nameof(power));
+        ValidateDerivedBonus(defense, nameof(defense));
+        ReplaceModifier(powerStatistic, ref equipmentPowerModifier, power);
+        ReplaceModifier(defenseStatistic, ref equipmentDefenseModifier, defense);
         equipmentBonuses = new EquipmentStatBonuses(power, defense);
     }
 
     internal void SetDevelopmentBonuses(long power, long defense)
     {
-        _ = Evaluate(PowerDefinition, Definition.BasePower, equipmentBonuses.Power, power);
-        _ = Evaluate(DefenseDefinition, Definition.BaseDefense, equipmentBonuses.Defense, defense);
+        ValidateDerivedBonus(power, nameof(power));
+        ValidateDerivedBonus(defense, nameof(defense));
+        ReplaceModifier(powerStatistic, ref developmentPowerModifier, power);
+        ReplaceModifier(defenseStatistic, ref developmentDefenseModifier, defense);
         developmentBonuses = new(power, defense);
     }
 
@@ -259,23 +265,23 @@ internal sealed class PartyMemberState
         Rank = rank;
     }
 
-    private static ExactStatDefinition CreateStatDefinition(StatId id) => new(
-        id, ExactValue.Zero, new ExactValue(MaximumDerivedStatistic));
+    private static Stat CreateDerivedStatistic(long baseValue) => new(
+        baseValue,
+        minimum: 0,
+        maximum: MaximumDerivedStatistic,
+        quantum: 1,
+        integerRounding: MidpointRounding.ToZero);
 
-    private static ExactStatEvaluation Evaluate(ExactStatDefinition definition, long baseValue, long equipmentBonus, long developmentBonus = 0)
+    private static void ReplaceModifier(Stat statistic, ref StatModifierHandle? existing, long value)
     {
-        List<ExactSource> sources = [];
-        void Add(string name, long bonus)
-        {
-            if (bonus == 0) return;
-            sources.Add(new ExactSource(new IntrinsicSourceIdentity(null, SourceInstanceId.Parse(name)),
-                SourceDefinitionId.Parse(name), 0,
-                [new ExactStatContributionDefinition(definition.Id, StackingGroupId.Parse(name + "." + definition.Id.Value),
-                    MechanicsStackingPolicy.Sum, new ExactStatContribution.Add(new ExactValue(bonus)))]));
-        }
-        Add("rifles.equipment", equipmentBonus);
-        Add("rifles.development", developmentBonus);
-        return ExactStatEvaluator.Evaluate(definition, new ExactValue(baseValue), sources);
+        if (existing is not null) statistic.RemoveModifier(existing);
+        existing = value == 0 ? null : statistic.AddModifier(value);
+    }
+
+    private static void ValidateDerivedBonus(long value, string parameter)
+    {
+        if (value < -MaximumDerivedStatistic || value > MaximumDerivedStatistic)
+            throw new ArgumentOutOfRangeException(parameter, value, "Derived statistic bonuses must remain within product bounds.");
     }
 }
 

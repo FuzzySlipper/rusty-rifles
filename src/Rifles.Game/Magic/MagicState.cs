@@ -34,10 +34,6 @@ internal sealed class MagicState
     private const int HotbarSlots = 3;
     private static readonly StatId SpeedId = StatId.Parse("rifles.speed");
     private static readonly StackingGroupId SlowSpeedGroup = StackingGroupId.Parse("rifles.slow.speed");
-    private static readonly ContinuousStatDefinition SpeedDefinition = new(
-        SpeedId,
-        new ContinuousValue(0),
-        new ContinuousValue(1));
     private readonly MagicDefinition definition;
     private readonly Dictionary<string, MagicBook> books;
     private readonly Dictionary<string, EffectDefinition> effectDefinitions;
@@ -166,20 +162,22 @@ internal sealed class MagicState
 
     internal double Speed(string target)
     {
-        if (!conditions.TryGetValue(target, out TargetConditions? targetConditions)) return 1;
-        ContinuousSource[] sources = targetConditions.BySpell.Values
+        Stat speed = new(1, minimum: 0, maximum: 1);
+        if (!conditions.TryGetValue(target, out TargetConditions? targetConditions)) return speed.Value;
+        StatSource[] sources = targetConditions.BySpell.Values
             .Where(condition => condition.Spell.Effect == SpellEffect.Slow)
-            .Select(condition => new ContinuousSource(
+            .Select(condition => new StatSource(
                 new EffectSourceIdentity(null, condition.Instance, 1, SourceDefinition(condition.Spell)),
                 SourceDefinition(condition.Spell),
                 priority: 0,
-                [new ContinuousStatContributionDefinition(
+                [new StatContributionDefinition(
                     SpeedId,
                     SlowSpeedGroup,
                     MechanicsStackingPolicy.Lowest,
-                    new ContinuousStatContribution.Maximum(new ContinuousValue(condition.Spell.SpeedFactor)))]))
+                    new StatContribution.Maximum(condition.Spell.SpeedFactor))]))
             .ToArray();
-        return ContinuousStatEvaluator.Evaluate(SpeedDefinition, new ContinuousValue(1), sources).Value.Value;
+        speed.SetSources(SpeedId, sources);
+        return speed.Value;
     }
 
     internal long DefenseBonus(string target) => !conditions.TryGetValue(target, out TargetConditions? targetConditions)
