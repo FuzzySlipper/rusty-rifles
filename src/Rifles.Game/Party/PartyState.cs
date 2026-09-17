@@ -78,6 +78,8 @@ internal sealed record MemberDefinition(
     long? StartingVitality = null,
     long? StartingResource = null)
 {
+    private const long MaximumTrackValue = 1_000_000_000_000;
+
     internal long InitialVitality => StartingVitality ?? MaximumVitality;
     internal long InitialResource => StartingResource ?? MaximumResource;
 
@@ -85,7 +87,7 @@ internal sealed record MemberDefinition(
     {
         if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
             || string.IsNullOrWhiteSpace(Position) || MaximumVitality <= 0 || MaximumResource < 0
-            || MaximumVitality > ExactValue.MaximumAbsolute || MaximumResource > ExactValue.MaximumAbsolute
+            || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
             || BasePower < 0 || BaseDefense < 0
             || BasePower > PartyMemberState.MaximumDerivedStatistic || BaseDefense > PartyMemberState.MaximumDerivedStatistic
             || StartingVitality is long startingVitality && (startingVitality < 0 || startingVitality > MaximumVitality)
@@ -166,10 +168,8 @@ internal sealed record EquipmentStatBonuses(long Power, long Defense);
 internal sealed class PartyMemberState
 {
     internal const long MaximumDerivedStatistic = 1_000_000_000_000;
-    private static readonly TrackId VitalityId = TrackId.Parse("rifles.vitality");
-    private static readonly TrackId ResourceId = TrackId.Parse("rifles.resource");
-    private readonly ExactTrack vitality;
-    private readonly ExactTrack? resource;
+    private readonly Track vitality;
+    private readonly Track? resource;
     private readonly Stat powerStatistic;
     private readonly Stat defenseStatistic;
     private EquipmentStatBonuses equipmentBonuses = new(0, 0);
@@ -188,22 +188,22 @@ internal sealed class PartyMemberState
         Rank = rank;
         powerStatistic = CreateDerivedStatistic(definition.BasePower);
         defenseStatistic = CreateDerivedStatistic(definition.BaseDefense);
-        vitality = new ExactTrack(new ExactTrackDefinition(VitalityId, ExactValue.Zero,
-            new ExactTrackMaximum.Fixed(new ExactValue(definition.MaximumVitality))), new ExactValue(definition.InitialVitality));
+        vitality = new Track(definition.MaximumVitality, definition.InitialVitality,
+            quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         if (definition.MaximumResource > 0)
         {
-            resource = new ExactTrack(new ExactTrackDefinition(ResourceId, ExactValue.Zero,
-                new ExactTrackMaximum.Fixed(new ExactValue(definition.MaximumResource))), new ExactValue(definition.InitialResource));
+            resource = new Track(definition.MaximumResource, definition.InitialResource,
+                quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         }
     }
 
     internal MemberDefinition Definition { get; }
     internal string Position { get; private set; }
     internal int Rank { get; private set; }
-    internal long Vitality => vitality.Current.Raw;
-    internal long MaximumVitality => vitality.Bounds.Maximum.Raw;
-    internal long Resource => resource?.Current.Raw ?? 0;
-    internal long MaximumResource => resource?.Bounds.Maximum.Raw ?? 0;
+    internal long Vitality => vitality.ValueInt64;
+    internal long MaximumVitality => checked((long)vitality.MaximumValue);
+    internal long Resource => resource?.ValueInt64 ?? 0;
+    internal long MaximumResource => resource is null ? 0 : checked((long)resource.MaximumValue);
     internal bool IsLiving => Vitality > 0;
     internal long Power => powerStatistic.ValueInt64;
     internal long Defense => defenseStatistic.ValueInt64;
@@ -213,14 +213,14 @@ internal sealed class PartyMemberState
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
         long applied = Math.Min(Vitality, requested);
-        vitality.Spend(new ExactValue(applied));
+        vitality.Spend(applied);
         return applied;
     }
 
     internal long Heal(long requested)
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return vitality.Restore(new ExactValue(requested)).AppliedAmount.Raw;
+        return checked((long)vitality.Restore(requested));
     }
 
     internal long SpendResource(long requested)
@@ -228,14 +228,14 @@ internal sealed class PartyMemberState
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
         if (resource is null) return 0;
         long applied = Math.Min(Resource, requested);
-        resource.Spend(new ExactValue(applied));
+        resource.Spend(applied);
         return applied;
     }
 
     internal long RecoverResource(long requested)
     {
         if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return resource?.Restore(new ExactValue(requested)).AppliedAmount.Raw ?? 0;
+        return resource is null ? 0 : checked((long)resource.Restore(requested));
     }
 
     /// <summary>Receives the current aggregate from authoritative equipped items.</summary>

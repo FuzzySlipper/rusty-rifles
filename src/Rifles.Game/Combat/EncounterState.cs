@@ -19,8 +19,8 @@ internal sealed record CombatSnapshot(EnemySnapshot[] Enemies, MemberActionSnaps
 
 internal sealed class EnemyState
 {
-    private readonly ExactTrack vitality;
-    private readonly ExactTrack resource;
+    private readonly Track vitality;
+    private readonly Track resource;
     internal ulong Id { get; }
     internal string Spawn { get; }
     internal EnemyDefinition Definition { get; }
@@ -32,9 +32,9 @@ internal sealed class EnemyState
     internal EnemyBrain Brain { get; }
     internal string NavigationStatus { get; set; } = "Ready";
     internal bool Loaded { get; set; }
-    internal long Resource => resource.Current.Raw;
-    internal void SpendResource(long cost) => resource.Spend(new ExactValue(cost));
-    internal long Vitality => vitality.Current.Raw;
+    internal long Resource => resource.ValueInt64;
+    internal void SpendResource(long cost) => resource.Spend(cost);
+    internal long Vitality => vitality.ValueInt64;
     internal bool Alive => Vitality > 0;
     internal EnemyState(EnemySnapshot saved, EnemyDefinition definition, DungeonFloor floor, ExplorationTuning tuning, long maximumResource = 0)
     {
@@ -42,22 +42,22 @@ internal sealed class EnemyState
             && double.IsFinite(saved.DecisionRemaining) && saved.DecisionRemaining >= 0
             && saved.DecisionRemaining <= definition.DecisionSeconds, "saved enemy state");
         GameDefinitions.Require(saved.Resource >= 0 && saved.Resource <= maximumResource, "saved enemy resource");
-        resource = new ExactTrack(new ExactTrackDefinition(TrackId.Parse("rifles.enemy.resource"), ExactValue.Zero,
-            new ExactTrackMaximum.Fixed(new ExactValue(maximumResource))), new ExactValue(saved.Resource));
+        resource = new Track(maximumResource, saved.Resource,
+            quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         Id = saved.Id; Spawn = saved.Spawn; Definition = definition; Owner = saved.Owner;
         Motion = ExplorationState.Restore(saved.Motion, floor, tuning with { StepSeconds = definition.StepSeconds });
         Action = ActionState.Restore(saved.Action);
         NavigationStatus = Motion.Moving ? "Moving" : "Ready";
         GameDefinitions.Require(saved.Vitality > 0 || !Motion.Moving && !Action.Busy, "dead enemy activity");
-        vitality = new ExactTrack(new ExactTrackDefinition(TrackId.Parse("rifles.enemy.vitality"), ExactValue.Zero,
-            new ExactTrackMaximum.Fixed(new ExactValue(definition.Vitality))), new ExactValue(saved.Vitality));
+        vitality = new Track(definition.Vitality, saved.Vitality,
+            quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
         DecisionRemaining = saved.DecisionRemaining; Loaded = saved.Loaded;
         Brain = EnemyBrain.FromSnapshot(definition.Brain, saved.Brain, floor.Cells.ToHashSet());
     }
     internal long Damage(long amount)
     {
         long applied = Math.Min(Vitality, amount);
-        vitality.Spend(new ExactValue(applied));
+        vitality.Spend(applied);
         return applied;
     }
     internal EnemySnapshot Capture() => new(Id, Definition.Id, Motion.Capture(), Vitality, Action.Capture(), DecisionRemaining, Aware, Loaded, Owner, Brain.Capture(), Spawn, Resource);
