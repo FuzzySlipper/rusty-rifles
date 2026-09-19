@@ -86,13 +86,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
-  const formationTitle = document.createElement('div');
-  formationTitle.textContent = 'Party formation';
-  formationTitle.style.cssText = 'margin-bottom:2px;color:#e4bd63;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;text-align:center';
-  const formationFacing = document.createElement('output');
-  formationFacing.dataset.barFacing = 'true';
-  formationFacing.textContent = 'Party faces North';
-  formationFacing.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px;text-align:center';
   const formationGrid = document.createElement('div');
   formationGrid.dataset.barFormation = 'true';
   formationGrid.tabIndex = -1;
@@ -115,7 +108,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   const formationOverflow = document.createElement('div');
   formationOverflow.dataset.barFormationOverflow = 'true';
   formationOverflow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;min-height:0';
-  formationSection.append(formationTitle, formationFacing, formationGrid, formationOverflow);
+  formationSection.append(formationGrid, formationOverflow);
 
   const logSection = document.createElement('section');
   logSection.setAttribute('aria-label', 'Event log');
@@ -354,8 +347,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const selectedMember = text(state.selectedMember, '');
     selectedMemberId = selectedMember;
     const partyFacing = text(state.facing, 'North');
-    const facingLine = `Party faces ${partyFacing}`;
-    if (formationFacing.textContent !== facingLine) formationFacing.textContent = facingLine;
     paintCompass();
     const signature = JSON.stringify([party, selectedMember, state.positions, partyFacing]);
     if (signature === formationSignature) return;
