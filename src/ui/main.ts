@@ -637,6 +637,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
         if (icon) row.gear.append(icon);
         else row.gear.textContent = name.slice(0, 2).toUpperCase();
         row.gear.style.borderStyle = 'solid';
+        row.gear.style.fontSize = '';
+        row.gear.style.color = '#f0e6d2';
       } else {
         row.gear.textContent = 'Empty';
         row.gear.style.fontSize = '11px';

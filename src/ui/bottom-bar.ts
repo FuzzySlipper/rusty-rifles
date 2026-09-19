@@ -82,7 +82,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(180px,25.5vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;overflow:hidden;max-height:min(180px,25.5vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
