@@ -82,7 +82,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(180px,26vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(180px,25.5vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
@@ -98,7 +98,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationGrid.tabIndex = -1;
   formationGrid.setAttribute('role', 'group');
   formationGrid.setAttribute('aria-label', 'Formation grid. Drag a member onto another cell to swap, onto an empty cell to move.');
-  formationGrid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
+  formationGrid.style.cssText = 'box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
   // Blocked middle cell: static, inert, never a token. C# leaves it
   // unauthored too, so even a forged move intent is rejected server-side.
   const blockedCell = document.createElement('div');
