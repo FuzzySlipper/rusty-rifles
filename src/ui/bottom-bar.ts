@@ -82,7 +82,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:8px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(240px,34vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;max-height:min(180px,26vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
@@ -98,7 +98,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationGrid.tabIndex = -1;
   formationGrid.setAttribute('role', 'group');
   formationGrid.setAttribute('aria-label', 'Formation grid. Drag a member onto another cell to swap, onto an empty cell to move.');
-  formationGrid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;width:min(100%,170px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
+  formationGrid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
   // Blocked middle cell: static, inert, never a token. C# leaves it
   // unauthored too, so even a forged move intent is rejected server-side.
   const blockedCell = document.createElement('div');
@@ -109,7 +109,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   blockedMark.textContent = '×';
   blockedMark.title = 'Blocked slot (reserved for later rules)';
   blockedMark.setAttribute('aria-label', 'Blocked formation slot, reserved for later rules');
-  blockedMark.style.cssText = 'height:24px;width:24px;border-radius:50%;border:1px dashed #4a4438;background:#10120f;color:#5a5348;font:14px/1 system-ui;cursor:not-allowed';
+  blockedMark.style.cssText = 'height:20px;width:20px;border-radius:50%;border:1px dashed #4a4438;background:#10120f;color:#5a5348;font:12px/1 system-ui;cursor:not-allowed';
   blockedCell.append(blockedMark);
   formationGrid.append(blockedCell);
   const formationOverflow = document.createElement('div');
@@ -127,7 +127,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   logView.dataset.barLog = 'true';
   logView.setAttribute('role', 'log');
   logView.textContent = 'No events yet.';
-  logView.style.cssText = 'display:block;height:140px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
+  logView.style.cssText = 'display:block;height:104px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
   logSection.append(logStatus, logView);
 
   const mapSection = document.createElement('section');
@@ -138,7 +138,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   mapLocation.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center';
   const mapDial = document.createElement('div');
   mapDial.dataset.barDial = 'true';
-  mapDial.style.cssText = 'position:relative;width:min(100%,150px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
+  mapDial.style.cssText = 'position:relative;width:min(100%,118px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
   const mapView = document.createElementNS(svgNamespace, 'svg');
   mapView.setAttribute('role', 'img');
   mapView.setAttribute('aria-label', 'Discovered floor map');
@@ -184,7 +184,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const chevron = document.createElementNS(svgNamespace, 'svg');
     chevron.setAttribute('viewBox', '0 0 14 14');
     chevron.setAttribute('aria-hidden', 'true');
-    (chevron as unknown as HTMLElement).style.cssText = 'position:absolute;top:-4px;left:50%;transform:translateX(-50%);height:8px;width:8px;visibility:hidden;z-index:3;pointer-events:none';
+    (chevron as unknown as HTMLElement).style.cssText = 'position:absolute;top:-3px;left:50%;transform:translateX(-50%);height:7px;width:7px;visibility:hidden;z-index:3;pointer-events:none';
     const marker = document.createElementNS(svgNamespace, 'path');
     marker.setAttribute('d', 'M 7 1 L 12.5 12 L 7 9.6 L 1.5 12 Z');
     marker.setAttribute('fill', '#c9b98a');
@@ -195,12 +195,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     select.type = 'button';
     select.dataset.barMember = key;
     select.disabled = true;
-    select.style.cssText = 'height:24px;width:24px;border-radius:50%;border:2px solid #574f3d;background:radial-gradient(circle at 50% 35%,#3d4338,#22251f 75%);color:#f0e6d2;cursor:pointer;font:700 10px/1 system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #00000088;padding:0';
+    select.style.cssText = 'height:20px;width:20px;border-radius:50%;border:2px solid #574f3d;background:radial-gradient(circle at 50% 35%,#3d4338,#22251f 75%);color:#f0e6d2;cursor:pointer;font:700 9px/1 system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #00000088;padding:0';
     const emblem = document.createElement('span');
     emblem.setAttribute('aria-hidden', 'true');
     select.append(emblem);
     const track = document.createElement('span');
-    track.style.cssText = 'display:block;height:3px;width:22px;border-radius:2px;background:#3a352a;margin-top:2px;overflow:hidden';
+    track.style.cssText = 'display:block;height:3px;width:18px;border-radius:2px;background:#3a352a;margin-top:1px;overflow:hidden';
     const health = document.createElement('span');
     health.style.cssText = 'display:block;height:100%;width:0%;background:#8ca65c';
     track.append(health);

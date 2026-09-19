@@ -590,20 +590,39 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const memberKey = `member:${memberId}`;
     const member = record(record(state.party)[memberId]);
     memberName.textContent = `${text(member.name, memberId)} · ${text(member.vitality, '?')}/${text(member.maximumVitality, '?')}`;
+    const statLines = [
+      `Health ${text(member.vitality, '?')}/${text(member.maximumVitality, '?')}`,
+      `Energy ${text(member.resource, '0')}/${text(member.maxResource, '0')}`,
+      `Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`,
+      `Melee/Ranged/Cast ${text(member.melee, '0')}/${text(member.ranged, '0')}/${text(member.casting, '0')}`,
+      `Station ${text(member.positionName, member.position)}`,
+      `Facing ${text(member.facing, '')}`,
+    ];
+    if (memberStats.childElementCount !== statLines.length) {
+      memberStats.replaceChildren();
+      for (const _line of statLines) memberStats.append(document.createElement('span'));
+    }
+    Array.from(memberStats.children).forEach((child, index) => { (child as HTMLElement).textContent = statLines[index] ?? ''; });
     for (const [slot, equipped] of entries(state.equipmentSlots)) {
       let row = partyEquipCache.get(slot);
       if (!row) {
         const element = document.createElement('div');
-        element.style.cssText = 'display:flex;gap:6px;align-items:center';
+        element.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:3px;align-items:stretch;min-width:0';
         const label = document.createElement('span');
         label.textContent = slot;
-        label.style.cssText = 'width:76px;color:#c9c0ae;font-size:12px';
+        label.style.cssText = 'color:#e4bd63;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         const gear = button('', () => {});
-        gear.style.cssText = 'flex:1;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+        gear.style.cssText = 'position:relative;height:72px;width:100%;padding:0;background:#10120f99;border:1px solid #574f3d;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden';
         gear.dataset.partyEquipSlot = slot;
         gear.addEventListener('click', () => clickEquipmentRow(slot, `member:${text(state.selectedMember, '')}`, gear.dataset.partyItem ?? ''));
         gear.addEventListener('dragover', event => event.preventDefault());
         gear.addEventListener('drop', event => dropOnEquipment(event, slot));
+        gear.addEventListener('dragstart', event => {
+          const worn = gear.dataset.partyItem;
+          if (!worn) { event.preventDefault(); return; }
+          beginDrag(event, `member:${text(state.selectedMember, '')}`, worn);
+        });
+        gear.addEventListener('dragend', cancelDrag);
         element.append(label, gear);
         equipmentList.append(element);
         row = { row: element, gear };
@@ -611,10 +630,26 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       }
       const token = text(record(equipped).token, '');
       const name = text(record(equipped).name, 'Empty');
-      row.gear.textContent = name;
+      const detail = record(record(record(record(inventoryState.owners)[memberKey]).items)[token]);
+      row.gear.replaceChildren();
+      if (token) {
+        const icon = gridIcon(detail, 44);
+        if (icon) row.gear.append(icon);
+        else row.gear.textContent = name.slice(0, 2).toUpperCase();
+        row.gear.style.borderStyle = 'solid';
+      } else {
+        row.gear.textContent = 'Empty';
+        row.gear.style.fontSize = '11px';
+        row.gear.style.color = '#5a5348';
+        row.gear.style.borderStyle = 'dashed';
+      }
       row.gear.dataset.partyItem = token;
       row.gear.draggable = token !== '';
-      row.gear.title = token ? `${name} — click to unequip, drag to the grid.` : `${slot} is empty — drop or select an item to equip.`;
+      if (token && detail.allowedSlots !== undefined) {
+        row.gear.title = `${name} — power ${text(detail.power, '0')} · click to unequip, drag to the grid.`;
+      } else {
+        row.gear.title = token ? `${name} — click to unequip, drag to the grid.` : `${slot} is empty — drop or select an item to equip.`;
+      }
       row.gear.setAttribute('aria-label', `${slot}: ${name}.`);
     }
     for (const [slot, cached] of partyEquipCache) {
@@ -721,7 +756,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   partyPanel.hidden = true;
   partyPanel.setAttribute('aria-label', 'Party inventory');
   partyPanel.dataset.rustyUiInteractive = 'true';
-  partyPanel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:64px;bottom:252px;z-index:1;width:300px;overflow:auto;padding:10px 12px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
+  partyPanel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:12px;bottom:192px;z-index:1;width:320px;overflow:auto;padding:10px 12px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
   const partyHead = document.createElement('div');
   partyHead.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px';
   const partyTitle = document.createElement('strong'); partyTitle.textContent = 'Party inventory'; partyTitle.style.cssText = 'color:#e4bd63;letter-spacing:0.12em;text-transform:uppercase;font-size:12px';
@@ -742,9 +777,14 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   memberName.dataset.partyMember = 'true';
   memberName.style.cssText = 'flex:1;text-align:center';
   memberRow.append(memberPrev, memberName, memberNext);
+  const memberStats = document.createElement('div');
+  memberStats.dataset.partyStats = 'true';
+  memberStats.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-bottom:8px;color:#c9c0ae;font-size:12px';
   const equipmentList = document.createElement('div');
   equipmentList.dataset.partyEquipment = 'true';
-  equipmentList.style.cssText = 'display:grid;gap:4px;margin-bottom:8px';
+  equipmentList.setAttribute('role', 'group');
+  equipmentList.setAttribute('aria-label', 'Equipped gear. Drop items here to equip, drag worn gear to the grid.');
+  equipmentList.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
   const gridStatus = document.createElement('output');
   gridStatus.dataset.partyLoad = 'true';
   gridStatus.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px';
@@ -753,7 +793,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   partyGrid.setAttribute('role', 'group');
   partyGrid.setAttribute('aria-label', 'Party inventory grid. Drag items between cells, or onto equipment above.');
   partyGrid.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:4px';
-  partyPanel.append(partyHead, partyStatus, memberRow, equipmentList, gridStatus, partyGrid);
+  partyPanel.append(partyHead, partyStatus, memberRow, memberStats, equipmentList, gridStatus, partyGrid);
   root.append(partyPanel);
   const rosterOrder = (): string[] => entries(state.party)
     .map(([id, member]) => ({ id, rank: numeric(record(member).rank) }))
@@ -810,7 +850,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   partyPanel.addEventListener('keyup', stopToggleKeys, true);
   const setLegacyVisible = (visible: boolean): void => {
     panel.hidden = !visible; inventory.hidden = !visible; runPanel.element.hidden = !visible;
-    inventory.style.bottom = visible ? '250px' : '12px';
+    inventory.style.bottom = visible ? '190px' : '12px';
     legacyToggle.textContent = visible ? 'Hide legacy panels' : 'Show legacy panels';
     legacyToggle.setAttribute('aria-expanded', String(visible));
   };

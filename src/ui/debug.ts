@@ -10,7 +10,7 @@ export function mountDebugTools(root: Element): Readonly<{ dispose(): void }> {
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Debug tools');
   panel.dataset.rustyUiInteractive = 'true';
-  panel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:12px;z-index:2;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;padding:8px;background:#171914f2;color:#eee6d5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
+  panel.style.cssText = 'box-sizing:border-box;position:fixed;left:12px;top:52px;z-index:2;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;padding:8px;background:#171914f2;color:#eee6d5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
   // Let the console handle typing normally, without sending keys to gameplay.
   const isolate = (event: Event): void => event.stopPropagation();
   const events = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'mousedown', 'mousemove', 'mouseup', 'wheel', 'keydown', 'keyup', 'click'];
