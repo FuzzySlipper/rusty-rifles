@@ -236,7 +236,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         commandRevision = checked(commandRevision + 1);
         switch (command.Action)
         {
-            case "transfer": case "equip": case "unequip": case "consume": case "item-feature":
+            case "transfer": case "equip": case "unequip": case "consume": case "item-feature": case "arrange":
                 ItemCommand(command); break;
             case "target": case "attack": case "reload": case "throw": case "interrupt":
                 BeginCombat(command); break;

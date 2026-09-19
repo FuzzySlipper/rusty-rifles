@@ -525,12 +525,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   };
 
   const renderVitals = (state: Values): void => {
-    // Display only: party load summed over member-owned inventories plus
-    // the expedition clock. No wealth line — the game has no currency yet,
+    // Display only: party load from the shared party inventory plus the
+    // expedition clock. No wealth line — the game has no currency yet,
     // and inventing a gold figure would be fiction, not projection.
     let mass = 0, capacity = 0;
     for (const [, owner] of entries(record(state.inventory).owners)) {
-      if (text(owner.kind, '') !== 'member') continue;
+      if (text(owner.kind, '') !== 'party') continue;
       mass += number(owner.mass);
       capacity += number(owner.maxMass);
     }

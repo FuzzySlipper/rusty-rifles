@@ -105,7 +105,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const command = (action: string, extra: Record<string, unknown> = {}, captured?: Pick<DragIntent, 'revision' | 'inventoryRevision'>): void => {
     const revision = captured?.revision ?? String(state.commandRevision ?? '');
     const inventoryRevision = captured?.inventoryRevision ?? text(inventoryOf(state).revision, '');
-    const inventoryAction = new Set(['transfer', 'equip', 'unequip', 'consume', 'item-feature', 'open-container', 'close-container', 'throw']);
+    const inventoryAction = new Set(['transfer', 'equip', 'unequip', 'consume', 'item-feature', 'open-container', 'close-container', 'throw', 'arrange']);
     context.intents?.claim('rifles.command', { kind: 'product-payload', contract: 'rifles.command.v1', data: { revision, action, ...extra, ...(inventoryAction.has(action) ? { inventoryRevision } : {}) } });
   };
   const button = (label: string, action: () => void): HTMLButtonElement => {
@@ -517,6 +517,143 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const log = text(combatState.log, '');
     if (combatLog.textContent !== log) { combatLog.textContent = log; combatLog.scrollTop = combatLog.scrollHeight; }
   };
+  // Party panel interactions. Click alternatives mirror the drag paths:
+  // cell-to-cell arranges, cross-owner drops transfer into the party, and
+  // equip rows run the shared equip flow (which swaps displaced gear home).
+  const dropOnPartyCell = (event: DragEvent, slot: number): void => {
+    event.preventDefault(); event.stopPropagation();
+    const payload = drag;
+    if (!payload) return;
+    if (payload.owner === 'party') command('arrange', { source: 'party', item: payload.token, partySlot: slot }, payload);
+    else transfer(payload.owner, payload.token, 'party', payload);
+    cancelDrag();
+  };
+  const clickPartyCell = (slot: number, token: string): void => {
+    if (selectedItem !== null && selectedItem.owner === 'party' && selectedItem.token === token) return;
+    if (selectedItem !== null && selectedItem.owner === 'party') {
+      command('arrange', { source: 'party', item: selectedItem.token, partySlot: slot });
+      setUiFeedback('Rearrange requested; waiting for the authoritative inventory update.');
+      return;
+    }
+    if (selectedItem !== null) { transfer(selectedItem.owner, selectedItem.token, 'party'); return; }
+    if (token) selectItem('party', token);
+    else setUiFeedback('Select an item, then choose a grid cell — or drag it here.');
+  };
+  const clickEquipmentRow = (slot: string, memberKey: string, token: string): void => {
+    if (selectedItem !== null) { equip(selectedItem.owner, selectedItem.token, slot, memberKey); return; }
+    if (!token) { setUiFeedback('Select an item or drag it here to equip it.'); return; }
+    command('unequip', { source: memberKey, item: token });
+  };
+  // Cached controls: projections arrive continuously, so grid cells and
+  // equipment rows persist by key and update in place instead of rebuilding.
+  const partyCellCache = new Map<number, HTMLButtonElement>();
+  const partyEquipCache = new Map<string, { row: HTMLElement; gear: HTMLButtonElement }>();
+  let previousPartyPanel = '';
+  const paintPartyCell = (cell: HTMLButtonElement, slot: number, found: [string, Record<string, unknown>] | undefined): void => {
+    cell.dataset.partySlot = String(slot);
+    cell.replaceChildren();
+    delete cell.dataset.partyItem;
+    if (!found) {
+      cell.textContent = '+';
+      cell.style.borderStyle = 'dashed';
+      cell.style.color = '#5a5348';
+      cell.title = `Empty grid slot ${slot + 1}. Drop an item here, or select one and click.`;
+      cell.setAttribute('aria-label', cell.title);
+      return;
+    }
+    const [token, item] = found;
+    cell.dataset.partyItem = token;
+    cell.style.borderStyle = 'solid';
+    cell.style.color = '#f0e6d2';
+    const icon = gridIcon(item, 30);
+    if (icon) cell.append(icon);
+    else cell.textContent = text(item.name, token).slice(0, 2).toUpperCase();
+    const quantity = numeric(item.quantity, 1);
+    if (quantity > 1) {
+      const badge = document.createElement('span');
+      badge.textContent = String(quantity);
+      badge.setAttribute('aria-hidden', 'true');
+      badge.style.cssText = 'position:absolute;right:2px;bottom:2px;background:#33392f;border:1px solid #827556;border-radius:3px;padding:0 3px;font:700 10px/1.4 system-ui';
+      cell.append(badge);
+    }
+    const name = text(item.name, token);
+    cell.title = `${name}${quantity > 1 ? ` ×${quantity}` : ''} · power ${text(item.power, '0')} · defense ${text(item.defense, '0')} · drag to move, click to select`;
+    cell.setAttribute('aria-label', `${name}, grid slot ${slot + 1}${quantity > 1 ? `, quantity ${quantity}` : ''}.`);
+  };
+  const renderPartyPanel = (): void => {
+    if (drag !== null) return;
+    const inventoryState = inventoryOf(state);
+    const signature = JSON.stringify([inventoryState, state.equipmentSlots, state.selectedMember, state.party]);
+    if (signature === previousPartyPanel) return;
+    previousPartyPanel = signature;
+    const memberId = text(state.selectedMember, '');
+    const memberKey = `member:${memberId}`;
+    const member = record(record(state.party)[memberId]);
+    memberName.textContent = `${text(member.name, memberId)} · ${text(member.vitality, '?')}/${text(member.maximumVitality, '?')}`;
+    for (const [slot, equipped] of entries(state.equipmentSlots)) {
+      let row = partyEquipCache.get(slot);
+      if (!row) {
+        const element = document.createElement('div');
+        element.style.cssText = 'display:flex;gap:6px;align-items:center';
+        const label = document.createElement('span');
+        label.textContent = slot;
+        label.style.cssText = 'width:76px;color:#c9c0ae;font-size:12px';
+        const gear = button('', () => {});
+        gear.style.cssText = 'flex:1;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';
+        gear.dataset.partyEquipSlot = slot;
+        gear.addEventListener('click', () => clickEquipmentRow(slot, `member:${text(state.selectedMember, '')}`, gear.dataset.partyItem ?? ''));
+        gear.addEventListener('dragover', event => event.preventDefault());
+        gear.addEventListener('drop', event => dropOnEquipment(event, slot));
+        element.append(label, gear);
+        equipmentList.append(element);
+        row = { row: element, gear };
+        partyEquipCache.set(slot, row);
+      }
+      const token = text(record(equipped).token, '');
+      const name = text(record(equipped).name, 'Empty');
+      row.gear.textContent = name;
+      row.gear.dataset.partyItem = token;
+      row.gear.draggable = token !== '';
+      row.gear.title = token ? `${name} — click to unequip, drag to the grid.` : `${slot} is empty — drop or select an item to equip.`;
+      row.gear.setAttribute('aria-label', `${slot}: ${name}.`);
+    }
+    for (const [slot, cached] of partyEquipCache) {
+      if (!record(state.equipmentSlots)[slot]) { cached.row.remove(); partyEquipCache.delete(slot); }
+    }
+    const owner = partyOwner();
+    const count = numeric(owner.gridSlots, 0);
+    const bySlot = new Map<number, [string, Record<string, unknown>]>();
+    for (const [token, item] of itemEntries(owner)) {
+      const at = numeric(record(item).slot, -1);
+      if (at >= 0 && at < count && !bySlot.has(at)) bySlot.set(at, [token, record(item)]);
+    }
+    const live = new Set<number>();
+    for (let slot = 0; slot < count; slot++) {
+      live.add(slot);
+      let cell = partyCellCache.get(slot);
+      if (!cell) {
+        const fresh = gridCellButton('');
+        fresh.addEventListener('click', () => clickPartyCell(numeric(fresh.dataset.partySlot, -1), fresh.dataset.partyItem ?? ''));
+        fresh.addEventListener('dragover', event => event.preventDefault());
+        fresh.addEventListener('drop', event => dropOnPartyCell(event, numeric(fresh.dataset.partySlot, -1)));
+        fresh.addEventListener('dragstart', event => {
+          const token = fresh.dataset.partyItem;
+          if (!token) { event.preventDefault(); return; }
+          beginDrag(event, 'party', token);
+        });
+        fresh.addEventListener('dragend', cancelDrag);
+        partyCellCache.set(slot, fresh);
+        partyGrid.append(fresh);
+        cell = fresh;
+      }
+      paintPartyCell(cell, slot, bySlot.get(slot));
+      cell.draggable = bySlot.has(slot);
+    }
+    for (const [slot, cell] of partyCellCache) {
+      if (!live.has(slot)) { cell.remove(); partyCellCache.delete(slot); }
+    }
+    gridStatus.textContent = `Party load ${text(owner.mass, '0')}/${text(owner.maxMass, '0')} · ${bySlot.size}/${count} slots`;
+  };
   const renderState = (envelope: Envelope | null): void => {
     if (!envelope) { status.textContent = 'Preparing the expedition…'; bottomBar.update({}); return; }
     state = record(envelope.value);
@@ -524,7 +661,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     if (presentedRun !== nextRun) {
       presentedRun = nextRun;
       cancelDrag(); selectedItem = null; hoveredItem = null; selectedDestination = null;
-      uiFeedback = ''; previousInventory = ''; previousInventoryControls = '';
+      uiFeedback = ''; previousInventory = ''; previousInventoryControls = ''; previousPartyPanel = '';
       previousMagicTargets = ''; allyTarget.value = '';
     }
     runPanel.update(state.run);
@@ -538,6 +675,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     feedback.textContent = nextFeedback;
     pause.textContent = numeric(state.paused) === 1 ? 'Resume' : 'Pause';
     inventoryFeedback.textContent = uiFeedback || nextFeedback;
+    partyStatus.textContent = uiFeedback || nextFeedback;
     menuStatus.textContent = uiFeedback || nextFeedback;
     menuPause.textContent = numeric(state.paused) === 1 ? 'Pause: on' : 'Pause: off';
     // A detour carry only means "menu-caused pause outstanding" while the
@@ -562,7 +700,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
         puzzle.append(lever);
       }
     }
-    renderRoster(); renderPartyTools(); renderInventory(); renderCombat(); renderMagic();
+    renderRoster(); renderPartyTools(); renderInventory(); renderPartyPanel(); renderCombat(); renderMagic();
   };
   const render = (envelope: Envelope | null): void => uiProfile.measure(() => renderState(envelope));
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); };
@@ -573,6 +711,77 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
   panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
+  // Party panel: the game-UI inventory. Right side, full height above the
+  // bottom bar. Current-member equipment plus a party cycler on top, the
+  // fixed party grid below. All mutations reuse the legacy flows (transfer,
+  // equip, arrange) and server-side validation; this panel only lays out the
+  // new model (shared party grid, equipment-only members).
+  const partyPanel = document.createElement('aside');
+  partyPanel.dataset.partyPanel = 'true';
+  partyPanel.hidden = true;
+  partyPanel.setAttribute('aria-label', 'Party inventory');
+  partyPanel.dataset.rustyUiInteractive = 'true';
+  partyPanel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:64px;bottom:252px;z-index:1;width:300px;overflow:auto;padding:10px 12px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
+  const partyHead = document.createElement('div');
+  partyHead.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px';
+  const partyTitle = document.createElement('strong'); partyTitle.textContent = 'Party inventory'; partyTitle.style.cssText = 'color:#e4bd63;letter-spacing:0.12em;text-transform:uppercase;font-size:12px';
+  const partyClose = button('×', () => { partyPanel.hidden = true; });
+  partyClose.setAttribute('aria-label', 'Close party inventory');
+  partyHead.append(partyTitle, partyClose);
+  const partyStatus = document.createElement('output');
+  partyStatus.dataset.partyFeedback = 'true';
+  partyStatus.setAttribute('role', 'status');
+  partyStatus.style.cssText = 'display:block;min-height:1.4em;margin:0 0 6px;color:#ead27e';
+  const memberRow = document.createElement('div');
+  memberRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px';
+  const memberPrev = button('◀', () => cycleMember(-1));
+  memberPrev.setAttribute('aria-label', 'Previous party member');
+  const memberNext = button('▶', () => cycleMember(1));
+  memberNext.setAttribute('aria-label', 'Next party member');
+  const memberName = document.createElement('strong');
+  memberName.dataset.partyMember = 'true';
+  memberName.style.cssText = 'flex:1;text-align:center';
+  memberRow.append(memberPrev, memberName, memberNext);
+  const equipmentList = document.createElement('div');
+  equipmentList.dataset.partyEquipment = 'true';
+  equipmentList.style.cssText = 'display:grid;gap:4px;margin-bottom:8px';
+  const gridStatus = document.createElement('output');
+  gridStatus.dataset.partyLoad = 'true';
+  gridStatus.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px';
+  const partyGrid = document.createElement('div');
+  partyGrid.dataset.partyGrid = 'true';
+  partyGrid.setAttribute('role', 'group');
+  partyGrid.setAttribute('aria-label', 'Party inventory grid. Drag items between cells, or onto equipment above.');
+  partyGrid.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:4px';
+  partyPanel.append(partyHead, partyStatus, memberRow, equipmentList, gridStatus, partyGrid);
+  root.append(partyPanel);
+  const rosterOrder = (): string[] => entries(state.party)
+    .map(([id, member]) => ({ id, rank: numeric(record(member).rank) }))
+    .sort((left, right) => left.rank - right.rank || left.id.localeCompare(right.id))
+    .map(member => member.id);
+  const cycleMember = (direction: -1 | 1): void => {
+    const order = rosterOrder();
+    if (order.length === 0) return;
+    const current = order.indexOf(text(state.selectedMember, ''));
+    const next = order[(current < 0 ? 0 : current + direction + order.length) % order.length];
+    command('select', { member: next });
+  };
+  const partyOwner = (): Record<string, unknown> => record(record(inventoryOf(state).owners).party);
+  const gridCellButton = (label: string): HTMLButtonElement => {
+    const cell = button(label, () => {});
+    cell.style.cssText = 'position:relative;height:44px;width:100%;padding:0;background:#10120f99;border:1px solid #574f3d;border-radius:3px;cursor:pointer;font:700 13px/1 system-ui;color:#f0e6d2;display:flex;align-items:center;justify-content:center;overflow:hidden';
+    return cell;
+  };
+  const gridIcon = (item: Record<string, unknown>, size: number): HTMLElement | null => {
+    const imageIndex = numeric(item.imageIndex, -1);
+    if (typeof item.image !== 'string' || item.image.length === 0 || imageIndex < 0 || imageIndex >= 8) return null;
+    const icon = document.createElement('span');
+    icon.dataset.partyIcon = 'true';
+    icon.setAttribute('aria-hidden', 'true');
+    const column = imageIndex % 4, row = Math.floor(imageIndex / 4);
+    icon.style.cssText = `background-image:url("${String(item.image).replaceAll('"', '%22')}");background-position:${(column * 100) / 3}% ${row * 100}%;background-repeat:no-repeat;background-size:400% 200%;display:block;height:${size}px;width:${size}px;pointer-events:none`;
+    return icon;
+  };
   // Escape menu: the game-UI front door. Centered button list; opening it
   // pauses a live expedition, closing via Resume restores only a
   // menu-caused pause. Legacy agent panels stay in the DOM behind the menu
@@ -597,6 +806,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const stopToggleKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.stopPropagation(); };
   legacyToggle.addEventListener('keydown', stopToggleKeys, true);
   legacyToggle.addEventListener('keyup', stopToggleKeys, true);
+  partyPanel.addEventListener('keydown', stopToggleKeys, true);
+  partyPanel.addEventListener('keyup', stopToggleKeys, true);
   const setLegacyVisible = (visible: boolean): void => {
     panel.hidden = !visible; inventory.hidden = !visible; runPanel.element.hidden = !visible;
     inventory.style.bottom = visible ? '250px' : '12px';
@@ -636,7 +847,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
   readmeSection('Formation', 'The left panel is a 5×5 formation grid, front row at the top. The chevron marks each member\u2019s facing. Drag a member onto another cell to swap them. Drop a member onto an empty cell \u2014 or click the cell with a member selected \u2014 to move them there. The middle cell is blocked for later rules.');
-  readmeSection('Inventory', 'Open it from this menu. Select an item, then choose a destination, an equipment slot, or a use action. Drag items between owners to transfer them.');
+  readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
   (readmeView.lastChild as HTMLElement).style.textAlign = 'center';
@@ -690,7 +901,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     resumeButton.focus();
   };
   menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
-  menuButton('Inventory & equipment', () => { menuDetourLive = !menuEntryPaused; setLegacyVisible(true); inventory.open = true; closeMenu(false); });
+  menuButton('Inventory & equipment', () => { menuDetourLive = !menuEntryPaused; partyPanel.hidden = false; closeMenu(false); });
   menuButton('Formation & party', () => { menuDetourLive = !menuEntryPaused; setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
   const menuPause = menuButton('Pause', () => command('pause'));
   menuButton('Rest', () => command('rest'));
@@ -726,5 +937,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   root.append(menuButtonTop);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); menu.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
 }
