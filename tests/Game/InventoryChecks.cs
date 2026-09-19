@@ -10,10 +10,13 @@ internal static class InventoryChecks
     {
         ItemInventory inventory = CreateInventory(definitions.Items);
 
-        VerifyGrantTransferAndStaleProposals(inventory);
+        VerifyGrantTransferAndStaleProposals(definitions.Items, inventory);
+        VerifyPartySlots(inventory);
+        VerifyPartyFull(definitions.Items);
         VerifyEquipmentViewsAndStats(definitions, inventory);
         VerifyCapacityFailureKeepsEquipment(definitions.Items);
         VerifySaveRestore(definitions.Items, inventory);
+        VerifyOldSavesRejected(definitions.Items);
         VerifyPartyFormationAndAuthoredResources(definitions, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
         VerifyExplorationCreation(definitions);
 
@@ -27,6 +30,7 @@ internal static class InventoryChecks
             .Select(key =>
             {
                 PackDefinition capacity = ItemInventory.IsMember(key) ? definitions.Backpack
+                    : key == "party" ? definitions.Party
                     : key == "crate" ? definitions.Container : definitions.Anchor;
                 return new PackOwner(ownerId++, key, capacity.Mass, capacity.Space);
             }).ToArray();
@@ -36,29 +40,71 @@ internal static class InventoryChecks
         return inventory;
     }
 
-    private static void VerifyGrantTransferAndStaleProposals(ItemInventory inventory)
+    private static void VerifyGrantTransferAndStaleProposals(ItemDefinitions definitions, ItemInventory inventory)
     {
         Require(FungibleQuantity(inventory, "shot") == 14, "Starting fungible quantities are admitted once.");
         CarriedItem[] unique = inventory.Owners.SelectMany(owner => inventory.Items(owner.Key))
             .Where(item => item.Entity != 0).ToArray();
         Require(unique.Select(item => item.Entity).Distinct().Count() == unique.Length, "Engine materializes unique item identities.");
+        Require(inventory.Items("party").All(item => inventory.SlotOf(item.Token) >= 0), "Loose starting kits arrive slotted in the party inventory.");
 
         ulong revision = inventory.Revision;
-        string shot = inventory.Find("member:warden", "s:shot").Token;
-        inventory.Transfer("member:warden", "member:seeker", shot, 3, revision);
+        inventory.RegisterOwner(new PackOwner(900, "test-anchor", definitions.Anchor.Mass, definitions.Anchor.Space));
+        revision = inventory.Revision;
+        inventory.Transfer("party", "test-anchor", "s:shot", 3, revision);
         Require(FungibleQuantity(inventory, "shot") == 14, "Split transfer conserves fungible items.");
-        Require(ItemQuantity(inventory, "member:warden", "shot") == 5 && ItemQuantity(inventory, "member:seeker", "shot") == 9,
-            "Split transfer leaves the source remainder and merges into the destination stack.");
+        Require(ItemQuantity(inventory, "party", "shot") == 11 && ItemQuantity(inventory, "test-anchor", "shot") == 3,
+            "Split transfer leaves the source remainder and starts the destination stack.");
+        RequireRejected(() => inventory.Transfer("party", "test-anchor", "s:tonic", 1, inventory.Revision),
+            "Anchors hold one item kind: mixing stacks is rejected.");
 
-        string seekerShot = inventory.Find("member:seeker", "s:shot").Token;
-        inventory.Transfer("member:seeker", "member:warden", seekerShot, 3, inventory.Revision);
-        Require(ItemQuantity(inventory, "member:warden", "shot") == 8 && ItemQuantity(inventory, "member:seeker", "shot") == 6,
+        inventory.Transfer("test-anchor", "party", "s:shot", 3, inventory.Revision);
+        Require(ItemQuantity(inventory, "party", "shot") == 14 && !inventory.Items("test-anchor").Any(),
             "Merged stack can be transferred back without changing the total.");
 
+        RequireRejected(() => inventory.Transfer("party", "member:warden", "s:shot", 1, inventory.Revision),
+            "Characters carry only equipped gear: loose transfers into member packs are rejected.");
+
         string beforeStaleAttempt = Describe(inventory);
-        RequireRejected(() => inventory.Transfer("member:warden", "member:seeker", "s:shot", 1, revision),
+        RequireRejected(() => inventory.Transfer("party", "test-anchor", "s:shot", 1, revision),
             "A proposal from an earlier inventory revision is rejected.");
         Require(Describe(inventory) == beforeStaleAttempt, "A stale proposal does not alter Engine inventory state.");
+    }
+
+    private static void VerifyPartySlots(ItemInventory inventory)
+    {
+        const string shot = "s:shot";
+        int home = inventory.SlotOf(shot);
+        Require(home >= 0, "Party stacks occupy grid slots.");
+        inventory.Arrange(shot, 20, inventory.Revision);
+        Require(inventory.SlotOf(shot) == 20, "Arrange moves a token to the chosen grid slot.");
+        string rifle = inventory.Items("party").Single(item => item.Definition == "rifle").Token;
+        int rifleHome = inventory.SlotOf(rifle);
+        inventory.Arrange(rifle, 20, inventory.Revision);
+        Require(inventory.SlotOf(rifle) == 20 && inventory.SlotOf(shot) == rifleHome,
+            "Arranging onto an occupied slot swaps the two tokens.");
+        int last = inventory.Definitions.PartySlots - 1;
+        inventory.Arrange(shot, last, inventory.Revision);
+        Require(inventory.SlotOf(shot) == last, "The last grid slot is usable.");
+        RequireRejected(() => inventory.Arrange(shot, inventory.Definitions.PartySlots, inventory.Revision),
+            "Out-of-range grid slots are rejected.");
+        RequireRejected(() => inventory.Arrange("s:no-such-item", 0, inventory.Revision),
+            "Arranging an item outside the party inventory is rejected.");
+        RequireRejected(() => inventory.Arrange(shot, 0, 0),
+            "Arrange proposals from an earlier inventory revision are rejected.");
+    }
+
+    private static void VerifyPartyFull(ItemDefinitions definitions)
+    {
+        ItemDefinitions small = definitions with { PartySlots = 2 };
+        ItemInventory inventory = new(small, [new PackOwner(1, "party", 1000, 1000)]);
+        ulong itemId = 10;
+        inventory.Grant("party", "tonic", 1, () => itemId++);
+        inventory.Grant("party", "knife", 1, () => itemId++);
+        inventory.Grant("party", "tonic", 2, () => itemId++);
+        Require(ItemQuantity(inventory, "party", "tonic") == 3, "Merging into an existing stack needs no fresh slot.");
+        RequireRejected(() => inventory.Grant("party", "cordial", 2, () => itemId++),
+            "A full party grid rejects fresh tokens.");
     }
 
     private static void VerifyEquipmentViewsAndStats(GameDefinitions definitions, ItemInventory inventory)
@@ -69,19 +115,26 @@ internal static class InventoryChecks
         Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
             && warden.Defense == warden.Definition.BaseDefense + 4, "Engine-backed equipment sources contribute to member statistics.");
 
-        string knife = inventory.Find("member:blade", "i:" + inventory.Items("member:blade").Single(item => item.Definition == "knife").Entity).Token;
-        inventory.Transfer("member:blade", "member:warden", knife, 1, inventory.Revision);
-        inventory.Equip("member:warden", knife, "main-hand", warden.Definition.BasePower, inventory.Revision);
+        string spareRifle = inventory.Items("party").Single(item => item.Definition == "rifle").Token;
+        ulong spareId = inventory.Find("party", spareRifle).Entity;
+        CarriedItem wornRifle = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
+        inventory.Equip("party", spareRifle, "main-hand", warden.Definition.BasePower, inventory.Revision, "member:warden");
+        CarriedItem nowWorn = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
+        Require(nowWorn.Entity == spareId && inventory.SlotOf(spareRifle) < 0,
+            "Equipping from the party grid vacates the grid slot.");
+        CarriedItem displacedRifle = inventory.Items("party").Single(item => item.Entity == wornRifle.Entity);
+        Require(displacedRifle.Slots.Length == 0 && inventory.SlotOf(displacedRifle.Token) >= 0,
+            "Displaced gear returns to the party grid instead of the member pack.");
 
-        CarriedItem rifle = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
-        CarriedItem equippedKnife = inventory.Items("member:warden").Single(item => item.Definition == "knife");
-        Require(rifle.Slots.Length == 0, "Equipping main-hand gear displaces the two-handed rifle from every occupied slot.");
-        Require(equippedKnife.Slots.SequenceEqual(["main-hand"]), "The inventory view exposes the equipped item and its actual slot.");
-        Require(inventory.View("member:warden").UniqueItems.Count == 3, "Engine inventory view retains every unique item after equipment changes.");
+        inventory.Transfer("member:warden", "party", nowWorn.Token, 1, inventory.Revision);
+        CarriedItem bankedRifle = inventory.Items("party").Single(item => item.Entity == nowWorn.Entity);
+        Require(bankedRifle.Slots.Length == 0 && inventory.SlotOf(bankedRifle.Token) >= 0,
+            "Dragging worn gear back to the grid unequips it into a grid slot.");
+        Require(inventory.View("member:warden").UniqueItems.Count == 1, "Member packs retain only worn gear.");
 
         ApplyEquipment(inventory, warden);
-        Require(inventory.Bonuses("member:warden") == (2L, 4L) && warden.EquipmentBonuses == new EquipmentStatBonuses(2, 4)
-            && warden.Power == warden.Definition.BasePower + 2 && warden.Defense == warden.Definition.BaseDefense + 4,
+        Require(inventory.Bonuses("member:warden") == (0L, 4L) && warden.EquipmentBonuses == new EquipmentStatBonuses(0, 4)
+            && warden.Power == warden.Definition.BasePower && warden.Defense == warden.Definition.BaseDefense + 4,
             "Equipment bonuses follow current Engine assignments rather than a parallel item ledger.");
     }
 
@@ -90,27 +143,33 @@ internal static class InventoryChecks
         ItemDefinitions rifleOnly = definitions with
         {
             StartingItems = [new StartingItem("member:source", "rifle", 1, true)],
+            PartySlots = 1,
         };
         ItemInventory inventory = new(rifleOnly,
         [
             new PackOwner(1, "member:source", 100, 100),
-            new PackOwner(2, "member:target", 39, 6),
+            new PackOwner(2, "party", 1000, 1000),
         ]);
         ulong itemId = 10;
         inventory.GrantStarting(() => itemId++);
+        inventory.Grant("party", "knife", 1, () => itemId++);
 
         string rifle = inventory.Items("member:source").Single().Token;
-        string before = Describe(inventory);
         ulong revision = inventory.Revision;
         RequireRejected(() => inventory.Transfer("member:source", "member:target", rifle, 1, revision),
-            "A full destination rejects the unique-item transfer.");
-        Require(inventory.Revision == revision && Describe(inventory) == before,
-            "A rejected transfer neither partially moves nor auto-unequips the source item.");
+            "Loose transfers into member packs are rejected even before capacity is consulted.");
+        RequireRejected(() => inventory.Grant("party", "tonic", 1, () => itemId++),
+            "A full party grid rejects fresh tokens without touching the ledger.");
 
-        RequireRejected(() => inventory.Equip("member:source", rifle, "main-hand", definitions.Item("rifle").MinimumPower,
-            revision, "member:target"), "A full destination rejects a cross-owner equip proposal.");
-        Require(inventory.Revision == revision && Describe(inventory) == before,
-            "A rejected cross-owner equip neither transfers nor unequips its source item.");
+        // Swapping grid gear onto the member is net-zero: the equipped rifle
+        // displaces back into the vacated slot, so full grids still equip.
+        string knife = inventory.Items("party").Single(i => i.Definition == "knife").Token;
+        inventory.Equip("party", knife, "main-hand", definitions.Item("knife").MinimumPower, inventory.Revision, "member:source");
+        Require(inventory.Items("member:source").Single(i => i.Definition == "knife").Slots.Contains("main-hand")
+            && inventory.Items("party").Single(i => i.Definition == "rifle").Slots.Length == 0,
+            "A full grid still equips by swapping the displaced gear home.");
+        Require(inventory.Revision != revision,
+            "The successful equip advanced inventory state.");
     }
 
     private static void VerifySaveRestore(ItemDefinitions definitions, ItemInventory inventory)
@@ -120,12 +179,32 @@ internal static class InventoryChecks
 
         ItemInventory restored = ItemInventory.Restore(definitions, saved);
         Require(Describe(restored) == expected, "Save restoration reconstructs exact item ids, quantities, and equipment assignments.");
+        Require(restored.Items("party").All(item => restored.SlotOf(item.Token) >= 0),
+            "Restored party items keep grid slots.");
         ulong revision = restored.Revision;
-        restored.Transfer("member:warden", "member:seeker", "s:shot", 1, revision);
+        restored.Transfer("crate", "party", "s:tonic", 1, revision);
         string beforeStaleRestore = Describe(restored);
-        RequireRejected(() => restored.Transfer("member:warden", "member:seeker", "s:shot", 1, revision),
+        RequireRejected(() => restored.Transfer("crate", "party", "s:tonic", 1, revision),
             "A proposal from before a reconstructed-world mutation is rejected.");
         Require(Describe(restored) == beforeStaleRestore, "A stale reconstructed-world proposal leaves inventory untouched.");
+    }
+
+    private static void VerifyOldSavesRejected(ItemDefinitions definitions)
+    {
+        // A pre-party snapshot keeps loose items in member packs: loud reject.
+        ItemInventory modern = CreateInventory(definitions);
+        InventorySnapshot saved = modern.Capture();
+        SavedPack[] packs = saved.Packs.Select(pack => pack.Owner.Key == "party"
+            ? pack with { Stacks = [], Items = [], Slots = [] }
+            : pack).ToArray();
+        SavedPack warden = packs.Single(pack => pack.Owner.Key == "member:warden");
+        packs[Array.IndexOf(packs, warden)] = warden with
+        {
+            Stacks = [new SavedStack("shot", 3)],
+            Items = [new SavedItem(9001, "knife")],
+        };
+        RequireRejected(() => ItemInventory.Restore(definitions, saved with { Packs = packs }),
+            "Saves that predate the shared party inventory are rejected loudly, never migrated silently.");
     }
 
     private static void VerifyPartyFormationAndAuthoredResources(GameDefinitions definitions, StarterPartyPresetDefinition preset)
@@ -238,7 +317,7 @@ internal static class InventoryChecks
 
     private static string Describe(ItemInventory inventory) => string.Join("|", inventory.Owners.OrderBy(owner => owner.Key, StringComparer.Ordinal)
         .Select(owner => owner.Key + ":" + string.Join(",", inventory.Items(owner.Key).OrderBy(item => item.Token, StringComparer.Ordinal)
-            .Select(item => $"{item.Token}:{item.Definition}:{item.Quantity}:{string.Join('+', item.Slots.OrderBy(slot => slot, StringComparer.Ordinal))}"))));
+            .Select(item => $"{item.Token}:{item.Definition}:{item.Quantity}:{string.Join('+', item.Slots.OrderBy(slot => slot, StringComparer.Ordinal))}@{inventory.SlotOf(item.Token)}"))));
 
     private static void RequireRejected(Action action, string message)
     {

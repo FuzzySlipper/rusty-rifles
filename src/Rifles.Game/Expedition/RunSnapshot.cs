@@ -59,7 +59,7 @@ internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
         string[] floorKeys = [active.Floor.IntentFloorId, .. run.Inactive.Select(f => f.Floor.IntentFloorId)];
         GameDefinitions.Require(floorKeys.Distinct().Count() == floorKeys.Length
             && floorKeys.All(k => active.Intent.Floors.Any(f => f.Id == k)), "visited floor identities");
-        GameDefinitions.Require(run.Inactive.All(f => f.Inventory.Packs.All(p => !ItemInventory.IsMember(p.Owner.Key))), "retained floor inventory ownership");
+        GameDefinitions.Require(run.Inactive.All(f => f.Inventory.Packs.All(p => !ItemInventory.IsMember(p.Owner.Key) && p.Owner.Key != ItemInventory.PartyKey)), "retained floor inventory ownership");
         string[] rewards = Rewards(run);
         var items = Items(run);
         ExpeditionCodec.Validate(active, definitions, rewards, items, completionExperience);
@@ -76,7 +76,7 @@ internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
         }
         var floors = new[] { RetainedFloor.Capture(active) }.Concat(run.Inactive).ToArray();
         var ids = floors.SelectMany(f => FloorIds(f)).Concat(active.Inventory.Packs
-            .Where(p => ItemInventory.IsMember(p.Owner.Key)).SelectMany(p => p.Items.Select(i => i.Id).Append(p.Owner.Id)))
+            .Where(p => ItemInventory.IsMember(p.Owner.Key) || p.Owner.Key == ItemInventory.PartyKey).SelectMany(p => p.Items.Select(i => i.Id).Append(p.Owner.Id)))
             .Append(active.PartyId).ToArray();
         GameDefinitions.Require(ids.Distinct().Count() == ids.Length && ids.All(i => i > 0 && i < active.NextObjectId), "cross-floor object identities");
     }

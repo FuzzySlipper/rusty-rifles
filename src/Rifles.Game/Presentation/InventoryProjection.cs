@@ -12,11 +12,12 @@ internal static class InventoryProjection
         uint owners = value.Object(inventory.Owners.Select(owner =>
         {
             bool member = ItemInventory.IsMember(owner.Key), container = owner.Key == "crate";
-            bool drop = owner.Key.StartsWith("combat:", StringComparison.Ordinal);
-            bool reachable = member || (drop ? dropReachable(owner.Key) : world.Reachable(owner.Key, exploration, scene));
-            bool opened = !container || world.OpenContainer == owner.Key;
+            bool shared = ItemInventory.IsParty(owner.Key);
+            bool drop = !shared && owner.Key.StartsWith("combat:", StringComparison.Ordinal);
+            bool reachable = member || shared || (drop ? dropReachable(owner.Key) : world.Reachable(owner.Key, exploration, scene));
+            bool opened = shared || !container || world.OpenContainer == owner.Key;
             string name = member ? party.Members.Single(m => "member:" + m.Definition.Id == owner.Key).Definition.Name
-                : drop ? owner.Label ?? "Ground belongings" : world.AnchorDefinition(owner.Key).Name;
+                : shared ? "Party" : drop ? owner.Label ?? "Ground belongings" : world.AnchorDefinition(owner.Key).Name;
             var view = inventory.View(owner.Key);
             uint items = value.Object((opened && reachable ? inventory.Items(owner.Key) : []).Select(item =>
             {
@@ -24,6 +25,7 @@ internal static class InventoryProjection
                 int imageIndex = Array.FindIndex(art.Images, image => image.Id == definition.Image);
                 return (item.Token, value.Object(("name", value.String(definition.Name)), ("definition", value.String(definition.Id)),
                     ("entity", value.String(item.Entity.ToString())), ("quantity", value.Number(item.Quantity)),
+                    ("slot", value.Number(shared ? inventory.SlotOf(item.Token) : -1)),
                     ("slots", value.String(string.Join(',', item.Slots))), ("allowedSlots", value.String(string.Join(',', definition.Slots))),
                     ("power", value.Number(definition.Power)), ("defense", value.Number(definition.Defense)),
                     ("minimumPower", value.Number(definition.MinimumPower)), ("ammunition", value.String(definition.Ammunition)),
@@ -31,7 +33,8 @@ internal static class InventoryProjection
             }).ToArray());
             return (owner.Key, value.Object(("name", value.String(name)), ("id", value.String(owner.Id.ToString())),
                 ("revision", value.String(world.Revision.ToString())), ("reachable", value.Number(reachable ? 1 : 0)),
-                ("opened", value.Number(opened ? 1 : 0)), ("kind", value.String(member ? "member" : container ? "container" : drop ? "ground" : "anchor")),
+                ("opened", value.Number(opened ? 1 : 0)), ("kind", value.String(member ? "member" : shared ? "party" : container ? "container" : drop ? "ground" : "anchor")),
+                ("gridSlots", value.Number(shared ? inventory.Definitions.PartySlots : 0)),
                 ("mass", value.Number(view.Capacity.Single(c => c.Metric == ItemInventory.MassMetric).Used)),
                 ("maxMass", value.Number(owner.MassCapacity)), ("space", value.Number(view.Capacity.Single(c => c.Metric == ItemInventory.SpaceMetric).Used)),
                 ("maxSpace", value.Number(owner.SpaceCapacity)), ("items", items)));

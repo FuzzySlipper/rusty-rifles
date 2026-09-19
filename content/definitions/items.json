@@ -11,6 +11,11 @@
     "mass": 100,
     "space": 12
   },
+  "party": {
+    "mass": 240,
+    "space": 48
+  },
+  "partySlots": 24,
   "equipmentSlots": [
     "main-hand",
     "off-hand",
@@ -175,7 +180,7 @@
       "equipped": true
     },
     {
-      "owner": "member:warden",
+      "owner": "party",
       "definition": "shot",
       "quantity": 8,
       "equipped": false
@@ -187,25 +192,25 @@
       "equipped": true
     },
     {
-      "owner": "member:blade",
+      "owner": "party",
       "definition": "tonic",
       "quantity": 2,
       "equipped": false
     },
     {
-      "owner": "member:seeker",
+      "owner": "party",
       "definition": "rifle",
       "quantity": 1,
       "equipped": false
     },
     {
-      "owner": "member:seeker",
+      "owner": "party",
       "definition": "shot",
       "quantity": 6,
       "equipped": false
     },
     {
-      "owner": "member:mender",
+      "owner": "party",
       "definition": "tonic",
       "quantity": 3,
       "equipped": false
@@ -229,20 +234,20 @@
       "equipped": false
     },
     {
-      "owner": "member:mender",
+      "owner": "party",
       "definition": "cordial",
       "quantity": 2,
       "equipped": false
     },
     {
-      "owner": "member:blade",
+      "owner": "party",
       "definition": "rifle",
       "quantity": 1,
       "equipped": false,
       "preset": "rifle-drill"
     },
     {
-      "owner": "member:mender",
+      "owner": "party",
       "definition": "rifle",
       "quantity": 1,
       "equipped": false,

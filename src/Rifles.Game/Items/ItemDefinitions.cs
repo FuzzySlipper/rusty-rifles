@@ -16,14 +16,14 @@ internal sealed record GearDefinition(string Id, string Name, ItemKind Kind, ulo
 internal sealed record PackDefinition(ulong Mass, ulong Space);
 internal sealed record StartingItem(string Owner, string Definition, ulong Quantity, bool Equipped, string? Preset = null);
 internal sealed record ItemDefinitions(PackDefinition Backpack, PackDefinition Container, PackDefinition Anchor,
-    string[] EquipmentSlots, GearDefinition[] Items, StartingItem[] StartingItems)
+    string[] EquipmentSlots, GearDefinition[] Items, StartingItem[] StartingItems, PackDefinition Party, int PartySlots)
 {
     internal GearDefinition Item(string id) => Items.SingleOrDefault(i => i.Id == id)
         ?? throw new InvalidDataException("Unknown item: " + id);
     internal void Validate()
     {
         GameDefinitions.Require(Backpack.Mass > 0 && Backpack.Space > 0 && Container.Mass > 0 && Container.Space > 0
-            && Anchor.Mass > 0 && Anchor.Space > 0, "inventory capacities");
+            && Anchor.Mass > 0 && Anchor.Space > 0 && Party.Mass > 0 && Party.Space > 0 && PartySlots > 0, "inventory capacities");
         GameDefinitions.Require(EquipmentSlots.Length > 0 && EquipmentSlots.Distinct().Count() == EquipmentSlots.Length, "equipment slots");
         GameDefinitions.Require(Items.Length > 0 && Items.Select(i => i.Id).Distinct().Count() == Items.Length, "item identities");
         foreach (GearDefinition item in Items)

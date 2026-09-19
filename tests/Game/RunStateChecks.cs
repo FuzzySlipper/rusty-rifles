@@ -42,8 +42,8 @@ internal static class RunStateChecks
     private static void VerifyRetainedFloorKeepsOnlyFloorState(GameDefinitions definitions, ExpeditionSnapshot fixture)
     {
         RetainedFloor retained = RetainedFloor.Capture(fixture);
-        Require(retained.Inventory.Packs.All(pack => !ItemInventory.IsMember(pack.Owner.Key)),
-            "Retained floors exclude travelling member packs.");
+        Require(retained.Inventory.Packs.All(pack => !ItemInventory.IsMember(pack.Owner.Key) && pack.Owner.Key != "party"),
+            "Retained floors exclude travelling member packs and the party inventory.");
 
         ExpeditionSnapshot current = ChangedPartyState(definitions, fixture);
         ExpeditionSnapshot joined = retained.Join(current, retained.Departure);
@@ -85,17 +85,18 @@ internal static class RunStateChecks
             "Run reload preserves a windup action and its unloaded rifle state.");
 
         ItemInventory inventory = ItemInventory.Restore(definitions.Items, decodedWindup.Active.Inventory);
-        ulong beforeAmmo = ItemQuantity(inventory, owner, definitions.Combat.AmmunitionItem);
+        const string ammoOwner = "party";
+        ulong beforeAmmo = ItemQuantity(inventory, ammoOwner, definitions.Combat.AmmunitionItem);
         ActionState action = ActionState.Restore(restoredWindup);
         int commits = 0;
         action.Advance(reload.Windup, _ =>
         {
-            inventory.Consume(owner, definitions.Combat.AmmunitionItem, 1);
+            inventory.Consume(ammoOwner, definitions.Combat.AmmunitionItem, 1);
             commits++;
         });
         ActionSnapshot recovery = action.Capture() ?? throw new InvalidOperationException("Reload did not enter recovery.");
         Require(commits == 1 && recovery.Phase == ActionPhase.Recovery
-            && ItemQuantity(inventory, owner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
+            && ItemQuantity(inventory, ammoOwner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
             "Resumed reload consumes exactly one Engine-ledger round and commits once.");
 
         ExpeditionSnapshot committed = decodedWindup.Active with
@@ -112,7 +113,7 @@ internal static class RunStateChecks
         ActionSnapshot restoredRecovery = decodedRecovery.Active.Combat.Members.Single(saved => saved.Member == member).Action
             ?? throw new InvalidOperationException("Reload recovery action was lost from the run save.");
         Require(restoredRecovery == recovery && decodedRecovery.Active.Combat.LoadedWeapons.SequenceEqual([rifle])
-            && ItemQuantity(ItemInventory.Restore(definitions.Items, decodedRecovery.Active.Inventory), owner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
+            && ItemQuantity(ItemInventory.Restore(definitions.Items, decodedRecovery.Active.Inventory), ammoOwner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
             "Committed reload recovery preserves its action, loaded rifle, and spent ammunition.");
 
         ActionState resumedRecovery = ActionState.Restore(restoredRecovery);
@@ -324,12 +325,9 @@ internal static class RunStateChecks
     private static ExpeditionSnapshot ChangedPartyState(GameDefinitions definitions, ExpeditionSnapshot fixture)
     {
         ItemInventory inventory = ItemInventory.Restore(definitions.Items, fixture.Inventory);
-        string source = fixture.Roster[0].Id;
-        string destination = fixture.Roster[1].Id;
-        string sourcePack = "member:" + source;
-        string destinationPack = "member:" + destination;
-        CarriedItem item = inventory.Items(sourcePack).First();
-        inventory.Transfer(sourcePack, destinationPack, item.Token, 1, inventory.Revision);
+        string token = inventory.Items("party").First().Token;
+        int moved = (inventory.SlotOf(token) + 1) % definitions.Items.PartySlots;
+        inventory.Arrange(token, moved, inventory.Revision);
 
         MemberSnapshot[] members = fixture.Members.Select((member, index) => index == 0
             ? member with { Vitality = Math.Max(1, member.Vitality - 1) }
@@ -363,10 +361,11 @@ internal static class RunStateChecks
     }
 
     private static string DescribeMemberPacks(InventorySnapshot inventory) => string.Join("|", inventory.Packs
-        .Where(pack => ItemInventory.IsMember(pack.Owner.Key)).OrderBy(pack => pack.Owner.Key, StringComparer.Ordinal)
+        .Where(pack => ItemInventory.IsMember(pack.Owner.Key) || pack.Owner.Key == "party").OrderBy(pack => pack.Owner.Key, StringComparer.Ordinal)
         .Select(pack => pack.Owner.Key + ":" + string.Join(",", pack.Stacks.OrderBy(stack => stack.Definition, StringComparer.Ordinal)
             .Select(stack => stack.Definition + ":" + stack.Quantity)) + ";" + string.Join(",", pack.Items
-            .OrderBy(item => item.Id).Select(item => item.Id + ":" + item.Definition))));
+            .OrderBy(item => item.Id).Select(item => item.Id + ":" + item.Definition)) + ";" + string.Join(",", (pack.Slots ?? [])
+            .OrderBy(slot => slot.Slot).Select(slot => slot.Token + "@" + slot.Slot))));
 
     private static RunSnapshot CreateRun(GameDefinitions definitions, ExpeditionSnapshot active, RetainedFloor[]? inactive = null,
         RunProgress? progress = null) => new(active, inactive ?? [], progress ?? new RunProgress(definitions.Run.DefaultDifficulty, false, []));

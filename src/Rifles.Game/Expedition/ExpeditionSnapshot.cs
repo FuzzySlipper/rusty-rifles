@@ -76,14 +76,14 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
                 : retained.Length == 1 && retained[0].Definition == definitions.GeneratedFeatures.KeyItem,
                 "saved generated key identity");
         }
-        string[] expectedOwners = saved.Roster.Select(m => "member:" + m.Id).Concat(definitions.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
+        string[] expectedOwners = saved.Roster.Select(m => "member:" + m.Id).Append(Rifles.Game.Items.ItemInventory.PartyKey).Concat(definitions.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
         GameDefinitions.Require(inventory.Owners.Where(o => !o.Key.StartsWith("combat:", StringComparison.Ordinal)).Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "saved inventory owners");
         foreach (PackOwner owner in inventory.Owners)
         {
             bool combatOwner = owner.Key.StartsWith("combat:", StringComparison.Ordinal);
-            PackDefinition capacity = combatOwner ? definitions.Combat.DropCapacity : ItemInventory.IsMember(owner.Key) ? definitions.Items.Backpack : owner.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
+            PackDefinition capacity = combatOwner ? definitions.Combat.DropCapacity : ItemInventory.IsMember(owner.Key) ? definitions.Items.Backpack : owner.Key == "crate" ? definitions.Items.Container : owner.Key == Rifles.Game.Items.ItemInventory.PartyKey ? definitions.Items.Party : definitions.Items.Anchor;
             GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "saved pack capacity");
-            if (!combatOwner && !ItemInventory.IsMember(owner.Key)) GameDefinitions.Require(owner.Id == itemWorld.Anchor(owner.Key).Id, "saved anchor owner");
+            if (!combatOwner && !ItemInventory.IsMember(owner.Key) && owner.Key != Rifles.Game.Items.ItemInventory.PartyKey) GameDefinitions.Require(owner.Id == itemWorld.Anchor(owner.Key).Id, "saved anchor owner");
         }
         ValidateWorldObstructions(saved);
         new PartyDefinition(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster).Validate();

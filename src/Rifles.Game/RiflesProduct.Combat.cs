@@ -69,7 +69,10 @@ public sealed partial class RiflesProduct
         return hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
     }
     private CarriedItem? Weapon(string member) => inventory!.Items("member:" + member).SingleOrDefault(i => i.Slots.Contains("main-hand"));
+    // Rifle ammunition is pooled: reload draws from the shared party
+    // inventory, never from a character pack. Enemies keep their own packs.
     private ulong Ammo(string owner) => inventory!.Items(owner).SingleOrDefault(i => i.Definition == Combat.AmmunitionItem)?.Quantity ?? 0;
+    private ulong PartyAmmo() => Ammo(ItemInventory.PartyKey);
     private ActionSnapshot NewAction(CombatActionKind kind, ulong weapon = 0, string? token = null, string? source = null,
         ulong target = 0, string? member = null, GridPoint? aim = null)
     {
@@ -107,7 +110,7 @@ public sealed partial class RiflesProduct
             if (weapon is null || definitions.Items.Item(weapon.Definition).Ammunition.Length == 0) throw new InvalidDataException("Equip a rifle first.");
             if (kind == CombatActionKind.Fire && !loadedWeapons.Contains(weapon.Entity)) throw new InvalidDataException("Dry rifle — reload first.");
             if (kind == CombatActionKind.Reload && loadedWeapons.Contains(weapon.Entity)) throw new InvalidDataException("Rifle already loaded.");
-            if (kind == CombatActionKind.Reload && Ammo(owner) == 0) throw new InvalidDataException("No rifle shot in this character's pack.");
+            if (kind == CombatActionKind.Reload && PartyAmmo() == 0) throw new InvalidDataException("No rifle shot in the party inventory.");
         }
         if (kind == CombatActionKind.Melee && !party.CanUseReach(selectedMember, PartyReach.Melee)) throw new InvalidDataException("Only the front row can reach with melee.");
         string? token = null, source = null, targetMember = null;
@@ -158,12 +161,11 @@ public sealed partial class RiflesProduct
         PartyMemberState member = Member(memberId);
         if (!member.IsLiving) return;
         if (action.Kind == CombatActionKind.Cast) { CommitSpell(memberId, null, action); return; }
-        string owner = "member:" + memberId;
         if (action.Kind is CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Melee
             && (Weapon(memberId)?.Entity ?? 0) != action.Weapon) throw new InvalidDataException("Equipment changed; action interrupted.");
         if (action.Kind == CombatActionKind.Reload)
         {
-            inventory!.Consume(owner, Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
+            inventory!.Consume(ItemInventory.PartyKey, Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
             audio!.Play(SoundCue.Reload, Aim(exploration.Position));
             CombatMessage(member.Definition.Name + " loaded one round."); return;
         }

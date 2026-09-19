@@ -46,6 +46,10 @@ public sealed partial class RiflesProduct
                 feedback = "Equipment changed";
                 break;
             case "unequip": inventory.Unequip(source, token, revision); feedback = "Item returned to pack"; break;
+            case "arrange":
+                inventory.Arrange(token, command.PartySlot ?? throw new InvalidDataException("Choose a grid slot."), revision);
+                feedback = "Item rearranged";
+                break;
             case "consume":
                 BeginCombat(command);
                 break;
@@ -102,7 +106,7 @@ public sealed partial class RiflesProduct
         itemWorld.RequireAccess(anchor.Key, exploration, scene!);
         CarriedItem? item = inventory!.Items(anchor.Key).SingleOrDefault();
         if (item is null) return "Choose a pack item and place it here from Inventory.";
-        inventory.Transfer(anchor.Key, "member:" + selectedMember, item.Token, item.Quantity, inventory.Revision);
+        inventory.Transfer(anchor.Key, ItemInventory.PartyKey, item.Token, item.Quantity, inventory.Revision);
         return "Picked up " + definitions.Items.Item(item.Definition).Name;
     }
 }

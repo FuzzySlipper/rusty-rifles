@@ -157,6 +157,7 @@ RoomDressing savedDressing = RoomDressing.Create(savedFloor, saveActor, definiti
 ExplorationItems savedItemWorld = ExplorationItems.Create(definitions.ItemExploration, savedFloor, savedDressing, saveActor, AllocateDressingId);
 ItemInventory savedInventory = new(definitions.Items,
     saveParty.Members.Select(m => new PackOwner(AllocateDressingId(), "member:" + m.Definition.Id, definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space))
+    .Append(new PackOwner(AllocateDressingId(), "party", definitions.Items.Party.Mass, definitions.Items.Party.Space))
     .Concat(savedItemWorld.Anchors.Select(a => new PackOwner(a.Id, a.Key,
         a.Key == "crate" ? definitions.Items.Container.Mass : definitions.Items.Anchor.Mass,
         a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));

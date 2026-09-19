@@ -61,12 +61,15 @@ internal static class FloorFactory
         ExplorationItems itemWorld = ExplorationItems.Create(definitions.ItemExploration, floor, features.Dressing, actor, Allocate);
         IEnumerable<PackOwner> memberPacks = party.Members.Select(member => new PackOwner(Allocate(), "member:" + member.Definition.Id,
             definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space));
+        // The shared party inventory travels with the expedition; members
+        // keep owners for equipment state but hold no loose items.
+        PackOwner partyPack = new(Allocate(), ItemInventory.PartyKey, definitions.Items.Party.Mass, definitions.Items.Party.Space);
         IEnumerable<PackOwner> anchorPacks = itemWorld.Anchors.Select(anchor =>
         {
             PackDefinition capacity = anchor.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
             return new PackOwner(anchor.Id, anchor.Key, capacity.Mass, capacity.Space);
         });
-        ItemInventory inventory = new(definitions.Items, memberPacks.Concat(anchorPacks));
+        ItemInventory inventory = new(definitions.Items, memberPacks.Append(partyPack).Concat(anchorPacks));
         inventory.GrantStarting(Allocate, preset);
         ApplyEquipment(party, inventory);
         scene.SetDoor(itemWorld.Capture().Door, false);

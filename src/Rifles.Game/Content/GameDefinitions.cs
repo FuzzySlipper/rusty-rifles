@@ -71,6 +71,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
         Require(result.Items.Items.All(i => result.ItemArt.Images.Any(image => image.Id == i.Image)), "item image references");
         string[] ownerKeys = result.Characters.Presets[0].Members.Select(m => "member:" + m.Id)
+            .Append(ItemInventory.PartyKey)
             .Concat(result.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
         Require(result.Items.StartingItems.All(g => ownerKeys.Contains(g.Owner)
             && (g.Preset is null || result.Characters.Presets.Any(p => p.Id == g.Preset))), "starting loadout owners/presets");

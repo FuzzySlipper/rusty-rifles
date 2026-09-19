@@ -17,7 +17,9 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
 {
     internal static RetainedFloor Capture(ExpeditionSnapshot state)
     {
-        SavedPack[] packs = state.Inventory.Packs.Where(p => !ItemInventory.IsMember(p.Owner.Key)).ToArray();
+        // Member packs and the shared party pack travel with the party;
+        // retained floors keep anchors and drops only.
+        SavedPack[] packs = state.Inventory.Packs.Where(p => !ItemInventory.IsMember(p.Owner.Key) && p.Owner.Key != ItemInventory.PartyKey).ToArray();
         var items = packs.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         return new(state.FloorId, state.Floor, state.Exploration, state.Actor, state.Features,
             new(packs), state.ItemWorld with { OpenContainer = null }, state.Combat.Enemies,
@@ -29,8 +31,8 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
 
     internal ExpeditionSnapshot Join(ExpeditionSnapshot party, ExplorationSnapshot pose)
     {
-        SavedPack[] members = party.Inventory.Packs.Where(p => ItemInventory.IsMember(p.Owner.Key)).ToArray();
-        var items = members.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
+        SavedPack[] travelling = party.Inventory.Packs.Where(p => ItemInventory.IsMember(p.Owner.Key) || p.Owner.Key == ItemInventory.PartyKey).ToArray();
+        var items = travelling.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         MagicSnapshot magic = party.Combat.Magic! with
         {
             Conditions = party.Combat.Magic!.Conditions.Where(c => !c.Target.StartsWith("enemy:", StringComparison.Ordinal))
@@ -40,7 +42,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
             party.Combat.LoadedWeapons.Where(items.Contains).Concat(LoadedWeapons).ToArray(),
             Flights, Drops, Allies, 0, magic);
         return party with { FloorId = Id, Floor = Floor, Exploration = pose, Actor = Actor,
-            Features = Features, Inventory = new(members.Concat(Inventory.Packs).ToArray()),
+            Features = Features, Inventory = new(travelling.Concat(Inventory.Packs).ToArray()),
             ItemWorld = ItemWorld, Combat = combat, GeneratedFeatures = GeneratedFeatures,
             EncounterPlacement = EncounterPlacement };
     }

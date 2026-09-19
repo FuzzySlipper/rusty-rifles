@@ -26,7 +26,7 @@ public sealed partial class RiflesProduct
             return (member.Definition.Id, value.Object(("phase", value.String(!member.IsLiving ? "Dead" : action is null ? "Ready" : action.Kind + " " + action.Phase)),
                 ("remaining", value.Number(action?.Remaining ?? 0)), ("weapon", value.String(weapon is null ? "Unarmed" : definitions.Items.Item(weapon.Definition).Name)),
                 ("loaded", value.Number(weapon is not null && loadedWeapons.Contains(weapon.Entity) ? 1 : 0)),
-                ("ammunition", value.Number(Ammo("member:" + member.Definition.Id)))));
+                ("ammunition", value.Number(PartyAmmo()))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(selectedTarget.ToString())), ("enemies", foes), ("members", members),
             ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", combatLog))), ("defeated", value.Number(Defeated ? 1 : 0)));

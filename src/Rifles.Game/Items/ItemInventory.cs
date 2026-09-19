@@ -8,7 +8,8 @@ internal sealed record PackOwner(ulong Id, string Key, ulong MassCapacity, ulong
 internal sealed record SavedStack(string Definition, ulong Quantity);
 internal sealed record SavedItem(ulong Id, string Definition);
 internal sealed record SavedEquipment(ulong Item, string[] Slots);
-internal sealed record SavedPack(PackOwner Owner, SavedStack[] Stacks, SavedItem[] Items, SavedEquipment[] Equipment);
+internal sealed record SavedPack(PackOwner Owner, SavedStack[] Stacks, SavedItem[] Items, SavedEquipment[] Equipment, SavedSlot[] Slots);
+internal sealed record SavedSlot(string Token, int Slot);
 internal sealed record InventorySnapshot(SavedPack[] Packs);
 internal sealed record CarriedItem(string Token, ulong Entity, string Definition, ulong Quantity, string[] Slots);
 
@@ -20,6 +21,11 @@ internal sealed class ItemInventory
     private readonly InventoryStore world = new();
     private readonly ItemDefinitions definitions;
     private readonly Dictionary<string, PackOwner> owners;
+    // Grid slots for the shared party pack only: token ("s:<def>" or
+    // "i:<entity>") to slot index. Anchors, drops, and member packs have no
+    // positions; equipped items live in equipment state, not in slots.
+    private readonly Dictionary<string, int> slots = new(StringComparer.Ordinal);
+    internal const string PartyKey = "party";
     internal ulong Revision => world.Revision;
     internal IReadOnlyCollection<PackOwner> Owners => owners.Values;
     internal ItemDefinitions Definitions => definitions;
@@ -30,6 +36,36 @@ internal sealed class ItemInventory
         foreach (PackOwner owner in owners) RegisterOwner(owner);
     }
     internal static bool IsMember(string key) => key.StartsWith("member:", StringComparison.Ordinal);
+    internal static bool IsParty(string key) => key == PartyKey;
+    internal int SlotOf(string token) => slots.TryGetValue(token, out int slot) ? slot : -1;
+    // Lowest free grid slot, or -1 when the party inventory is full.
+    private int FreeSlot()
+    {
+        HashSet<int> taken = new(slots.Values);
+        for (int slot = 0; slot < definitions.PartySlots; slot++)
+            if (!taken.Contains(slot)) return slot;
+        return -1;
+    }
+    private void TakeSlot(string token)
+    {
+        if (slots.ContainsKey(token)) return;
+        int free = FreeSlot();
+        if (free < 0) throw new InvalidDataException("The party inventory is full.");
+        slots[token] = free;
+    }
+    // Slots for tokens that left the party pack (equipped, moved, consumed,
+    // destroyed) retire; anything else is a corrupt map, never silently kept.
+    private void SyncSlots()
+    {
+        HashSet<string> live = new(Items(PartyKey).Select(i => i.Token), StringComparer.Ordinal);
+        foreach (string token in slots.Keys.Where(token => !live.Contains(token)).ToArray()) slots.Remove(token);
+    }
+    private void RequirePartyRoom(IEnumerable<string> tokens)
+    {
+        int fresh = tokens.Distinct(StringComparer.Ordinal).Count(token => !slots.ContainsKey(token));
+        int free = definitions.PartySlots - slots.Count;
+        if (fresh > free) throw new InvalidDataException("The party inventory is full.");
+    }
     private static bool IsCombatOwner(string key) => key.StartsWith("combat:", StringComparison.Ordinal);
     internal void RegisterOwner(PackOwner owner)
     {
@@ -58,33 +94,52 @@ internal sealed class ItemInventory
     internal void GrantStarting(Func<ulong> allocate, string? preset = null)
     {
         InventoryEdit candidate = world.Prepare();
+        List<string> partyTokens = [];
         foreach (StartingItem grant in definitions.StartingItems.Where(g => g.Preset is null || g.Preset == preset))
         {
             GearDefinition definition = definitions.Item(grant.Definition);
             EntityId owner = new(Owner(grant.Owner).Id);
-            if (definition.Kind == ItemKind.Fungible) candidate.Grant(owner, definition.Mechanical, grant.Quantity);
+            if (definition.Kind == ItemKind.Fungible)
+            {
+                candidate.Grant(owner, definition.Mechanical, grant.Quantity);
+                if (grant.Owner == PartyKey) partyTokens.Add("s:" + definition.Id);
+            }
             else
             {
                 EntityId id = new(allocate());
                 candidate.MaterializeUnique(new ItemState(id, definition.Mechanical), owner);
                 if (grant.Equipped) candidate.Equip(owner, id, Slots(definition.Slots));
+                else if (grant.Owner == PartyKey) partyTokens.Add("i:" + id.Value);
             }
         }
+        RequirePartyRoom(partyTokens);
         candidate.Publish();
+        foreach (string token in partyTokens) TakeSlot(token);
     }
     internal void Grant(string owner, string definition, ulong quantity, Func<ulong> allocate)
     {
         GearDefinition item = definitions.Item(definition);
         if (quantity == 0 || quantity > item.MaximumQuantity) throw new InvalidDataException("Choose an available quantity.");
         EntityId destination = new(Owner(owner).Id);
+        List<string> partyTokens = [];
         InventoryEdit candidate = world.Prepare();
-        if (item.Kind == ItemKind.Fungible) candidate.Grant(destination, item.Mechanical, quantity);
+        if (item.Kind == ItemKind.Fungible)
+        {
+            candidate.Grant(destination, item.Mechanical, quantity);
+            if (owner == PartyKey) partyTokens.Add("s:" + item.Id);
+        }
         else
         {
             for (ulong count = 0; count < quantity; count++)
-                candidate.MaterializeUnique(new ItemState(new(allocate()), item.Mechanical), destination);
+            {
+                EntityId id = new(allocate());
+                candidate.MaterializeUnique(new ItemState(id, item.Mechanical), destination);
+                if (owner == PartyKey) partyTokens.Add("i:" + id.Value);
+            }
         }
+        RequirePartyRoom(partyTokens);
         candidate.Publish();
+        foreach (string token in partyTokens) TakeSlot(token);
     }
     internal void Consume(string owner, string definition, ulong quantity)
     {
@@ -93,14 +148,19 @@ internal sealed class ItemInventory
         InventoryEdit candidate = world.Prepare();
         candidate.Consume(new(Owner(owner).Id), item.Mechanical, quantity);
         candidate.Publish();
+        if (owner == PartyKey) SyncSlots();
     }
     internal void Transfer(string from, string to, string token, ulong quantity, ulong expectedRevision)
     {
         if (from == to) throw new InvalidDataException("Choose a different destination.");
+        // Characters carry equipped gear only; loose items live in the party.
+        // Equip (with its slot and power validation) is the way onto a member.
+        if (IsMember(to)) throw new InvalidDataException("Characters carry only equipped gear — send it to the party instead.");
         CarriedItem item = Find(from, token);
         if (quantity == 0 || quantity > item.Quantity) throw new InvalidDataException("Choose an available quantity.");
         // A floor quadrant/alcove/plate holds one item kind, with stack merging permitted.
-        if (!IsMember(to) && to != "crate" && !IsCombatOwner(to))
+        // The party pack is a real multi-kind inventory and skips this rule.
+        if (!IsMember(to) && !IsParty(to) && to != "crate" && !IsCombatOwner(to))
         {
             IReadOnlyList<CarriedItem> existing = Items(to);
             if (existing.Any(i => i.Entity != 0 || item.Entity != 0 || i.Definition != item.Definition))
@@ -115,7 +175,10 @@ internal sealed class ItemInventory
             if (item.Slots.Length > 0) candidate.Unequip(source, id);
             candidate.TransferUnique(id, source, destination);
         }
+        if (to == PartyKey) RequirePartyRoom([token]);
         candidate.Publish();
+        if (to == PartyKey) TakeSlot(token);
+        if (from == PartyKey) SyncSlots();
     }
     internal void Equip(string owner, string token, string slot, long basePower, ulong expectedRevision, string? destination = null)
     {
@@ -132,10 +195,34 @@ internal sealed class ItemInventory
             if (item.Slots.Length > 0) candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
             candidate.TransferUnique(new(item.Entity), new(Owner(owner).Id), id);
         }
+        // Swapping out of the party grid returns the displaced gear to the
+        // grid, not into the member pack: equipping from anywhere else keeps
+        // the old behavior. The incoming item vacates its own slot first.
+        bool toParty = owner == PartyKey;
+        List<string> displacedParty = [];
         foreach (CarriedItem displaced in Items(destination).Where(i => i.Slots.Intersect(definition.Slots).Any()))
+        {
             candidate.Unequip(id, new(displaced.Entity));
+            if (toParty)
+            {
+                candidate.TransferUnique(new(displaced.Entity), id, new(Owner(PartyKey).Id));
+                displacedParty.Add("i:" + displaced.Entity);
+            }
+        }
+        if (toParty)
+        {
+            int spare = definitions.PartySlots - slots.Count + 1;
+            if (displacedParty.Distinct(StringComparer.Ordinal).Count() > spare)
+                throw new InvalidDataException("The party inventory is full.");
+        }
         candidate.Equip(id, new(item.Entity), Slots(definition.Slots));
         candidate.Publish();
+        if (toParty)
+        {
+            SyncSlots();
+            foreach (string placed in displacedParty) TakeSlot(placed);
+        }
+        else if (owner == PartyKey) SyncSlots();
     }
     internal void Unequip(string owner, string token, ulong expectedRevision)
     {
@@ -159,6 +246,20 @@ internal sealed class ItemInventory
         candidate.Validate();
         return candidate;
     }
+    // Rearrange the party grid: move a token to a slot, swapping with any
+    // occupant. Slots are C#-side presentation state (the Engine ledger has
+    // no positions), so no ledger edit is needed — but the revision gate
+    // still applies so stale grids cannot overwrite fresh ones.
+    internal void Arrange(string token, int slot, ulong expectedRevision)
+    {
+        if (expectedRevision != world.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
+        if (slot < 0 || slot >= definitions.PartySlots) throw new InvalidDataException("Choose a slot inside the party inventory.");
+        if (!Items(PartyKey).Any(i => i.Token == token)) throw new InvalidDataException("That item is no longer in the party inventory.");
+        if (SlotOf(token) < 0) TakeSlot(token); // Repair path; every entry assigns, so this should not happen.
+        string? occupant = slots.SingleOrDefault(pair => pair.Value == slot && pair.Key != token).Key;
+        if (occupant is not null) slots[occupant] = SlotOf(token);
+        slots[token] = slot;
+    }
     internal void Destroy(string owner, string token)
     {
         CarriedItem item = Find(owner, token);
@@ -166,6 +267,7 @@ internal sealed class ItemInventory
         if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definitions.Item(item.Definition).Mechanical, item.Quantity);
         else candidate.DestroyUnique(new(item.Entity));
         candidate.Publish();
+        if (owner == PartyKey) SyncSlots();
     }
     internal (long Power, long Defense) Bonuses(string owner)
     {
@@ -178,7 +280,8 @@ internal sealed class ItemInventory
         return new SavedPack(owner,
             contents.Where(i => i.Entity == 0).Select(i => new SavedStack(i.Definition, i.Quantity)).ToArray(),
             contents.Where(i => i.Entity != 0).Select(i => new SavedItem(i.Entity, i.Definition)).ToArray(),
-            contents.Where(i => i.Slots.Length > 0).Select(i => new SavedEquipment(i.Entity, i.Slots)).ToArray());
+            contents.Where(i => i.Slots.Length > 0).Select(i => new SavedEquipment(i.Entity, i.Slots)).ToArray(),
+            owner.Key == PartyKey ? contents.Select(i => new SavedSlot(i.Token, SlotOf(i.Token))).ToArray() : []);
     }).ToArray());
     internal static ItemInventory Restore(ItemDefinitions definitions, InventorySnapshot snapshot)
     {
@@ -188,6 +291,12 @@ internal sealed class ItemInventory
         {
             EntityId owner = new(pack.Owner.Id);
             GameDefinitions.Require(pack.Stacks.Select(s => s.Definition).Distinct().Count() == pack.Stacks.Length, "saved stack uniqueness");
+            // Saves that predate the shared party inventory kept loose items
+            // in member packs. They cannot load: reject loudly, never migrate
+            // silently into a model the player did not choose.
+            if (IsMember(pack.Owner.Key) && (pack.Stacks.Length > 0
+                || pack.Items.Any(item => !pack.Equipment.Any(equipment => equipment.Item == item.Id))))
+                throw new InvalidDataException("This save predates the shared party inventory; start a new expedition.");
             foreach (SavedStack stack in pack.Stacks) candidate.Grant(owner, definitions.Item(stack.Definition).Mechanical, stack.Quantity);
             foreach (SavedItem item in pack.Items) candidate.MaterializeUnique(new ItemState(new(item.Id), definitions.Item(item.Definition).Mechanical), owner);
             foreach (SavedEquipment equipment in pack.Equipment)
@@ -196,7 +305,20 @@ internal sealed class ItemInventory
                 GameDefinitions.Require(equipment.Slots.ToHashSet().SetEquals(definitions.Item(item.Definition).Slots), "saved equipment slots");
                 candidate.Equip(owner, new(equipment.Item), result.Slots(equipment.Slots));
             }
-            if (!IsMember(pack.Owner.Key) && pack.Owner.Key != "crate" && !IsCombatOwner(pack.Owner.Key))
+            if (pack.Owner.Key == PartyKey)
+            {
+                SavedSlot[] savedSlots = pack.Slots ?? [];
+                GameDefinitions.Require(savedSlots.All(s => s.Slot >= 0 && s.Slot < definitions.PartySlots)
+                    && savedSlots.Select(s => s.Slot).Distinct().Count() == savedSlots.Length
+                    && savedSlots.Select(s => s.Token).Distinct(StringComparer.Ordinal).Count() == savedSlots.Length, "saved party slots");
+                List<string> live = [
+                    .. pack.Stacks.Select(s => "s:" + s.Definition),
+                    .. pack.Items.Select(i => "i:" + i.Id)];
+                GameDefinitions.Require(savedSlots.All(s => live.Contains(s.Token, StringComparer.Ordinal)), "saved party slot contents");
+                foreach (SavedSlot saved in savedSlots) result.slots[saved.Token] = saved.Slot;
+                foreach (string token in live.Where(token => result.SlotOf(token) < 0)) result.TakeSlot(token);
+            }
+            if (!IsMember(pack.Owner.Key) && pack.Owner.Key != "crate" && !IsCombatOwner(pack.Owner.Key) && pack.Owner.Key != PartyKey)
                 GameDefinitions.Require(pack.Items.Length + pack.Stacks.Length <= 1, "saved anchor occupancy");
         }
         candidate.Publish();
