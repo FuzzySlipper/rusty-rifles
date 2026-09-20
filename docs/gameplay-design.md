@@ -33,9 +33,13 @@ event bus, or scripting layer.
 - Canonical stat/track ownership is Engine `StatsComponent` with shared maximum
   `Stat` references and named accessors. Formulas/rounding stay Rifles-owned.
   No duplicated long-only mirrors or shadow scalars. (Landed — #8358.)
-- `EffectsComponent` contributions apply to the same `StatsComponent` combat
-  reads; equipment attach/removal preserves per-source identity. No per-tick
-  aggregate rebuild when nothing changed. (Planned — #8359, #8361.)
+- Landed (#8359, #8361): `EffectsComponent` contributions apply to the same
+  `StatsComponent` combat reads; equipment, advancement, and condition
+  attach/removal preserve per-source identity. No per-tick aggregate rebuild
+  when nothing changed. Spellbooks attach to character entities (archetypes
+  without starting spells carry none); rest travels with the party, outside
+  the magic snapshot. An entity-lifetime marker keeps restores onto live
+  entities from duplicating effect instances or stat modifiers.
 - Landed (#8359): every ledger owner binds an entity facade — members on
   character entities, the party pack on a `rifles:party` entity, anchors and
   flights on container entities, enemy packs on their live enemy entity
@@ -109,7 +113,7 @@ event bus, or scripting layer.
 | Entities/stats | `RiflesCharacter` over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` durable map | Landed (#8358) |
 | Inventory | `ItemInventory` numeric `PackOwner` ledger + bound components + typed owners | Landed (#8359); ledger re-key follows #8363 |
 | Combat | `RiflesProduct` combat partials + action dictionaries | Landed `RiflesCombat` owner (#8360) |
-| Magic | `MagicState` string-keyed books/conditions; per-tick recompute | Attached spellbook/conditions via `EffectsComponent` (#8361) |
+| Magic | `MagicState` detached books/conditions; per-tick recompute | Landed attached books/conditions + per-source stats (#8361) |
 | Commands | Global revisions + exception eligibility | Typed operations + availability contract (#8362) |
 | Floors | `FloorFactory` build/capture/dispose; `Capture()` reads | Active-floor aggregate; frozen retained floors (#8363) |
 | Saves | `RunCodec` schema11 + unused `ExpeditionCodec` schema9; synthetic validation | One current codec + one reconstruction path (#8364) |

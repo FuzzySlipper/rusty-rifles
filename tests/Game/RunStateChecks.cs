@@ -333,7 +333,8 @@ internal static class RunStateChecks
         MemberSnapshot[] members = fixture.Members.Select((member, index) => index == 0
             ? member with { Vitality = Math.Max(1, member.Vitality - 1) }
             : member).ToArray();
-        MagicState magic = new(definitions.Magic, fixture.Roster.Select(member => (member.Id, member.Archetype)));
+        PartyState throwaway = new(definitions.Party.Positions, definitions.Party.MaxPartySize, fixture.Roster);
+        MagicState magic = new(definitions.Magic, fixture.Roster.Select(member => (member.Id, member.Archetype)), throwaway.Entities);
         MagicBookSnapshot firstBook = magic.Capture().Books[0];
         magic.Select(firstBook.Member, firstBook.Known[0]);
 

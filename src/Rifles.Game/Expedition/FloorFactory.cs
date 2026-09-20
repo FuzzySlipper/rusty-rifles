@@ -90,7 +90,7 @@ internal static class FloorFactory
         generatedFeatures = AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, Allocate);
         inventory.BindRemaining(party.Entities);
 
-        MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)));
+        MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)), party.Entities);
         // The build-time owner only freezes the snapshot: damage, sound, and
         // feature callbacks never fire here, so inert callables are correct.
         // The live owner is built at activation with real services.
@@ -106,7 +106,7 @@ internal static class FloorFactory
         ExpeditionSnapshot snapshot = new(runId, floorId, partyId, candidateNextObjectId, floor, exploration.Capture(),
             party.Members.Select(member => member.Definition).ToArray(), party.Capture().ToArray(), false,
             party.Members[0].Definition.Id, actor.Capture(), features, preset, inventory.Capture(), itemWorld.Capture(), combatSnapshot,
-            intent, generatedFeatures, encounterPlacement);
+            intent, generatedFeatures, encounterPlacement, 0, "");
         _ = ExpeditionCodec.Validate(snapshot, definitions);
         nextObjectId = candidateNextObjectId;
         return snapshot;

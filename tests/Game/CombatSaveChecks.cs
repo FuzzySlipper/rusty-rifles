@@ -152,7 +152,7 @@ internal static class CombatSaveChecks
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
             AllySnapshot[] allies = allyIds.Select(id => new AllySnapshot(id, definitions.Combat.AllyVitality)).ToArray();
-            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype))).Capture());
+            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Entities).Capture());
             return new CombatFixture(floor, inventory, party, saved, partyId, allyIds);
         }
     }

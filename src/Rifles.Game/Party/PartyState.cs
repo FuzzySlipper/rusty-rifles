@@ -332,6 +332,15 @@ internal sealed class PartyState
 
     /// <summary>Set for a starter-preset party and immutable for its expedition.</summary>
     internal string? PresetId { get; }
+
+    /// <summary>
+    /// Party-wide rest state. Rest belongs to the party/session owner, not the
+    /// magic books: it travels with the party and resets when floors join idle.
+    /// </summary>
+    internal double RestRemaining { get; set; }
+
+    internal string RestOwner { get; set; } = "";
+
     internal IReadOnlyList<RiflesCharacter> Members => Array.AsReadOnly(members);
     internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members

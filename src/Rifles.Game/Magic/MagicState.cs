@@ -1,3 +1,5 @@
+using Rifles.Game.Characters;
+using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
 
 namespace Rifles.Game.Magic;
@@ -20,55 +22,62 @@ internal sealed record MagicConditionSnapshot(
 internal sealed record MagicSnapshot(
     MagicBookSnapshot[] Books,
     MagicConditionSnapshot[] Conditions,
-    string[] Rewards,
-    double RestRemaining,
-    string RestOwner);
+    string[] Rewards);
 
 /// <summary>
 /// Product-owned spellbooks, advancement, timed conditions, and recovery state.
-/// Engine effects enforce each condition's single refreshable stack; this class
-/// owns admitted duration and periodic timing.
+/// Effect stacks live on the target entity's own <see cref="EffectsComponent"/>;
+/// stat contributions attach per source to the same <see cref="StatsComponent"/>
+/// combat and equipment use. This class owns admitted duration, periodic
+/// timing, and per-source handle bookkeeping — never an aggregate rebuild.
 /// </summary>
 internal sealed class MagicState
 {
     private const int HotbarSlots = 3;
-    private static readonly StatId SpeedId = StatId.Parse("rifles.speed");
-    private static readonly StackingGroupId SlowSpeedGroup = StackingGroupId.Parse("rifles.slow.speed");
     private readonly MagicDefinition definition;
+    private readonly CharacterEntities entities;
     private readonly Dictionary<string, MagicBook> books;
     private readonly Dictionary<string, EffectDefinition> effectDefinitions;
     private readonly Dictionary<string, TargetConditions> conditions = new(StringComparer.Ordinal);
     private readonly HashSet<string> rewards = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// Builds one spellbook per roster instance. Starting spells resolve by
-    /// archetype, so shared archetype instances start from the same spells
-    /// under distinct instance ids.
+    /// Builds one spellbook per roster instance whose archetype admits starting
+    /// spells. Archetypes without starting spells get no book: progression
+    /// never assumes every character is a caster.
     /// </summary>
-    internal MagicState(MagicDefinition definition, IEnumerable<(string Instance, string Archetype)> roster)
+    internal MagicState(MagicDefinition definition, IEnumerable<(string Instance, string Archetype)> roster, CharacterEntities entities)
     {
         this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        this.entities = entities ?? throw new ArgumentNullException(nameof(entities));
         ArgumentNullException.ThrowIfNull(roster);
         definition.Validate();
 
-        (string Instance, string Archetype)[] members = ValidateRoster(roster);
-        books = members.ToDictionary(
-            member => member.Instance,
-            member => new MagicBook(member.Archetype, SpellsForArchetype(member.Archetype), definition.ExperiencePerPoint),
-            StringComparer.Ordinal);
+        books = new Dictionary<string, MagicBook>(StringComparer.Ordinal);
+        foreach ((string instance, string archetype) in ValidateRoster(roster))
+        {
+            if (!definition.StartingSpells.TryGetValue(archetype, out string[]? spells)) continue;
+            MagicBook book = new(archetype, spells, definition.ExperiencePerPoint);
+            books.Add(instance, book);
+            entities.AttachComponent(instance, () => book);
+        }
+
         effectDefinitions = definition.Spells.ToDictionary(
             spell => spell.Id,
             CreateEffectDefinition,
             StringComparer.Ordinal);
     }
 
-    internal double RestRemaining { get; set; }
+    internal MagicBook For(string member)
+    {
+        if (books.TryGetValue(member, out MagicBook? book)
+            && entities.TryGetEntity(member, out EntityId entity)
+            && new Actor(entities.Store, entity).Has<MagicBook>())
+            return book;
+        throw new InvalidDataException("Unknown spellbook member: " + member);
+    }
 
-    internal string RestOwner { get; set; } = "";
-
-    internal MagicBook For(string member) => books.TryGetValue(member, out MagicBook? book)
-        ? book
-        : throw new InvalidDataException("Unknown spellbook member: " + member);
+    internal bool HasBook(string member) => books.ContainsKey(member);
 
     internal void Select(string member, string spell)
     {
@@ -98,6 +107,7 @@ internal sealed class MagicState
 
         book.Choices.Add(selected.Id);
         foreach (string spell in selected.Unlocks) book.Known.Add(spell);
+        AttachDevelopment(member, book, selected);
     }
 
     /// <summary>Settles an encounter reward once across the complete roster.</summary>
@@ -116,15 +126,11 @@ internal sealed class MagicState
         foreach (var book in books.Values) book.Experience = checked(book.Experience + amount);
     }
 
-    internal long Power(string member) => SumChoices(For(member), choice => choice.Power);
-
-    internal long Defense(string member) => SumChoices(For(member), choice => choice.Defense);
-
     internal long CostDiscount(string member) => SumChoices(For(member), choice => choice.CostDiscount);
 
-    internal void Apply(string target, SpellDefinition spell, double? duration = null)
+    internal void Apply(MagicTarget target, SpellDefinition spell, double? duration = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(target);
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(spell);
         double appliedDuration = duration ?? spell.Duration;
         if (!double.IsFinite(appliedDuration) || appliedDuration <= 0 || appliedDuration > spell.Duration)
@@ -132,67 +138,58 @@ internal sealed class MagicState
         if (!effectDefinitions.TryGetValue(spell.Id, out EffectDefinition? effectDefinition))
             throw new InvalidDataException("Unknown condition spell: " + spell.Id);
 
-        TargetConditions targetConditions = GetTarget(target);
+        TargetConditions targetConditions = GetTarget(target.Key);
         if (targetConditions.BySpell.TryGetValue(spell.Id, out Condition? existing))
         {
-            targetConditions.Effects.Refresh(existing.Instance, Provenance(spell), 1);
+            EffectsFor(target).Refresh(existing.Instance, Provenance(spell), 1);
             existing.Remaining = appliedDuration;
             // Do not reset TickRemaining. Reapplying an injury cannot indefinitely
-            // defer its next due tick.
+            // defer its next due tick. Stat handles persist: refresh changes
+            // duration, never the contribution.
             return;
         }
 
         EffectInstanceId instance = EffectInstance(spell);
-        targetConditions.Effects.Apply(effectDefinition, instance, Provenance(spell), 1);
-        targetConditions.BySpell.Add(spell.Id, new Condition(spell, instance, appliedDuration, InitialTick(spell)));
+        MagicAttachments marker = MarkerFor(target);
+        // Effect instances and stat modifiers persist on the entity across
+        // state generations: a second restore onto the same entities must not
+        // duplicate them. Timing always refreshes from the admitted snapshot.
+        if (marker.Effects.Add("fx:" + spell.Id))
+            EffectsFor(target).Apply(effectDefinition, instance, Provenance(spell), 1);
+        Condition condition = new(spell, instance, appliedDuration, InitialTick(spell));
+        AttachConditionStats(target, condition, marker);
+        targetConditions.BySpell.Add(spell.Id, condition);
     }
 
-    internal void Clear(string target, bool harmfulOnly = false)
+    internal void Clear(MagicTarget target, bool harmfulOnly = false)
     {
-        if (!conditions.TryGetValue(target, out TargetConditions? targetConditions)) return;
+        ArgumentNullException.ThrowIfNull(target);
+        if (!conditions.TryGetValue(target.Key, out TargetConditions? targetConditions)) return;
+        EffectsComponent effects = EffectsFor(target);
+        MagicAttachments marker = MarkerFor(target);
         foreach (Condition condition in targetConditions.BySpell.Values.ToArray())
         {
             if (harmfulOnly && !condition.Spell.Harmful) continue;
-            targetConditions.Effects.Remove(condition.Instance);
+            effects.Remove(condition.Instance);
+            marker.Effects.Remove("fx:" + condition.Spell.Id);
+            DetachConditionStats(target, condition, marker);
             targetConditions.BySpell.Remove(condition.Spell.Id);
         }
-        if (targetConditions.BySpell.Count == 0) conditions.Remove(target);
+        if (targetConditions.BySpell.Count == 0) conditions.Remove(target.Key);
     }
 
-    internal bool Has(string target, SpellEffect effect) => conditions.TryGetValue(target, out TargetConditions? targetConditions)
+    internal bool Has(MagicTarget target, SpellEffect effect) => conditions.TryGetValue(target.Key, out TargetConditions? targetConditions)
         && targetConditions.BySpell.Values.Any(condition => condition.Spell.Effect == effect);
 
-    internal float Radius(string target, SpellEffect effect) => conditions.TryGetValue(target, out TargetConditions? active)
+    internal float Radius(MagicTarget target, SpellEffect effect) => conditions.TryGetValue(target.Key, out TargetConditions? active)
         ? active.BySpell.Values.Where(c => c.Spell.Effect == effect).Select(c => c.Spell.Radius).DefaultIfEmpty(0).Max() : 0;
 
-    internal double Speed(string target)
-    {
-        Stat speed = new(1, minimum: 0, maximum: 1);
-        if (!conditions.TryGetValue(target, out TargetConditions? targetConditions)) return speed.Value;
-        StatSource[] sources = targetConditions.BySpell.Values
-            .Where(condition => condition.Spell.Effect == SpellEffect.Slow)
-            .Select(condition => new StatSource(
-                new EffectSourceIdentity(null, condition.Instance, 1, SourceDefinition(condition.Spell)),
-                SourceDefinition(condition.Spell),
-                priority: 0,
-                [new StatContributionDefinition(
-                    SpeedId,
-                    SlowSpeedGroup,
-                    MechanicsStackingPolicy.Lowest,
-                    new StatContribution.Maximum(condition.Spell.SpeedFactor))]))
-            .ToArray();
-        speed.SetSources(SpeedId, sources);
-        return speed.Value;
-    }
+    /// <summary>Live speed factor read from the target's own speed stat.</summary>
+    internal double Speed(MagicTarget target) => StatsFor(target).GetStat(RiflesStatIds.Speed).Value;
 
-    internal long DefenseBonus(string target) => !conditions.TryGetValue(target, out TargetConditions? targetConditions)
-        ? 0
-        : targetConditions.BySpell.Values.Where(condition => condition.Spell.Effect == SpellEffect.Defense)
-            .Aggregate(0L, (sum, condition) => checked(sum + condition.Spell.Power));
-
-    internal string Describe(string target)
+    internal string Describe(MagicTarget target)
     {
-        if (!conditions.TryGetValue(target, out TargetConditions? targetConditions) || targetConditions.BySpell.Count == 0)
+        if (!conditions.TryGetValue(target.Key, out TargetConditions? targetConditions) || targetConditions.BySpell.Count == 0)
             return "Healthy";
         return string.Join(", ", targetConditions.BySpell.Values
             .OrderBy(condition => condition.Spell.Name, StringComparer.Ordinal)
@@ -229,13 +226,12 @@ internal sealed class MagicState
         conditions.OrderBy(entry => entry.Key, StringComparer.Ordinal).SelectMany(entry => entry.Value.BySpell.Values
             .OrderBy(condition => condition.Spell.Id, StringComparer.Ordinal)
             .Select(condition => new MagicConditionSnapshot(entry.Key, condition.Spell.Id, condition.Remaining, condition.TickRemaining))).ToArray(),
-        rewards.OrderBy(reward => reward, StringComparer.Ordinal).ToArray(),
-        RestRemaining,
-        RestOwner);
+        rewards.OrderBy(reward => reward, StringComparer.Ordinal).ToArray());
 
     internal static MagicState Restore(
         MagicSnapshot snapshot,
         MagicDefinition definition,
+        CharacterEntities entities,
         IEnumerable<(string Instance, string Archetype)> members,
         IEnumerable<string> validTargets,
         IEnumerable<string> validRewards, long completionExperience = 0)
@@ -244,7 +240,7 @@ internal sealed class MagicState
         ArgumentNullException.ThrowIfNull(validTargets);
         ArgumentNullException.ThrowIfNull(validRewards);
 
-        MagicState state = new(definition, members);
+        MagicState state = new(definition, members, entities);
         HashSet<string> targets = RequireDistinct(validTargets, "condition targets");
         HashSet<string> rewardKeys = RequireDistinct(validRewards, "reward identities");
         ValidateSnapshotShape(snapshot, state, targets, rewardKeys, completionExperience);
@@ -259,20 +255,93 @@ internal sealed class MagicState
             book.Experience = saved.Experience;
             book.Choices.Clear();
             book.Choices.AddRange(saved.Choices);
+            foreach (string choice in book.Choices)
+                state.AttachDevelopment(saved.Member, book, state.definition.Choice(choice));
             book.Revivals = saved.Revivals;
         }
         foreach (string reward in snapshot.Rewards) state.rewards.Add(reward);
         foreach (MagicConditionSnapshot saved in snapshot.Conditions)
         {
             SpellDefinition spell = definition.Spell(saved.Spell);
-            state.Apply(saved.Target, spell);
+            state.Apply(MagicTarget.Parse(saved.Target), spell);
             Condition condition = state.conditions[saved.Target].BySpell[saved.Spell];
             condition.Remaining = saved.Remaining;
             condition.TickRemaining = saved.TickRemaining;
         }
-        state.RestRemaining = snapshot.RestRemaining;
-        state.RestOwner = snapshot.RestOwner;
         return state;
+    }
+
+    private EffectsComponent EffectsFor(MagicTarget target) =>
+        entities.AttachComponent(EntityKey(target), () => new EffectsComponent());
+
+    private StatsComponent StatsFor(MagicTarget target) =>
+        new Actor(entities.Store, EntityOf(target)).Get<StatsComponent>();
+
+    private EntityId EntityOf(MagicTarget target)
+    {
+        if (entities.TryGetEntity(EntityKey(target), out EntityId entity)) return entity;
+        throw new InvalidDataException($"Unknown condition target '{target.Key}'.");
+    }
+
+    private static string EntityKey(MagicTarget target) => target switch
+    {
+        MemberTarget member => member.Instance,
+        EnemyTarget enemy => "enemy:" + enemy.Id,
+        PartyTarget => "party",
+        _ => throw new InvalidDataException($"Unknown condition target '{target.Key}'."),
+    };
+
+    /// <summary>
+    /// Attaches one condition's stat contribution to the target's own stats.
+    /// Defense conditions add power; slow conditions cap speed. Party targets
+    /// carry no stats, so party conditions are effects-only by construction.
+    /// </summary>
+    private MagicAttachments MarkerFor(MagicTarget target) =>
+        entities.AttachComponent(EntityKey(target), () => new MagicAttachments());
+
+    private void AttachConditionStats(MagicTarget target, Condition condition, MagicAttachments marker)
+    {
+        if (target is PartyTarget) return;
+        if (condition.Spell.Effect is not (SpellEffect.Defense or SpellEffect.Slow)) return;
+        if (marker.Stats.TryGetValue("st:" + condition.Spell.Id, out StatModifierHandle? existing))
+        {
+            // A previous generation attached this contribution; adopt its
+            // handle so this generation's expiry removes the original.
+            if (condition.Spell.Effect == SpellEffect.Defense) condition.DefenseHandle = existing;
+            else condition.SpeedHandle = existing;
+            return;
+        }
+        StatsComponent stats = StatsFor(target);
+        if (condition.Spell.Effect == SpellEffect.Defense)
+            condition.DefenseHandle = stats.GetStat(RiflesStatIds.Defense).AddModifier(condition.Spell.Power, StatModifierKind.Add);
+        else
+            condition.SpeedHandle = stats.GetStat(RiflesStatIds.Speed).AddModifier(condition.Spell.SpeedFactor, StatModifierKind.Maximum);
+        marker.Stats.Add("st:" + condition.Spell.Id, condition.DefenseHandle ?? condition.SpeedHandle);
+    }
+
+    private void DetachConditionStats(MagicTarget target, Condition condition, MagicAttachments marker)
+    {
+        if (target is PartyTarget) return;
+        if (condition.Spell.Effect is not (SpellEffect.Defense or SpellEffect.Slow)) return;
+        if (!marker.Stats.Remove("st:" + condition.Spell.Id, out StatModifierHandle? handle) || handle is null) return;
+        StatsComponent stats = StatsFor(target);
+        if (condition.Spell.Effect == SpellEffect.Defense)
+            stats.GetStat(RiflesStatIds.Defense).RemoveModifier(handle);
+        else
+            stats.GetStat(RiflesStatIds.Speed).RemoveModifier(handle);
+    }
+
+    private void AttachDevelopment(string member, MagicBook book, AdvancementDefinition choice)
+    {
+        MemberTarget target = new(member);
+        MagicAttachments marker = MarkerFor(target);
+        if (marker.Stats.ContainsKey("dev:" + choice.Id)) return;
+        StatsComponent stats = StatsFor(target);
+        StatModifierHandle? power = choice.Power == 0 ? null
+            : stats.GetStat(RiflesStatIds.Power).AddModifier(choice.Power, StatModifierKind.Add);
+        StatModifierHandle? defense = choice.Defense == 0 ? null
+            : stats.GetStat(RiflesStatIds.Defense).AddModifier(choice.Defense, StatModifierKind.Add);
+        marker.Stats.Add("dev:" + choice.Id, power ?? defense);
     }
 
     private void AdvanceCondition(
@@ -334,7 +403,11 @@ internal sealed class MagicState
     private void Expire(string target, TargetConditions targetConditions, Condition condition)
     {
         if (!targetConditions.BySpell.Remove(condition.Spell.Id)) return;
-        targetConditions.Effects.Expire(condition.Instance);
+        MagicTarget parsed = MagicTarget.Parse(target);
+        EffectsFor(parsed).Remove(condition.Instance);
+        MagicAttachments marker = MarkerFor(parsed);
+        marker.Effects.Remove("fx:" + condition.Spell.Id);
+        DetachConditionStats(parsed, condition, marker);
         if (targetConditions.BySpell.Count == 0) conditions.Remove(target);
     }
 
@@ -370,13 +443,6 @@ internal sealed class MagicState
 
     private static double InitialTick(SpellDefinition spell) => spell.Period > 0 ? spell.Period : 0;
 
-    private string[] SpellsForArchetype(string archetype)
-    {
-        if (string.IsNullOrWhiteSpace(archetype) || !definition.StartingSpells.TryGetValue(archetype, out string[]? spells))
-            throw new InvalidDataException($"No starting spells for archetype '{archetype}'.");
-        return spells;
-    }
-
     private static (string Instance, string Archetype)[] ValidateRoster(IEnumerable<(string Instance, string Archetype)> members)
     {
         (string Instance, string Archetype)[] roster = members.ToArray();
@@ -401,26 +467,19 @@ internal sealed class MagicState
         IReadOnlySet<string> validTargets,
         IReadOnlySet<string> validRewards, long completionExperience)
     {
-        if (snapshot.Books is null || snapshot.Conditions is null || snapshot.Rewards is null
-            || snapshot.RestOwner is null || !double.IsFinite(snapshot.RestRemaining)
-            || snapshot.RestRemaining < 0 || snapshot.RestRemaining > state.definition.RestSeconds)
+        if (snapshot.Books is null || snapshot.Conditions is null || snapshot.Rewards is null)
             throw new InvalidDataException("Magic snapshot has invalid required values.");
-        if (snapshot.Books.Length != state.books.Count
-            || snapshot.Books.Any(book => book is null)
+        if (snapshot.Books.Any(book => book is null)
             || snapshot.Books.Select(book => book.Member).Distinct(StringComparer.Ordinal).Count() != snapshot.Books.Length
-            || !snapshot.Books.Select(book => book.Member).ToHashSet(StringComparer.Ordinal).SetEquals(state.books.Keys))
+            || !snapshot.Books.Select(book => book.Member).ToHashSet(StringComparer.Ordinal).IsSubsetOf(state.books.Keys))
             throw new InvalidDataException("Magic snapshot spellbook roster does not match.");
         if (snapshot.Conditions.Any(condition => condition is null)
-            || snapshot.Conditions.Select(condition => condition.Target + "\u001f" + condition.Spell).Distinct(StringComparer.Ordinal).Count() != snapshot.Conditions.Length)
+            || snapshot.Conditions.Select(condition => condition.Target + "" + condition.Spell).Distinct(StringComparer.Ordinal).Count() != snapshot.Conditions.Length)
             throw new InvalidDataException("Magic snapshot repeats an active condition.");
         if (snapshot.Rewards.Any(string.IsNullOrWhiteSpace)
             || snapshot.Rewards.Distinct(StringComparer.Ordinal).Count() != snapshot.Rewards.Length
             || !snapshot.Rewards.ToHashSet(StringComparer.Ordinal).SetEquals(validRewards))
             throw new InvalidDataException("Magic snapshot rewards do not match resolved encounters.");
-        if (snapshot.RestRemaining > 0 && !state.books.ContainsKey(snapshot.RestOwner)
-            || snapshot.RestRemaining == 0 && snapshot.RestOwner.Length != 0)
-            throw new InvalidDataException("Magic snapshot rest owner is invalid.");
-
         if (completionExperience < 0) throw new InvalidDataException("Invalid completion experience.");
         long expectedExperience = checked((long)snapshot.Rewards.Length * state.definition.ExperiencePerEnemy + completionExperience);
         foreach (MagicBookSnapshot book in snapshot.Books)
@@ -435,7 +494,6 @@ internal sealed class MagicState
             if (book.Selected.Length != 0 && !book.Known.Contains(book.Selected, StringComparer.Ordinal)
                 || book.Hotbar.Any(spell => spell.Length != 0 && !book.Known.Contains(spell, StringComparer.Ordinal)))
                 throw new InvalidDataException("Magic snapshot selects an unknown spell.");
-
             HashSet<string> choiceIds = state.definition.Choices.Select(choice => choice.Id).ToHashSet(StringComparer.Ordinal);
             HashSet<string> spellIds = state.definition.Spells.Select(spell => spell.Id).ToHashSet(StringComparer.Ordinal);
             if (book.Choices.Any(choice => !choiceIds.Contains(choice)) || book.Known.Any(spell => !spellIds.Contains(spell)))
@@ -485,7 +543,6 @@ internal sealed class MagicState
 
     private sealed class TargetConditions
     {
-        internal EffectsComponent Effects { get; } = new();
         internal Dictionary<string, Condition> BySpell { get; } = new(StringComparer.Ordinal);
     }
 
@@ -495,5 +552,7 @@ internal sealed class MagicState
         internal EffectInstanceId Instance { get; } = instance;
         internal double Remaining { get; set; } = remaining;
         internal double TickRemaining { get; set; } = tickRemaining;
+        internal StatModifierHandle? DefenseHandle { get; set; }
+        internal StatModifierHandle? SpeedHandle { get; set; }
     }
 }

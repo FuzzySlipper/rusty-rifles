@@ -67,10 +67,9 @@ internal sealed class RunCodec : IProductStateCodec<RunSnapshot>
         {
             // Party actions belong only to the active floor. A resting floor has
             // no phantom travelling action or party reservation to restore.
-            var idle = active with { Combat = active.Combat with
+            var idle = active with { RestRemaining = 0, RestOwner = "", Combat = active.Combat with
             {
                 Members = active.Combat.Members.Select(m => m with { Action = null }).ToArray(),
-                Magic = active.Combat.Magic! with { RestRemaining = 0, RestOwner = "" },
             }};
             ExpeditionCodec.Validate(floor.Join(idle, floor.Departure), definitions, rewards, items, completionExperience);
         }

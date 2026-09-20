@@ -2,6 +2,7 @@ using System.Numerics;
 using Rifles.Game.Characters;
 using Rifles.Game.Combat;
 using Rifles.Game.Dungeon;
+using Rifles.Game.Magic;
 using Rifles.Game.Items;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
@@ -19,7 +20,7 @@ public sealed partial class RiflesProduct
             ("name", value.String(enemy.Definition.Name)), ("vitality", value.Number(enemy.Vitality)),
             ("maxVitality", value.Number(enemy.Definition.Vitality)), ("visible", value.Number(combat.Visible(enemy) ? 1 : 0)),
             ("phase", value.String(enemy.Alive ? enemy.Action.Current is { } a ? a.Kind + " " + a.Phase : enemy.Brain.Mode.ToString() : "Dead")),
-            ("conditions", value.String(magic!.Describe("enemy:" + enemy.Id))),
+            ("conditions", value.String(magic!.Describe(new EnemyTarget(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))))),
             ("position", value.String($"({enemy.Motion.Position.X}, {enemy.Motion.Position.Y}) · slot {enemy.Motion.CrowdOffset.X:0.##}, {enemy.Motion.CrowdOffset.Y:0.##}")),
             ("remaining", value.Number(enemy.Action.Current?.Remaining ?? 0)), ("kind", value.String(enemy.Definition.Attack.ToString()))))).ToArray());
         uint members = value.Object(party.Members.Select(member =>

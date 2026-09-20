@@ -335,7 +335,7 @@ internal sealed class RiflesCombat
                 && pending.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload
                 && (Weapon(member.Definition.Id)?.Entity ?? 0) != pending.Weapon)
             { state.Cancel(); CombatMessage(member.Definition.Name + " interrupted by equipment change."); }
-            try { state.Advance(seconds * magic.Speed("member:" + member.Definition.Id), action => CommitMember(member.Definition.Id, action)); }
+            try { state.Advance(seconds * magic.Speed(new MemberTarget(member.Definition.Id)), action => CommitMember(member.Definition.Id, action)); }
             catch (InvalidDataException error) { CombatMessage(error.Message); }
             catch (InvalidOperationException error) { CombatMessage("Action interrupted: " + error.Message); }
         }
@@ -387,7 +387,7 @@ internal sealed class RiflesCombat
             scope.CancelRest("Rest interrupted by damage.");
             long applied = DamageMember(target, Math.Max(Combat.MinimumDamage, damage - target.Defense));
             CombatMessage(target.Definition.Name + " took " + applied + " damage" + (target.IsLiving ? "." : " and died. Pack retained."));
-            if (!target.IsLiving) { ActionOf(target).Cancel(); magic.Clear("member:" + target.Definition.Id); }
+            if (!target.IsLiving) { ActionOf(target).Cancel(); magic.Clear(new MemberTarget(target.Definition.Id)); }
             return;
         }
         if (allies.TryGetValue(hit.Entity, out RiflesCharacter? ally) && Combat.FriendlyFire)
@@ -405,7 +405,7 @@ internal sealed class RiflesCombat
         enemy.Brain.Observe(null, scope.Exploration.Position); CombatMessage(enemy.Definition.Name + " took " + applied + " damage.");
         if (!enemy.Alive)
         {
-            magic.Clear("enemy:" + enemy.Id); magic.Reward(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            magic.Clear(new EnemyTarget(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))); magic.Reward(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
             enemy.Action.Cancel(); enemy.Motion.Stop(); scope.Movement.Remove(enemy.Id); enemy.Motion.Detach();
             drops[enemy.Owner] = enemy.Motion.Position;
             // An enemy's loaded round stays with its unique rifle on death.
@@ -423,7 +423,7 @@ internal sealed class RiflesCombat
     {
         scope.CancelRest("Rest interrupted by injury.");
         long applied = member.ApplyDamage(checked((long)Math.Ceiling(damage * scope.IncomingDamageMultiplier)));
-        if (!member.IsLiving) { ActionOf(member).Cancel(); magic.Clear("member:" + member.Definition.Id); }
+        if (!member.IsLiving) { ActionOf(member).Cancel(); magic.Clear(new MemberTarget(member.Definition.Id)); }
         return applied;
     }
 
@@ -570,11 +570,11 @@ internal sealed class RiflesCombat
     {
         foreach (EnemyState enemy in enemies.Where(e => e.Alive))
         {
-            enemy.Motion.Advance(seconds, magic.Speed("enemy:" + enemy.Id));
+            enemy.Motion.Advance(seconds, magic.Speed(new EnemyTarget(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))));
             enemy.Brain.Advance(seconds);
             enemy.DecisionRemaining = Math.Max(0, enemy.DecisionRemaining - seconds);
             if (Defeated) { enemy.Action.Cancel(); enemy.Motion.Stop(); continue; }
-            try { enemy.Action.Advance(seconds * magic.Speed("enemy:" + enemy.Id), action => CommitEnemy(enemy, action)); }
+            try { enemy.Action.Advance(seconds * magic.Speed(new EnemyTarget(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))), action => CommitEnemy(enemy, action)); }
             catch (InvalidOperationException error) { CombatMessage(enemy.Definition.Name + ": " + error.Message); }
         }
         if (Defeated || enemies.Count == 0) return;
@@ -684,13 +684,6 @@ internal sealed class RiflesCombat
 
     private bool HasItem(string member, string item) => inventory.Items("member:" + member).Any(i => i.Definition == item && i.Quantity > 0);
 
-    internal void RefreshDevelopment()
-    {
-        foreach (RiflesCharacter member in party.Members)
-            member.SetDevelopmentBonuses(magic.Power(member.Definition.Id),
-                magic.Defense(member.Definition.Id) + magic.DefenseBonus("member:" + member.Definition.Id));
-    }
-
     internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
         RiflesCharacter member = Member(memberId);
@@ -789,11 +782,11 @@ internal sealed class RiflesCombat
             if (action.Target == scope.ItemWorld.Capture().LeverId) scope.ItemWorld.ToggleLever(scope.Exploration, scope.Scene, action.FeatureRevision);
             else CombatMessage(scope.UseFeature(action.Target, action.FeatureRevision));
         }
-        else if (spell.Target == SpellTarget.Party) magic.Apply("party", spell);
+        else if (spell.Target == SpellTarget.Party) magic.Apply(new PartyTarget(), spell);
         else
         {
             RiflesCharacter target = Member(action.TargetMember!);
-            string key = "member:" + target.Definition.Id;
+            MemberTarget key = new(target.Definition.Id);
             switch (spell.Effect)
             {
                 case SpellEffect.Heal: target.Heal(spell.Power); break;
@@ -802,7 +795,6 @@ internal sealed class RiflesCombat
                 default: magic.Apply(key, spell); break;
             }
         }
-        RefreshDevelopment();
         CombatMessage((memberId is null ? enemy!.Definition.Name : Member(memberId).Definition.Name) + " casts " + spell.Name + ".");
     }
 
@@ -842,7 +834,7 @@ internal sealed class RiflesCombat
         {
             if (shooter != scope.PartyId && !Combat.FriendlyFire) return;
             if (spell.Effect == SpellEffect.Damage) DamageEnemy(foe, Resisted(spell.Power, foe.Definition.Id));
-            else if (definitions.Magic.Resistances[foe.Definition.Id] < 100) magic.Apply("enemy:" + foe.Id, spell, spell.Duration * (100 - definitions.Magic.Resistances[foe.Definition.Id]) / 100);
+            else if (definitions.Magic.Resistances[foe.Definition.Id] < 100) magic.Apply(new EnemyTarget(foe.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)), spell, spell.Duration * (100 - definitions.Magic.Resistances[foe.Definition.Id]) / 100);
             foe.Brain.Observe(null, scope.Exploration.Position);
         }
         else if (target == scope.PartyId && (shooter != scope.PartyId || Combat.FriendlyFire))
@@ -851,9 +843,8 @@ internal sealed class RiflesCombat
             if (member is null) return;
             scope.CancelRest("Rest interrupted by hostile magic.");
             if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));
-            else if (definitions.Magic.Resistances[member.Definition.Archetype] < 100) magic.Apply("member:" + member.Definition.Id, spell, spell.Duration * (100 - definitions.Magic.Resistances[member.Definition.Archetype]) / 100);
+            else if (definitions.Magic.Resistances[member.Definition.Archetype] < 100) magic.Apply(new MemberTarget(member.Definition.Id), spell, spell.Duration * (100 - definitions.Magic.Resistances[member.Definition.Archetype]) / 100);
         }
         CombatMessage(spell.Name + " struck " + (foe?.Definition.Name ?? "the party") + ".");
-        RefreshDevelopment();
     }
 }

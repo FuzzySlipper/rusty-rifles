@@ -3,6 +3,8 @@ using Rifles.Game.Items;
 using Rifles.Procgen;
 using Rusty.Engine.Interaction;
 
+using Rifles.Game.Magic;
+
 namespace Rifles.Game;
 
 public sealed partial class RiflesProduct
@@ -108,9 +110,9 @@ public sealed partial class RiflesProduct
 
     private void AdvanceGeneratedHazards(double seconds)
     {
-        if (magic!.Has("party", Rifles.Game.Magic.SpellEffect.Reveal))
+        if (magic!.Has(new PartyTarget(), Rifles.Game.Magic.SpellEffect.Reveal))
         {
-            float radius = magic.Radius("party", Rifles.Game.Magic.SpellEffect.Reveal);
+            float radius = magic.Radius(new PartyTarget(), Rifles.Game.Magic.SpellEffect.Reveal);
             for (int index = 0; index < generatedFeatures.Gates.Length; index++)
             {
                 var gate = generatedFeatures.Gates[index];

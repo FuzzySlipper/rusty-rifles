@@ -17,7 +17,7 @@ namespace Rifles.Game.Expedition;
 
 internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId, ulong NextObjectId,
     DungeonFloor Floor, ExplorationSnapshot Exploration, MemberDefinition[] Roster,
-    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent, GeneratedFeatureSnapshot GeneratedFeatures, EncounterPlacementResult EncounterPlacement);
+    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent, GeneratedFeatureSnapshot GeneratedFeatures, EncounterPlacementResult EncounterPlacement, double RestRemaining = 0, string RestOwner = "");
 
 internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
 {
@@ -103,6 +103,11 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         }
         ExplorationState exploration = ExplorationState.Restore(saved.Exploration, saved.Floor, definitions.Exploration);
         GameDefinitions.Require(party.Members.Any(m => m.Definition.Id == saved.SelectedMember), "Save.SelectedMember");
+        GameDefinitions.Require(double.IsFinite(saved.RestRemaining) && saved.RestRemaining >= 0
+            && saved.RestRemaining <= definitions.Magic.RestSeconds, "Save.RestRemaining");
+        GameDefinitions.Require(saved.RestRemaining > 0
+            ? party.Members.Any(m => m.Definition.Id == saved.RestOwner && m.IsLiving) : saved.RestOwner.Length == 0, "Save.RestOwner");
+        party.RestRemaining = saved.RestRemaining; party.RestOwner = saved.RestOwner;
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
             new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, expeditionRewards, completionExperience);
         inventory.BindRemaining(party.Entities);

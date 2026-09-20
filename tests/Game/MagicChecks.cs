@@ -1,7 +1,9 @@
+using Rifles.Game.Characters;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Magic;
+using Rifles.Game.Party;
 using Rifles.Procgen.Generation;
 
 internal static class MagicChecks
@@ -15,73 +17,79 @@ internal static class MagicChecks
         VerifySlowMovementUsesUnscaledClock(definitions);
         VerifyPeriodicTimingAndExpiry(definitions);
         VerifyPausedTimeAndCastRecovery(definitions);
+        VerifyPerSourceExpiryAndRestoreIdentity(definitions);
+        VerifyBooklessMemberWorks(definitions);
 
         Console.WriteLine("Magic checks passed: spellbooks, advancement, conditions, saves, and action recovery.");
     }
 
     private static void VerifySelectionAndKnownHotbar(GameDefinitions definitions)
     {
-        MagicState state = NewState(definitions);
-        state.Select("warden", "spark");
-        Require(state.For("warden").Selected == "spark", "A member can freely select a known spell.");
-        state.Select("warden", "");
-        Require(state.For("warden").Selected == "", "Cancelling a selection clears the selected spell.");
+        Fixture fixture = NewFixture(definitions);
+        fixture.State.Select("warden", "spark");
+        Require(fixture.State.For("warden").Selected == "spark", "A member can freely select a known spell.");
+        fixture.State.Select("warden", "");
+        Require(fixture.State.For("warden").Selected == "", "Cancelling a selection clears the selected spell.");
 
-        state.Assign("warden", "spark", 0);
-        state.Assign("warden", "ward", 2);
-        Require(state.For("warden").Hotbar.SequenceEqual(["spark", "", "ward"]),
+        fixture.State.Assign("warden", "spark", 0);
+        fixture.State.Assign("warden", "ward", 2);
+        Require(fixture.State.For("warden").Hotbar.SequenceEqual(["spark", "", "ward"]),
             "Known spells occupy their requested hotbar slots.");
-        RequireRejected(() => state.Select("warden", "burst"), "A member cannot select a spell they do not know.");
-        RequireRejected(() => state.Assign("warden", "burst", 1), "A member cannot hotbar a spell they do not know.");
+        RequireRejected(() => fixture.State.Select("warden", "burst"), "A member cannot select a spell they do not know.");
+        RequireRejected(() => fixture.State.Assign("warden", "burst", 1), "A member cannot hotbar a spell they do not know.");
     }
 
     private static void VerifyRewardsAndAdvancement(GameDefinitions definitions)
     {
-        MagicState state = NewState(definitions);
-        AwardTwoEnemies(state);
-        Require(state.For("warden").Experience == 2 * definitions.Magic.ExperiencePerEnemy,
+        Fixture fixture = NewFixture(definitions);
+        AwardTwoEnemies(fixture.State);
+        Require(fixture.State.For("warden").Experience == 2 * definitions.Magic.ExperiencePerEnemy,
             "Distinct dead enemy identities grant their authored experience once.");
-        Require(!state.Reward("enemy:42") && state.For("warden").Experience == 2 * definitions.Magic.ExperiencePerEnemy,
+        Require(!fixture.State.Reward("enemy:42") && fixture.State.For("warden").Experience == 2 * definitions.Magic.ExperiencePerEnemy,
             "Re-awarding a resolved enemy identity does not duplicate experience.");
 
+        RiflesCharacter warden = Member(fixture.Party, "warden");
         AdvancementDefinition power = definitions.Magic.Choices.Single(choice => choice.Power > 0 && choice.CostDiscount > 0);
-        state.AdvanceMember("warden", power.Id);
-        Require(state.For("warden").Known.IsSupersetOf(power.Unlocks)
-            && state.Power("warden") == power.Power
-            && state.Defense("warden") == power.Defense
-            && state.CostDiscount("warden") == power.CostDiscount,
-            "An earned advancement unlocks its actual spells, power, defense, and cost discount.");
-        RequireRejected(() => state.AdvanceMember("warden", power.Id), "A chosen advancement cannot be selected twice.");
+        fixture.State.AdvanceMember("warden", power.Id);
+        Require(fixture.State.For("warden").Known.IsSupersetOf(power.Unlocks)
+            && warden.Power == warden.Definition.BasePower + power.Power
+            && warden.Defense == warden.Definition.BaseDefense + power.Defense
+            && fixture.State.CostDiscount("warden") == power.CostDiscount,
+            "An earned advancement unlocks its actual spells and contributes power, defense, and cost discount to live stats.");
+        RequireRejected(() => fixture.State.AdvanceMember("warden", power.Id), "A chosen advancement cannot be selected twice.");
 
-        MagicState defenseState = NewState(definitions);
-        AwardTwoEnemies(defenseState);
+        Fixture defenseFixture = NewFixture(definitions);
+        AwardTwoEnemies(defenseFixture.State);
+        RiflesCharacter defenseWarden = Member(defenseFixture.Party, "warden");
         AdvancementDefinition defense = definitions.Magic.Choices.Single(choice => choice.Defense > 0);
-        defenseState.AdvanceMember("warden", defense.Id);
-        Require(defenseState.Power("warden") == defense.Power
-            && defenseState.Defense("warden") == defense.Defense
-            && defenseState.CostDiscount("warden") == defense.CostDiscount,
-            "A different earned advancement contributes its authored defensive statistics.");
+        defenseFixture.State.AdvanceMember("warden", defense.Id);
+        Require(defenseWarden.Power == defenseWarden.Definition.BasePower + defense.Power
+            && defenseWarden.Defense == defenseWarden.Definition.BaseDefense + defense.Defense
+            && defenseFixture.State.CostDiscount("warden") == defense.CostDiscount,
+            "A different earned advancement contributes its authored defensive statistics to live stats.");
     }
 
     private static void VerifySnapshotAndRestoreValidation(GameDefinitions definitions)
     {
-        MagicState state = NewState(definitions);
-        AwardTwoEnemies(state);
-        state.Select("warden", "spark");
-        state.Assign("warden", "spark", 0);
-        state.Assign("warden", "ward", 2);
+        Fixture fixture = NewFixture(definitions);
+        AwardTwoEnemies(fixture.State);
+        fixture.State.Select("warden", "spark");
+        fixture.State.Assign("warden", "spark", 0);
+        fixture.State.Assign("warden", "ward", 2);
         SpellDefinition blight = definitions.Magic.Spell("blight");
-        state.Apply("enemy:42", blight);
-        state.Advance(0.4, (_, _) => throw new InvalidOperationException("Blight must not tick before its period."));
-        state.RestRemaining = definitions.Magic.RestSeconds - 0.5;
-        state.RestOwner = "warden";
-        MagicSnapshot saved = state.Capture();
+        fixture.State.Apply(new EnemyTarget("42"), blight);
+        fixture.State.Advance(0.4, (_, _) => throw new InvalidOperationException("Blight must not tick before its period."));
+        fixture.Party.RestRemaining = definitions.Magic.RestSeconds - 0.5;
+        fixture.Party.RestOwner = "warden";
+        MagicSnapshot saved = fixture.State.Capture();
         MagicConditionSnapshot condition = saved.Conditions.Single();
         Require(Same(condition.Remaining, blight.Duration - 0.4) && Same(condition.TickRemaining, blight.Period - 0.4),
             "Condition snapshots retain exact remaining duration and next periodic tick.");
+        Require(fixture.Party.RestRemaining == definitions.Magic.RestSeconds - 0.5 && fixture.Party.RestOwner == "warden",
+            "Rest state travels with the party, outside the magic snapshot.");
 
-        MagicState restored = MagicState.Restore(saved, definitions.Magic, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]);
-        Require(SameSnapshot(restored.Capture(), saved), "Magic restore preserves books, slots, experience, conditions, and recovery state exactly.");
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]);
+        Require(SameSnapshot(restored.Capture(), saved), "Magic restore preserves books, slots, experience, and conditions exactly.");
         int ticks = 0;
         restored.Advance(condition.TickRemaining - 0.01, (_, _) => ticks++);
         restored.Advance(0.011, (_, _) => ticks++);
@@ -91,41 +99,41 @@ internal static class MagicChecks
         {
             Books = saved.Books.Select(book => book.Member == "warden" ? book with { Experience = book.Experience + 1 } : book).ToArray(),
         };
-        RequireRejected(() => MagicState.Restore(forgedExperience, definitions.Magic, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
+        RequireRejected(() => MagicState.Restore(forgedExperience, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
             "Restore rejects experience forged beyond the resolved enemy rewards.");
         MagicSnapshot forgedRewards = saved with { Rewards = ["enemy:42"] };
-        RequireRejected(() => MagicState.Restore(forgedRewards, definitions.Magic, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
+        RequireRejected(() => MagicState.Restore(forgedRewards, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
             "Restore rejects a reward set that does not match resolved enemies.");
         MagicSnapshot invalidDuration = saved with
         {
             Conditions = saved.Conditions.Select(savedCondition => savedCondition with { Remaining = blight.Duration + 0.01 }).ToArray(),
         };
-        RequireRejected(() => MagicState.Restore(invalidDuration, definitions.Magic, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
+        RequireRejected(() => MagicState.Restore(invalidDuration, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
             "Restore rejects condition durations beyond their authored limit.");
     }
 
     private static void VerifyRefreshAndEngineSpeed(GameDefinitions definitions)
     {
         SpellDefinition ward = definitions.Magic.Spell("ward");
-        MagicState wardState = NewState(definitions);
-        wardState.Apply("warden", ward);
-        wardState.Advance(3, (_, _) => { });
-        wardState.Apply("warden", ward);
-        Require(wardState.Capture().Conditions.Length == 1
-            && Same(wardState.Capture().Conditions.Single().Remaining, ward.Duration)
-            && wardState.DefenseBonus("warden") == ward.Power,
-            "Refreshing a ward restores one authored duration without double-stacking its defense.");
-        wardState.Advance(ward.Duration, (_, _) => { });
-        Require(wardState.DefenseBonus("warden") == 0, "A refreshed ward expires once at its authored duration.");
+        Fixture fixture = NewFixture(definitions);
+        RiflesCharacter warden = Member(fixture.Party, "warden");
+        fixture.State.Apply(new MemberTarget("warden"), ward);
+        fixture.State.Advance(3, (_, _) => { });
+        fixture.State.Apply(new MemberTarget("warden"), ward);
+        Require(fixture.State.Capture().Conditions.Length == 1
+            && Same(fixture.State.Capture().Conditions.Single().Remaining, ward.Duration)
+            && warden.Defense == warden.Definition.BaseDefense + ward.Power,
+            "Refreshing a ward restores one authored duration without double-stacking its defense on the shared stat.");
+        fixture.State.Advance(ward.Duration, (_, _) => { });
+        Require(warden.Defense == warden.Definition.BaseDefense, "A refreshed ward expires once at its authored duration.");
 
         SpellDefinition bind = definitions.Magic.Spell("bind");
-        MagicState slowState = NewState(definitions);
-        slowState.Apply("enemy:42", bind);
-        double evaluatedFactor = slowState.Speed("enemy:42");
+        fixture.State.Apply(new EnemyTarget("42"), bind);
+        double evaluatedFactor = fixture.State.Speed(new EnemyTarget("42"));
         Require(evaluatedFactor < 1 && Same(evaluatedFactor, bind.SpeedFactor),
             "Slow uses the Engine continuous-stat evaluation to reduce movement factor.");
-        slowState.Advance(bind.Duration, (_, _) => { });
-        Require(Same(slowState.Speed("enemy:42"), 1), "Slow expiry restores the Engine-evaluated speed factor to one.");
+        fixture.State.Advance(bind.Duration, (_, _) => { });
+        Require(Same(fixture.State.Speed(new EnemyTarget("42")), 1), "Slow expiry restores the Engine-evaluated speed factor to one.");
     }
 
     private static void VerifySlowMovementUsesUnscaledClock(GameDefinitions definitions)
@@ -154,41 +162,41 @@ internal static class MagicChecks
     private static void VerifyPeriodicTimingAndExpiry(GameDefinitions definitions)
     {
         SpellDefinition blight = definitions.Magic.Spell("blight");
-        MagicState refreshState = NewState(definitions);
-        refreshState.Apply("enemy:42", blight);
-        refreshState.Advance(0.4, (_, _) => throw new InvalidOperationException("Blight must not tick early."));
-        refreshState.Apply("enemy:42", blight);
-        MagicConditionSnapshot refreshed = refreshState.Capture().Conditions.Single();
+        Fixture fixture = NewFixture(definitions);
+        fixture.State.Apply(new EnemyTarget("42"), blight);
+        fixture.State.Advance(0.4, (_, _) => throw new InvalidOperationException("Blight must not tick early."));
+        fixture.State.Apply(new EnemyTarget("42"), blight);
+        MagicConditionSnapshot refreshed = fixture.State.Capture().Conditions.Single();
         Require(Same(refreshed.Remaining, blight.Duration) && Same(refreshed.TickRemaining, blight.Period - 0.4),
             "Refreshing damage over time keeps its already-admitted countdown to the next tick.");
 
         int clearedTicks = 0;
-        refreshState.Advance(refreshed.TickRemaining, (target, _) =>
+        fixture.State.Advance(refreshed.TickRemaining, (target, _) =>
         {
             clearedTicks++;
-            refreshState.Clear(target);
+            fixture.State.Clear(MagicTarget.Parse(target));
         });
-        refreshState.Advance(20, (_, _) => clearedTicks++);
-        Require(clearedTicks == 1 && !refreshState.Has("enemy:42", SpellEffect.Injury),
+        fixture.State.Advance(20, (_, _) => clearedTicks++);
+        Require(clearedTicks == 1 && !fixture.State.Has(new EnemyTarget("42"), SpellEffect.Injury),
             "A periodic callback may clear its condition without the advance loop resurrecting or reticking it.");
 
-        MagicState expiryState = NewState(definitions);
-        expiryState.Apply("enemy:42", blight);
+        Fixture expiryFixture = NewFixture(definitions);
+        expiryFixture.State.Apply(new EnemyTarget("42"), blight);
         int expiryTicks = 0;
-        expiryState.Advance(blight.Duration * 10, (_, _) => expiryTicks++);
-        expiryState.Advance(blight.Duration * 10, (_, _) => expiryTicks++);
-        Require(expiryTicks == (int)(blight.Duration / blight.Period) && !expiryState.Has("enemy:42", SpellEffect.Injury),
+        expiryFixture.State.Advance(blight.Duration * 10, (_, _) => expiryTicks++);
+        expiryFixture.State.Advance(blight.Duration * 10, (_, _) => expiryTicks++);
+        Require(expiryTicks == (int)(blight.Duration / blight.Period) && !expiryFixture.State.Has(new EnemyTarget("42"), SpellEffect.Injury),
             "A large admitted update resolves ticks only through condition expiry and never after it.");
     }
 
     private static void VerifyPausedTimeAndCastRecovery(GameDefinitions definitions)
     {
-        MagicState paused = NewState(definitions);
-        paused.Apply("enemy:42", definitions.Magic.Spell("blight"));
-        MagicSnapshot beforePause = paused.Capture();
+        Fixture fixture = NewFixture(definitions);
+        fixture.State.Apply(new EnemyTarget("42"), definitions.Magic.Spell("blight"));
+        MagicSnapshot beforePause = fixture.State.Capture();
         int ticks = 0;
-        paused.Advance(0, (_, _) => ticks++);
-        Require(ticks == 0 && SameSnapshot(paused.Capture(), beforePause), "Paused admitted time leaves magic state unchanged.");
+        fixture.State.Advance(0, (_, _) => ticks++);
+        Require(ticks == 0 && SameSnapshot(fixture.State.Capture(), beforePause), "Paused admitted time leaves magic state unchanged.");
 
         SpellDefinition spark = definitions.Magic.Spell("spark");
         ActionSnapshot cast = new(CombatActionKind.Cast, 0, null, null, 42, null, spark.Windup, ActionPhase.Windup,
@@ -204,21 +212,94 @@ internal static class MagicChecks
             "A saved spell action in recovery cannot replay its committed cast after restore.");
     }
 
-    private static MagicState NewState(GameDefinitions definitions) => new(definitions.Magic, Members(definitions));
+    private static void VerifyPerSourceExpiryAndRestoreIdentity(GameDefinitions definitions)
+    {
+        // A condition changes the same stat combat reads and removes only its
+        // own contribution on expiry, leaving advancement sources intact.
+        Fixture fixture = NewFixture(definitions);
+        AwardTwoEnemies(fixture.State);
+        AdvancementDefinition defense = definitions.Magic.Choices.Single(choice => choice.Defense > 0);
+        fixture.State.AdvanceMember("warden", defense.Id);
+        RiflesCharacter warden = Member(fixture.Party, "warden");
+        SpellDefinition ward = definitions.Magic.Spell("ward");
+        fixture.State.Apply(new MemberTarget("warden"), ward);
+        Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense + ward.Power,
+            "Condition and advancement contributions coexist on the shared defense stat.");
+        fixture.State.Advance(ward.Duration, (_, _) => { });
+        Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense,
+            "Expiring a condition removes only its own contribution, preserving advancement.");
+
+        // Progress survives save and travel without duplicate bonuses: a
+        // second restore onto the same entities attaches nothing twice, and
+        // the restored generation expiring the condition removes the original.
+        fixture.State.Apply(new MemberTarget("warden"), ward);
+        Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense + ward.Power,
+            "Reapplying after expiry attaches cleanly.");
+        MagicSnapshot saved = fixture.State.Capture();
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]);
+        Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense + ward.Power,
+            "Restoring an active condition onto live entities does not duplicate its contribution.");
+        restored.Advance(ward.Duration, (_, _) => { });
+        Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense,
+            "The restored generation expiring a condition removes the original contribution.");
+        Require(restored.Capture().Conditions.Length == 0,
+            "The expired condition leaves no snapshot behind.");
+    }
+
+    private static void VerifyBooklessMemberWorks(GameDefinitions definitions)
+    {
+        // A roster instance whose archetype admits no starting spells gets no
+        // book, yet its character still holds conditions and saves without
+        // source branches. Content admission still requires preset archetypes
+        // to resolve; this is roster-level tolerance for future noncasters.
+        (string Instance, string Archetype)[] roster = [.. Members(definitions), ("squire", "hedge-nobody")];
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
+        party.Entities.AttachStats("squire", "rifles:member:test", () => RiflesStats.ForVitality(10, 10, 0, 0));
+        MagicState state = new(definitions.Magic, roster, party.Entities);
+        Require(state.Capture().Books.Length == Members(definitions).Length && !state.HasBook("squire"),
+            "A noncaster roster instance carries no spellbook.");
+        RequireRejected(() => state.For("squire"), "Casting without a spellbook is rejected, not assumed.");
+        SpellDefinition bind = definitions.Magic.Spell("bind");
+        state.Apply(new MemberTarget("squire"), bind);
+        Require(Same(state.Speed(new MemberTarget("squire")), bind.SpeedFactor),
+            "A bookless character still receives condition contributions on shared stats.");
+        MagicSnapshot saved = state.Capture();
+        Require(saved.Books.All(book => book.Member != "squire"), "Snapshots carry books only for casters.");
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, party.Entities, roster, [.. Targets(definitions), "member:squire"], []);
+        Require(SameSnapshot(restored.Capture(), saved), "Bookless rosters restore exactly.");
+    }
+
+    private sealed record Fixture(PartyState Party, MagicState State);
+
+    private static Fixture NewFixture(GameDefinitions definitions)
+    {
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
+        EnsureEnemy(party, 42);
+        EnsureEnemy(party, 43);
+        MagicState state = new(definitions.Magic, Members(definitions), party.Entities);
+        return new(party, state);
+    }
+
+    private static void EnsureEnemy(PartyState party, ulong id)
+    {
+        party.Entities.AttachStats("enemy:" + id, "rifles:enemy:test",
+            () => RiflesStats.ForVitality(10, 10, 0, 0));
+    }
+
+    private static RiflesCharacter Member(PartyState party, string id) =>
+        party.Members.Single(member => member.Definition.Id == id);
 
     private static (string Instance, string Archetype)[] Members(GameDefinitions definitions) => definitions.Characters
         .ResolvePreset(definitions.Characters.DefaultPresetId).Select(member => (member.Id, member.Archetype)).ToArray();
 
-    private static string[] Targets(GameDefinitions definitions) => [.. Members(definitions).Select(member => member.Instance), "enemy:42", "party"];
+    private static string[] Targets(GameDefinitions definitions) => [.. Members(definitions).Select(member => "member:" + member.Instance), "enemy:42", "enemy:43", "party"];
 
     private static void AwardTwoEnemies(MagicState state)
     {
         Require(state.Reward("enemy:42") && state.Reward("enemy:43"), "Distinct enemy identities settle their rewards.");
     }
 
-    private static bool SameSnapshot(MagicSnapshot actual, MagicSnapshot expected) => actual.RestRemaining == expected.RestRemaining
-        && actual.RestOwner == expected.RestOwner
-        && actual.Rewards.SequenceEqual(expected.Rewards)
+    private static bool SameSnapshot(MagicSnapshot actual, MagicSnapshot expected) => actual.Rewards.SequenceEqual(expected.Rewards)
         && actual.Conditions.SequenceEqual(expected.Conditions)
         && actual.Books.Length == expected.Books.Length
         && actual.Books.Zip(expected.Books).All(pair => pair.First.Member == pair.Second.Member

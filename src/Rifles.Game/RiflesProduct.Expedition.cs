@@ -32,7 +32,7 @@ public sealed partial class RiflesProduct
         if (combat.Defeated) return "A living party is required.";
         if (paused) return "Resume before travelling.";
         if (exploration.Position != departure) return "Stand on the marked stair to travel.";
-        if (exploration.Moving || combat.ActionsBusy || combat.HasFlights || magic!.RestRemaining > 0)
+        if (exploration.Moving || combat.ActionsBusy || combat.HasFlights || party.RestRemaining > 0)
             return "Finish movement, actions and projectile flights before travelling.";
         return null;
     }

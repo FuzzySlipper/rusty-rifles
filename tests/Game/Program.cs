@@ -123,7 +123,7 @@ Require(twinRoster.Select(m => m.Id).Distinct(StringComparer.Ordinal).Count() ==
     && twinRoster.All(m => m.Archetype == "warden" && m.MaximumVitality == 40 && m.BasePower == 7),
     "Shared archetype instances resolve with distinct instance ids and identical authored stats, without code branches.");
 PartyState twinParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, twinRoster);
-MagicState twinMagic = new(definitions.Magic, twinRoster.Select(m => (m.Id, m.Archetype)));
+MagicState twinMagic = new(definitions.Magic, twinRoster.Select(m => (m.Id, m.Archetype)), twinParty.Entities);
 Require(twinParty.Members.Count == 2 && twinMagic.For("warden-a").Known.SetEquals(twinMagic.For("warden-b").Known),
     "A different roster with shared archetypes constructs party state and spellbooks per instance.");
 Require(twinRoster.All(m => m.Id != m.Archetype && definitions.Magic.Resistances.ContainsKey(m.Archetype)),
@@ -222,11 +222,11 @@ foreach (var placed in savedEncounterPlacement.Instances)
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
 CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
-    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype))).Capture());
+    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), saveParty.Entities).Capture());
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
-    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!, new Rifles.Game.Generation.GeneratedFeatureSnapshot(1, savedGeneratedGates, [], [], [], []), savedEncounterPlacement);
+    definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!, new Rifles.Game.Generation.GeneratedFeatureSnapshot(1, savedGeneratedGates, [], [], [], []), savedEncounterPlacement, 0, "");
 var codec = new Rifles.Game.Expedition.ExpeditionCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
 codec.Encode(snapshot, payload);

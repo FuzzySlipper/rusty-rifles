@@ -17,6 +17,7 @@ internal static class RiflesStats
         StatsComponent stats = new();
         stats.AddStat(RiflesStatIds.Power, Derived(definition.BasePower));
         stats.AddStat(RiflesStatIds.Defense, Derived(definition.BaseDefense));
+        stats.AddStat(RiflesStatIds.Speed, new Stat(1, minimum: 0, maximum: 1));
         // Stat rounding stays at the Engine AwayFromZero default, matching the
         // previous private-stat construction which passed integerRounding only.
         Stat vitalityMax = new(definition.MaximumVitality, minimum: 0, maximum: RiflesCharacter.MaximumDerivedStatistic,
@@ -38,6 +39,7 @@ internal static class RiflesStats
     {
         if (maximumVitality <= 0 || maximumResource < 0) throw new ArgumentOutOfRangeException(nameof(maximumVitality));
         StatsComponent stats = new();
+        stats.AddStat(RiflesStatIds.Speed, new Stat(1, minimum: 0, maximum: 1));
         Stat vitalityMax = new(maximumVitality, minimum: 0, maximum: RiflesCharacter.MaximumDerivedStatistic,
             quantum: 1, integerRounding: MidpointRounding.ToZero);
         stats.AddStat(RiflesStatIds.VitalityMax, vitalityMax);

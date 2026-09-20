@@ -34,7 +34,7 @@ internal static class CombatRestore
         ValidateAllies(saved.Allies, definitions.Combat, allyIds);
         GameDefinitions.Require(saved.SelectedTarget == 0 || enemies.Any(enemy => enemy.Id == saved.SelectedTarget), "saved combat target");
 
-        MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic,
+        MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic, party.Entities,
             party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
                 .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn), completionExperience);
         foreach (var entry in actions)
@@ -43,7 +43,7 @@ internal static class CombatRestore
                     && cast.Cost == Math.Max(0, definitions.Magic.Spell(cast.Spell!).Cost - magic.CostDiscount(entry.Key))
                     && (cast.Phase == ActionPhase.Recovery || party.Members.Single(m => m.Definition.Id == entry.Key).Resource >= cast.Cost)
                     && cast.TargetMember is not null && party.Members.Any(m => m.Definition.Id == cast.TargetMember), "saved caster spell and target");
-        GameDefinitions.Require(magic.RestRemaining == 0 || party.Members.Any(m => m.Definition.Id == magic.RestOwner && m.IsLiving)
+        GameDefinitions.Require(party.RestRemaining == 0 || party.Members.Any(m => m.Definition.Id == party.RestOwner && m.IsLiving)
             && actions.Values.All(a => !a.Busy), "saved rest eligibility");
         foreach (MagicConditionSnapshot condition in saved.Magic!.Conditions)
         {

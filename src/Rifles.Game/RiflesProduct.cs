@@ -293,7 +293,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), combat.Capture(), expedition, generatedFeatures, encounterPlacement!);
+        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), combat.Capture(), expedition, generatedFeatures, encounterPlacement!, party.RestRemaining, party.RestOwner);
 
     private void Save()
     {
@@ -383,7 +383,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         inventory.BindMembers(restored.Party.Entities, restored.Party.Members);
         inventory.BindRemaining(restored.Party.Entities);
         combat = RiflesCombat.Restore(restoredCombat, definitions, restored.Party.Entities, restored.Party, magic!, inventory, BuildCombatScope());
-        magic = restoredCombat.Magic; combat.RefreshDevelopment();
+        magic = restoredCombat.Magic;
         paused = saved.Paused;
         selectedMember = saved.SelectedMember;
         controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
