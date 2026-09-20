@@ -53,10 +53,12 @@ All source in this repository belongs to Rifles. Imported code is a one-time
 transfer: do not maintain donor links, source-provenance documents, sync
 scripts, parity obligations, or sibling project references.
 
-The installed development pair is SDK `0.1.0-dev.bcf02594620c` and
-`.runtime/pair-bcf02594620c/runtime-pack`. Keep the package and runtime matched.
+The installed development pair is recorded in `src/Rifles.Game/Rifles.Game.csproj`
+(`RustyEngineSdkPackageVersion`) and `scripts/dev.sh`, with the runtime under
+`.runtime/pair-<revision>/runtime-pack`. Keep the package and runtime matched.
 Use `scripts/install-engine.sh` to install external artifacts on another
 checkout. `.runtime`, generated SDK composition, and UI output are ignored.
+See `docs/gameplay-design.md` for the gameplay ownership map and Engine basis.
 `rusty dev` is the normal CoreCLR loader; NativeAOT is an explicit release
 check only when requested.
 

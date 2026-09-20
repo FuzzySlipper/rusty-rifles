@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <RustyEngineSdkPackageVersion>0.1.0-dev.bcf02594620c</RustyEngineSdkPackageVersion>
+    <RustyEngineSdkPackageVersion>0.1.0-dev.1b208e9b33aa</RustyEngineSdkPackageVersion>
     <RustyEngineProductEntryType>Rifles.Game.RiflesProduct</RustyEngineProductEntryType>
     <RustyEngineProductId>rusty-rifles</RustyEngineProductId>
     <RustyEngineProductTitle>Rusty Rifles</RustyEngineProductTitle>
