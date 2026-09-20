@@ -33,7 +33,7 @@ public sealed partial class RiflesProduct
                 ("ammunition", value.Number(active.Combat.PartyAmmo()))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(active.Combat.SelectedTarget.ToString())), ("enemies", foes), ("members", members),
-            ("active.Magic", MagicProjection(value)), ("log", value.String(string.Join("\n", active.Combat.Log))), ("defeated", value.Number(active.Combat.Defeated ? 1 : 0)));
+            ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", active.Combat.Log))), ("defeated", value.Number(active.Combat.Defeated ? 1 : 0)));
     }
     private IEnumerable<AppearanceFact> CombatFacts()
     {

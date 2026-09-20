@@ -77,7 +77,7 @@ public sealed partial class RiflesProduct
 
     private GameOutcome UseItemOnFeature(string source, string token, ulong? target, ulong targetRevision)
     {
-        if (paused) return GameOutcome.Reject("Resume before using world active.Features.");
+        if (paused) return GameOutcome.Reject("Resume before using world features.");
         GearDefinition key = definitions.Items.Item(active.Inventory.Find(source, token).Definition);
         if (key.Use != ItemUse.Key || target != active.ItemWorld.DoorId)
             return GameOutcome.Reject("This item does not fit that feature.");
