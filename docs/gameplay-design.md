@@ -1,8 +1,8 @@
 # Rifles gameplay design
 
-Status: campaign #8356 foundation (task #8357). Planned migration, not landed
-owners. Later tasks update their sections as they land; task descriptions carry
-planning authority until then.
+Status: campaign #8356 foundation landed (#8357–#8364, closed by #8365).
+Ownership map below names the actual owners; behavior rows carry the landed
+shape. Future work extends these owners; task descriptions are history.
 
 This is one concrete single-player real-time blobber. One party occupies one
 cell and faces one cardinal direction. No reusable kit, ruleset framework,
@@ -114,18 +114,18 @@ event bus, or scripting layer.
   This is a single-player game; there is no cheating/MITM/adversarial-content
   threat model.
 
-## Ownership map (current → target)
+## Ownership map (landed)
 
-| Concern | Current | Target (#) |
-| --- | --- | --- |
-| Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots (`PresetMemberDefinition`: instance id + archetype ref + display name + position); `ResolvePreset` builds `MemberDefinition` inputs carrying archetype ids; `PartyDefinition` keeps formation + capacity only | Landed (#8283). Spells/resistances key by archetype; books key by instance; rifle-drill stats converged to archetypes (formation/loadout identity kept) |
-| Entities/stats | `RiflesCharacter` over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` durable map | Landed (#8358) |
-| Inventory | `ItemInventory` numeric `PackOwner` ledger + bound components + typed owners | Landed (#8359); ledger re-key follows #8363 |
-| Combat | `RiflesProduct` combat partials + action dictionaries | Landed `RiflesCombat` owner (#8360) |
-| Magic | `MagicState` detached books/conditions; per-tick recompute | Landed attached books/conditions + per-source stats (#8361) |
-| Commands | Global revisions + exception eligibility | Landed outcomes + shared availability (#8362) |
-| Floors | `FloorFactory` build/capture/dispose; `Capture()` reads | Active-floor aggregate; frozen retained floors (#8363) |
-| Saves | `RunCodec` schema11 + unused `ExpeditionCodec` schema9; synthetic validation | One current codec + one reconstruction path (#8364) |
+| Concern | Owner (file) |
+| --- | --- |
+| Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots; `PartyState` (`Party/PartyState.cs`) owns formation, members, rest; spells/resistances key by archetype, books by instance (#8283) |
+| Entities/stats | `RiflesCharacter` facade over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` (`Characters/`) owns lifetimes; stat persistence via `RiflesStats` + `StatsComponentCapture` (#8358, #8364) |
+| Inventory | `ItemInventory` (`Items/ItemInventory.cs`): numeric `PackOwner` ledger world per floor, bound `InventoryComponent`/`EquipmentComponent` facades, typed owners, per-source equipment contributions (#8359) |
+| Combat | `RiflesCombat` (`Combat/RiflesCombat.cs`): enemies, member actions, flights, drops, allies; `CombatScope` carries explicit services (#8360) |
+| Magic | `MagicState` (`Magic/MagicState.cs`): books/conditions attached to entities with marker dedup; per-source development; rest on `PartyState` (#8361) |
+| Commands | `SessionCommand` + `GameOutcome` dispatch (`Presentation/`, `RiflesProduct.cs`); `SpellAvailability` single source; no revisions (#8362) |
+| Floors | `ActiveFloor` (`Expedition/ActiveFloor.cs`) owns the mounted floor; `RetainedFloor` freezes compact floor state; travelling `PartyState`/books/markers ride the shared store; `FloorFactory` keeps pure builders only (#8363) |
+| Saves | `RunCodec` validation + Engine `JsonProductStateCodec` via `RunSaveJsonContext` (`Expedition/`); `SaveIdentities` centralizes durable ids; retained floors validate as floors; XP/rewards coherence-trusted (#8364) |
 
 ## Engine basis
 
