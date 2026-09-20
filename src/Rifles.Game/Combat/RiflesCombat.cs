@@ -150,7 +150,7 @@ internal sealed class RiflesCombat
         return new(id, RiflesStats.SnapshotForPersistence(RiflesStats.ForMember(definition)));
     }
 
-    private static MemberDefinition AllyDefinition(ulong id, GameDefinitions definitions)
+    internal static MemberDefinition AllyDefinition(ulong id, GameDefinitions definitions)
     {
         FormationPositionDefinition front = definitions.Party.Positions.OrderBy(position => position.Rank).First();
         return new(id.ToString(), "garrison-ally", "Garrison ally",

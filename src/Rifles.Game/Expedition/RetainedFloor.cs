@@ -106,12 +106,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
         ulong[] allyIds = [floor.Actor.Id, floor.Features.Dressing.ObserverId];
         CombatRestore.ValidateAllies(floor.Allies, definitions.Combat, allyIds);
         foreach (AllySnapshot ally in floor.Allies)
-        {
-            FormationPositionDefinition front = definitions.Party.Positions.OrderBy(position => position.Rank).First();
-            MemberDefinition definition = new(ally.Id.ToString(), "garrison-ally", "Garrison ally",
-                front.Id, definitions.Combat.AllyVitality, StartingVitality: definitions.Combat.AllyVitality);
-            RiflesStats.AdmitStats(ally.Stats, RiflesStats.ForMember(definition));
-        }
+            RiflesStats.AdmitStats(ally.Stats, RiflesStats.ForMember(RiflesCombat.AllyDefinition(ally.Id, definitions)));
         // Member actions are not frozen here (the thaw adopts the live
         // party's); flights only need the travelling roster for shooters.
         HashSet<string> members = roster.Keys.ToHashSet(StringComparer.Ordinal);
