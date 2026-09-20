@@ -62,6 +62,35 @@ internal sealed class CharacterEntities
     internal bool TryGetEntity(string instanceKey, out EntityId entity) => instances.TryGetValue(instanceKey, out entity);
 
     /// <summary>
+    /// Drops every instance except the kept travelling keys (members plus the
+    /// party pack). Floor-local enemies, allies, containers, and combat packs
+    /// die with their entities; their components and markers go with them.
+    /// Member entities — with books, actions, effects, and markers — survive.
+    /// </summary>
+    internal void DetachAllExcept(IEnumerable<string> keep)
+    {
+        HashSet<string> kept = new(keep, StringComparer.Ordinal);
+        foreach (string key in instances.Keys.Where(key => !kept.Contains(key)).ToArray()) Detach(key);
+    }
+
+    /// <summary>
+    /// Removes inventory and equipment facades from travelling entities. The
+    /// facades address the departing floor's ledger world; the destination
+    /// floor rebinds them onto its own world. Stats, books, actions, effects,
+    /// and markers are untouched.
+    /// </summary>
+    internal void RemoveInventoryFacades(IEnumerable<string> keys)
+    {
+        foreach (string key in keys)
+        {
+            if (!instances.TryGetValue(key, out EntityId entity)) continue;
+            Actor actor = new(store, entity);
+            actor.Remove<InventoryComponent>();
+            actor.Remove<EquipmentComponent>();
+        }
+    }
+
+    /// <summary>
     /// Binds the travelling party pack to its own entity. The party has
     /// inventory but never equipment or stats; the entity gives it the same
     /// lifetime and discovery surface as character packs. Idempotent.

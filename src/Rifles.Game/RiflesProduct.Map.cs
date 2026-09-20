@@ -11,22 +11,22 @@ public sealed partial class RiflesProduct
 
     private void ObserveMap()
     {
-        var observation = (floorId, exploration.Position, generatedFeatures.Revision, itemWorld!.Capture().DoorOpen);
+        var observation = (active.FloorId, active.Exploration.Position, active.GeneratedFeatures.Revision, active.ItemWorld.DoorOpen);
         if (mapObservation == observation) return;
         mapObservation = observation;
-        var known = progress.Maps.FirstOrDefault(m => m.FloorKey == floor.IntentFloorId)?.Cells.ToHashSet() ?? [];
-        foreach (var cell in floor.Cells.Where(c => c.ManhattanDistance(exploration.Position) <= definitions.Run.MapRevealCells))
-            if (cell == exploration.Position || scene!.Visibility(scene.Eye(exploration.Position), scene.Eye(cell)) == InteractionVisibility.Visible)
+        var known = progress.Maps.FirstOrDefault(m => m.FloorKey == active.Floor.IntentFloorId)?.Cells.ToHashSet() ?? [];
+        foreach (var cell in active.Floor.Cells.Where(c => c.ManhattanDistance(active.Exploration.Position) <= definitions.Run.MapRevealCells))
+            if (cell == active.Exploration.Position || active.Scene.Visibility(active.Scene.Eye(active.Exploration.Position), active.Scene.Eye(cell)) == InteractionVisibility.Visible)
                 known.Add(cell);
-        progress = progress with { Maps = progress.Maps.Where(m => m.FloorKey != floor.IntentFloorId)
-            .Append(new MapMemory(floor.IntentFloorId, known.OrderBy(c => c.Y).ThenBy(c => c.X).ToArray())).ToArray() };
+        progress = progress with { Maps = progress.Maps.Where(m => m.FloorKey != active.Floor.IntentFloorId)
+            .Append(new MapMemory(active.Floor.IntentFloorId, known.OrderBy(c => c.Y).ThenBy(c => c.X).ToArray())).ToArray() };
     }
 
     private uint MapProjection(SessionValueBuilder value) => value.Object(progress.Maps.Select(memory =>
     {
-        var saved = memory.FloorKey == floor.IntentFloorId ? null : inactiveFloors[memory.FloorKey];
-        var dungeon = saved?.Floor ?? floor;
-        var facts = saved?.GeneratedFeatures ?? generatedFeatures;
+        var saved = memory.FloorKey == active.Floor.IntentFloorId ? null : inactiveFloors[memory.FloorKey];
+        var dungeon = saved?.Floor ?? active.Floor;
+        var facts = saved?.GeneratedFeatures ?? active.GeneratedFeatures;
         var known = memory.Cells.ToHashSet();
         var markers = new List<(string, uint)>();
         void Marker(string id, GridPoint cell, string label)

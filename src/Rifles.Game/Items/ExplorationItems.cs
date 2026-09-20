@@ -36,6 +36,9 @@ internal sealed class ExplorationItems
     private ItemExplorationSnapshot state;
     internal string? OpenContainer => state.OpenContainer;
     internal ItemExplorationSnapshot Capture() => state;
+    internal GridPoint Door => state.Door;
+    internal ulong LeverId => state.LeverId;
+    internal ulong DoorId => state.DoorId;
     internal ItemExplorationDefinition Definition => definition;
     internal IReadOnlyList<WorldAnchor> Anchors => state.Anchors;
     internal ulong Revision => state.Revision;

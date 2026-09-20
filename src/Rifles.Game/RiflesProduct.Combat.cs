@@ -16,30 +16,29 @@ namespace Rifles.Game;
 public sealed partial class RiflesProduct
 {
     // Set by Activate during Start; the engine never issues commands or reads projections before that,
-    // the same guarantee the scene!/movement! sites rely on.
-    private RiflesCombat combat = null!;
-    private EncounterPlacementResult? encounterPlacement;
+    // the same guarantee the active.Scene/active.Grid sites rely on.
     private WorldArt? combatArt;
     private Appearance? boltAppearance;
     private CombatDefinition Combat => definitions.Combat;
-    private Vector3 Aim(GridPoint cell) => scene!.Eye(cell) with { Y = scene.GroundHeight(cell) + Combat.AimHeight };
+    private Vector3 Aim(GridPoint cell) => AimOn(active.Scene, cell, Combat.AimHeight);
+    private static Vector3 AimOn(DungeonScene scene, GridPoint cell, float height) => scene.Eye(cell) with { Y = scene.GroundHeight(cell) + height };
     private void CombatMessage(string message)
     {
         feedback = message;
-        combat.AddLog(message);
+        active.Combat.AddLog(message);
     }
 
     private void AdvanceCombat(double seconds)
     {
         if (seconds <= 0) return;
         AdvanceMagic(seconds);
-        combat.Advance(seconds);
-        if (combat.Defeated)
+        active.Combat.Advance(seconds);
+        if (active.Combat.Defeated)
         {
-            magic!.Clear(new PartyTarget()); CancelRest("Party defeated.");
+            active.Magic.Clear(new PartyTarget()); CancelRest("Party defeated.");
             paused = true; controls.Clear(); feedback = definitions.Run.DefeatText;
-            exploration.Stop(); movement!.Remove(partyId); exploration.Detach();
-            combat.CancelAll();
+            active.Exploration.Stop(); active.Grid.Remove(partyId); active.Exploration.Detach();
+            active.Combat.CancelAll();
         }
     }
 }

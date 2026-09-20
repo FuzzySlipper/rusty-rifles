@@ -24,6 +24,8 @@ internal sealed class WorldFeatures : IDisposable
     internal string Style { get; private set; }
     internal int LightPosition => lightPosition;
     internal FeatureSnapshot Capture() => state;
+    internal RoomDressing Dressing => state.Dressing;
+    internal ulong ExitId => state.ExitId;
     internal InteractionReadout? Readout { get; private set; }
     private Vector3 Ground(GridPoint cell) => scene.Eye(cell) with { Y = scene.GroundHeight(cell) };
     private Vector3 LanternPoint => Ground(floor.Entrance) + Vector(artDefinition.LanternOffset);

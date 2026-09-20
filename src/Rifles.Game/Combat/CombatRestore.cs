@@ -21,7 +21,8 @@ internal sealed record RestoredCombat(
 internal static class CombatRestore
 {
     internal static RestoredCombat Validate(CombatSnapshot saved, GameDefinitions definitions, DungeonFloor floor,
-        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds, IEnumerable<string>? expeditionRewards = null, long completionExperience = 0)
+        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds, IEnumerable<string>? expeditionRewards = null, long completionExperience = 0,
+        IReadOnlyDictionary<string, Rifles.Game.Magic.MagicState.MagicBook>? travellingBooks = null)
     {
         ArgumentNullException.ThrowIfNull(saved);
         ArgumentNullException.ThrowIfNull(allyIds);
@@ -36,7 +37,7 @@ internal static class CombatRestore
 
         MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic, party.Entities,
             party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
-                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn), completionExperience);
+                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn), completionExperience, travellingBooks);
         foreach (var entry in actions)
             if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)
                 GameDefinitions.Require(magic.For(entry.Key).Known.Contains(cast.Spell!)

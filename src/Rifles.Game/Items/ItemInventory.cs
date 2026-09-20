@@ -164,13 +164,17 @@ internal sealed class ItemInventory
     internal ulong Mass(string owner) => View(owner).Capacity.Single(c => c.Metric == MassMetric).Used;
     private EquipmentSlotDefinition[] Slots(IEnumerable<string> slots) => slots.Select(s =>
         new EquipmentSlotDefinition(EquipmentSlotId.Parse(s), [ItemClassificationId.Parse("gear")])).ToArray();
-    internal void GrantStarting(Func<ulong> allocate, string? preset = null)
+    internal void GrantStarting(Func<ulong> allocate, string? preset = null, Func<string, bool>? includeOwner = null)
     {
         InventoryEdit candidate = world.Prepare();
         List<string> partyTokens = [];
         List<(string Owner, string Token, long Power, long Defense)> equipped = [];
         foreach (StartingItem grant in definitions.StartingItems.Where(g => g.Preset is null || g.Preset == preset))
         {
+            // Travelling kits restore instead of granting again; floor-local
+            // owners always grant. The re-granted member kit on a fresh travel
+            // floor would otherwise duplicate the travelled equipment.
+            if (includeOwner is not null && !includeOwner(grant.Owner)) continue;
             GearDefinition definition = definitions.Item(grant.Definition);
             EntityId owner = new(Owner(grant.Owner).Id);
             if (definition.Kind == ItemKind.Fungible)
@@ -379,7 +383,27 @@ internal sealed class ItemInventory
     {
         ItemInventory result = new(definitions, snapshot.Packs.Select(p => p.Owner));
         InventoryEdit candidate = result.world.Prepare();
-        foreach (SavedPack pack in snapshot.Packs)
+        foreach (SavedPack pack in snapshot.Packs) result.RestorePack(candidate, pack);
+        candidate.Publish();
+        return result;
+    }
+
+    /// <summary>
+    /// Restores one travelling pack into a live floor inventory, preserving
+    /// item identity. The owner must already be registered. Same validation
+    /// as snapshot restore: the merge of two live generations is checked,
+    /// not trusted.
+    /// </summary>
+    internal void RestorePack(SavedPack pack)
+    {
+        Owner(pack.Owner.Key);
+        InventoryEdit candidate = world.Prepare();
+        RestorePack(candidate, pack);
+        candidate.Publish();
+    }
+
+    private void RestorePack(InventoryEdit candidate, SavedPack pack)
+    {
         {
             EntityId owner = new(pack.Owner.Id);
             GameDefinitions.Require(pack.Stacks.Select(s => s.Definition).Distinct().Count() == pack.Stacks.Length, "saved stack uniqueness");
@@ -395,7 +419,7 @@ internal sealed class ItemInventory
             {
                 SavedItem item = pack.Items.Single(i => i.Id == equipment.Item);
                 GameDefinitions.Require(equipment.Slots.ToHashSet().SetEquals(definitions.Item(item.Definition).Slots), "saved equipment slots");
-                candidate.Equip(owner, new(equipment.Item), result.Slots(equipment.Slots));
+                candidate.Equip(owner, new(equipment.Item), Slots(equipment.Slots));
             }
             if (pack.Owner.Key == PartyKey)
             {
@@ -407,13 +431,11 @@ internal sealed class ItemInventory
                     .. pack.Stacks.Select(s => "s:" + s.Definition),
                     .. pack.Items.Select(i => "i:" + i.Id)];
                 GameDefinitions.Require(savedSlots.All(s => live.Contains(s.Token, StringComparer.Ordinal)), "saved party slot contents");
-                foreach (SavedSlot saved in savedSlots) result.slots[saved.Token] = saved.Slot;
-                foreach (string token in live.Where(token => result.SlotOf(token) < 0)) result.TakeSlot(token);
+                foreach (SavedSlot saved in savedSlots) slots[saved.Token] = saved.Slot;
+                foreach (string token in live.Where(token => SlotOf(token) < 0)) TakeSlot(token);
             }
             if (InventoryOwner.Parse(pack.Owner.Key) is AnchorOwner anchor && anchor.Anchor != "crate")
                 GameDefinitions.Require(pack.Items.Length + pack.Stacks.Length <= 1, "saved anchor occupancy");
         }
-        candidate.Publish();
-        return result;
     }
 }

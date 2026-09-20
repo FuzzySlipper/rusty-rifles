@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using Rusty.Engine.Persistence;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
+using Rifles.Game.Magic;
 using Rifles.Game.Party;
 using Rifles.Game.Items;
 
@@ -37,7 +38,8 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
     public ExpeditionSnapshot Decode(ReadOnlySpan<byte> payload) => JsonSerializer.Deserialize<ExpeditionSnapshot>(payload, Json)
         ?? throw new InvalidDataException("Empty expedition save.");
 
-    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IEnumerable<string>? expeditionRewards = null, IReadOnlyDictionary<ulong, string>? expeditionItems = null, long completionExperience = 0)
+    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IEnumerable<string>? expeditionRewards = null, IReadOnlyDictionary<ulong, string>? expeditionItems = null, long completionExperience = 0,
+        PartyState? travellingParty = null, IReadOnlyDictionary<string, MagicState.MagicBook>? travellingBooks = null)
     {
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
             && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId) && saved.NextObjectId <= (ulong)uint.MaxValue + 1, "Save identities");
@@ -93,8 +95,10 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             if (InventoryOwner.Parse(owner.Key) is AnchorOwner savedAnchor) GameDefinitions.Require(owner.Id == itemWorld.Anchor(savedAnchor.Anchor).Id, "saved anchor owner");
         }
         ValidateWorldObstructions(saved);
-        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
-        party.Restore(saved.Members);
+        // A travelling party moves untouched: its vitals, entities, books,
+        // and markers are live-continuous. Only fresh boots rebuild.
+        PartyState party = travellingParty ?? new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
+        if (travellingParty is null) party.Restore(saved.Members);
         inventory.BindMembers(party.Entities, party.Members);
         foreach (RiflesCharacter member in party.Members)
         {
@@ -109,7 +113,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             ? party.Members.Any(m => m.Definition.Id == saved.RestOwner && m.IsLiving) : saved.RestOwner.Length == 0, "Save.RestOwner");
         party.RestRemaining = saved.RestRemaining; party.RestOwner = saved.RestOwner;
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
-            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, expeditionRewards, completionExperience);
+            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, expeditionRewards, completionExperience, travellingBooks);
         inventory.BindRemaining(party.Entities);
         ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId,
             saved.Features.Dressing.BenchId, saved.Features.Dressing.CrateId, saved.Features.Dressing.ObserverId, saved.ItemWorld.DoorId, saved.ItemWorld.LeverId, saved.ItemWorld.PlateId,

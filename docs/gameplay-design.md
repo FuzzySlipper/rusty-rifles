@@ -26,7 +26,7 @@ event bus, or scripting layer.
   `rifles:ally`); wrapping attaches nothing. Enemies share stats via the same
   owner (motion/brain stay concrete); allies are real characters from an
   explicit stand-in definition. Action/inventory/progression attachment is
-  #8359–#8361; floor-lifetime consolidation is #8363.
+  #8359–#8361; floor-lifetime consolidation landed in #8363.
 
 ## Stats, effects, inventory
 
@@ -48,8 +48,8 @@ event bus, or scripting layer.
   ledger reads stay strings at the edge). Equipment contributions attach per
   source on the shared `StatsComponent` (aggregate push retired; live-stat
   equip policy). One ledger; Rifles owns capacities, grid layout, equip
-  requirements, atomic transfer/swap semantics. Ledger re-keying to entity
-  values awaits run-scoped entity lifetime (#8363).
+  requirements, atomic transfer/swap semantics. Travelling packs restore
+  by identity into each floor's world (#8363).
 
 ## Actions and commands
 
@@ -72,15 +72,19 @@ event bus, or scripting layer.
 
 ## Floors and travel
 
-- One concrete active-floor aggregate owns the built scene, grid, features,
-  floor actors, and resource lifetimes, mounted directly — no temporary
-  build/capture/dispose on startup or travel, no routine reads through save
-  capture. Pure procgen stays Engine/file/clock-free. (Planned — #8363.)
-- Travelling party/run state is separate from floor-owned state. Departing
-  floors freeze as compact retained state; party characters/equipment/
-  spellbooks travel once without duplication. Resources bind/dispose in
-  reference/retirement order. No trusted-intent hash gates on owned floor data;
-  procgen correctness and offline artifact hashes remain. (Planned — #8363.)
+- Landed (#8363): one concrete active-floor aggregate owns the built scene,
+  grid, features, floor actors, and resource lifetimes, mounted directly —
+  no temporary build/capture/dispose on startup or travel, no routine reads
+  through save capture (live getters for dressing/door/lever/exit). Pure
+  procgen stays Engine/file/clock-free.
+- Landed (#8363): travelling party/run state is separate from floor-owned
+  state. Departing floors freeze as compact retained state at the transition;
+  the party object, books, and entity markers travel once (floor-local keys
+  detach, facades rebind); packs and condition timing restore by identity.
+  Retained returns validate the thawed merge and adopt live party/books.
+  Resources bind/dispose in reference/retirement order. The intent graph
+  re-hash on owned floor data is gone (identity plus seed suffice);
+  procgen correctness and offline artifact hashes remain.
 
 ## Saves
 

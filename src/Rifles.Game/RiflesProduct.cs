@@ -25,23 +25,30 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private GeneratedArt? generatedArt;
     private DungeonMaterialCache? dungeonMaterials;
     private GameAudio? audio;
-    private DungeonFloor floor;
+    // The mounted live floor. Set by Start/Travel/Activate before any
+    // command, update, or projection runs — the same guarantee the old
+    // scene!/movement! sites relied on. Run-level state stays on product.
+    private ActiveFloor active = null!;
+    private string? artStyle;
+    private void Mount(ActiveFloor next)
+    {
+        ActiveFloor? previous = active;
+        active = next;
+        artStyle = next.Features.Style;
+        // Retire appearance references before releasing Engine resources.
+        previous?.Dispose();
+    }
+    private PartyState party = null!;
     private ProductStateStore<RunSnapshot>? saves;
     private Guid expeditionId = Guid.NewGuid();
     private ulong nextLightId = 1;
-    private ulong floorId = 1, partyId = 2, nextObjectId = 3;
+    private ulong partyId = 2, nextObjectId = 3;
     private readonly ExplorationInput controls = new();
     private readonly HudPublication hudPublication = new();
     private ResolvedExpedition expedition;
     private string selectedMember = "";
     private bool cameraCut = true;
     private string feedback = "Expedition ready";
-    private ExplorationState exploration;
-    private PartyState party;
-    private DungeonScene? scene;
-    private MovementGrid? movement;
-    private PatrolActor? actor;
-    private WorldFeatures? features;
     private Camera? camera;
     private SessionProjection? projection;
     private bool started, paused, shutdown;
@@ -55,13 +62,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         catch (Exception error) { Console.Error.WriteLine("Rifles content admission failed: " + error); throw; }
         progress = new(definitions.Run.DefaultDifficulty, false, []);
         preset = string.IsNullOrEmpty(preset) ? definitions.Characters.DefaultPresetId : preset;
-        party = new PartyState(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, preset);
-        selectedMember = party.Members[0].Definition.Id;
         ExpeditionGenerationResult generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, definitions.Generation.Seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Code + ": " + d.Detail)));
         expedition = generated.Expedition!;
-        floor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor), definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
-        exploration = new ExplorationState(floor.Entrance, definitions.Exploration);
         generatedArt = new GeneratedArt(context.Content, engine.Graphics,
             definitions.Appearance.Styles.SelectMany(s => s.Textures)
                 .Select(texture => (texture.Path, TextureFilter.Linear, TextureWrap.Repeat))
@@ -95,20 +98,20 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
 
     [DebugCommand("rifles.floor.read", Description = "Read the played floor cells, resolved room functions, architectural landmarks and thresholds.")]
-    public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(floor);
+    public string ReadFloor() => System.Text.Json.JsonSerializer.Serialize(active.Floor);
 
     [DebugCommand("rifles.floor.population", Description = "Read retained generated gate, key, hazard, supply and encounter placement facts.")]
-    public string ReadFloorPopulation() => System.Text.Json.JsonSerializer.Serialize(new { Features = generatedFeatures, Encounters = encounterPlacement },
+    public string ReadFloorPopulation() => System.Text.Json.JsonSerializer.Serialize(new { Features = active.GeneratedFeatures, Encounters = active.EncounterPlacement },
         new System.Text.Json.JsonSerializerOptions { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
 
     [DebugCommand("rifles.floor.validate", Description = "Inspect actual floor connectivity, generated key acquisition and gate-handle reachability.")]
     public string ValidateFloor() => System.Text.Json.JsonSerializer.Serialize(
-        Rifles.Game.Generation.FloorProgression.Inspect(floor, generatedFeatures.Gates, generatedFeatures.Plates));
+        Rifles.Game.Generation.FloorProgression.Inspect(active.Floor, active.GeneratedFeatures.Gates, active.GeneratedFeatures.Plates));
 
     [DebugCommand("rifles.floor.navigation", Description = "Compare a bounded set of resolved steps against live Engine navigation, including barriers and heights.")]
     public string InspectFloorNavigation(int maximumEdges)
     {
-        var result = scene!.InspectNavigation(maximumEdges);
+        var result = active.Scene.InspectNavigation(maximumEdges);
         return System.Text.Json.JsonSerializer.Serialize(new { result.Checked, result.Complete, result.Mismatches });
     }
 
@@ -123,9 +126,29 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
-            var initial = FloorFactory.Create(engine, dungeonMaterials!, FloorDefinitions(progress.Difficulty), expedition, expedition.EntranceFloor,
-                expeditionId, partyId, preset, ref nextObjectId, AllocateLightId, floor);
-            Activate(initial, []);
+            // The run party is built once here and travels across floors;
+            // fresh floors mount directly with no snapshot roundtrip.
+            party = new PartyState(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, preset);
+            selectedMember = party.Members[0].Definition.Id;
+            DungeonFloor firstFloor = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == expedition.EntranceFloor),
+                definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
+            ulong next = nextObjectId;
+            ulong Allocate()
+            {
+                if (next == 0 || next > uint.MaxValue) throw new InvalidOperationException("Expedition object identity space exhausted.");
+                return checked(next++);
+            }
+            ulong firstFloorId = Allocate();
+            if (firstFloorId == partyId) throw new InvalidDataException("Floor and party identities must differ.");
+            ExplorationSnapshot pose = new(firstFloor.Entrance, definitions.Exploration.InitialFacing, 0, null,
+                firstFloor.Entrance, definitions.Exploration.InitialFacing, 0);
+            Mount(ActiveFloor.CreateFresh(definitions, expedition, expedition.EntranceFloor, firstFloorId, partyId, party, null, pose,
+                engine, dungeonMaterials!, generatedArt!, AllocateLightId, Allocate, preset, artStyle,
+                definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier,
+                CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
+                GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
+                (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight), firstFloor));
+            nextObjectId = next;
             spellLightId = AllocateLightId(); spellLight = engine.Graphics.CreateLight(SpellLightRequest());
             camera = engine.CameraView.CreateCamera(CameraDescriptor());
             projection = new SessionProjection(engine.Ui);
@@ -145,7 +168,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     public void Attach()
     {
         if (!started || shutdown) return;
-        scene!.Attach();
+        active.Scene.Attach();
         engine.CameraView.SetActiveCamera(camera!);
         Publish();
     }
@@ -176,11 +199,11 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.pause") { SetPaused(!paused); suppressMovement = true; continue; }
             if (intent == "rifles.save") { Save(); suppressMovement = true; continue; }
             if (intent == "rifles.load") { Load(); suppressMovement = true; continue; }
-            if (intent == "rifles.use") { Use(features!.Readout?.Selected); suppressMovement = true; continue; }
-            if (intent == "rifles.cycle") { features!.Observe(exploration, 1); continue; }
+            if (intent == "rifles.use") { Use(active.Features.Readout?.Selected); suppressMovement = true; continue; }
+            if (intent == "rifles.cycle") { active.Features.Observe(active.Exploration, 1); continue; }
             if (intent is "rifles.attack" or "rifles.reload")
             {
-                try { ApplyOutcome(combat.BeginCombat(new SessionCommand(intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused)); }
+                try { ApplyOutcome(active.Combat.BeginCombat(new SessionCommand(intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused)); }
                 catch (InvalidDataException error) { feedback = error.Message; }
                 suppressMovement = true; continue;
             }
@@ -199,29 +222,29 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             for (uint step = 0; step < update.Facts.AdmittedStepCount; step++)
             {
                 double seconds = update.Facts.FixedDeltaSeconds;
-                GridPoint previousCell = exploration.Position;
-                if (!combat.Defeated) exploration.Advance(seconds, PartySpeed);
-                if (exploration.Position != previousCell)
+                GridPoint previousCell = active.Exploration.Position;
+                if (!active.Combat.Defeated) active.Exploration.Advance(seconds, PartySpeed);
+                if (active.Exploration.Position != previousCell)
                 {
-                    combat.EmitNoise(exploration.Position, RiflesCombat.NoiseKind.Footstep);
-                    var connector = floor.Connectors.SingleOrDefault(c => c.From == previousCell && c.To == exploration.Position);
+                    active.Combat.EmitNoise(active.Exploration.Position, RiflesCombat.NoiseKind.Footstep);
+                    var connector = active.Floor.Connectors.SingleOrDefault(c => c.From == previousCell && c.To == active.Exploration.Position);
                     if (connector is { Damage: > 0 })
                     {
-                        foreach (var member in party.Members.Where(m => m.IsLiving)) combat.DamageMember(member, connector.Damage);
+                        foreach (var member in party.Members.Where(m => m.IsLiving)) active.Combat.DamageMember(member, connector.Damage);
                         CombatMessage("The party falls into the drain pit. Climb out by an adjacent step.");
                     }
                 }
-                if (combat.Allies[actor!.Id].IsLiving) actor.Advance(seconds);
+                if (active.Combat.Allies[active.Actor.Id].IsLiving) active.Actor.Advance(seconds);
                 AdvanceCombat(seconds);
                 AdvanceGeneratedHazards(seconds);
             }
-            if (!suppressMovement && !combat.Defeated) controls.Apply(exploration);
+            if (!suppressMovement && !active.Combat.Defeated) controls.Apply(active.Exploration);
         }
         phaseStarted = updateProfile.Record(UpdatePhase.Simulation, phaseStarted);
-        itemWorld!.CheckOpen(exploration, scene!);
-        bool wasOpen = itemWorld.Capture().DoorOpen;
-        itemWorld.UpdateDoor(inventory!, exploration, actor!, movement!, scene!);
-        if (!wasOpen && itemWorld.Capture().DoorOpen) combat.EmitNoise(itemWorld.Capture().Door, RiflesCombat.NoiseKind.Alarm);
+        active.ItemWorld.CheckOpen(active.Exploration, active.Scene);
+        bool wasOpen = active.ItemWorld.DoorOpen;
+        active.ItemWorld.UpdateDoor(active.Inventory, active.Exploration, active.Actor, active.Grid, active.Scene);
+        if (!wasOpen && active.ItemWorld.DoorOpen) active.Combat.EmitNoise(active.ItemWorld.Door, RiflesCombat.NoiseKind.Alarm);
         updateProfile.Record(UpdatePhase.WorldInteractions, phaseStarted);
         Publish(immediateHud);
         updateProfile.Record(UpdatePhase.TotalUpdate, updateStarted);
@@ -240,7 +263,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         GameOutcome outcome = command.Action switch
         {
             "transfer" or "equip" or "unequip" or "consume" or "item-feature" or "arrange" => ItemCommand(command),
-            "target" or "attack" or "reload" or "throw" or "interrupt" => combat.BeginCombat(command, selectedMember, paused),
+            "target" or "attack" or "reload" or "throw" or "interrupt" => active.Combat.BeginCombat(command, selectedMember, paused),
             "spell-select" or "spell-cancel" or "spell-assign" or "spell-hotbar"
                 or "cast" or "rest" or "rest-cancel" or "advance" => MagicCommand(command),
             "formation" => party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "")
@@ -276,14 +299,14 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
 
     private GameOutcome OpenContainer(ulong? target)
     {
-        if (target != itemWorld!.Anchor("crate").Id) return GameOutcome.Reject("Choose the crate.");
-        itemWorld.Open("crate", exploration, scene!);
+        if (target != active.ItemWorld.Anchor("crate").Id) return GameOutcome.Reject("Choose the crate.");
+        active.ItemWorld.Open("crate", active.Exploration, active.Scene);
         return GameOutcome.Accept("Crate opened");
     }
 
     private GameOutcome CloseContainer()
     {
-        itemWorld!.Close();
+        active.ItemWorld.Close();
         return GameOutcome.Accept("Crate closed");
     }
 
@@ -338,22 +361,22 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
 
     private GameOutcome CycleArtStyle()
     {
-        string currentStyle = features!.Style;
+        string currentStyle = active.Features.Style;
         int index = Array.FindIndex(definitions.Art.Styles, s => s.Id == currentStyle);
         string nextStyle = definitions.Art.Styles[(index + 1) % definitions.Art.Styles.Length].Id;
-        scene!.SetStyle(nextStyle); features.SetStyle(nextStyle);
+        active.Scene.SetStyle(nextStyle); active.Features.SetStyle(nextStyle);
         return GameOutcome.Accept("Art treatment: " + nextStyle);
     }
 
     private GameOutcome CycleLightCommand()
     {
-        features!.CycleLight();
-        return GameOutcome.Accept("Light position " + (features.LightPosition + 1));
+        active.Features.CycleLight();
+        return GameOutcome.Accept("Light position " + (active.Features.LightPosition + 1));
     }
 
     private GameOutcome ToggleRoomLights()
     {
-        roomLights = !roomLights; scene!.SetRoomLights(roomLights);
+        roomLights = !roomLights; active.Scene.SetRoomLights(roomLights);
         return GameOutcome.Accept(roomLights ? "Room lights on" : "Room fill disabled");
     }
 
@@ -364,7 +387,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
     private void SetPaused(bool value)
     {
-        paused = value || progress.Completed || combat.Defeated; controls.Clear();
+        paused = value || progress.Completed || active.Combat.Defeated; controls.Clear();
         feedback = paused ? "Paused" : "Resumed";
     }
     public void Pause() { if (started && !shutdown) { SetPaused(true); Publish(); } }
@@ -377,8 +400,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         Publish();
     }
 
-    private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), combat.Capture(), expedition, generatedFeatures, encounterPlacement!, party.RestRemaining, party.RestOwner);
+    private ExpeditionSnapshot Capture() => new(expeditionId, active.FloorId, partyId, nextObjectId,
+        active.Floor, active.Exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, active.Actor.Capture(), active.Features.Capture(), preset, active.Inventory.Capture(), active.ItemWorld.Capture(), active.Combat.Capture(), expedition, active.GeneratedFeatures, active.EncounterPlacement, party.RestRemaining, party.RestOwner);
 
     private void Save()
     {
@@ -411,68 +434,21 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         catch (Exception error) { feedback = "Load rejected: " + error.Message; }
     }
 
-    private CombatScope BuildCombatScope() => new(
-        scene!, movement!, exploration, itemWorld!, actor!, () => features!, generatedFeatures,
-        floor, partyId, definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, AllocateId,
-        Aim, CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
-        GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)));
-
     private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null, long completionExperience = 0)
     {
-        var restored = ExpeditionCodec.Validate(saved, definitions, rewards, allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition), completionExperience);
-        ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
-        RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory, restored.Party, saved.PartyId,
-            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, rewards, completionExperience);
-        ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
-        DungeonScene replacement = new(engine, dungeonMaterials!, saved.Floor, definitions.Exploration, definitions.Appearance, AllocateLightId, definitions.ItemExploration);
-        MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
-        try
-        {
-            replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
-            foreach (var gate in saved.GeneratedFeatures.Gates) replacement.SetDoor(gate.Cell, gate.Open);
-            foreach (var connector in saved.Floor.Connectors) replacementGrid.SetClearance(connector.From, connector.To, connector.Clearance);
-            foreach (var direction in CardinalDirections.Ordered)
-                if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
-                    replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), Combat.DoorClearance);
-            if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
-            if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
-        }
-        catch { replacement.Dispose(); throw; }
-        WorldFeatures replacementFeatures;
-        try { replacementFeatures = new WorldFeatures(engine, generatedArt!, replacement, saved.Floor, definitions.Features, definitions.Art, saved.Features, AllocateLightId(), features?.Style); }
-        catch { replacement.Dispose(); throw; }
-        try
-        {
-            if (features is not null && replacement.Style != features.Style) replacement.SetStyle(features.Style);
-            replacement.SetRoomLights(roomLights);
-            replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
-            foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
-            foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
-            // Retire old appearance references before releasing their Engine resources.
-            replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt!.Facts(restoredInventory, restoredItems, replacement));
-        }
-        catch
-        {
-            replacementFeatures.Dispose(); replacement.Dispose(); throw;
-        }
-        WorldFeatures? previousFeatures = features;
-        features = replacementFeatures; actor = restored.Actor;
-        DungeonScene? previous = scene;
-        movement = replacementGrid;
-        scene = replacement; floor = saved.Floor; exploration = restored.Exploration; party = restored.Party;
+        Mount(ActiveFloor.Restore(saved, definitions, null, null, rewards, allItems, completionExperience,
+            engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
+            definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
+            CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
+            GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
+            AllocateId, (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight)));
+        party = active.Party;
         expedition = saved.Intent;
-        generatedFeatures = saved.GeneratedFeatures;
-        encounterPlacement = saved.EncounterPlacement;
-        expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
-        inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
-        inventory.BindMembers(restored.Party.Entities, restored.Party.Members);
-        inventory.BindRemaining(restored.Party.Entities);
-        combat = RiflesCombat.Restore(restoredCombat, definitions, restored.Party.Entities, restored.Party, magic!, inventory, BuildCombatScope());
-        magic = restoredCombat.Magic;
+        expeditionId = saved.Id; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
+        preset = saved.Preset;
         paused = saved.Paused;
         selectedMember = saved.SelectedMember;
         controls.Clear(); cameraCut = true;
-        previousFeatures?.Dispose(); previous?.Dispose();
         feedback = "Expedition restored";
     }
 
@@ -482,10 +458,10 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private ulong AllocateId() { if (nextObjectId > uint.MaxValue) throw new InvalidOperationException("Expedition object identity space exhausted."); ulong id = nextObjectId; nextObjectId = checked(nextObjectId + 1); return id; }
     private void Use(InteractionTarget? target)
     {
-        if (target is { } stair && (stair.Id == features!.Capture().ExitId || stair.Id == floorId))
+        if (target is { } stair && (stair.Id == active.Features.ExitId || stair.Id == active.FloorId))
         {
-            var routes = Connections().Where(c => c.Forward == (stair.Id == features.Capture().ExitId)).ToArray();
-            if (routes.Length == 0 && stair.Id == features.Capture().ExitId)
+            var routes = Connections().Where(c => c.Forward == (stair.Id == active.Features.ExitId)).ToArray();
+            if (routes.Length == 0 && stair.Id == active.Features.ExitId)
             {
                 try { CompleteRun(); } catch (InvalidDataException error) { feedback = error.Message; }
                 return;
@@ -497,13 +473,13 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 return;
             }
         }
-        features!.SetExtraCandidates(ItemCandidates());
-        feedback = paused ? "Resume before using world features" : features.Use(exploration, target, UseItemFeature);
+        active.Features.SetExtraCandidates(ItemCandidates());
+        feedback = paused ? "Resume before using world features" : active.Features.Use(active.Exploration, target, UseItemFeature);
     }
 
 
     private CameraDescriptor CameraDescriptor() => new(
-        new CameraPose(scene!.Eye(exploration.VisualCell), 0, exploration.VisualYaw),
+        new CameraPose(active.Scene.Eye(active.Exploration.VisualCell), 0, active.Exploration.VisualYaw),
         CameraBasisMode.Derived, default,
         new CameraProjection(CameraProjectionKind.Perspective, definitions.Exploration.FieldOfView, 0, definitions.Exploration.NearDistance, definitions.Exploration.FarDistance),
         new CameraViewport(0, 0, 1, 1));
@@ -512,18 +488,18 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     {
         long phaseStarted = updateProfile.Begin();
         engine.CameraView.UpdateCameraSample(new CameraSampleRequest(camera!, CameraDescriptor(),
-            exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Pose, cameraCut ? (byte)1 : (byte)0));
+            active.Exploration.ElapsedSeconds, definitions.Exploration.CameraDelay, CameraInterpolation.Pose, cameraCut ? (byte)1 : (byte)0));
         cameraCut = false;
         UpdateSpellLight();
         phaseStarted = updateProfile.Record(UpdatePhase.CameraAndLight, phaseStarted);
-        features!.SetExtraCandidates(ItemCandidates());
-        features.Observe(exploration);
+        active.Features.SetExtraCandidates(ItemCandidates());
+        active.Features.Observe(active.Exploration);
         phaseStarted = updateProfile.Record(UpdatePhase.FeatureFocus, phaseStarted);
-        features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()).Concat(GeneratedFeatureFacts()),
-            combat.Allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
-            combat.Allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
+        active.Features.Present(active.Actor, active.Exploration, itemArt!.Facts(active.Inventory, active.ItemWorld, active.Scene).Concat(CombatFacts()).Concat(GeneratedFeatureFacts()),
+            active.Combat.Allies[active.Actor.Id].IsLiving ? 1 : Combat.CorpseScale,
+            active.Combat.Allies[active.Features.Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
-        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, combat.DropReachable, RunProjection);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(active.Floor, active.Exploration, party, paused, feedback, selectedMember, active.Features.Readout, active.Features.Style, roomLights, active.Features.LightPosition, active.Inventory, active.ItemWorld, active.Scene, definitions.Characters, preset, active.Actor, definitions.ItemArt, CombatProjection, active.Combat.DropReachable, RunProjection);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 
@@ -533,7 +509,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         shutdown = true;
         if (camera is not null) engine.CameraView.ClearActiveCamera(new ClearActiveCameraRequest(0));
         engine.Graphics.PublishSnapshot(ReadOnlySpan<AppearanceFact>.Empty);
-        features?.Dispose();
+        active.Features?.Dispose();
         itemArt?.Dispose();
         combatArt?.Dispose();
         boltAppearance?.Dispose();
@@ -541,7 +517,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         saves?.Dispose();
         projection?.Dispose();
         camera?.Dispose();
-        scene?.Dispose();
+        active.Scene?.Dispose();
         dungeonMaterials?.Dispose();
         generatedArt?.Dispose();
         audio?.Dispose();

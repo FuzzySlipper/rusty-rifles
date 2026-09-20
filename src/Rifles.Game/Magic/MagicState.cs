@@ -44,9 +44,11 @@ internal sealed class MagicState
     /// <summary>
     /// Builds one spellbook per roster instance whose archetype admits starting
     /// spells. Archetypes without starting spells get no book: progression
-    /// never assumes every character is a caster.
+    /// never assumes every character is a caster. Travelling books are adopted
+    /// as-is — spellbooks travel once with their characters, never rebuilt.
     /// </summary>
-    internal MagicState(MagicDefinition definition, IEnumerable<(string Instance, string Archetype)> roster, CharacterEntities entities)
+    internal MagicState(MagicDefinition definition, IEnumerable<(string Instance, string Archetype)> roster, CharacterEntities entities,
+        IReadOnlyDictionary<string, MagicBook>? travelling = null)
     {
         this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
         this.entities = entities ?? throw new ArgumentNullException(nameof(entities));
@@ -56,6 +58,12 @@ internal sealed class MagicState
         books = new Dictionary<string, MagicBook>(StringComparer.Ordinal);
         foreach ((string instance, string archetype) in ValidateRoster(roster))
         {
+            if (travelling is not null && travelling.TryGetValue(instance, out MagicBook? live))
+            {
+                books.Add(instance, live);
+                entities.AttachComponent(instance, () => live);
+                continue;
+            }
             if (!definition.StartingSpells.TryGetValue(archetype, out string[]? spells)) continue;
             MagicBook book = new(archetype, spells, definition.ExperiencePerPoint);
             books.Add(instance, book);
@@ -67,6 +75,8 @@ internal sealed class MagicState
             CreateEffectDefinition,
             StringComparer.Ordinal);
     }
+
+    internal IReadOnlyDictionary<string, MagicBook> Books => books;
 
     internal MagicBook For(string member)
     {
@@ -214,6 +224,24 @@ internal sealed class MagicState
         }
     }
 
+    /// <summary>
+    /// Re-registers travelling condition timing on a new floor. Effect
+    /// instances and stat contributions ride the entities (with their marker
+    /// keys), so this records timing without re-attaching.
+    /// </summary>
+    internal void RejoinTravelling(MagicConditionSnapshot[] conditions)
+    {
+        ArgumentNullException.ThrowIfNull(conditions);
+        foreach (MagicConditionSnapshot saved in conditions)
+        {
+            SpellDefinition spell = definition.Spell(saved.Spell);
+            Apply(MagicTarget.Parse(saved.Target), spell);
+            Condition condition = this.conditions[saved.Target].BySpell[saved.Spell];
+            condition.Remaining = saved.Remaining;
+            condition.TickRemaining = saved.TickRemaining;
+        }
+    }
+
     internal MagicSnapshot Capture() => new(
         books.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => new MagicBookSnapshot(
             entry.Key,
@@ -234,13 +262,14 @@ internal sealed class MagicState
         CharacterEntities entities,
         IEnumerable<(string Instance, string Archetype)> members,
         IEnumerable<string> validTargets,
-        IEnumerable<string> validRewards, long completionExperience = 0)
+        IEnumerable<string> validRewards, long completionExperience = 0,
+        IReadOnlyDictionary<string, MagicBook>? travellingBooks = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(validTargets);
         ArgumentNullException.ThrowIfNull(validRewards);
 
-        MagicState state = new(definition, members, entities);
+        MagicState state = new(definition, members, entities, travellingBooks);
         HashSet<string> targets = RequireDistinct(validTargets, "condition targets");
         HashSet<string> rewardKeys = RequireDistinct(validRewards, "reward identities");
         ValidateSnapshotShape(snapshot, state, targets, rewardKeys, completionExperience);

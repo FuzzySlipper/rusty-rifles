@@ -89,12 +89,14 @@ internal sealed class RiflesCombat
 
     /// <summary>Fresh combat for a newly built floor: empty actions/flights, no drops.</summary>
     internal static RiflesCombat CreateFresh(GameDefinitions definitions, CharacterEntities entities, PartyState party,
-        MagicState magic, ItemInventory inventory, CombatScope scope, List<EnemyState> enemies, AllySnapshot[] allies)
+        MagicState magic, ItemInventory inventory, CombatScope scope, List<EnemyState> enemies, AllySnapshot[] allies,
+        ulong[]? travellingLoaded = null)
     {
         RiflesCombat combat = new(definitions, entities, party, magic, inventory, [], scope, enemies);
         foreach (RiflesCharacter member in party.Members)
-            entities.AttachComponent("member:" + member.Definition.Id, () => new ActionState());
+            entities.AttachComponent(member.Definition.Id, () => new ActionState());
         combat.BuildAllies(allies);
+        if (travellingLoaded is not null) combat.loadedWeapons.UnionWith(travellingLoaded);
         return combat;
     }
 
@@ -108,7 +110,7 @@ internal sealed class RiflesCombat
         {
             if (!saved.Actions.TryGetValue(member.Definition.Id, out ActionState? action) || action is null)
                 action = new ActionState();
-            entities.AttachComponent("member:" + member.Definition.Id, () => action);
+            entities.AttachComponent(member.Definition.Id, () => action);
         }
 
         foreach (FlightSnapshot flight in saved.Flights) combat.flights.Add(FlightState.Restore(flight));
@@ -172,7 +174,7 @@ internal sealed class RiflesCombat
             Add(enemy.Id, enemy.Motion.Position, enemy.Motion.CrowdOffset, slot.Width * scope.Scene.LogicalCellSize, slot.Depth * scope.Scene.LogicalCellSize);
         }
         if (allies.GetValueOrDefault(scope.Actor.Id)?.IsLiving == true) Add(scope.Actor.Id, scope.Actor.Motion.Position);
-        RoomDressing dressing = scope.Features().Capture().Dressing;
+        RoomDressing dressing = scope.Features().Dressing;
         if (allies.GetValueOrDefault(dressing.ObserverId)?.IsLiving == true) Add(dressing.ObserverId, dressing.Observer);
         Add(dressing.BenchId, dressing.Bench); Add(dressing.CrateId, dressing.Crate);
         return bodies.ToArray();
@@ -466,7 +468,7 @@ internal sealed class RiflesCombat
                 if (flight.Spell is null) ResolveHit(hit, flight.Kind, flight.Member, flight.Shooter,
                     new Vector3(flight.DirectionX, flight.DirectionY, flight.DirectionZ));
             }
-            if (!scope.Floor.Cells.Contains(landed) || landed == scope.ItemWorld.Capture().Door && !scope.ItemWorld.Capture().DoorOpen
+            if (!scope.Floor.Cells.Contains(landed) || landed == scope.ItemWorld.Door && !scope.ItemWorld.DoorOpen
                 || scope.GeneratedFeatures.Gates.Any(g => g.Cell == landed && !g.Open)) landed = flight.LastCell;
             flights.Remove(flight);
             if (hit.Present || travel >= flight.Remaining)
@@ -555,7 +557,7 @@ internal sealed class RiflesCombat
         GridPoint forward = enemy.Motion.Facing.Offset();
         if (delta.LengthSquared() > 0 && Vector3.Dot(Vector3.Normalize(delta), new(forward.X, 0, forward.Y))
             < Math.Cos(enemy.Definition.Brain.SightConeDegrees * Math.PI / 360)) return false;
-        RoomDressing dressing = scope.Features().Capture().Dressing;
+        RoomDressing dressing = scope.Features().Dressing;
         SpatialEntityCollider[] sightBodies = CombatBodies().Where(body => Combat.ActorsBlockSight
             || body.Entity == scope.PartyId || body.Entity == dressing.BenchId || body.Entity == dressing.CrateId).ToArray();
         SpatialHit sight = scope.Scene.Trace(EnemyAim(enemy), Aim(scope.Exploration.Position), sightBodies, enemy.Id);
@@ -625,7 +627,7 @@ internal sealed class RiflesCombat
             if (queries == 0) { enemy.DecisionRemaining = 0; enemy.NavigationStatus = "Waiting for path budget"; continue; }
             GridPoint[] goals = EnemyGoals(enemy, goal.Value, sees, retreat).Take(Math.Min(queries, Combat.PathGoalsPerDecision)).ToArray();
             queries -= goals.Length;
-            GridPoint door = scope.ItemWorld.Capture().Door;
+            GridPoint door = scope.ItemWorld.Door;
             bool tooWideForDoor = definitions.Crowd.Footprints[enemy.Definition.Footprint].EdgeClearance > Combat.DoorClearance;
             var narrowLandings = scope.Floor.Connectors.Where(c => c.Clearance < definitions.Crowd.Footprints[enemy.Definition.Footprint].EdgeClearance)
                 .Select(c => c.To).ToHashSet();
@@ -746,8 +748,8 @@ internal sealed class RiflesCombat
         {
             var focused = scope.Features().Readout?.Selected;
             targetId = focused is { } selected && (scope.GeneratedFeatures.Gates.Any(g => g.Id == selected.Id)
-                || scope.GeneratedFeatures.Hazards.Any(h => h.Id == selected.Id)) ? focused.Value.Id : scope.ItemWorld.Capture().LeverId;
-            targetRevision = targetId == scope.ItemWorld.Capture().LeverId ? scope.ItemWorld.Revision : scope.GeneratedFeatures.Revision;
+                || scope.GeneratedFeatures.Hazards.Any(h => h.Id == selected.Id)) ? focused.Value.Id : scope.ItemWorld.LeverId;
+            targetRevision = targetId == scope.ItemWorld.LeverId ? scope.ItemWorld.Revision : scope.GeneratedFeatures.Revision;
         }
         if (SpellAvailability(member, spell, targetMember, targetId, targetRevision) is { } reason) return GameOutcome.Reject(reason);
         scope.CancelRest("Rest interrupted by casting.");
@@ -798,7 +800,7 @@ internal sealed class RiflesCombat
         }
         else if (spell.Effect == SpellEffect.Lever)
         {
-            if (action.Target == scope.ItemWorld.Capture().LeverId) scope.ItemWorld.ToggleLever(scope.Exploration, scope.Scene, action.FeatureRevision);
+            if (action.Target == scope.ItemWorld.LeverId) scope.ItemWorld.ToggleLever(scope.Exploration, scope.Scene, action.FeatureRevision);
             else CombatMessage(scope.UseFeature(action.Target, action.FeatureRevision));
         }
         else if (spell.Target == SpellTarget.Party) magic.Apply(new PartyTarget(), spell);
@@ -834,7 +836,7 @@ internal sealed class RiflesCombat
             float Before(float coordinate, float direction) => direction > 0 ? MathF.BitDecrement(coordinate) : direction < 0 ? MathF.BitIncrement(coordinate) : coordinate;
             origin = new(Before(point.X, flight.DirectionX), point.Y, Before(point.Z, flight.DirectionZ));
         }
-        var dressing = scope.Features().Capture().Dressing;
+        var dressing = scope.Features().Dressing;
         SpatialEntityCollider[] obstacles = CombatBodies().Where(b => b.Entity == dressing.BenchId || b.Entity == dressing.CrateId).ToArray();
         foreach (EnemyState target in enemies.Where(e => e.Alive).ToArray())
             if (Vector3.Distance(origin, EnemyAim(target)) <= spell.Radius && !scope.Scene.Trace(origin, EnemyAim(target), obstacles, 0).Present)

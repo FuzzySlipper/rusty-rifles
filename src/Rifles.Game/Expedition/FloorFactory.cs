@@ -13,106 +13,11 @@ using Rusty.Engine;
 
 namespace Rifles.Game.Expedition;
 
-/// <summary>Builds a complete, inactive floor snapshot without changing the active expedition.</summary>
+/// <summary>Pure floor-construction helpers shared by live floor mounts. Fresh floors mount
+/// directly from these builders; the snapshot roundtrip is gone.</summary>
 internal static class FloorFactory
 {
-    internal static ExpeditionSnapshot Create(IEngineContext engine, DungeonMaterialCache materialCache, GameDefinitions definitions,
-        ResolvedExpedition intent, string floorKey, Guid runId, ulong partyId, string preset,
-        ref ulong nextObjectId, Func<ulong> allocateLightId, DungeonFloor? resolvedFloor = null)
-    {
-        ArgumentNullException.ThrowIfNull(engine);
-        ArgumentNullException.ThrowIfNull(materialCache);
-        ArgumentNullException.ThrowIfNull(definitions);
-        ArgumentNullException.ThrowIfNull(intent);
-        ArgumentException.ThrowIfNullOrWhiteSpace(floorKey);
-        ArgumentNullException.ThrowIfNull(allocateLightId);
-        if (runId == Guid.Empty) throw new InvalidDataException("Expedition run identity is required.");
-        if (partyId == 0 || partyId > uint.MaxValue) throw new InvalidDataException("Invalid party identity.");
-
-        ResolvedFloorIntent resolved = intent.Floors.SingleOrDefault(f => f.Id == floorKey)
-            ?? throw new InvalidDataException("Unknown expedition floor: " + floorKey);
-        ulong candidateNextObjectId = nextObjectId;
-        ulong Allocate()
-        {
-            if (candidateNextObjectId == 0 || candidateNextObjectId > uint.MaxValue)
-                throw new InvalidOperationException("Expedition object identity space exhausted.");
-            return checked(candidateNextObjectId++);
-        }
-
-        // Floor identity is allocated before any durable floor-owned fact.
-        ulong floorId = Allocate();
-        if (floorId == partyId) throw new InvalidDataException("Floor and party identities must differ.");
-
-        DungeonFloor floor = resolvedFloor ?? DungeonFloor.Generate(resolved, definitions.Generation.Policy, definitions.Rooms,
-            definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
-        if (floor.IntentFloorId != resolved.Id || floor.Seed != resolved.Candidate.Seed
-            || floor.IntentGraphIdentity != Rifles.Procgen.CanonicalIdentity.Hash(resolved.Candidate))
-            throw new InvalidDataException("Resolved floor does not belong to the requested expedition floor.");
-        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, preset);
-        ExplorationState exploration = new(floor.Entrance, definitions.Exploration);
-
-        using DungeonScene scene = new(engine, materialCache, floor, definitions.Exploration, definitions.Appearance,
-            allocateLightId, definitions.ItemExploration);
-
-        PatrolActor actor = PatrolActor.Create(Allocate(), floor,
-            definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);
-        FeatureSnapshot features = new(Allocate(), Allocate(), 1, true, false,
-            RoomDressing.Create(floor, actor, definitions.Art, Allocate));
-
-        ExplorationItems itemWorld = ExplorationItems.Create(definitions.ItemExploration, floor, features.Dressing, actor, Allocate);
-        IEnumerable<PackOwner> memberPacks = party.Members.Select(member => new PackOwner(Allocate(), "member:" + member.Definition.Id,
-            definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space));
-        // The shared party inventory travels with the expedition; members
-        // keep owners for equipment state but hold no loose items.
-        PackOwner partyPack = new(Allocate(), ItemInventory.PartyKey, definitions.Items.Party.Mass, definitions.Items.Party.Space);
-        IEnumerable<PackOwner> anchorPacks = itemWorld.Anchors.Select(anchor =>
-        {
-            PackDefinition capacity = anchor.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
-            return new PackOwner(anchor.Id, anchor.Key, capacity.Mass, capacity.Space);
-        });
-        ItemInventory inventory = new(definitions.Items, memberPacks.Append(partyPack).Concat(anchorPacks));
-        inventory.BindMembers(party.Entities, party.Members);
-        inventory.GrantStarting(Allocate, preset);
-        scene.SetDoor(itemWorld.Capture().Door, false);
-
-        MovementGrid movement = new(floor.Cells.ToHashSet(), scene.AdmitStep, definitions.Crowd);
-        foreach (FloorConnector connector in floor.Connectors)
-            movement.SetClearance(connector.From, connector.To, connector.Clearance);
-        exploration.Bind(movement, partyId);
-        actor.Bind(movement);
-        features.Dressing.Bind(movement);
-        ConfigureDoorClearance(movement, floor, itemWorld.Capture().Door, definitions.Combat.DoorClearance);
-
-        Dictionary<string, GridPoint> drops = [];
-        GeneratedFeatureSnapshot generatedFeatures = CreateGeneratedFeatures(intent, floor, definitions, inventory, drops, scene, Allocate);
-        EncounterPlacementResult encounterPlacement = CreateEnemies(floor, definitions, inventory, itemWorld, movement,
-            generatedFeatures, drops, Allocate, party.Entities, out EnemyState[] enemies);
-        generatedFeatures = AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, Allocate);
-        inventory.BindRemaining(party.Entities);
-
-        MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)), party.Entities);
-        // The build-time owner only freezes the snapshot: damage, sound, and
-        // feature callbacks never fire here, so inert callables are correct.
-        // The live owner is built at activation with real services.
-        CombatScope scope = new(scene, movement, exploration, itemWorld, actor,
-            () => throw new InvalidOperationException("No live features during snapshot build."), generatedFeatures,
-            floor, partyId, 1.0, Allocate,
-            cell => scene.Eye(cell) with { Y = scene.GroundHeight(cell) + definitions.Combat.AimHeight },
-            _ => { }, (_, _) => { }, _ => { }, _ => null, _ => new(0, 0, 0), (_, _) => "");
-        RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
-            [new(actor.Id, definitions.Combat.AllyVitality), new(features.Dressing.ObserverId, definitions.Combat.AllyVitality)]);
-        CombatSnapshot combatSnapshot = combat.Capture();
-
-        ExpeditionSnapshot snapshot = new(runId, floorId, partyId, candidateNextObjectId, floor, exploration.Capture(),
-            party.Members.Select(member => member.Definition).ToArray(), party.Capture().ToArray(), false,
-            party.Members[0].Definition.Id, actor.Capture(), features, preset, inventory.Capture(), itemWorld.Capture(), combatSnapshot,
-            intent, generatedFeatures, encounterPlacement, 0, "");
-        _ = ExpeditionCodec.Validate(snapshot, definitions);
-        nextObjectId = candidateNextObjectId;
-        return snapshot;
-    }
-
-    private static void ConfigureDoorClearance(MovementGrid movement, DungeonFloor floor, GridPoint door, float clearance)
+    internal static void ConfigureDoorClearance(MovementGrid movement, DungeonFloor floor, GridPoint door, float clearance)
     {
         foreach (CardinalDirection direction in CardinalDirections.Ordered)
         {
@@ -121,7 +26,7 @@ internal static class FloorFactory
         }
     }
 
-    private static GeneratedFeatureSnapshot CreateGeneratedFeatures(ResolvedExpedition intent, DungeonFloor floor,
+    internal static GeneratedFeatureSnapshot CreateGeneratedFeatures(ResolvedExpedition intent, DungeonFloor floor,
         GameDefinitions definitions, ItemInventory inventory, Dictionary<string, GridPoint> drops, DungeonScene scene, Func<ulong> allocate)
     {
         GeneratedGate[] gates = GeneratedFeatures.Resolve(floor, allocate);
@@ -165,7 +70,7 @@ internal static class FloorFactory
         return result;
     }
 
-    private static EncounterPlacementResult CreateEnemies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
+    internal static EncounterPlacementResult CreateEnemies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
         ExplorationItems itemWorld, MovementGrid movement, GeneratedFeatureSnapshot generatedFeatures,
         Dictionary<string, GridPoint> drops, Func<ulong> allocate, CharacterEntities entities, out EnemyState[] enemies)
     {
@@ -207,7 +112,7 @@ internal static class FloorFactory
         return route;
     }
 
-    private static GeneratedFeatureSnapshot AddRouteSupplies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
+    internal static GeneratedFeatureSnapshot AddRouteSupplies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
         EncounterPlacementResult placement, Dictionary<string, GridPoint> drops, GeneratedFeatureSnapshot features, Func<ulong> allocate)
     {
         ResolvedSupply[] supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies,

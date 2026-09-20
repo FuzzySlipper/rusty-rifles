@@ -68,8 +68,8 @@ internal sealed class SessionProjection : IDisposable
             ("preset", value.String(preset)),
             ("presets", value.Object(characters.Presets.Select(p => (p.Id, value.Object(("name", value.String(p.Name))))).ToArray())),
             ("puzzle", value.Object(("status", value.String(world.Status(world.Weight(inventory, exploration, actor)))),
-                ("doorId", value.String(world.Capture().DoorId.ToString())), ("doorRevision", value.String(world.Revision.ToString())),
-                ("leverId", value.String(world.Capture().LeverId.ToString())), ("leverRevision", value.String(world.Revision.ToString())))));
+                ("doorId", value.String(world.DoorId.ToString())), ("doorRevision", value.String(world.Revision.ToString())),
+                ("leverId", value.String(world.LeverId.ToString())), ("leverRevision", value.String(world.Revision.ToString())))));
 
         UiValue snapshot = value.Build(root);
         // Engine retains the last complete projection for attachment/recovery.
