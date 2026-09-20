@@ -85,7 +85,7 @@ public sealed partial class RiflesProduct
             ? "The counterweight plate needs " + plate.RequiredWeight + " mass. " + definitions.GeneratedFeatures.PlateClue : null;
     }
 
-    private ulong PlateMass(GeneratedPlate plate) => checked(drops.Where(d => d.Value == plate.Cell)
+    private ulong PlateMass(GeneratedPlate plate) => checked(combat.Drops.Where(d => d.Value == plate.Cell)
         .Aggregate(0UL, (mass, drop) => checked(mass + inventory!.Mass(drop.Key)))
         + (exploration.Position == plate.Cell ? definitions.ItemExploration.PartyWeight : 0)
         + (actor!.Motion.Position == plate.Cell ? definitions.ItemExploration.ActorWeight : 0));
@@ -122,7 +122,7 @@ public sealed partial class RiflesProduct
         generatedFeatures = generatedFeatures with { Hazards = generatedFeatures.Hazards.Select(h =>
             GeneratedHazards.Advance(h, definitions.Hazards, seconds, exploration.Position, damage =>
             {
-                foreach (var member in party.Members.Where(m => m.IsLiving)) DamageMember(member, damage);
+                foreach (var member in party.Members.Where(m => m.IsLiving)) combat.DamageMember(member, damage);
                 CombatMessage("Scalding drain: the party takes " + damage + " damage.");
             })).ToArray() };
     }

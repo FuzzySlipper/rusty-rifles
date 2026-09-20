@@ -21,14 +21,14 @@ public sealed partial class RiflesProduct
         string source = command.Source ?? "member:" + selectedMember;
         ulong revision = ulong.TryParse(command.InventoryRevision, out ulong parsed) ? parsed : throw new InvalidDataException("Inventory proposal expired.");
         if (revision != inventory!.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
-        RequireItemAccess(source);
+        combat.RequireItemAccess(source);
         string token = command.Item ?? throw new InvalidDataException("Select an item first.");
         ItemRef subject = ItemRef.Parse(source, token);
         switch (command.Action)
         {
             case "transfer":
                 string destination = command.Destination ?? throw new InvalidDataException("Choose a destination.");
-                RequireItemAccess(destination);
+                combat.RequireItemAccess(destination);
                 inventory.Transfer(subject, InventoryOwner.Parse(destination), command.Quantity ?? 1, revision);
                 feedback = "Item transferred";
                 break;
@@ -45,7 +45,7 @@ public sealed partial class RiflesProduct
                 feedback = "Item rearranged";
                 break;
             case "consume":
-                BeginCombat(command);
+                combat.BeginCombat(command, selectedMember, paused);
                 break;
             case "item-feature":
                 if (paused) throw new InvalidDataException("Resume before using world features.");

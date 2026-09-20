@@ -91,14 +91,21 @@ internal static class FloorFactory
         inventory.BindRemaining(party.Entities);
 
         MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)));
-        CombatSnapshot combat = new(enemies.Select(enemy => enemy.Capture()).ToArray(),
-            party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, new ActionState().Capture())).ToArray(), [], [],
-            drops.Select(drop => new DropSnapshot(drop.Key, drop.Value)).ToArray(),
-            [new(actor.Id, definitions.Combat.AllyVitality), new(features.Dressing.ObserverId, definitions.Combat.AllyVitality)], 0, magic.Capture());
+        // The build-time owner only freezes the snapshot: damage, sound, and
+        // feature callbacks never fire here, so inert callables are correct.
+        // The live owner is built at activation with real services.
+        CombatScope scope = new(scene, movement, exploration, itemWorld, actor,
+            () => throw new InvalidOperationException("No live features during snapshot build."), generatedFeatures,
+            floor, partyId, 1.0, Allocate,
+            cell => scene.Eye(cell) with { Y = scene.GroundHeight(cell) + definitions.Combat.AimHeight },
+            _ => { }, (_, _) => { }, _ => { }, _ => null, _ => new(0, 0, 0), (_, _) => "");
+        RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
+            [new(actor.Id, definitions.Combat.AllyVitality), new(features.Dressing.ObserverId, definitions.Combat.AllyVitality)]);
+        CombatSnapshot combatSnapshot = combat.Capture();
 
         ExpeditionSnapshot snapshot = new(runId, floorId, partyId, candidateNextObjectId, floor, exploration.Capture(),
             party.Members.Select(member => member.Definition).ToArray(), party.Capture().ToArray(), false,
-            party.Members[0].Definition.Id, actor.Capture(), features, preset, inventory.Capture(), itemWorld.Capture(), combat,
+            party.Members[0].Definition.Id, actor.Capture(), features, preset, inventory.Capture(), itemWorld.Capture(), combatSnapshot,
             intent, generatedFeatures, encounterPlacement);
         _ = ExpeditionCodec.Validate(snapshot, definitions);
         nextObjectId = candidateNextObjectId;

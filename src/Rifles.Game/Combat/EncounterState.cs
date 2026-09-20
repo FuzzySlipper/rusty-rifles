@@ -54,7 +54,8 @@ internal sealed class EnemyState
             () => RiflesStats.ForVitality(definition.Vitality, saved.Vitality, maximumResource, saved.Resource));
         Id = saved.Id; Spawn = saved.Spawn; Definition = definition; Owner = saved.Owner;
         Motion = ExplorationState.Restore(saved.Motion, floor, tuning with { StepSeconds = definition.StepSeconds });
-        Action = ActionState.Restore(saved.Action);
+        ActionState action = ActionState.Restore(saved.Action);
+        Action = entities.AttachComponent("enemy:" + saved.Id, () => action);
         NavigationStatus = Motion.Moving ? "Moving" : "Ready";
         GameDefinitions.Require(saved.Vitality > 0 || !Motion.Moving && !Action.Busy, "dead enemy activity");
         DecisionRemaining = saved.DecisionRemaining; Loaded = saved.Loaded;

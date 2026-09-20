@@ -49,11 +49,15 @@ event bus, or scripting layer.
 
 ## Actions and commands
 
-- Concrete combat/action owners expose typed attack/cast/remedy operations with
-  character-attached action state. Input, UI, and AI call the same named
-  operations; the product root handles lifecycle and admitted update ordering.
-  Windup → effect → recovery, interruption, ammo charging, target
-  disappearance, and friendly fire are preserved. (Planned — #8360.)
+- Landed (#8360): `RiflesCombat` owns member action states (attached to
+  character entities, no dictionary), live enemy/flight/drop/loaded state
+  (`FlightState` mutates in place; snapshots freeze DTOs at save), and the
+  named attack/cast/remedy operations input, UI, and AI call. The product
+  root keeps lifecycle, update ordering, and defeat aftermath; a `CombatScope`
+  carries floor services plus explicit message/sound/rest/feature callables.
+  Windup → effect → recovery, interruption, ammo charging, impact rechecks,
+  and friendly fire are preserved. Allies share stats but need no action
+  machinery; their authored source stays deferred.
 - UI input is parsed once at the boundary into explicit domain operations.
   No global `commandRevision`/inventory-revision/target-revision freshness
   gates; actual entity/item/target state is inspected when acted on.
@@ -104,7 +108,7 @@ event bus, or scripting layer.
 | Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots (`PresetMemberDefinition`: instance id + archetype ref + display name + position); `ResolvePreset` builds `MemberDefinition` inputs carrying archetype ids; `PartyDefinition` keeps formation + capacity only | Landed (#8283). Spells/resistances key by archetype; books key by instance; rifle-drill stats converged to archetypes (formation/loadout identity kept) |
 | Entities/stats | `RiflesCharacter` over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` durable map | Landed (#8358) |
 | Inventory | `ItemInventory` numeric `PackOwner` ledger + bound components + typed owners | Landed (#8359); ledger re-key follows #8363 |
-| Combat | `RiflesProduct.Combat/Enemies/CombatPresentation` partials + dictionaries | Concrete combat/action owner (#8360) |
+| Combat | `RiflesProduct` combat partials + action dictionaries | Landed `RiflesCombat` owner (#8360) |
 | Magic | `MagicState` string-keyed books/conditions; per-tick recompute | Attached spellbook/conditions via `EffectsComponent` (#8361) |
 | Commands | Global revisions + exception eligibility | Typed operations + availability contract (#8362) |
 | Floors | `FloorFactory` build/capture/dispose; `Capture()` reads | Active-floor aggregate; frozen retained floors (#8363) |

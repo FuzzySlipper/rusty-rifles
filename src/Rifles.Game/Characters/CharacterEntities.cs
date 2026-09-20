@@ -126,6 +126,22 @@ internal sealed class CharacterEntities
         return (actor.Get<InventoryComponent>(), equipment ? actor.Get<EquipmentComponent>() : null);
     }
 
+    /// <summary>
+    /// Attaches an arbitrary component to an established entity, returning
+    /// the same attached instance. Used for action state and other
+    /// per-character attachments that follow entity lifetime.
+    /// </summary>
+    internal T AttachComponent<T>(string instanceKey, Func<T> build) where T : class
+    {
+        if (!instances.TryGetValue(instanceKey, out EntityId entity))
+            throw new InvalidDataException($"Unknown character instance '{instanceKey}'.");
+        ArgumentNullException.ThrowIfNull(build);
+        Actor actor = new(store, entity);
+        if (!actor.Has<T>())
+            actor.Add(build());
+        return actor.Get<T>();
+    }
+
     internal string? TryGetInstance(EntityId entity)
     {
         foreach ((string key, EntityId id) in instances)

@@ -29,10 +29,10 @@ public sealed partial class RiflesProduct
     private string? TravelProblem(GridPoint departure)
     {
         if (progress.Completed) return "Expedition complete.";
-        if (Defeated) return "A living party is required.";
+        if (combat.Defeated) return "A living party is required.";
         if (paused) return "Resume before travelling.";
         if (exploration.Position != departure) return "Stand on the marked stair to travel.";
-        if (exploration.Moving || actions.Values.Any(a => a.Busy) || flights.Count != 0 || magic!.RestRemaining > 0)
+        if (exploration.Moving || combat.ActionsBusy || combat.HasFlights || magic!.RestRemaining > 0)
             return "Finish movement, actions and projectile flights before travelling.";
         return null;
     }
@@ -96,7 +96,7 @@ public sealed partial class RiflesProduct
         if (progress.Completed) return "Expedition already complete.";
         if (floor.IntentFloorId != expedition.ObjectiveFloor) return "Reach " + expedition.Floors.Single(f => f.Id == expedition.ObjectiveFloor).Title + ".";
         if (inactiveFloors.Count + 1 != expedition.Floors.Length) return "Explore every expedition floor.";
-        if (enemies.Any(e => e.Alive)) return "Defeat the remaining garrison: " + enemies.Count(e => e.Alive) + " foes.";
+        if (combat.Enemies.Any(e => e.Alive)) return "Defeat the remaining garrison: " + combat.Enemies.Count(e => e.Alive) + " foes.";
         return TravelProblem(floor.Exit);
     }
 
@@ -123,9 +123,9 @@ public sealed partial class RiflesProduct
             ("seed", value.String(expedition.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture))),
             ("nextSeed", value.String(unchecked(expedition.Seed + definitions.Run.SeedIncrement).ToString(System.Globalization.CultureInfo.InvariantCulture))),
             ("difficulty", value.String(progress.Difficulty)),
-            ("status", value.String(progress.Completed ? "Complete" : Defeated ? "Defeated" : "Exploring")),
+            ("status", value.String(progress.Completed ? "Complete" : combat.Defeated ? "Defeated" : "Exploring")),
             ("objective", value.String(definitions.Run.Goal + " Visited " + (inactiveFloors.Count + 1) + "/" + expedition.Floors.Length + " floors.")),
-            ("result", value.String(progress.Completed ? definitions.Run.SuccessText : Defeated ? definitions.Run.DefeatText : "")),
+            ("result", value.String(progress.Completed ? definitions.Run.SuccessText : combat.Defeated ? definitions.Run.DefeatText : "")),
             ("completionProblem", value.String(CompletionProblem() ?? "")),
             ("finaleLabel", value.String(definitions.Run.FinaleLabel)),
             ("difficulties", value.Object(definitions.Run.Difficulties.Select(d => (d.Id, value.Object(

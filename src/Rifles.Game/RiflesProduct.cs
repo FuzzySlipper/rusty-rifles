@@ -181,7 +181,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.cycle") { features!.Observe(exploration, 1); continue; }
             if (intent is "rifles.attack" or "rifles.reload")
             {
-                try { BeginCombat(new SessionCommand(commandRevision.ToString(), intent == "rifles.attack" ? "attack" : "reload", null, null, null)); }
+                try { combat.BeginCombat(new SessionCommand(commandRevision.ToString(), intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused); }
                 catch (Exception error) { feedback = error.Message; }
                 suppressMovement = true; continue;
             }
@@ -201,28 +201,28 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             {
                 double seconds = update.Facts.FixedDeltaSeconds;
                 GridPoint previousCell = exploration.Position;
-                if (!Defeated) exploration.Advance(seconds, PartySpeed);
+                if (!combat.Defeated) exploration.Advance(seconds, PartySpeed);
                 if (exploration.Position != previousCell)
                 {
-                    EmitNoise(exploration.Position, NoiseKind.Footstep);
+                    combat.EmitNoise(exploration.Position, RiflesCombat.NoiseKind.Footstep);
                     var connector = floor.Connectors.SingleOrDefault(c => c.From == previousCell && c.To == exploration.Position);
                     if (connector is { Damage: > 0 })
                     {
-                        foreach (var member in party.Members.Where(m => m.IsLiving)) DamageMember(member, connector.Damage);
+                        foreach (var member in party.Members.Where(m => m.IsLiving)) combat.DamageMember(member, connector.Damage);
                         CombatMessage("The party falls into the drain pit. Climb out by an adjacent step.");
                     }
                 }
-                if (allies[actor!.Id].IsLiving) actor.Advance(seconds);
+                if (combat.Allies[actor!.Id].IsLiving) actor.Advance(seconds);
                 AdvanceCombat(seconds);
                 AdvanceGeneratedHazards(seconds);
             }
-            if (!suppressMovement && !Defeated) controls.Apply(exploration);
+            if (!suppressMovement && !combat.Defeated) controls.Apply(exploration);
         }
         phaseStarted = updateProfile.Record(UpdatePhase.Simulation, phaseStarted);
         itemWorld!.CheckOpen(exploration, scene!);
         bool wasOpen = itemWorld.Capture().DoorOpen;
         itemWorld.UpdateDoor(inventory!, exploration, actor!, movement!, scene!);
-        if (!wasOpen && itemWorld.Capture().DoorOpen) EmitNoise(itemWorld.Capture().Door, NoiseKind.Alarm);
+        if (!wasOpen && itemWorld.Capture().DoorOpen) combat.EmitNoise(itemWorld.Capture().Door, RiflesCombat.NoiseKind.Alarm);
         updateProfile.Record(UpdatePhase.WorldInteractions, phaseStarted);
         Publish(immediateHud);
         updateProfile.Record(UpdatePhase.TotalUpdate, updateStarted);
@@ -239,7 +239,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             case "transfer": case "equip": case "unequip": case "consume": case "item-feature": case "arrange":
                 ItemCommand(command); break;
             case "target": case "attack": case "reload": case "throw": case "interrupt":
-                BeginCombat(command); break;
+                combat.BeginCombat(command, selectedMember, paused); break;
             case "spell-select": case "spell-cancel": case "spell-assign": case "spell-hotbar":
             case "cast": case "rest": case "rest-cancel": case "advance":
                 MagicCommand(command); break;
@@ -279,7 +279,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
     private void SetPaused(bool value)
     {
-        paused = value || progress.Completed || Defeated; controls.Clear(); commandRevision = checked(commandRevision + 1);
+        paused = value || progress.Completed || combat.Defeated; controls.Clear(); commandRevision = checked(commandRevision + 1);
         feedback = paused ? "Paused" : "Resumed";
     }
     public void Pause() { if (started && !shutdown) { SetPaused(true); Publish(); } }
@@ -293,7 +293,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, floorId, partyId, nextObjectId,
-        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), CaptureCombat(), expedition, generatedFeatures, encounterPlacement!);
+        floor, exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, actor!.Capture(), features!.Capture(), preset, inventory!.Capture(), itemWorld!.Capture(), combat.Capture(), expedition, generatedFeatures, encounterPlacement!);
 
     private void Save()
     {
@@ -325,6 +325,12 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         }
         catch (Exception error) { feedback = "Load rejected: " + error.Message; }
     }
+
+    private CombatScope BuildCombatScope() => new(
+        scene!, movement!, exploration, itemWorld!, actor!, () => features!, generatedFeatures,
+        floor, partyId, definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, AllocateId,
+        Aim, CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
+        GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)));
 
     private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null, long completionExperience = 0)
     {
@@ -376,7 +382,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
         inventory.BindMembers(restored.Party.Entities, restored.Party.Members);
         inventory.BindRemaining(restored.Party.Entities);
-        ApplyCombatRestore(restoredCombat);
+        combat = RiflesCombat.Restore(restoredCombat, definitions, restored.Party.Entities, restored.Party, magic!, inventory, BuildCombatScope());
+        magic = restoredCombat.Magic; combat.RefreshDevelopment();
         paused = saved.Paused;
         selectedMember = saved.SelectedMember;
         controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
@@ -429,10 +436,10 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         features.Observe(exploration);
         phaseStarted = updateProfile.Record(UpdatePhase.FeatureFocus, phaseStarted);
         features.Present(actor!, exploration, itemArt!.Facts(inventory!, itemWorld!, scene!).Concat(CombatFacts()).Concat(GeneratedFeatureFacts()),
-            allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
-            allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
+            combat.Allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
+            combat.Allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
-        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, DropReachable, RunProjection);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, combat.DropReachable, RunProjection);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 
