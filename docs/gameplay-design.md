@@ -36,12 +36,14 @@ event bus, or scripting layer.
 - `EffectsComponent` contributions apply to the same `StatsComponent` combat
   reads; equipment attach/removal preserves per-source identity. No per-tick
   aggregate rebuild when nothing changed. (Planned — #8359, #8361.)
-- Landed (#8359): `InventoryComponent` / `EquipmentComponent` attach to
-  character entities addressing their ledger records (`BindMembers`);
-  `InventoryOwner` typed references replace prefix dispatch in gameplay (UI
-  tokens stay strings at the edge). Equipment contributions attach per source
-  on the shared `StatsComponent` (aggregate push retired; live-stat equip
-  policy). One ledger; Rifles owns capacities, grid layout, equip
+- Landed (#8359): every ledger owner binds an entity facade — members on
+  character entities, the party pack on a `rifles:party` entity, anchors and
+  flights on container entities, enemy packs on their live enemy entity
+  (`BindMembers` + `BindRemaining`). Mutations take typed `ItemRef` /
+  `InventoryOwner` references; interior prefix dispatch is gone (UI tokens and
+  ledger reads stay strings at the edge). Equipment contributions attach per
+  source on the shared `StatsComponent` (aggregate push retired; live-stat
+  equip policy). One ledger; Rifles owns capacities, grid layout, equip
   requirements, atomic transfer/swap semantics. Ledger re-keying to entity
   values awaits run-scoped entity lifetime (#8363).
 
