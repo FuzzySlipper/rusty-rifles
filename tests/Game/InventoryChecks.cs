@@ -3,6 +3,7 @@ using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
 using Rifles.Game.Party;
+using Rifles.Game.Tests;
 using Rifles.Procgen.Generation;
 
 internal static class InventoryChecks
@@ -250,7 +251,7 @@ internal static class InventoryChecks
         IReadOnlyList<MemberSnapshot> saved = party.Capture();
         warden.ApplyDamage(long.MaxValue);
         party.Restore(saved);
-        Require(party.Capture().SequenceEqual(saved), "Party restore preserves formation, injury, and resource values exactly.");
+        Require(StatSnapshotHelpers.MembersEqual(party.Capture(), saved), "Party restore preserves formation, injury, and resource values exactly.");
     }
 
     private static void VerifyExplorationCreation(GameDefinitions definitions)

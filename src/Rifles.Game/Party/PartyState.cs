@@ -275,7 +275,7 @@ internal sealed record CharacterOptionsDefinition(string DefaultPresetId, Charac
 /// Saved party-member state. Nullable fields admit pre-formation/pre-resource
 /// snapshots; all newly captured snapshots provide both values.
 /// </summary>
-internal sealed record MemberSnapshot(string Id, long Vitality, string? Position = null, long? Resource = null);
+internal sealed record MemberSnapshot(string Id, string Position, StatsComponentSnapshot Stats);
 
 internal sealed class PartyState
 {
@@ -316,10 +316,10 @@ internal sealed class PartyState
     /// </summary>
     internal CharacterEntities Entities => entities;
 
-    private RiflesCharacter CreateMember(MemberDefinition definition, int rank)
+    private RiflesCharacter CreateMember(MemberDefinition definition, int rank, Func<StatsComponent>? build = null)
     {
         (EntityId entity, StatsComponent stats) = entities.AttachStats(
-            definition.Id, "rifles:member:" + definition.Archetype, () => RiflesStats.ForMember(definition));
+            definition.Id, "rifles:member:" + definition.Archetype, build ?? (() => RiflesStats.ForMember(definition)));
         return new RiflesCharacter(new Actor(entities.Store, entity), definition, stats, definition.Position, rank);
     }
 
@@ -344,7 +344,7 @@ internal sealed class PartyState
     internal IReadOnlyList<RiflesCharacter> Members => Array.AsReadOnly(members);
     internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members
-        .Select(member => new MemberSnapshot(member.Definition.Id, member.Vitality, member.Position, member.Resource)).ToArray();
+        .Select(member => new MemberSnapshot(member.Definition.Id, member.Position, RiflesStats.SnapshotForPersistence(member.Stats))).ToArray();
 
     internal bool SwapFormation(string memberId, string otherMemberId)
     {
@@ -413,27 +413,16 @@ internal sealed class PartyState
         {
             MemberDefinition definition = roster.SingleOrDefault(candidate => candidate.Id == value.Id)
                 ?? throw new InvalidOperationException("Party snapshot member missing.");
-            string position = value.Position ?? definition.Position;
-            if (!positions.TryGetValue(position, out FormationPositionDefinition? target))
+            if (!positions.TryGetValue(value.Position, out FormationPositionDefinition? target))
             {
                 throw new InvalidOperationException("Party snapshot formation position is unknown.");
             }
 
-            long resourceValue = value.Resource ?? definition.MaximumResource;
-            if (value.Vitality < 0 || value.Vitality > definition.MaximumVitality
-                || resourceValue < 0 || resourceValue > definition.MaximumResource)
-            {
-                throw new InvalidOperationException("Party snapshot member state is out of range.");
-            }
-
-            // Rebuilt characters start modifier-free on fresh entities, exactly
-            // like fresh construction; callers re-apply equipment afterwards.
+            // Stats rebuild modifier-free from the admitted snapshot with
+            // authored bases intact; callers re-apply equipment afterwards.
+            RiflesStats.AdmitStats(value.Stats, RiflesStats.ForMember(definition));
             entities.Detach(value.Id);
-            RiflesCharacter member = CreateMember(definition, target.Rank);
-            member.Heal(definition.MaximumVitality);
-            member.ApplyDamage(definition.MaximumVitality - value.Vitality);
-            member.RecoverResource(definition.MaximumResource);
-            member.SpendResource(definition.MaximumResource - resourceValue);
+            RiflesCharacter member = CreateMember(definition, target.Rank, () => RiflesStats.RebuildForRestore(value.Stats));
             member.SetPosition(target.Id, target.Rank);
             return member;
         }).ToArray();

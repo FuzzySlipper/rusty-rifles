@@ -10,6 +10,7 @@ using Rifles.Procgen;
 using Rifles.Procgen.Expeditions;
 using Rifles.Procgen.Generation;
 using Rusty.Engine;
+using Rusty.Engine.Mechanics;
 
 namespace Rifles.Game.Expedition;
 
@@ -93,8 +94,10 @@ internal static class FloorFactory
             foreach (StartingItem loot in definition.Loot) inventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, allocate);
             ExplorationState motion = new(placed.Cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
             GridPoint[] patrol = PatrolRoute(floor, itemWorld.Capture().Door, placed.Cell, spawn);
-            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false,
-                owner, new EnemyBrain(definition.Brain, placed.Cell, patrol).Capture(), spawn.Id, definitions.Magic.EnemyResource),
+            StatsComponentSnapshot enemyStats = RiflesStats.SnapshotForPersistence(RiflesStats.ForVitality(
+                definition.Vitality, definition.Vitality, definitions.Magic.EnemyResource, definitions.Magic.EnemyResource));
+            EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), enemyStats, null, 0, false, false,
+                owner, new EnemyBrain(definition.Brain, placed.Cell, patrol).Capture(), spawn.Id),
                 definition, floor, definitions.Exploration, entities, definitions.Magic.EnemyResource);
             enemy.Motion.Bind(movement, id, definition.Footprint, definition.Faction, definition.Share);
             GameDefinitions.Require(enemy.Motion.Capture().Placement == placed.PlacementId, "resolved enemy crowd slot");

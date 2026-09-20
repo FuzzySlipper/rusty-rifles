@@ -88,27 +88,38 @@ internal static class MagicChecks
         Require(fixture.Party.RestRemaining == definitions.Magic.RestSeconds - 0.5 && fixture.Party.RestOwner == "warden",
             "Rest state travels with the party, outside the magic snapshot.");
 
-        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]);
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions));
         Require(SameSnapshot(restored.Capture(), saved), "Magic restore preserves books, slots, experience, and conditions exactly.");
         int ticks = 0;
         restored.Advance(condition.TickRemaining - 0.01, (_, _) => ticks++);
         restored.Advance(0.011, (_, _) => ticks++);
         Require(ticks == 1, "A restored periodic condition resumes on its exact saved tick schedule.");
 
-        MagicSnapshot forgedExperience = saved with
+        // Coherent current values are trusted without replaying encounter
+        // history: off-ledger experience and reward subsets restore exactly.
+        MagicSnapshot coherentExperience = saved with
         {
             Books = saved.Books.Select(book => book.Member == "warden" ? book with { Experience = book.Experience + 1 } : book).ToArray(),
         };
-        RequireRejected(() => MagicState.Restore(forgedExperience, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
-            "Restore rejects experience forged beyond the resolved enemy rewards.");
-        MagicSnapshot forgedRewards = saved with { Rewards = ["enemy:42"] };
-        RequireRejected(() => MagicState.Restore(forgedRewards, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
-            "Restore rejects a reward set that does not match resolved enemies.");
+        MagicState trusted = MagicState.Restore(coherentExperience, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions));
+        Require(SameSnapshot(trusted.Capture(), coherentExperience), "Restore trusts coherent experience without a kill replay.");
+        MagicSnapshot coherentRewards = saved with { Rewards = ["enemy:42"] };
+        MagicState trustedRewards = MagicState.Restore(coherentRewards, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions));
+        Require(SameSnapshot(trustedRewards.Capture(), coherentRewards), "Restore trusts a coherent reward subset without a kill replay.");
+        MagicSnapshot negativeExperience = saved with
+        {
+            Books = saved.Books.Select(book => book.Member == "warden" ? book with { Experience = -1 } : book).ToArray(),
+        };
+        RequireRejected(() => MagicState.Restore(negativeExperience, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions)),
+            "Restore rejects negative experience.");
+        MagicSnapshot duplicateRewards = saved with { Rewards = ["enemy:42", "enemy:42"] };
+        RequireRejected(() => MagicState.Restore(duplicateRewards, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions)),
+            "Restore rejects duplicated rewards.");
         MagicSnapshot invalidDuration = saved with
         {
             Conditions = saved.Conditions.Select(savedCondition => savedCondition with { Remaining = blight.Duration + 0.01 }).ToArray(),
         };
-        RequireRejected(() => MagicState.Restore(invalidDuration, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]),
+        RequireRejected(() => MagicState.Restore(invalidDuration, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions)),
             "Restore rejects condition durations beyond their authored limit.");
     }
 
@@ -236,7 +247,7 @@ internal static class MagicChecks
         Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense + ward.Power,
             "Reapplying after expiry attaches cleanly.");
         MagicSnapshot saved = fixture.State.Capture();
-        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions), ["enemy:42", "enemy:43"]);
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, fixture.Party.Entities, Members(definitions), Targets(definitions));
         Require(warden.Defense == warden.Definition.BaseDefense + defense.Defense + ward.Power,
             "Restoring an active condition onto live entities does not duplicate its contribution.");
         restored.Advance(ward.Duration, (_, _) => { });
@@ -265,7 +276,7 @@ internal static class MagicChecks
             "A bookless character still receives condition contributions on shared stats.");
         MagicSnapshot saved = state.Capture();
         Require(saved.Books.All(book => book.Member != "squire"), "Snapshots carry books only for casters.");
-        MagicState restored = MagicState.Restore(saved, definitions.Magic, party.Entities, roster, [.. Targets(definitions), "member:squire"], []);
+        MagicState restored = MagicState.Restore(saved, definitions.Magic, party.Entities, roster, [.. Targets(definitions), "member:squire"]);
         Require(SameSnapshot(restored.Capture(), saved), "Bookless rosters restore exactly.");
     }
 

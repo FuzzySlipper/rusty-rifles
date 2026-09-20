@@ -1,4 +1,6 @@
 using Rifles.Game.Magic;
+using Rifles.Game.Characters;
+using Rifles.Game.Tests;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -100,7 +102,12 @@ internal static class CombatSaveChecks
         MemberActionSnapshot[] members = fixture.Saved.Members.Select(saved => saved.Member == member ? saved with { Action = action } : saved).ToArray();
         RequireRejected(() => Validate(fixture.Saved with { Members = members }, definitions, fixture), "Attack aims must remain on the restored floor.");
 
-        EnemySnapshot dead = fixture.Saved.Enemies[0] with { Vitality = 0, Action = action with { AimCell = fixture.Floor.Entrance } };
+        EnemySnapshot first = fixture.Saved.Enemies[0];
+        EnemySnapshot dead = first with
+        {
+            Stats = StatSnapshotHelpers.WithTrack(first.Stats, RiflesStatIds.Vitality, 0),
+            Action = action with { AimCell = fixture.Floor.Entrance },
+        };
         CombatSnapshot activeDead = fixture.Saved with
         {
             Enemies = [dead, .. fixture.Saved.Enemies.Skip(1)],
@@ -148,10 +155,10 @@ internal static class CombatSaveChecks
                 inventory.RegisterOwner(new PackOwner(nextId++, owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
                 foreach (StartingItem loot in definition.Loot) inventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, () => nextId++);
                 ExplorationState motion = new(floor.Cells.First(), definitions.Exploration with { StepSeconds = definition.StepSeconds });
-                return new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, motion.Position, [motion.Position]).Capture(), spawn.Id);
+                return new EnemySnapshot(id, definition.Id, motion.Capture(), StatSnapshotHelpers.FullEnemy(definition, definitions.Magic.EnemyResource), null, 0, false, false, owner, new EnemyBrain(definition.Brain, motion.Position, [motion.Position]).Capture(), spawn.Id);
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
-            AllySnapshot[] allies = allyIds.Select(id => new AllySnapshot(id, definitions.Combat.AllyVitality)).ToArray();
+            AllySnapshot[] allies = allyIds.Select(id => RiflesCombat.FreshAlly(id, definitions)).ToArray();
             CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Entities).Capture());
             return new CombatFixture(floor, inventory, party, saved, partyId, allyIds);
         }

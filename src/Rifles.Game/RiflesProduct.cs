@@ -120,7 +120,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         if (started || shutdown) return;
         try
         {
-            saves = new ProductStateStore<RunSnapshot>(engine, "expedition", new RunCodec());
+            saves = new ProductStateStore<RunSnapshot>(engine, "expedition", RunCodec.CreateStoreCodec());
             itemArt = new ItemArt(engine, generatedArt!, definitions.ItemArt, definitions.Art, definitions.ItemExploration);
             combatArt = new WorldArt(engine, generatedArt!, definitions.Art);
             float[] boltColor = Combat.BoltColor;
@@ -424,7 +424,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (!loaded.Present) { feedback = "No saved expedition"; return; }
             RunSnapshot run = loaded.State!;
             RunCodec.Validate(run, definitions);
-            Activate(run.Active, RunCodec.Rewards(run), RunCodec.Items(run), run.Progress.Completed ? definitions.Run.FinaleExperience : 0);
+            Activate(run.Active, RunCodec.Items(run));
             progress = run.Progress;
             mapObservation = null;
             inactiveFloors.Clear();
@@ -434,9 +434,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         catch (Exception error) { feedback = "Load rejected: " + error.Message; }
     }
 
-    private void Activate(ExpeditionSnapshot saved, string[] rewards, IReadOnlyDictionary<ulong, string>? allItems = null, long completionExperience = 0)
+    private void Activate(ExpeditionSnapshot saved, IReadOnlyDictionary<ulong, string>? allItems = null)
     {
-        Mount(ActiveFloor.Restore(saved, definitions, null, null, rewards, allItems, completionExperience,
+        Mount(ActiveFloor.Restore(saved, definitions, null, null, allItems,
             engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
             definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
             CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,

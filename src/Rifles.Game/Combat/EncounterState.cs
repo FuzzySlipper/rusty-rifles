@@ -9,13 +9,16 @@ using Rusty.Engine.Mechanics;
 
 namespace Rifles.Game.Combat;
 
-internal sealed record EnemySnapshot(ulong Id, string Definition, ExplorationSnapshot Motion, long Vitality,
-    ActionSnapshot? Action, double DecisionRemaining, bool Aware, bool Loaded, string Owner, EnemyBrainSnapshot Brain, string Spawn, long Resource = 0);
+internal sealed record EnemySnapshot(ulong Id, string Definition, ExplorationSnapshot Motion, StatsComponentSnapshot Stats,
+    ActionSnapshot? Action, double DecisionRemaining, bool Aware, bool Loaded, string Owner, EnemyBrainSnapshot Brain, string Spawn);
 internal sealed record MemberActionSnapshot(string Member, ActionSnapshot? Action);
 internal sealed record FlightSnapshot(ulong Id, ulong Shooter, string? Member, CombatActionKind Kind, float X, float Y, float Z,
     float DirectionX, float DirectionY, float DirectionZ, float Remaining, GridPoint LastCell, string? Owner, string? Destination, string? Spell = null);
 internal sealed record DropSnapshot(string Owner, GridPoint Cell);
-internal sealed record AllySnapshot(ulong Id, long Vitality);
+internal sealed record AllySnapshot(ulong Id, StatsComponentSnapshot Stats)
+{
+    internal long Vitality => (long)RiflesStats.TrackCurrent(Stats, RiflesStatIds.Vitality);
+}
 internal sealed record CombatSnapshot(EnemySnapshot[] Enemies, MemberActionSnapshot[] Members, ulong[] LoadedWeapons,
     FlightSnapshot[] Flights, DropSnapshot[] Drops, AllySnapshot[] Allies, ulong SelectedTarget, MagicSnapshot? Magic = null);
 
@@ -46,18 +49,19 @@ internal sealed class EnemyState
     internal EnemyState(EnemySnapshot saved, EnemyDefinition definition, DungeonFloor floor, ExplorationTuning tuning, CharacterEntities entities, long maximumResource = 0)
     {
         ArgumentNullException.ThrowIfNull(entities);
-        GameDefinitions.Require(saved.Vitality >= 0 && saved.Vitality <= definition.Vitality
-            && double.IsFinite(saved.DecisionRemaining) && saved.DecisionRemaining >= 0
+        GameDefinitions.Require(double.IsFinite(saved.DecisionRemaining) && saved.DecisionRemaining >= 0
             && saved.DecisionRemaining <= definition.DecisionSeconds, "saved enemy state");
-        GameDefinitions.Require(saved.Resource >= 0 && saved.Resource <= maximumResource, "saved enemy resource");
+        // Stats rebuild modifier-free from the admitted snapshot with
+        // authored bases intact; conditions re-apply through magic flows.
+        RiflesStats.AdmitStats(saved.Stats, RiflesStats.ForVitality(definition.Vitality, definition.Vitality, maximumResource, maximumResource));
         (Entity, stats) = entities.ReplaceStats("enemy:" + saved.Id, "rifles:enemy:" + definition.Id,
-            () => RiflesStats.ForVitality(definition.Vitality, saved.Vitality, maximumResource, saved.Resource));
+            () => RiflesStats.RebuildForRestore(saved.Stats));
         Id = saved.Id; Spawn = saved.Spawn; Definition = definition; Owner = saved.Owner;
         Motion = ExplorationState.Restore(saved.Motion, floor, tuning with { StepSeconds = definition.StepSeconds });
         ActionState action = ActionState.Restore(saved.Action);
         Action = entities.AttachComponent("enemy:" + saved.Id, () => action);
         NavigationStatus = Motion.Moving ? "Moving" : "Ready";
-        GameDefinitions.Require(saved.Vitality > 0 || !Motion.Moving && !Action.Busy, "dead enemy activity");
+        GameDefinitions.Require(Vitality > 0 || !Motion.Moving && !Action.Busy, "dead enemy activity");
         DecisionRemaining = saved.DecisionRemaining; Loaded = saved.Loaded;
         Brain = EnemyBrain.FromSnapshot(definition.Brain, saved.Brain, floor.Cells.ToHashSet());
     }
@@ -67,5 +71,5 @@ internal sealed class EnemyState
         stats.GetTrack(RiflesStatIds.Vitality).Spend(applied);
         return applied;
     }
-    internal EnemySnapshot Capture() => new(Id, Definition.Id, Motion.Capture(), Vitality, Action.Capture(), DecisionRemaining, Aware, Loaded, Owner, Brain.Capture(), Spawn, Resource);
+    internal EnemySnapshot Capture() => new(Id, Definition.Id, Motion.Capture(), RiflesStats.SnapshotForPersistence(stats), Action.Capture(), DecisionRemaining, Aware, Loaded, Owner, Brain.Capture(), Spawn);
 }

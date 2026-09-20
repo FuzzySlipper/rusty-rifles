@@ -1,4 +1,5 @@
 using Rifles.Game.Characters;
+using Rifles.Game.Content;
 using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
 
@@ -262,17 +263,14 @@ internal sealed class MagicState
         CharacterEntities entities,
         IEnumerable<(string Instance, string Archetype)> members,
         IEnumerable<string> validTargets,
-        IEnumerable<string> validRewards, long completionExperience = 0,
         IReadOnlyDictionary<string, MagicBook>? travellingBooks = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(validTargets);
-        ArgumentNullException.ThrowIfNull(validRewards);
 
         MagicState state = new(definition, members, entities, travellingBooks);
         HashSet<string> targets = RequireDistinct(validTargets, "condition targets");
-        HashSet<string> rewardKeys = RequireDistinct(validRewards, "reward identities");
-        ValidateSnapshotShape(snapshot, state, targets, rewardKeys, completionExperience);
+        ValidateSnapshotShape(snapshot, definition, state.books.ToDictionary(book => book.Key, book => book.Value.Archetype, StringComparer.Ordinal), targets);
 
         foreach (MagicBookSnapshot saved in snapshot.Books)
         {
@@ -492,30 +490,30 @@ internal sealed class MagicState
 
     private static void ValidateSnapshotShape(
         MagicSnapshot snapshot,
-        MagicState state,
-        IReadOnlySet<string> validTargets,
-        IReadOnlySet<string> validRewards, long completionExperience)
+        MagicDefinition definition,
+        IReadOnlyDictionary<string, string> roster,
+        IReadOnlySet<string> validTargets)
     {
         if (snapshot.Books is null || snapshot.Conditions is null || snapshot.Rewards is null)
             throw new InvalidDataException("Magic snapshot has invalid required values.");
         if (snapshot.Books.Any(book => book is null)
             || snapshot.Books.Select(book => book.Member).Distinct(StringComparer.Ordinal).Count() != snapshot.Books.Length
-            || !snapshot.Books.Select(book => book.Member).ToHashSet(StringComparer.Ordinal).IsSubsetOf(state.books.Keys))
+            || !snapshot.Books.Select(book => book.Member).ToHashSet(StringComparer.Ordinal).IsSubsetOf(roster.Keys))
             throw new InvalidDataException("Magic snapshot spellbook roster does not match.");
         if (snapshot.Conditions.Any(condition => condition is null)
             || snapshot.Conditions.Select(condition => condition.Target + "" + condition.Spell).Distinct(StringComparer.Ordinal).Count() != snapshot.Conditions.Length)
             throw new InvalidDataException("Magic snapshot repeats an active condition.");
+        // Rewards are live double-award prevention, not a kill ledger: shape
+        // only. Experience is trusted as a coherent current value, never
+        // re-derived from encounter history.
         if (snapshot.Rewards.Any(string.IsNullOrWhiteSpace)
-            || snapshot.Rewards.Distinct(StringComparer.Ordinal).Count() != snapshot.Rewards.Length
-            || !snapshot.Rewards.ToHashSet(StringComparer.Ordinal).SetEquals(validRewards))
-            throw new InvalidDataException("Magic snapshot rewards do not match resolved encounters.");
-        if (completionExperience < 0) throw new InvalidDataException("Invalid completion experience.");
-        long expectedExperience = checked((long)snapshot.Rewards.Length * state.definition.ExperiencePerEnemy + completionExperience);
+            || snapshot.Rewards.Distinct(StringComparer.Ordinal).Count() != snapshot.Rewards.Length)
+            throw new InvalidDataException("Magic snapshot rewards are invalid.");
         foreach (MagicBookSnapshot book in snapshot.Books)
         {
             if (book.Selected is null || book.Known is null || book.Hotbar is null || book.Choices is null
-                || book.Hotbar.Length != HotbarSlots || book.Experience < 0 || book.Experience != expectedExperience
-                || book.Revivals < 0 || book.Revivals > state.definition.MaximumRevivals
+                || book.Hotbar.Length != HotbarSlots || book.Experience < 0
+                || book.Revivals < 0 || book.Revivals > definition.MaximumRevivals
                 || book.Known.Any(string.IsNullOrWhiteSpace) || book.Known.Distinct(StringComparer.Ordinal).Count() != book.Known.Length
                 || book.Choices.Any(string.IsNullOrWhiteSpace) || book.Choices.Distinct(StringComparer.Ordinal).Count() != book.Choices.Length
                 || book.Hotbar.Any(spell => spell is null))
@@ -523,30 +521,46 @@ internal sealed class MagicState
             if (book.Selected.Length != 0 && !book.Known.Contains(book.Selected, StringComparer.Ordinal)
                 || book.Hotbar.Any(spell => spell.Length != 0 && !book.Known.Contains(spell, StringComparer.Ordinal)))
                 throw new InvalidDataException("Magic snapshot selects an unknown spell.");
-            HashSet<string> choiceIds = state.definition.Choices.Select(choice => choice.Id).ToHashSet(StringComparer.Ordinal);
-            HashSet<string> spellIds = state.definition.Spells.Select(spell => spell.Id).ToHashSet(StringComparer.Ordinal);
+            HashSet<string> choiceIds = definition.Choices.Select(choice => choice.Id).ToHashSet(StringComparer.Ordinal);
+            HashSet<string> spellIds = definition.Spells.Select(spell => spell.Id).ToHashSet(StringComparer.Ordinal);
             if (book.Choices.Any(choice => !choiceIds.Contains(choice)) || book.Known.Any(spell => !spellIds.Contains(spell)))
                 throw new InvalidDataException("Magic snapshot refers to an unknown definition.");
-            if (book.Choices.Length > book.Experience / state.definition.ExperiencePerPoint)
+            if (book.Choices.Length > book.Experience / definition.ExperiencePerPoint)
                 throw new InvalidDataException("Magic snapshot spends unavailable advancement.");
 
-            HashSet<string> expectedKnown = state.definition.StartingSpells[state.books[book.Member].Archetype].ToHashSet(StringComparer.Ordinal);
-            foreach (string choice in book.Choices) expectedKnown.UnionWith(state.definition.Choice(choice).Unlocks);
+            HashSet<string> expectedKnown = definition.StartingSpells[roster[book.Member]].ToHashSet(StringComparer.Ordinal);
+            foreach (string choice in book.Choices) expectedKnown.UnionWith(definition.Choice(choice).Unlocks);
             if (!expectedKnown.SetEquals(book.Known))
                 throw new InvalidDataException("Magic snapshot known spells do not match its advancement choices.");
         }
 
-        foreach (MagicConditionSnapshot condition in snapshot.Conditions)
+        ValidateConditions(snapshot.Conditions, validTargets, definition);
+    }
+
+    /// <summary>
+    /// Data-only condition admission: timers fit their spells and targets fit
+    /// their kinds. Shared by live reconstruction and retained-floor checks.
+    /// </summary>
+    internal static void ValidateConditions(MagicConditionSnapshot[] conditions, IReadOnlySet<string> validTargets,
+        MagicDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(conditions);
+        ArgumentNullException.ThrowIfNull(validTargets);
+        ArgumentNullException.ThrowIfNull(definition);
+        foreach (MagicConditionSnapshot condition in conditions)
         {
             if (!validTargets.Contains(condition.Target) || string.IsNullOrWhiteSpace(condition.Spell)
                 || !double.IsFinite(condition.Remaining) || condition.Remaining <= 0
                 || !double.IsFinite(condition.TickRemaining) || condition.TickRemaining < 0)
                 throw new InvalidDataException("Magic snapshot condition timer is invalid.");
-            SpellDefinition spell = state.definition.Spell(condition.Spell);
+            SpellDefinition spell = definition.Spell(condition.Spell);
             if (spell.Duration <= 0 || condition.Remaining > spell.Duration
                 || spell.Period == 0 && condition.TickRemaining != 0
                 || spell.Period > 0 && (condition.TickRemaining <= 0 || condition.TickRemaining > spell.Period))
                 throw new InvalidDataException("Magic snapshot condition does not match its spell.");
+            GameDefinitions.Require(condition.Target == "party" ? spell.Target == SpellTarget.Party
+                : condition.Target.StartsWith("member:", StringComparison.Ordinal) ? spell.Target == SpellTarget.Ally || spell.Harmful
+                : spell.Harmful, "saved condition target kind");
         }
     }
 

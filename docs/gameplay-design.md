@@ -88,12 +88,16 @@ event bus, or scripting layer.
 
 ## Saves
 
-- One current-state schema over Engine `JsonProductStateCodec` with
-  source-generated DTO metadata and `StatsComponentCapture` rebuild. No version
-  numbers, historical readers, duplicate nested codecs, or synthetic
-  active-party validation of retained floors. Development saves may break.
+- Landed (#8364): one current-state schema over Engine `JsonProductStateCodec`
+  with source-generated DTO metadata (`RunSaveJsonContext`, string enums).
+  No version numbers, historical readers, or duplicate nested codecs;
+  retained floors validate as floors, never as synthetic active expeditions.
+  Stats persist modifier-free via `StatsComponentCapture` and rebuild with
+  authored bases intact; equipment/development/conditions re-apply through
+  their owning flows. Experience and rewards are trusted as coherent current
+  values, never re-derived from kill history. Development saves may break.
   Malformed-current-save and unknown-definition errors stay understandable;
-  native cleanup on failed activation remains. (Planned — #8364.)
+  native cleanup on failed activation remains.
 
 ## Content and trust
 

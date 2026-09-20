@@ -5,6 +5,7 @@ using Rifles.Game.Characters;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Content;
 using Rifles.Game.Party;
+using Rifles.Game.Tests;
 using Rifles.Procgen.Generation;
 using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
@@ -172,15 +173,17 @@ var saved = party.Capture();
 party.Members[0].ApplyDamage(long.MaxValue);
 Require(!party.Members[0].IsLiving, "Damage saturates at zero vitality.");
 party.Restore(saved);
-Require(party.Capture().SequenceEqual(saved), "Snapshot restores prior vitality, including healing.");
+Require(StatSnapshotHelpers.MembersEqual(party.Capture(), saved), "Snapshot restores prior vitality, including healing.");
 try
 {
-    party.Restore(saved.Select((m, index) => index == 3 ? m with { Vitality = -1 } : m with { Vitality = 0 }).ToArray());
+    party.Restore(saved.Select((m, index) => index == 3
+        ? m with { Stats = StatSnapshotHelpers.WithTrack(m.Stats, RiflesStatIds.Vitality, -1) }
+        : m with { Stats = StatSnapshotHelpers.WithTrack(m.Stats, RiflesStatIds.Vitality, 0) }).ToArray());
     throw new Exception("Invalid vitality accepted.");
 }
-catch (InvalidOperationException)
+catch (Exception error) when (error is InvalidDataException or InvalidOperationException)
 {
-    Require(party.Capture().SequenceEqual(saved), "Invalid snapshot cannot partially change party.");
+    Require(StatSnapshotHelpers.MembersEqual(party.Capture(), saved), "Invalid snapshot cannot partially change party.");
 }
 Console.WriteLine("Game checks passed: generated connectivity/replay, grid actions/recovery, party vitality/snapshots.");
 
@@ -206,6 +209,7 @@ ItemInventory savedInventory = new(definitions.Items,
         a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));
 savedInventory.GrantStarting(AllocateDressingId);
 savedDressing.Bind(saveGrid);
+ulong savedObserverId = savedDressing.ObserverId;
 var savedGeneratedGates = Rifles.Game.Generation.GeneratedFeatures.Resolve(savedFloor, AllocateDressingId);
 List<EnemySnapshot> saveEnemies = [];
 var savedEncounterPlacement = new EncounterPlacementResolver(definitions.EncounterPlacement).Resolve(savedFloor.Seed, savedFloor,
@@ -220,18 +224,22 @@ foreach (var placed in savedEncounterPlacement.Instances)
     foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, AllocateDressingId);
     GridPoint cell = placed.Cell;
     ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id, enemy.Footprint, enemy.Faction, enemy.Share);
-    saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
+    saveEnemies.Add(new(id, enemy.Id, motion.Capture(), StatSnapshotHelpers.FullEnemy(enemy, definitions.Magic.EnemyResource), null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
 CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
-    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), saveParty.Entities).Capture());
+    new[] { RiflesCombat.FreshAlly(saveActor.Id, definitions), RiflesCombat.FreshAlly(savedObserverId, definitions) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), saveParty.Entities).Capture());
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),
     definitions.Characters.DefaultPresetId, savedInventory.Capture(), savedItemWorld.Capture(), saveCombat, new Rifles.Procgen.Expeditions.ExpeditionGenerator().Generate(definitions.Generation.Expedition, savedFloor.Seed).Expedition!, new Rifles.Game.Generation.GeneratedFeatureSnapshot(1, savedGeneratedGates, [], [], [], []), savedEncounterPlacement, 0, "");
-var codec = new Rifles.Game.Expedition.ExpeditionCodec();
+var run = new Rifles.Game.Expedition.RunSnapshot(snapshot, [],
+    new Rifles.Game.Expedition.RunProgress(definitions.Run.DefaultDifficulty, false, []));
+var codec = Rifles.Game.Expedition.RunCodec.CreateStoreCodec();
 System.Buffers.ArrayBufferWriter<byte> payload = new();
-codec.Encode(snapshot, payload);
-var decoded = codec.Decode(payload.WrittenSpan);
+codec.Encode(run, payload);
+var decodedRun = codec.Decode(payload.WrittenSpan);
+Rifles.Game.Expedition.RunCodec.Validate(decodedRun, definitions);
+var decoded = decodedRun.Active;
 var restored = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, definitions);
 RunStateChecks.Run(definitions, decoded);
 Require(decoded.Intent.Identity == snapshot.Intent.Identity
@@ -240,7 +248,7 @@ var changedGeneration = definitions with { Generation = definitions.Generation w
 _ = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, changedGeneration);
 Require(decoded.Id == snapshot.Id && decoded.NextObjectId == snapshot.NextObjectId, "Stable identities survive serialization.");
 Require(decoded.Floor.Cells.SequenceEqual(savedFloor.Cells) && decoded.Floor.GenerationIdentity == savedFloor.GenerationIdentity, "Resolved floor is stored exactly.");
-Require(restored.Party.Capture().SequenceEqual(saveParty.Capture()) && restored.Actor.Capture() == saveActor.Capture(), "Vitality and in-transit actor survive save.");
+Require(StatSnapshotHelpers.MembersEqual(restored.Party.Capture(), saveParty.Capture()) && restored.Actor.Capture() == saveActor.Capture(), "Vitality and in-transit actor survive save.");
 MovementGrid restoredGrid = new(decoded.Floor.Cells.ToHashSet(), (_, _) => true);
 restored.Exploration.Bind(restoredGrid, decoded.PartyId); restored.Actor.Bind(restoredGrid);
 saveActor.Advance(2); restored.Actor.Advance(2);
@@ -255,7 +263,7 @@ foreach (var invalid in new[] {
     decoded with { Floor = decoded.Floor with { Exit = new(-1, -1) } },
     decoded with { Exploration = decoded.Exploration with { RemainingSeconds = double.NaN } },
     decoded with { Features = decoded.Features with { LanternId = decoded.PartyId } },
-    decoded with { Members = decoded.Members.Select(m => m with { Vitality = -1 }).ToArray() },
+    decoded with { Members = decoded.Members.Select(m => m with { Stats = StatSnapshotHelpers.WithTrack(m.Stats, RiflesStatIds.Vitality, -1) }).ToArray() },
 })
 {
     bool rejected = false;

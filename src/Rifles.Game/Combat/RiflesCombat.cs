@@ -125,7 +125,7 @@ internal sealed class RiflesCombat
         party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, ActionOf(member).Capture())).ToArray(),
         loadedWeapons.ToArray(), flights.Select(f => f.Capture()).ToArray(),
         drops.Select(d => new DropSnapshot(d.Key, d.Value)).ToArray(),
-        allies.Select(a => new AllySnapshot(a.Key, a.Value.Vitality)).ToArray(), selectedTarget, magic.Capture());
+        allies.Select(a => new AllySnapshot(a.Key, RiflesStats.SnapshotForPersistence(a.Value.Stats))).ToArray(), selectedTarget, magic.Capture());
 
     private void CombatMessage(string message)
     {
@@ -141,17 +141,30 @@ internal sealed class RiflesCombat
     {
         allies.Clear();
         foreach (AllySnapshot ally in snapshots)
-            allies.Add(ally.Id, CreateAlly(ally.Id, ally.Vitality));
+            allies.Add(ally.Id, CreateAlly(ally.Id, ally.Stats));
     }
 
-    private RiflesCharacter CreateAlly(ulong id, long vitality)
+    internal static AllySnapshot FreshAlly(ulong id, GameDefinitions definitions)
+    {
+        MemberDefinition definition = AllyDefinition(id, definitions);
+        return new(id, RiflesStats.SnapshotForPersistence(RiflesStats.ForMember(definition)));
+    }
+
+    private static MemberDefinition AllyDefinition(ulong id, GameDefinitions definitions)
     {
         FormationPositionDefinition front = definitions.Party.Positions.OrderBy(position => position.Rank).First();
-        MemberDefinition definition = new(id.ToString(), "garrison-ally", "Garrison ally",
-            front.Id, Combat.AllyVitality, StartingVitality: vitality);
+        return new(id.ToString(), "garrison-ally", "Garrison ally",
+            front.Id, definitions.Combat.AllyVitality, StartingVitality: definitions.Combat.AllyVitality);
+    }
+
+    private RiflesCharacter CreateAlly(ulong id, StatsComponentSnapshot saved)
+    {
+        MemberDefinition definition = AllyDefinition(id, definitions);
+        RiflesStats.AdmitStats(saved, RiflesStats.ForMember(definition));
         entities.Detach(definition.Id);
         (EntityId entity, StatsComponent stats) = entities.AttachStats(
-            definition.Id, "rifles:ally", () => RiflesStats.ForMember(definition));
+            definition.Id, "rifles:ally", () => RiflesStats.RebuildForRestore(saved));
+        FormationPositionDefinition front = definitions.Party.Positions.OrderBy(position => position.Rank).First();
         return new RiflesCharacter(new Actor(entities.Store, entity), definition, stats, front.Id, front.Rank);
     }
 

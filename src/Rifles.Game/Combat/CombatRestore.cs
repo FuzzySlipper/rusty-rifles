@@ -21,7 +21,7 @@ internal sealed record RestoredCombat(
 internal static class CombatRestore
 {
     internal static RestoredCombat Validate(CombatSnapshot saved, GameDefinitions definitions, DungeonFloor floor,
-        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds, IEnumerable<string>? expeditionRewards = null, long completionExperience = 0,
+        ItemInventory inventory, PartyState party, ulong partyId, ulong[] allyIds,
         IReadOnlyDictionary<string, Rifles.Game.Magic.MagicState.MagicBook>? travellingBooks = null)
     {
         ArgumentNullException.ThrowIfNull(saved);
@@ -30,14 +30,17 @@ internal static class CombatRestore
         EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor, party.Entities);
         Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions, floor, party);
         ValidateLoadedWeapons(saved.LoadedWeapons, definitions, inventory);
-        FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory, party, partyId, enemies);
-        ValidateDropsAndCombatOwners(saved.Drops, flights, enemies, floor, inventory);
+        FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory,
+            party.Members.Select(member => member.Definition.Id).ToHashSet(StringComparer.Ordinal), partyId,
+            enemies.Select(enemy => (enemy.Id, enemy.Owner, enemy.Definition.Id, enemy.Alive)).ToArray());
+        ValidateDropsAndCombatOwners(saved.Drops, flights,
+            enemies.Select(enemy => (enemy.Id, enemy.Owner, enemy.Definition.Id, enemy.Alive)).ToArray(), floor, inventory);
         ValidateAllies(saved.Allies, definitions.Combat, allyIds);
         GameDefinitions.Require(saved.SelectedTarget == 0 || enemies.Any(enemy => enemy.Id == saved.SelectedTarget), "saved combat target");
 
         MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic, party.Entities,
             party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
-                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn), completionExperience, travellingBooks);
+                .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), travellingBooks);
         foreach (var entry in actions)
             if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)
                 GameDefinitions.Require(magic.For(entry.Key).Known.Contains(cast.Spell!)
@@ -46,27 +49,40 @@ internal static class CombatRestore
                     && cast.TargetMember is not null && party.Members.Any(m => m.Definition.Id == cast.TargetMember), "saved caster spell and target");
         GameDefinitions.Require(party.RestRemaining == 0 || party.Members.Any(m => m.Definition.Id == party.RestOwner && m.IsLiving)
             && actions.Values.All(a => !a.Busy), "saved rest eligibility");
-        foreach (MagicConditionSnapshot condition in saved.Magic!.Conditions)
-        {
-            SpellDefinition spell = definitions.Magic.Spell(condition.Spell);
-            GameDefinitions.Require(condition.Target == "party" ? spell.Target == SpellTarget.Party
-                : condition.Target.StartsWith("member:", StringComparison.Ordinal) ? spell.Target == SpellTarget.Ally || spell.Harmful
-                : spell.Harmful, "saved condition target kind");
-        }
+        // Condition timers and target kinds are admitted inside
+        // MagicState.Restore via shared data validation.
         return new RestoredCombat(enemies, actions, saved.LoadedWeapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
     }
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor, CharacterEntities entities)
     {
-        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length <= definitions.Combat.Encounter.Length
-            && snapshots.Select(snapshot => snapshot.Spawn).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
-            && snapshots.Select(snapshot => snapshot.Spawn).ToHashSet(StringComparer.Ordinal)
-                .IsSubsetOf(definitions.Combat.Encounter.Select(spawn => spawn.Id).ToHashSet(StringComparer.Ordinal)), "saved combat enemy definitions");
+        ValidateEnemies(snapshots, definitions, floor);
 
         EnemyState[] enemies = new EnemyState[snapshots.Length];
         for (int index = 0; index < snapshots.Length; index++)
         {
             EnemySnapshot snapshot = snapshots[index];
+            EnemySpawnDefinition spawn = definitions.Combat.Encounter.Single(s => s.Id == snapshot.Spawn);
+            EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
+            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration, entities, definitions.Magic.EnemyResource);
+            var placement = definitions.Crowd.Footprint(definition.Footprint).Placement(snapshot.Motion.Placement);
+            enemies[index].Motion.RestoreVisualOffset(new(placement.OffsetX, placement.OffsetY));
+        }
+        return enemies;
+    }
+
+    /// <summary>
+    /// Data-only enemy admission: roster, archetypes, owners, actions, and
+    /// cast shapes. Shared by live reconstruction and retained-floor checks.
+    /// </summary>
+    internal static void ValidateEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor)
+    {
+        GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length <= definitions.Combat.Encounter.Length
+            && snapshots.Select(snapshot => snapshot.Spawn).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
+            && snapshots.Select(snapshot => snapshot.Spawn).ToHashSet(StringComparer.Ordinal)
+                .IsSubsetOf(definitions.Combat.Encounter.Select(spawn => spawn.Id).ToHashSet(StringComparer.Ordinal)), "saved combat enemy definitions");
+        foreach (EnemySnapshot snapshot in snapshots)
+        {
             EnemySpawnDefinition spawn = definitions.Combat.Encounter.Single(s => s.Id == snapshot.Spawn);
             GameDefinitions.Require(spawn.Enemy == snapshot.Definition, "saved enemy archetype");
             EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
@@ -75,12 +91,8 @@ internal static class CombatRestore
             if (snapshot.Action is { Kind: CombatActionKind.Cast } cast)
                 GameDefinitions.Require(definitions.Magic.EnemySpells.GetValueOrDefault(definition.Id) == cast.Spell
                     && cast.Cost == definitions.Magic.Spell(cast.Spell!).Cost && cast.TargetMember is null
-                    && (cast.Phase == ActionPhase.Recovery || snapshot.Resource >= cast.Cost), "saved enemy cast");
-            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration, entities, definitions.Magic.EnemyResource);
-            var placement = definitions.Crowd.Footprint(definition.Footprint).Placement(snapshot.Motion.Placement);
-            enemies[index].Motion.RestoreVisualOffset(new(placement.OffsetX, placement.OffsetY));
+                    && (cast.Phase == ActionPhase.Recovery || RiflesStats.TrackCurrent(snapshot.Stats, RiflesStatIds.Resource) >= cast.Cost), "saved enemy cast");
         }
-        return enemies;
     }
 
     private static Dictionary<string, ActionState> RestoreMemberActions(MemberActionSnapshot[] snapshots,
@@ -104,7 +116,7 @@ internal static class CombatRestore
         return actions;
     }
 
-    private static void ValidateAction(ActionSnapshot? action, GameDefinitions definitions, DungeonFloor floor)
+    internal static void ValidateAction(ActionSnapshot? action, GameDefinitions definitions, DungeonFloor floor)
     {
         if (action is null) return;
         GameDefinitions.Require(float.IsFinite(action.AimOffsetX) && Math.Abs(action.AimOffsetX) <= .5f
@@ -131,7 +143,7 @@ internal static class CombatRestore
             "saved combat action aim");
     }
 
-    private static void ValidateLoadedWeapons(ulong[] loadedWeapons, GameDefinitions definitions, ItemInventory inventory)
+    internal static void ValidateLoadedWeapons(ulong[] loadedWeapons, GameDefinitions definitions, ItemInventory inventory)
     {
         if (loadedWeapons is null) throw new InvalidDataException("Invalid saved loaded weapons.");
         GameDefinitions.Require(loadedWeapons.Distinct().Count() == loadedWeapons.Length, "saved loaded weapons");
@@ -141,11 +153,10 @@ internal static class CombatRestore
         GameDefinitions.Require(loadedWeapons.All(rifles.Contains), "saved loaded weapon item");
     }
 
-    private static FlightSnapshot[] RestoreFlights(FlightSnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor,
-        ItemInventory inventory, PartyState party, ulong partyId, EnemyState[] enemies)
+    internal static FlightSnapshot[] RestoreFlights(FlightSnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor,
+        ItemInventory inventory, HashSet<string> members, ulong partyId, (ulong Id, string Owner, string Definition, bool Alive)[] enemies)
     {
         if (snapshots is null) throw new InvalidDataException("Invalid saved combat flights.");
-        HashSet<string> members = party.Members.Select(member => member.Definition.Id).ToHashSet(StringComparer.Ordinal);
         HashSet<string> enemyOwners = enemies.Select(enemy => enemy.Owner).ToHashSet(StringComparer.Ordinal);
         FlightSnapshot[] flights = new FlightSnapshot[snapshots.Length];
         for (int index = 0; index < snapshots.Length; index++)
@@ -155,7 +166,7 @@ internal static class CombatRestore
             GameDefinitions.Require(spell is null ? flight.Spell is null : spell.Target == SpellTarget.Enemy && flight.Owner is null && flight.Destination is null, "saved spell flight payload");
             bool validShooter = flight.Shooter == partyId && flight.Member is not null && members.Contains(flight.Member)
                 || spell is not null && flight.Member is null && enemies.Any(e => e.Id == flight.Shooter
-                    && definitions.Magic.EnemySpells.GetValueOrDefault(e.Definition.Id) == spell.Id);
+                    && definitions.Magic.EnemySpells.GetValueOrDefault(e.Definition) == spell.Id);
             GameDefinitions.Require(flight.Kind is CombatActionKind.Throw or CombatActionKind.Cast
                 && float.IsFinite(flight.X) && float.IsFinite(flight.Y) && float.IsFinite(flight.Z)
                 && float.IsFinite(flight.DirectionX) && float.IsFinite(flight.DirectionY) && float.IsFinite(flight.DirectionZ)
@@ -183,8 +194,8 @@ internal static class CombatRestore
         return flights;
     }
 
-    private static void ValidateDropsAndCombatOwners(DropSnapshot[] drops, FlightSnapshot[] flights, EnemyState[] enemies,
-        DungeonFloor floor, ItemInventory inventory)
+    internal static void ValidateDropsAndCombatOwners(DropSnapshot[] drops, FlightSnapshot[] flights,
+        (ulong Id, string Owner, string Definition, bool Alive)[] enemies, DungeonFloor floor, ItemInventory inventory)
     {
         if (drops is null) throw new InvalidDataException("Invalid saved combat drops.");
         GameDefinitions.Require(drops.All(drop => !string.IsNullOrWhiteSpace(drop.Owner) && floor.Cells.Contains(drop.Cell))
@@ -195,8 +206,8 @@ internal static class CombatRestore
         GameDefinitions.Require(flightOwners.Count == flights.Count(flight => flight.Owner is not null)
             && !flightOwners.Overlaps(dropOwners), "saved combat flight drops");
 
-        foreach (EnemyState enemy in enemies)
-            GameDefinitions.Require(enemy.Alive ? !dropOwners.Contains(enemy.Owner) : dropOwners.Contains(enemy.Owner), "saved enemy drop");
+        foreach ((ulong _, string Owner, string _, bool Alive) in enemies)
+            GameDefinitions.Require(Alive ? !dropOwners.Contains(Owner) : dropOwners.Contains(Owner), "saved enemy drop");
 
         HashSet<string> inventoryCombatOwners = inventory.Owners.Where(owner => InventoryOwner.Parse(owner.Key) is CombatOwner)
             .Select(owner => owner.Key).ToHashSet(StringComparer.Ordinal);
@@ -214,7 +225,7 @@ internal static class CombatRestore
         }
     }
 
-    private static void ValidateAllies(AllySnapshot[] allies, CombatDefinition combat, ulong[] allyIds)
+    internal static void ValidateAllies(AllySnapshot[] allies, CombatDefinition combat, ulong[] allyIds)
     {
         GameDefinitions.Require(allies is not null && allyIds.Length == allies.Length
             && allies.Select(ally => ally.Id).Distinct().Count() == allies.Length

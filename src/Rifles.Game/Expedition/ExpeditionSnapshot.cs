@@ -20,25 +20,15 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
     DungeonFloor Floor, ExplorationSnapshot Exploration, MemberDefinition[] Roster,
     MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent, GeneratedFeatureSnapshot GeneratedFeatures, EncounterPlacementResult EncounterPlacement, double RestRemaining = 0, string RestOwner = "");
 
-internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
+/// <summary>
+/// Active-floor save admission. Encoding is the run codec's job; this class
+/// owns validation, returning one reconstruction consumed once by the floor
+/// aggregate.
+/// </summary>
+internal static class ExpeditionCodec
 {
-    public uint SchemaVersion => 9;
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        RespectRequiredConstructorParameters = true,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        Converters = { new JsonStringEnumConverter() },
-    };
-    public void Encode(in ExpeditionSnapshot state, IBufferWriter<byte> destination)
-    {
-        using Utf8JsonWriter writer = new(destination);
-        JsonSerializer.Serialize(writer, state, Json);
-    }
-    public ExpeditionSnapshot Decode(ReadOnlySpan<byte> payload) => JsonSerializer.Deserialize<ExpeditionSnapshot>(payload, Json)
-        ?? throw new InvalidDataException("Empty expedition save.");
 
-    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IEnumerable<string>? expeditionRewards = null, IReadOnlyDictionary<ulong, string>? expeditionItems = null, long completionExperience = 0,
+    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IReadOnlyDictionary<ulong, string>? expeditionItems = null,
         PartyState? travellingParty = null, IReadOnlyDictionary<string, MagicState.MagicBook>? travellingBooks = null)
     {
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
@@ -94,7 +84,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "saved pack capacity");
             if (InventoryOwner.Parse(owner.Key) is AnchorOwner savedAnchor) GameDefinitions.Require(owner.Id == itemWorld.Anchor(savedAnchor.Anchor).Id, "saved anchor owner");
         }
-        ValidateWorldObstructions(saved);
+        ValidateWorldObstructions(saved.Floor, saved.Actor, saved.Features.Dressing, saved.ItemWorld, saved.GeneratedFeatures);
         // A travelling party moves untouched: its vitals, entities, books,
         // and markers are live-continuous. Only fresh boots rebuild.
         PartyState party = travellingParty ?? new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
@@ -113,7 +103,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
             ? party.Members.Any(m => m.Definition.Id == saved.RestOwner && m.IsLiving) : saved.RestOwner.Length == 0, "Save.RestOwner");
         party.RestRemaining = saved.RestRemaining; party.RestOwner = saved.RestOwner;
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
-            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, expeditionRewards, completionExperience, travellingBooks);
+            new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, travellingBooks);
         inventory.BindRemaining(party.Entities);
         ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId,
             saved.Features.Dressing.BenchId, saved.Features.Dressing.CrateId, saved.Features.Dressing.ObserverId, saved.ItemWorld.DoorId, saved.ItemWorld.LeverId, saved.ItemWorld.PlateId,
@@ -140,19 +130,20 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         return (exploration, party, actor);
     }
 
-    private static void ValidateWorldObstructions(ExpeditionSnapshot saved)
+    internal static void ValidateWorldObstructions(DungeonFloor floor, PatrolSnapshot actor, RoomDressing dressing,
+        ItemExplorationSnapshot itemWorld, GeneratedFeatureSnapshot generated)
     {
-        GridPoint[] staticObstacles = [saved.Actor.Start, saved.Actor.End, saved.Features.Dressing.Bench,
-            saved.Features.Dressing.Crate, saved.Features.Dressing.Observer];
+        GridPoint[] staticObstacles = [actor.Start, actor.End, dressing.Bench,
+            dressing.Crate, dressing.Observer];
         GameDefinitions.Require(staticObstacles.Distinct().Count() == staticObstacles.Length
-            && DressingPlacement.CanBlock(saved.Floor, staticObstacles), "saved static obstacle placement");
+            && DressingPlacement.CanBlock(floor, staticObstacles), "saved static obstacle placement");
 
-        GridPoint door = saved.ItemWorld.Door;
-        GameDefinitions.Require(door != saved.Floor.Entrance && door != saved.Floor.Exit
+        GridPoint door = itemWorld.Door;
+        GameDefinitions.Require(door != floor.Entrance && door != floor.Exit
             && !staticObstacles.Contains(door)
-            && !saved.GeneratedFeatures.Gates.Any(gate => gate.Cell == door)
-            && !saved.Floor.Grants.Any(grant => grant.Cell == door)
-            && !saved.Floor.Connectors.Any(connector => connector.From == door || connector.To == door),
+            && !generated.Gates.Any(gate => gate.Cell == door)
+            && !floor.Grants.Any(grant => grant.Cell == door)
+            && !floor.Connectors.Any(connector => connector.From == door || connector.To == door),
             "saved item gate placement");
     }
 }

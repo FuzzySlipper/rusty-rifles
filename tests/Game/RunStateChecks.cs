@@ -1,5 +1,6 @@
 using System.Buffers;
 using Rifles.Game.Characters;
+using Rifles.Game.Tests;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -29,9 +30,18 @@ internal static class RunStateChecks
         RunSnapshot run = CreateRun(definitions, fixture);
         RunCodec.Validate(run, definitions);
 
-        RunCodec codec = new();
+        var codec = RunCodec.CreateStoreCodec();
         ArrayBufferWriter<byte> bytes = new();
         codec.Encode(run, bytes);
+        string payload = System.Text.Encoding.UTF8.GetString(bytes.WrittenSpan);
+        // Every reachable enum serializes as a string: product enums and the
+        // Engine stat capture enums alike. A missing converter registration
+        // would silently fall back to numeric here.
+        Require(payload.Contains("\"facing\":\"" + run.Active.Exploration.Facing.ToString() + "\"", StringComparison.Ordinal)
+            && payload.Contains("\"rounding\":\"ToZero\"", StringComparison.Ordinal)
+            && payload.Contains("\"maximumChangePolicy\":", StringComparison.Ordinal)
+            && !payload.Contains("\"maximumChangePolicy\":0", StringComparison.Ordinal),
+            "Save payload keeps string enums across product and Engine stat captures.");
         RunSnapshot decoded = codec.Decode(bytes.WrittenSpan);
         RunCodec.Validate(decoded, definitions);
 
@@ -226,7 +236,7 @@ internal static class RunStateChecks
         ActionSnapshot restoredRecovery = decodedRecovery.Active.Combat.Members.Single(saved => saved.Member == member).Action
             ?? throw new InvalidOperationException("Cast recovery was lost from the run save.");
         Require(restoredFlight == flight && restoredRecovery == recovery
-            && decodedRecovery.Active.Members.Single(saved => saved.Id == member).Resource == resourceBefore - spell.Cost,
+            && (long)RiflesStats.TrackCurrent(decodedRecovery.Active.Members.Single(saved => saved.Id == member).Stats, RiflesStatIds.Resource) == resourceBefore - spell.Cost,
             "Run save retains the committed spell flight, recovery action, and already-spent cast resource.");
 
         ActionState resumedRecovery = ActionState.Restore(restoredRecovery);
@@ -258,13 +268,21 @@ internal static class RunStateChecks
             progress: remembered with { Completed = true }), definitions),
             "A run cannot forge expedition completion before the objective floor and finale exit are secured.");
 
-        MagicSnapshot forgedMagic = fixture.Combat.Magic! with
+        // Coherent experience is trusted without replaying kill history, even
+        // when it matches finale scale on a non-completed run.
+        MagicSnapshot coherentMagic = fixture.Combat.Magic! with
         {
             Books = fixture.Combat.Magic!.Books.Select(book => book with { Experience = definitions.Run.FinaleExperience }).ToArray(),
         };
-        ExpeditionSnapshot forgedExperience = fixture with { Combat = fixture.Combat with { Magic = forgedMagic } };
-        RequireRejected(() => RunCodec.Validate(CreateRun(definitions, forgedExperience), definitions),
-            "A non-completed run cannot forge finale experience into its spellbooks.");
+        ExpeditionSnapshot coherentExperience = fixture with { Combat = fixture.Combat with { Magic = coherentMagic } };
+        RunCodec.Validate(CreateRun(definitions, coherentExperience), definitions);
+        MagicSnapshot negativeMagic = fixture.Combat.Magic! with
+        {
+            Books = fixture.Combat.Magic!.Books.Select(book => book.Member == "warden" ? book with { Experience = -1 } : book).ToArray(),
+        };
+        ExpeditionSnapshot negativeExperience = fixture with { Combat = fixture.Combat with { Magic = negativeMagic } };
+        RequireRejected(() => RunCodec.Validate(CreateRun(definitions, negativeExperience), definitions),
+            "A run cannot persist negative spellbook experience.");
     }
 
     private static EnemySnapshot MovingEnemy(GameDefinitions definitions, ExpeditionSnapshot fixture, int index)
@@ -331,7 +349,8 @@ internal static class RunStateChecks
         inventory.Arrange(token, moved, inventory.Revision);
 
         MemberSnapshot[] members = fixture.Members.Select((member, index) => index == 0
-            ? member with { Vitality = Math.Max(1, member.Vitality - 1) }
+            ? member with { Stats = StatSnapshotHelpers.WithTrack(member.Stats, RiflesStatIds.Vitality,
+                Math.Max(1, (long)RiflesStats.TrackCurrent(member.Stats, RiflesStatIds.Vitality) - 1)) }
             : member).ToArray();
         PartyState throwaway = new(definitions.Party.Positions, definitions.Party.MaxPartySize, fixture.Roster);
         MagicState magic = new(definitions.Magic, fixture.Roster.Select(member => (member.Id, member.Archetype)), throwaway.Entities);
@@ -375,7 +394,7 @@ internal static class RunStateChecks
     private static RunSnapshot RoundTrip(GameDefinitions definitions, RunSnapshot run)
     {
         RunCodec.Validate(run, definitions);
-        RunCodec codec = new();
+        var codec = RunCodec.CreateStoreCodec();
         ArrayBufferWriter<byte> bytes = new();
         codec.Encode(run, bytes);
         RunSnapshot decoded = codec.Decode(bytes.WrittenSpan);

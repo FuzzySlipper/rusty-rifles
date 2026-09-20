@@ -97,7 +97,7 @@ internal sealed class ActiveFloor : IDisposable
     /// </summary>
     internal static ActiveFloor Restore(ExpeditionSnapshot saved, GameDefinitions definitions,
         PartyState? travellingParty, IReadOnlyDictionary<string, MagicState.MagicBook>? travellingBooks,
-        string[] rewards, IReadOnlyDictionary<ulong, string>? allItems, long completionExperience,
+        IReadOnlyDictionary<ulong, string>? allItems,
         IEngineContext engine, DungeonMaterialCache materials, GeneratedArt artResources, ItemArt itemArt,
         Func<ulong> allocateLightId, string? style, bool roomLights, double incomingDamageMultiplier,
         ulong partyId, Action<string> message, Action<Audio.SoundCue, System.Numerics.Vector3> sound,
@@ -105,13 +105,13 @@ internal sealed class ActiveFloor : IDisposable
         Func<ulong, System.Numerics.Vector3> featurePoint, Func<ulong, ulong, string> useFeature, Func<ulong> allocateId,
         Func<DungeonScene, GridPoint, Vector3> aim)
     {
-        var restored = ExpeditionCodec.Validate(saved, definitions, rewards,
+        var restored = ExpeditionCodec.Validate(saved, definitions,
             allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition),
-            completionExperience, travellingParty, travellingBooks);
+            travellingParty, travellingBooks);
         ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
         RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory,
             restored.Party, saved.PartyId, new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId },
-            rewards, completionExperience, travellingBooks);
+            travellingBooks);
         ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
         DungeonScene replacement = new(engine, materials, saved.Floor, definitions.Exploration, definitions.Appearance,
             allocateLightId, definitions.ItemExploration);
@@ -277,7 +277,7 @@ internal sealed class ActiveFloor : IDisposable
             // Member action states ride the travelling entities (travel only runs
             // idle); the multiplier never applies here since no damage runs.
             RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
-                [new(actor.Id, definitions.Combat.AllyVitality), new(features.Dressing.ObserverId, definitions.Combat.AllyVitality)],
+                [RiflesCombat.FreshAlly(actor.Id, definitions), RiflesCombat.FreshAlly(features.Dressing.ObserverId, definitions)],
                 travelling?.LoadedWeapons ?? []);
             return new ActiveFloor(floor, scene, movement, world, actor, exploration, itemWorld, inventory, magic, combat,
                 generatedFeatures, encounterPlacement, floorId, party);

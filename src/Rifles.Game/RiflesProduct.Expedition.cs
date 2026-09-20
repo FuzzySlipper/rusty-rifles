@@ -85,7 +85,7 @@ public sealed partial class RiflesProduct
                 retained = inactiveFloors.Values.Where(f => f.Floor.IntentFloorId != route.Destination).Append(departed).ToArray();
                 var run = new RunSnapshot(candidate, retained, progress);
                 destination = ActiveFloor.Restore(candidate, definitions, party, active.Magic.Books,
-                    RunCodec.Rewards(run), RunCodec.Items(run), 0,
+                    RunCodec.Items(run),
                     engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
                     definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
                     CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
@@ -118,7 +118,7 @@ public sealed partial class RiflesProduct
         {
             var run = new RunSnapshot(current, inactiveFloors.Values.Append(departed).ToArray(), progress);
             Mount(ActiveFloor.Restore(current, definitions, party, active.Magic.Books,
-                RunCodec.Rewards(run), RunCodec.Items(run), progress.Completed ? definitions.Run.FinaleExperience : 0,
+                RunCodec.Items(run),
                 engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
                 definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
                 CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
