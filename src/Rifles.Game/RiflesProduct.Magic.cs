@@ -33,38 +33,78 @@ public sealed partial class RiflesProduct
         if (party.RestRemaining <= 0) return;
         party.RestRemaining = 0; party.RestOwner = ""; CombatMessage(reason);
     }
-    private void MagicCommand(SessionCommand command)
+    private GameOutcome MagicCommand(SessionCommand command)
     {
         string id = selectedMember;
         switch (command.Action)
         {
-            case "spell-select": magic!.Select(id, command.Spell ?? ""); return;
-            case "spell-cancel": magic!.Select(id, ""); return;
+            case "spell-select": return SelectSpell(id, command.Spell ?? "");
+            case "spell-cancel": return SelectSpell(id, "");
             case "spell-assign":
-                if (!int.TryParse(command.Slot, out int slot)) throw new InvalidDataException("Choose a hotbar slot.");
-                magic!.Assign(id, command.Spell ?? magic.For(id).Selected, slot); return;
+                if (!int.TryParse(command.Slot, out int slot)) return GameOutcome.Reject("Choose a hotbar slot.");
+                return AssignSpell(id, command.Spell ?? SelectedSpell(id), slot);
             case "spell-hotbar":
                 if (!int.TryParse(command.Slot, out int hotbar) || hotbar < 0 || hotbar >= magic!.For(id).Hotbar.Length)
-                    throw new InvalidDataException("Unknown hotbar slot.");
-                magic.Select(id, magic.For(id).Hotbar[hotbar]); return;
+                    return GameOutcome.Reject("Unknown hotbar slot.");
+                return SelectSpell(id, magic.For(id).Hotbar[hotbar]);
             case "advance":
-                if (combat.ActionOf(Member(command.Member ?? id)).Busy) throw new InvalidDataException("Finish the current action before advancing.");
-                magic!.AdvanceMember(command.Member ?? id, command.Choice ?? "");
-                CombatMessage("Advancement learned."); return;
-            case "rest-cancel": CancelRest("Rest cancelled; no recovery granted."); return;
+                if (combat.ActionOf(Member(command.Member ?? id)).Busy) return GameOutcome.Reject("Finish the current action before advancing.");
+                try { magic!.AdvanceMember(command.Member ?? id, command.Choice ?? ""); }
+                catch (InvalidDataException error) { return GameOutcome.Reject(error.Message); }
+                CombatMessage("Advancement learned."); return GameOutcome.Accept();
+            case "rest-cancel": CancelRest("Rest cancelled; no recovery granted."); return GameOutcome.Accept();
+            case "rest": return BeginRest(id);
+            case "cast":
+                string spellId = command.Spell ?? SelectedSpell(id);
+                if (spellId.Length == 0) return GameOutcome.Reject("Select a known spell.");
+                return combat.BeginSpell(id, definitions.Magic.Spell(spellId), command.Member ?? id);
+            default: return GameOutcome.Reject("Unknown command");
         }
-        if (paused || combat.Defeated) throw new InvalidDataException("Resume with a living party before acting.");
-        if (command.Action == "rest")
-        {
-            if (party.RestRemaining > 0) throw new InvalidDataException("Already resting.");
-            if (combat.Threatened || exploration.Moving || combat.ActionsBusy) throw new InvalidDataException("Rest requires a still, idle party without threats.");
-            if (!Member(id).IsLiving) throw new InvalidDataException("A living member must supply the rest remedy.");
-            if (!HasItem(id, definitions.Magic.RestItem)) throw new InvalidDataException("Selected member needs " + definitions.Magic.RestItem + " for rest.");
-            party.RestOwner = id; party.RestRemaining = definitions.Magic.RestSeconds;
-            CombatMessage("Rest begun; remedy and recovery settle only on completion."); return;
-        }
-        combat.BeginSpell(id, definitions.Magic.Spell(command.Spell ?? magic!.For(id).Selected), command.Member ?? id);
     }
+
+    private string SelectedSpell(string member)
+    {
+        try { return magic!.For(member).Selected; }
+        catch (InvalidDataException) { return ""; }
+    }
+
+    private GameOutcome SelectSpell(string member, string spell)
+    {
+        try { magic!.Select(member, spell); }
+        catch (InvalidDataException error) { return GameOutcome.Reject(error.Message); }
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome AssignSpell(string member, string spell, int slot)
+    {
+        try { magic!.Assign(member, spell, slot); }
+        catch (InvalidDataException error) { return GameOutcome.Reject(error.Message); }
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome BeginRest(string id)
+    {
+        if (paused || combat.Defeated) return GameOutcome.Reject("Resume with a living party before acting.");
+        if (party.RestRemaining > 0) return GameOutcome.Reject("Already resting.");
+        if (combat.Threatened || exploration.Moving || combat.ActionsBusy) return GameOutcome.Reject("Rest requires a still, idle party without threats.");
+        if (!Member(id).IsLiving) return GameOutcome.Reject("A living member must supply the rest remedy.");
+        if (!HasItem(id, definitions.Magic.RestItem)) return GameOutcome.Reject("Selected member needs " + definitions.Magic.RestItem + " for rest.");
+        party.RestOwner = id; party.RestRemaining = definitions.Magic.RestSeconds;
+        CombatMessage("Rest begun; remedy and recovery settle only on completion.");
+        return GameOutcome.Accept();
+    }
+    private string AllySpellReason(SpellDefinition spell)
+    {
+        string reason = "";
+        foreach (RiflesCharacter candidate in party.Members)
+        {
+            string? availability = combat.SpellAvailability(selectedMember, spell, candidate.Definition.Id, combat.SelectedTarget, itemWorld!.Revision);
+            if (availability is null) return "";
+            reason = availability;
+        }
+        return reason;
+    }
+
     private bool HasItem(string member, string item) => inventory!.Items("member:" + member).Any(i => i.Definition == item && i.Quantity > 0);
     private void AdvanceMagic(double seconds)
     {
@@ -110,22 +150,10 @@ public sealed partial class RiflesProduct
         var book = magic!.For(selectedMember);
         uint spells = value.Object(definitions.Magic.Spells.Select(spell =>
         {
-            string reason = "";
-            try
-            {
-                if (spell.Target != SpellTarget.Ally) combat.ValidateSpell(selectedMember, spell, selectedMember, combat.SelectedTarget, itemWorld!.Revision, false);
-                else
-                {
-                    bool valid = false;
-                    foreach (RiflesCharacter candidate in party.Members)
-                    {
-                        try { combat.ValidateSpell(selectedMember, spell, candidate.Definition.Id, combat.SelectedTarget, itemWorld!.Revision, false); valid = true; break; }
-                        catch (InvalidDataException error) { reason = error.Message; }
-                    }
-                    if (valid) reason = "";
-                }
-            }
-            catch (InvalidDataException error) { reason = error.Message; }
+            // Rendered availability is the execution check, not a copy of it.
+            string reason = spell.Target != SpellTarget.Ally
+                ? combat.SpellAvailability(selectedMember, spell, selectedMember, combat.SelectedTarget, itemWorld!.Revision) ?? ""
+                : AllySpellReason(spell);
             if (paused) reason = "Resume to cast.";
             return (spell.Id, value.Object(("name", value.String(spell.Name)), ("description", value.String(spell.Description)),
                 ("target", value.String(spell.Target.ToString())), ("cost", value.Number(combat.SpellCost(selectedMember, spell))),

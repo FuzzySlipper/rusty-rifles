@@ -201,24 +201,27 @@ internal sealed class RiflesCombat
         return new(kind, weapon, token, source, target, member, tuning.Windup, ActionPhase.Windup, tuning.Recovery, aim);
     }
 
-    internal void BeginCombat(SessionCommand command, string selectedMember, bool paused)
+    internal GameOutcome BeginCombat(SessionCommand command, string selectedMember, bool paused)
     {
         if (command.Action == "target")
         {
-            EnemyState target = enemies.SingleOrDefault(e => e.Id == command.Target && Visible(e)) ?? throw new InvalidDataException("Target is not visible.");
-            selectedTarget = target.Id; CombatMessage("Target: " + target.Definition.Name); return;
+            EnemyState? target = enemies.SingleOrDefault(e => e.Id == command.Target && Visible(e));
+            if (target is null) return GameOutcome.Reject("Target is not visible.");
+            selectedTarget = target.Id; CombatMessage("Target: " + target.Definition.Name); return GameOutcome.Accept();
         }
-        if (paused || Defeated) throw new InvalidDataException("Resume with a living party before acting.");
-        RiflesCharacter member = Member(selectedMember);
-        if (!member.IsLiving) throw new InvalidDataException("Choose a living character.");
+        if (paused || Defeated) return GameOutcome.Reject("Resume with a living party before acting.");
+        RiflesCharacter member;
+        try { member = Member(selectedMember); }
+        catch (InvalidDataException) { return GameOutcome.Reject("Choose a living character."); }
+        if (!member.IsLiving) return GameOutcome.Reject("Choose a living character.");
         ActionState state = ActionOf(member);
         if (command.Action == "interrupt")
         {
-            if (state.Current?.Phase == ActionPhase.Recovery) throw new InvalidDataException("Committed actions must finish recovery.");
-            state.Cancel(); CombatMessage(member.Definition.Name + " interrupted; no cost committed."); return;
+            if (state.Current?.Phase == ActionPhase.Recovery) return GameOutcome.Reject("Committed actions must finish recovery.");
+            state.Cancel(); CombatMessage(member.Definition.Name + " interrupted; no cost committed."); return GameOutcome.Accept();
         }
         scope.CancelRest("Rest interrupted by an action.");
-        if (state.Busy) throw new InvalidDataException("That character is still acting.");
+        if (state.Busy) return GameOutcome.Reject("That character is still acting.");
         CarriedItem? weapon = Weapon(selectedMember);
         string owner = "member:" + selectedMember;
         CombatActionKind kind = command.Action switch
@@ -229,19 +232,21 @@ internal sealed class RiflesCombat
         };
         if (kind is CombatActionKind.Reload or CombatActionKind.Fire)
         {
-            if (weapon is null || definitions.Items.Item(weapon.Definition).Ammunition.Length == 0) throw new InvalidDataException("Equip a rifle first.");
-            if (kind == CombatActionKind.Fire && !loadedWeapons.Contains(weapon.Entity)) throw new InvalidDataException("Dry rifle — reload first.");
-            if (kind == CombatActionKind.Reload && loadedWeapons.Contains(weapon.Entity)) throw new InvalidDataException("Rifle already loaded.");
-            if (kind == CombatActionKind.Reload && PartyAmmo() == 0) throw new InvalidDataException("No rifle shot in the party inventory.");
+            if (weapon is null || definitions.Items.Item(weapon.Definition).Ammunition.Length == 0) return GameOutcome.Reject("Equip a rifle first.");
+            if (kind == CombatActionKind.Fire && !loadedWeapons.Contains(weapon.Entity)) return GameOutcome.Reject("Dry rifle — reload first.");
+            if (kind == CombatActionKind.Reload && loadedWeapons.Contains(weapon.Entity)) return GameOutcome.Reject("Rifle already loaded.");
+            if (kind == CombatActionKind.Reload && PartyAmmo() == 0) return GameOutcome.Reject("No rifle shot in the party inventory.");
         }
-        if (kind == CombatActionKind.Melee && !party.CanUseReach(selectedMember, PartyReach.Melee)) throw new InvalidDataException("Only the front row can reach with melee.");
+        if (kind == CombatActionKind.Melee && !party.CanUseReach(selectedMember, PartyReach.Melee)) return GameOutcome.Reject("Only the front row can reach with melee.");
         string? token = null, source = null, targetMember = null;
         GridPoint? aim = null; ulong targetId = 0;
         if (kind is CombatActionKind.Throw or CombatActionKind.Consume)
         {
-            if (command.InventoryRevision != inventory.Revision.ToString()) throw new InvalidDataException("Inventory changed; select the item again.");
-            source = command.Source ?? owner; RequireItemAccess(source);
-            token = command.Item ?? throw new InvalidDataException("Select an item.");
+            source = command.Source ?? owner;
+            try { RequireItemAccess(source); }
+            catch (InvalidDataException error) { return GameOutcome.Reject(error.Message); }
+            token = command.Item;
+            if (token is null) return GameOutcome.Reject("Select an item.");
             _ = inventory.Find(source, token);
             if (kind == CombatActionKind.Consume)
             {
@@ -258,17 +263,19 @@ internal sealed class RiflesCombat
         if (kind is CombatActionKind.Fire or CombatActionKind.Melee or CombatActionKind.Throw && aim is null)
         {
             targetId = command.Target ?? selectedTarget;
-            EnemyState target = enemies.SingleOrDefault(e => e.Id == targetId && Visible(e)) ?? throw new InvalidDataException("Select a visible enemy.");
-            aim = target.Motion.Position;
+            EnemyState? visibleTarget = enemies.SingleOrDefault(e => e.Id == targetId && Visible(e));
+            if (visibleTarget is null) return GameOutcome.Reject("Select a visible enemy.");
+            aim = visibleTarget.Motion.Position;
         }
         if (aim is { } cell && Vector3.Distance(Aim(scope.Exploration.Position), Aim(cell)) > Combat.Action(kind).Range)
-            throw new InvalidDataException("Target is out of range.");
+            return GameOutcome.Reject("Target is out of range.");
         ActionSnapshot prepared = NewAction(kind, kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload ? weapon?.Entity ?? 0 : 0,
             token, source, targetId, targetMember, aim);
         EnemyState? aimedEnemy = enemies.SingleOrDefault(e => e.Id == targetId);
         if (aimedEnemy is not null) prepared = prepared with { AimOffsetX = aimedEnemy.Motion.CrowdOffset.X, AimOffsetY = aimedEnemy.Motion.CrowdOffset.Y };
         state.Start(prepared);
         CombatMessage(member.Definition.Name + ": " + kind + " windup");
+        return GameOutcome.Accept();
     }
 
     private void ValidateRemedy(string source, string token, string targetId)
@@ -684,6 +691,17 @@ internal sealed class RiflesCombat
 
     private bool HasItem(string member, string item) => inventory.Items("member:" + member).Any(i => i.Definition == item && i.Quantity > 0);
 
+    /// <summary>
+    /// Planning-time spell eligibility shared by execution and projection.
+    /// Translates this owner's own rejection channel into a reason; only
+    /// InvalidDataException converts, programming failures still propagate.
+    /// </summary>
+    internal string? SpellAvailability(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision)
+    {
+        try { ValidateSpell(memberId, spell, targetMember, target, featureRevision, committing: false); return null; }
+        catch (InvalidDataException error) { return error.Message; }
+    }
+
     internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
         RiflesCharacter member = Member(memberId);
@@ -720,7 +738,7 @@ internal sealed class RiflesCombat
         }
     }
 
-    internal void BeginSpell(string member, SpellDefinition spell, string targetMember)
+    internal GameOutcome BeginSpell(string member, SpellDefinition spell, string targetMember)
     {
         ulong targetId = selectedTarget;
         ulong targetRevision = scope.ItemWorld.Revision;
@@ -731,13 +749,14 @@ internal sealed class RiflesCombat
                 || scope.GeneratedFeatures.Hazards.Any(h => h.Id == selected.Id)) ? focused.Value.Id : scope.ItemWorld.Capture().LeverId;
             targetRevision = targetId == scope.ItemWorld.Capture().LeverId ? scope.ItemWorld.Revision : scope.GeneratedFeatures.Revision;
         }
-        ValidateSpell(member, spell, targetMember, targetId, targetRevision, false);
+        if (SpellAvailability(member, spell, targetMember, targetId, targetRevision) is { } reason) return GameOutcome.Reject(reason);
         scope.CancelRest("Rest interrupted by casting.");
         EnemyState? target = spell.Target == SpellTarget.Enemy ? enemies.Single(e => e.Id == selectedTarget) : null;
         ActionOf(Member(member)).Start(new(CombatActionKind.Cast, 0, null, null, spell.Target == SpellTarget.Feature ? targetId : target?.Id ?? 0, targetMember,
             spell.Windup, ActionPhase.Windup, spell.Recovery, target?.Motion.Position,
             target?.Motion.CrowdOffset.X ?? 0, target?.Motion.CrowdOffset.Y ?? 0, spell.Id, SpellCost(member, spell), targetRevision));
         CombatMessage(Member(member).Definition.Name + " prepares " + spell.Name + ".");
+        return GameOutcome.Accept();
     }
 
     private bool TryEnemySpell(EnemyState enemy, float distance)

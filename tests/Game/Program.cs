@@ -40,6 +40,7 @@ ArchitectureDetailChecks.Run(definitions);
 DressingPlacementChecks.Run(definitions);
 ActionChecks.Run();
 MagicChecks.Run(definitions);
+CommandChecks.Run();
 EnemyBrainChecks.Run();
 CrowdChecks.Run();
 CrowdLaneChecks.Run(definitions);

@@ -62,12 +62,13 @@ event bus, or scripting layer.
   Windup → effect → recovery, interruption, ammo charging, impact rechecks,
   and friendly fire are preserved. Allies share stats but need no action
   machinery; their authored source stays deferred.
-- UI input is parsed once at the boundary into explicit domain operations.
-  No global `commandRevision`/inventory-revision/target-revision freshness
-  gates; actual entity/item/target state is inspected when acted on.
-  Expected unavailable gameplay returns an availability/result reason, not an
-  exception. Broad `catch (Exception)` never relabels programming failures as
-  rejection. (Planned — #8362.)
+- Landed (#8362): UI input parses once at the boundary (shared options)
+  into named domain operations returning `GameOutcome` reasons. No global
+  `commandRevision` or UI-passed inventory-revision gates; ledger atomicity
+  and feature impact revisions still recheck genuinely at act time. Input
+  catches only `InvalidDataException`; programming failures propagate.
+  Rendered spell availability is the execution check (`SpellAvailability`).
+  UI payloads carry no revisions except feature impact revisions.
 
 ## Floors and travel
 
@@ -114,7 +115,7 @@ event bus, or scripting layer.
 | Inventory | `ItemInventory` numeric `PackOwner` ledger + bound components + typed owners | Landed (#8359); ledger re-key follows #8363 |
 | Combat | `RiflesProduct` combat partials + action dictionaries | Landed `RiflesCombat` owner (#8360) |
 | Magic | `MagicState` detached books/conditions; per-tick recompute | Landed attached books/conditions + per-source stats (#8361) |
-| Commands | Global revisions + exception eligibility | Typed operations + availability contract (#8362) |
+| Commands | Global revisions + exception eligibility | Landed outcomes + shared availability (#8362) |
 | Floors | `FloorFactory` build/capture/dispose; `Capture()` reads | Active-floor aggregate; frozen retained floors (#8363) |
 | Saves | `RunCodec` schema11 + unused `ExpeditionCodec` schema9; synthetic validation | One current codec + one reconstruction path (#8364) |
 

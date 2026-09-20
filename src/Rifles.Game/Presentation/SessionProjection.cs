@@ -18,7 +18,7 @@ internal sealed class SessionProjection : IDisposable
         stream = ui.OpenStream(new UiStreamRequest("rifles.session", "rifles.session.v1"));
     }
 
-    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, ulong commandRevision, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run)
+    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run)
     {
         SessionValueBuilder value = new();
         Dictionary<string, string> positionNames = party.Positions.ToDictionary(p => p.Id, p => p.Name);
@@ -52,7 +52,6 @@ internal sealed class SessionProjection : IDisposable
             ("focusId", value.String(focus?.Selected?.Id.ToString() ?? "")),
             ("focusRevision", value.String(focus?.Selected?.Revision.ToString() ?? "")),
             ("selectedMember", value.String(selectedMember)),
-            ("commandRevision", value.String(commandRevision.ToString(System.Globalization.CultureInfo.InvariantCulture))),
             ("paused", value.Number(paused ? 1 : 0)),
             ("feedback", value.String(feedback)),
             ("artStyle", value.String(artStyle)),

@@ -9,7 +9,7 @@ type UiContext = Readonly<{
   intents?: { claim(intent: string, value: { kind: 'product-payload'; contract: string; data: Record<string, unknown> }): void };
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
-type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number; revision: string; inventoryRevision: string }>;
+type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
 const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
@@ -28,7 +28,6 @@ function ownerEntries(state: Record<string, unknown>): Array<[string, Record<str
     });
 }
 function itemEntries(owner: Record<string, unknown>): Array<[string, Record<string, unknown>]> { return entries(owner.items); }
-function ownerRevision(owner: Record<string, unknown>): string | null { const revision = owner.revision; return revision === null || revision === undefined || revision === '' ? null : String(revision); }
 
 /**
  * The Engine host already rejects input from descendants of its downstream UI and
@@ -102,11 +101,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   let uiFeedback = '';
   let productFeedback = '';
   const setUiFeedback = (message: string): void => { uiFeedback = message; inventoryFeedback.textContent = message; };
-  const command = (action: string, extra: Record<string, unknown> = {}, captured?: Pick<DragIntent, 'revision' | 'inventoryRevision'>): void => {
-    const revision = captured?.revision ?? String(state.commandRevision ?? '');
-    const inventoryRevision = captured?.inventoryRevision ?? text(inventoryOf(state).revision, '');
-    const inventoryAction = new Set(['transfer', 'equip', 'unequip', 'consume', 'item-feature', 'open-container', 'close-container', 'throw', 'arrange']);
-    context.intents?.claim('rifles.command', { kind: 'product-payload', contract: 'rifles.command.v1', data: { revision, action, ...extra, ...(inventoryAction.has(action) ? { inventoryRevision } : {}) } });
+  const command = (action: string, extra: Record<string, unknown> = {}): void => {
+    context.intents?.claim('rifles.command', { kind: 'product-payload', contract: 'rifles.command.v1', data: { action, ...extra } });
   };
   const button = (label: string, action: () => void): HTMLButtonElement => {
     const element = document.createElement('button'); element.type = 'button'; element.textContent = label;
@@ -169,10 +165,10 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const item = record(record(record(inventoryOf(state).owners)[source]).items)[token];
     const maximum = Math.max(1, numeric(record(item).quantity, 1)); const input = inventoryControls.querySelector<HTMLInputElement>('[data-inventory-quantity]');
     const quantity = Math.min(maximum, Math.max(1, Math.floor(captured?.quantity ?? numeric(input?.value, maximum))));
-    command('transfer', { source, destination, item: token, quantity }, captured); setUiFeedback('Transfer requested; waiting for the authoritative inventory update.');
+    command('transfer', { source, destination, item: token, quantity }); setUiFeedback('Transfer requested; waiting for the authoritative inventory update.');
   };
   const equip = (source: string, token: string, slot: string, destination = `member:${text(state.selectedMember)}`, captured?: DragIntent): void => {
-    command('equip', { source, destination, item: token, slot }, captured);
+    command('equip', { source, destination, item: token, slot });
     setUiFeedback('Equipment change requested; waiting for the authoritative inventory update.');
   };
   const inventoryControlsSignature = (): string => {
@@ -224,7 +220,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const item = record(record(record(inventoryOf(state).owners)[owner]).items)[token];
     const maximum = Math.max(1, numeric(record(item).quantity, 1));
     const quantity = Math.min(maximum, Math.max(1, Math.floor(numeric(sameSelection ? selectedQuantity() : undefined, maximum))));
-    const captured: DragIntent = { owner, token, destination: `member:${text(state.selectedMember)}`, quantity, revision: String(state.commandRevision ?? ''), inventoryRevision: text(inventoryOf(state).revision, '') };
+    const captured: DragIntent = { owner, token, destination: `member:${text(state.selectedMember)}`, quantity };
     drag = captured;
     event.dataTransfer?.setData('text/plain', JSON.stringify(captured));
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -286,7 +282,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     if (presets.length > 0) { const presetTitle = document.createElement('strong'); presetTitle.textContent = 'Party preset'; presetTitle.style.marginLeft = '8px'; const select = document.createElement('select'); select.dataset.partyPreset = 'true'; for (const [id, preset] of presets) { const option = document.createElement('option'); option.value = id; option.textContent = text(preset.name, id); select.append(option); } select.value = text(state.preset, presets[0][0]); partyTools.append(presetTitle, select, button('Restart with party', () => command('choose-party', { preset: select.value }))); }
   };
   const renderInventory = (): void => {
-    // The drag captures revisions. Preserve its DOM source until drop/cancel;
+    // The drag captures item identity. Preserve its DOM source until drop/cancel;
     // the authoritative command still rejects changed ownership or lost reach.
     if (drag !== null) return;
     const inventoryState = inventoryOf(state);
@@ -302,8 +298,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     for (const [key, owner] of owners) {
       const ownerPanel = document.createElement('section'); ownerPanel.dataset.inventoryOwner = 'true'; ownerPanel.dataset.owner = key; ownerPanel.style.cssText = 'background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:5px'; ownerPanel.addEventListener('dragover', event => event.preventDefault()); ownerPanel.addEventListener('drop', event => dropOn(event, key));
       const heading = document.createElement('div'); heading.style.cssText = 'display:flex;gap:5px;align-items:center;justify-content:space-between'; const ownerButton = button(`${text(owner.name, key)} · ${text(owner.mass, '0')}/${text(owner.maxMass, '0')} mass · ${text(owner.space, '0')}/${text(owner.maxSpace, '0')} space`, () => { if (selectedItem && selectedItem.owner !== key) transfer(selectedItem.owner, selectedItem.token, key); else chooseOwner(key); }); ownerButton.dataset.ownerDestination = key; heading.append(ownerButton);
-      if (owner.kind === 'container' && numeric(owner.opened) !== 1) { const revision = ownerRevision(owner); const target = numeric(owner.id, -1), targetRevision = numeric(revision, -1); const open = button('Open', () => { if (target <= 0 || targetRevision <= 0) { setUiFeedback('Container information changed; focus it and try Use again.'); return; } command('open-container', { target, targetRevision }); }); open.disabled = target <= 0 || targetRevision <= 0; heading.append(open); }
-      if (owner.kind === 'container' && numeric(owner.opened) === 1) { const revision = ownerRevision(owner); const target = numeric(owner.id, -1), targetRevision = numeric(revision, -1); const close = button('Close', () => command('close-container', { target, targetRevision })); close.disabled = target <= 0 || targetRevision <= 0; heading.append(close); }
+      if (owner.kind === 'container' && numeric(owner.opened) !== 1) { const target = numeric(owner.id, -1); const open = button('Open', () => { if (target <= 0) { setUiFeedback('Container information changed; focus it and try Use again.'); return; } command('open-container', { target }); }); open.disabled = target <= 0; heading.append(open); }
+      if (owner.kind === 'container' && numeric(owner.opened) === 1) { const target = numeric(owner.id, -1); const close = button('Close', () => command('close-container', { target })); close.disabled = target <= 0; heading.append(close); }
       ownerPanel.append(heading); const items = document.createElement('div'); items.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:5px';
       if (owner.kind !== 'container' || numeric(owner.opened) === 1) {
         for (const [token, item] of itemEntries(owner)) {
@@ -524,7 +520,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     event.preventDefault(); event.stopPropagation();
     const payload = drag;
     if (!payload) return;
-    if (payload.owner === 'party') command('arrange', { source: 'party', item: payload.token, partySlot: slot }, payload);
+    if (payload.owner === 'party') command('arrange', { source: 'party', item: payload.token, partySlot: slot });
     else transfer(payload.owner, payload.token, 'party', payload);
     cancelDrag();
   };

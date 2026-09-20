@@ -31,7 +31,6 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private ulong nextLightId = 1;
     private ulong floorId = 1, partyId = 2, nextObjectId = 3;
     private readonly ExplorationInput controls = new();
-    private ulong commandRevision = 1;
     private readonly HudPublication hudPublication = new();
     private ResolvedExpedition expedition;
     private string selectedMember = "";
@@ -170,7 +169,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.command")
             {
                 try { Command(SessionCommand.Parse(input.PayloadData.Span)); }
-                catch (Exception error) { feedback = "Command rejected: " + error.Message; }
+                catch (InvalidDataException error) { feedback = "Command rejected: " + error.Message; }
                 suppressMovement = true;
                 continue;
             }
@@ -181,8 +180,8 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.cycle") { features!.Observe(exploration, 1); continue; }
             if (intent is "rifles.attack" or "rifles.reload")
             {
-                try { combat.BeginCombat(new SessionCommand(commandRevision.ToString(), intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused); }
-                catch (Exception error) { feedback = error.Message; }
+                try { ApplyOutcome(combat.BeginCombat(new SessionCommand(intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused)); }
+                catch (InvalidDataException error) { feedback = error.Message; }
                 suppressMovement = true; continue;
             }
             ExplorationAction? action = intent switch
@@ -229,57 +228,143 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         return ProductUpdateResult.None;
     }
 
+    private void ApplyOutcome(GameOutcome outcome)
+    {
+        if (!outcome.Accepted || outcome.Message.Length != 0) feedback = outcome.Message;
+    }
+
     private void Command(SessionCommand command)
     {
-        if (command.Revision != commandRevision.ToString(System.Globalization.CultureInfo.InvariantCulture))
-        { feedback = "Command expired; try again"; return; }
-        commandRevision = checked(commandRevision + 1);
-        switch (command.Action)
+        // No freshness gate: every command inspects actual state when acted
+        // on, so independent queued actions from one projection all execute.
+        GameOutcome outcome = command.Action switch
         {
-            case "transfer": case "equip": case "unequip": case "consume": case "item-feature": case "arrange":
-                ItemCommand(command); break;
-            case "target": case "attack": case "reload": case "throw": case "interrupt":
-                combat.BeginCombat(command, selectedMember, paused); break;
-            case "spell-select": case "spell-cancel": case "spell-assign": case "spell-hotbar":
-            case "cast": case "rest": case "rest-cancel": case "advance":
-                MagicCommand(command); break;
-            case "formation":
-                feedback = party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "") ? "Formation changed" : "Choose two living members"; break;
-            case "move":
-                feedback = party.MoveFormation(command.Member ?? selectedMember, command.Position ?? "") ? "Formation changed" : "Choose a living member and an empty position"; break;
-            case "choose-party":
-                _ = definitions.Characters.GetPreset(command.Preset ?? "");
-                preset = command.Preset!; Restart(); break;
-            case "open-container":
-                if (command.Target != itemWorld!.Anchor("crate").Id || command.TargetRevision != itemWorld.Revision)
-                    throw new InvalidDataException("Container target expired.");
-                itemWorld.Open("crate", exploration, scene!); feedback = "Crate opened"; break;
-            case "close-container": itemWorld!.Close(); feedback = "Crate closed"; break;
-            case "select":
-                if (!party.Members.Any(m => m.Definition.Id == command.Member)) { feedback = "Member unavailable"; break; }
-                selectedMember = command.Member!; feedback = "Selected " + party.Members.Single(m => m.Definition.Id == selectedMember).Definition.Name; break;
-            case "pause": SetPaused(!paused); break;
-            case "save": Save(); break;
-            case "load": Load(); break;
-            case "restart": Restart(); break;
-            case "complete": CompleteRun(); break;
-            case "new-run": NewRunCommand(command.Choice ?? ""); break;
-            case "travel": Travel(command.Choice ?? ""); break;
-            case "art-style":
-                string currentStyle = features!.Style;
-                int index = Array.FindIndex(definitions.Art.Styles, s => s.Id == currentStyle);
-                string nextStyle = definitions.Art.Styles[(index + 1) % definitions.Art.Styles.Length].Id;
-                scene!.SetStyle(nextStyle); features.SetStyle(nextStyle);
-                feedback = "Art treatment: " + nextStyle; break;
-            case "art-light": features!.CycleLight(); feedback = "Light position " + (features.LightPosition + 1); break;
-            case "art-fill": roomLights = !roomLights; scene!.SetRoomLights(roomLights); feedback = roomLights ? "Room lights on" : "Room fill disabled"; break;
-            case "use": Use(command.Target is { } target && command.TargetRevision is { } revision ? new InteractionTarget(target, revision) : null); break;
-            default: feedback = "Unknown command"; break;
-        }
+            "transfer" or "equip" or "unequip" or "consume" or "item-feature" or "arrange" => ItemCommand(command),
+            "target" or "attack" or "reload" or "throw" or "interrupt" => combat.BeginCombat(command, selectedMember, paused),
+            "spell-select" or "spell-cancel" or "spell-assign" or "spell-hotbar"
+                or "cast" or "rest" or "rest-cancel" or "advance" => MagicCommand(command),
+            "formation" => party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "")
+                ? GameOutcome.Accept("Formation changed") : GameOutcome.Reject("Choose two living members"),
+            "move" => party.MoveFormation(command.Member ?? selectedMember, command.Position ?? "")
+                ? GameOutcome.Accept("Formation changed") : GameOutcome.Reject("Choose a living member and an empty position"),
+            "choose-party" => ChooseParty(command.Preset ?? ""),
+            "open-container" => OpenContainer(command.Target),
+            "close-container" => CloseContainer(),
+            "select" => SelectMember(command.Member),
+            "pause" => TogglePaused(),
+            "save" => SaveCommand(),
+            "load" => LoadCommand(),
+            "restart" => RestartCommand(),
+            "complete" => CompleteCommand(),
+            "new-run" => NewRunOutcome(command.Choice ?? ""),
+            "travel" => TravelCommand(command.Choice ?? ""),
+            "art-style" => CycleArtStyle(),
+            "art-light" => CycleLightCommand(),
+            "art-fill" => ToggleRoomLights(),
+            "use" => UseCommand(command.Target is { } target && command.TargetRevision is { } revision ? new InteractionTarget(target, revision) : null),
+            _ => GameOutcome.Reject("Unknown command"),
+        };
+        ApplyOutcome(outcome);
+    }
+
+    private GameOutcome ChooseParty(string presetId)
+    {
+        _ = definitions.Characters.GetPreset(presetId);
+        preset = presetId; Restart();
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome OpenContainer(ulong? target)
+    {
+        if (target != itemWorld!.Anchor("crate").Id) return GameOutcome.Reject("Choose the crate.");
+        itemWorld.Open("crate", exploration, scene!);
+        return GameOutcome.Accept("Crate opened");
+    }
+
+    private GameOutcome CloseContainer()
+    {
+        itemWorld!.Close();
+        return GameOutcome.Accept("Crate closed");
+    }
+
+    private GameOutcome SelectMember(string? member)
+    {
+        if (!party.Members.Any(m => m.Definition.Id == member)) return GameOutcome.Reject("Member unavailable");
+        selectedMember = member!;
+        return GameOutcome.Accept("Selected " + party.Members.Single(m => m.Definition.Id == selectedMember).Definition.Name);
+    }
+
+    private GameOutcome TogglePaused()
+    {
+        SetPaused(!paused);
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome SaveCommand()
+    {
+        Save();
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome LoadCommand()
+    {
+        Load();
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome RestartCommand()
+    {
+        Restart();
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome CompleteCommand()
+    {
+        CompleteRun();
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome NewRunOutcome(string choice)
+    {
+        NewRunCommand(choice);
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome TravelCommand(string choice)
+    {
+        Travel(choice);
+        return GameOutcome.Accept();
+    }
+
+    private GameOutcome CycleArtStyle()
+    {
+        string currentStyle = features!.Style;
+        int index = Array.FindIndex(definitions.Art.Styles, s => s.Id == currentStyle);
+        string nextStyle = definitions.Art.Styles[(index + 1) % definitions.Art.Styles.Length].Id;
+        scene!.SetStyle(nextStyle); features.SetStyle(nextStyle);
+        return GameOutcome.Accept("Art treatment: " + nextStyle);
+    }
+
+    private GameOutcome CycleLightCommand()
+    {
+        features!.CycleLight();
+        return GameOutcome.Accept("Light position " + (features.LightPosition + 1));
+    }
+
+    private GameOutcome ToggleRoomLights()
+    {
+        roomLights = !roomLights; scene!.SetRoomLights(roomLights);
+        return GameOutcome.Accept(roomLights ? "Room lights on" : "Room fill disabled");
+    }
+
+    private GameOutcome UseCommand(InteractionTarget? target)
+    {
+        Use(target);
+        return GameOutcome.Accept();
     }
     private void SetPaused(bool value)
     {
-        paused = value || progress.Completed || combat.Defeated; controls.Clear(); commandRevision = checked(commandRevision + 1);
+        paused = value || progress.Completed || combat.Defeated; controls.Clear();
         feedback = paused ? "Paused" : "Resumed";
     }
     public void Pause() { if (started && !shutdown) { SetPaused(true); Publish(); } }
@@ -288,7 +373,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     {
         if (!started || shutdown) return;
         try { StartNewRun(expedition.Seed); }
-        catch (Exception error) { feedback = "Restart rejected: " + error.Message; }
+        catch (InvalidDataException error) { feedback = "Restart rejected: " + error.Message; }
         Publish();
     }
 
@@ -386,7 +471,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         magic = restoredCombat.Magic;
         paused = saved.Paused;
         selectedMember = saved.SelectedMember;
-        controls.Clear(); cameraCut = true; commandRevision = checked(commandRevision + 1);
+        controls.Clear(); cameraCut = true;
         previousFeatures?.Dispose(); previous?.Dispose();
         feedback = "Expedition restored";
     }
@@ -414,7 +499,6 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         }
         features!.SetExtraCandidates(ItemCandidates());
         feedback = paused ? "Resume before using world features" : features.Use(exploration, target, UseItemFeature);
-        commandRevision = checked(commandRevision + 1);
     }
 
 
@@ -439,7 +523,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             combat.Allies[actor!.Id].IsLiving ? 1 : Combat.CorpseScale,
             combat.Allies[features.Capture().Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
-        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, commandRevision, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, combat.DropReachable, RunProjection);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(floor, exploration, party, paused, feedback, selectedMember, features.Readout, features.Style, roomLights, features.LightPosition, inventory!, itemWorld!, scene!, definitions.Characters, preset, actor!, definitions.ItemArt, CombatProjection, combat.DropReachable, RunProjection);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 
