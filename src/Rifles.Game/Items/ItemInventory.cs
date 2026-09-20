@@ -1,3 +1,4 @@
+using Rifles.Game.Characters;
 using Rifles.Game.Content;
 using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
@@ -77,6 +78,40 @@ internal sealed class ItemInventory
         owners.Add(owner.Key, owner);
     }
     internal PackOwner Owner(string key) => owners.TryGetValue(key, out PackOwner? value) ? value : throw new InvalidDataException("Pack unavailable.");
+
+    private readonly Dictionary<string, (EntityId Ledger, InventoryComponent Inventory, EquipmentComponent Equipment, RiflesCharacter Character)> bound = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Binds member packs to canonical character entities: owner facades attach
+    /// to the entity while addressing its ledger record, and currently equipped
+    /// items attach per-source contributions. Re-binding is idempotent.
+    /// </summary>
+    internal void BindMembers(CharacterEntities entities, IEnumerable<RiflesCharacter> members)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        ArgumentNullException.ThrowIfNull(members);
+        foreach (RiflesCharacter member in members)
+        {
+            PackOwner owner = Owner("member:" + member.Definition.Id);
+            (InventoryComponent inventory, EquipmentComponent equipment) =
+                entities.BindInventory(member.Definition.Id, world, new(owner.Id));
+            bound[member.Definition.Id] = (new(owner.Id), inventory, equipment, member);
+            foreach (CarriedItem worn in Items(owner.Key).Where(i => i.Slots.Length > 0))
+            {
+                GearDefinition gear = definitions.Item(worn.Definition);
+                member.EquipContribution(worn.Token, gear.Power, gear.Defense);
+            }
+        }
+    }
+
+    private bool BoundMember(string key, out (EntityId Ledger, InventoryComponent Inventory, EquipmentComponent Equipment, RiflesCharacter Character) member)
+    {
+        if (key.StartsWith("member:", StringComparison.Ordinal)
+            && bound.TryGetValue(key["member:".Length..], out member))
+            return true;
+        member = default;
+        return false;
+    }
     internal InventoryView View(string owner) => world.View(new(Owner(owner).Id));
     internal IReadOnlyList<CarriedItem> Items(string key)
     {
@@ -95,6 +130,7 @@ internal sealed class ItemInventory
     {
         InventoryEdit candidate = world.Prepare();
         List<string> partyTokens = [];
+        List<(string Owner, string Token, long Power, long Defense)> equipped = [];
         foreach (StartingItem grant in definitions.StartingItems.Where(g => g.Preset is null || g.Preset == preset))
         {
             GearDefinition definition = definitions.Item(grant.Definition);
@@ -108,13 +144,24 @@ internal sealed class ItemInventory
             {
                 EntityId id = new(allocate());
                 candidate.MaterializeUnique(new ItemState(id, definition.Mechanical), owner);
-                if (grant.Equipped) candidate.Equip(owner, id, Slots(definition.Slots));
+                if (grant.Equipped)
+                {
+                    candidate.Equip(owner, id, Slots(definition.Slots));
+                    equipped.Add((grant.Owner, "i:" + id.Value, definition.Power, definition.Defense));
+                }
                 else if (grant.Owner == PartyKey) partyTokens.Add("i:" + id.Value);
             }
         }
         RequirePartyRoom(partyTokens);
         candidate.Publish();
         foreach (string token in partyTokens) TakeSlot(token);
+        // Contributions attach only once the ledger edit publishes: a failed
+        // grant must leave both the ledger and the stats untouched.
+        foreach ((string owner, string token, long power, long defense) in equipped)
+        {
+            if (BoundMember(owner, out var member))
+                member.Character.EquipContribution(token, power, defense);
+        }
     }
     internal void Grant(string owner, string definition, ulong quantity, Func<ulong> allocate)
     {
@@ -179,15 +226,16 @@ internal sealed class ItemInventory
         candidate.Publish();
         if (to == PartyKey) TakeSlot(token);
         if (from == PartyKey) SyncSlots();
+        if (item.Slots.Length > 0 && BoundMember(from, out var member)) member.Character.UnequipContribution(token);
     }
-    internal void Equip(string owner, string token, string slot, long basePower, ulong expectedRevision, string? destination = null)
+    internal void Equip(string owner, string token, string slot, long wielderPower, ulong expectedRevision, string? destination = null)
     {
         destination ??= owner;
-        if (!IsMember(destination)) throw new InvalidDataException("Only characters can equip gear.");
+        if (InventoryOwner.Parse(destination) is not MemberOwner) throw new InvalidDataException("Only characters can equip gear.");
         CarriedItem item = Find(owner, token);
         GearDefinition definition = definitions.Item(item.Definition);
         if (!definition.Slots.Contains(slot)) throw new InvalidDataException("This item cannot use that slot.");
-        if (basePower < definition.MinimumPower) throw new InvalidDataException("This character needs more power to use that gear.");
+        if (wielderPower < definition.MinimumPower) throw new InvalidDataException("This character needs more power to use that gear.");
         EntityId id = new(Owner(destination).Id);
         InventoryEdit candidate = world.Prepare(expectedRevision);
         if (owner != destination)
@@ -200,9 +248,11 @@ internal sealed class ItemInventory
         // the old behavior. The incoming item vacates its own slot first.
         bool toParty = owner == PartyKey;
         List<string> displacedParty = [];
+        List<string> displacedTokens = [];
         foreach (CarriedItem displaced in Items(destination).Where(i => i.Slots.Intersect(definition.Slots).Any()))
         {
             candidate.Unequip(id, new(displaced.Entity));
+            displacedTokens.Add(displaced.Token);
             if (toParty)
             {
                 candidate.TransferUnique(new(displaced.Entity), id, new(Owner(PartyKey).Id));
@@ -223,6 +273,14 @@ internal sealed class ItemInventory
             foreach (string placed in displacedParty) TakeSlot(placed);
         }
         else if (owner == PartyKey) SyncSlots();
+        // Per-source contributions mirror the ledger: displaced gear loses its
+        // own contribution and the incoming item gains its own, so unequipping
+        // later removes exactly what this equip added.
+        if (BoundMember(destination, out var wearer))
+        {
+            foreach (string displaced in displacedTokens) wearer.Character.UnequipContribution(displaced);
+            wearer.Character.EquipContribution(token, definition.Power, definition.Defense);
+        }
     }
     internal void Unequip(string owner, string token, ulong expectedRevision)
     {
@@ -231,6 +289,7 @@ internal sealed class ItemInventory
         InventoryEdit candidate = world.Prepare(expectedRevision);
         candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
         candidate.Publish();
+        if (BoundMember(owner, out var member)) member.Character.UnequipContribution(token);
     }
     internal InventoryEdit PrepareUse(string owner, string token, ulong expectedRevision)
     {
@@ -268,11 +327,7 @@ internal sealed class ItemInventory
         else candidate.DestroyUnique(new(item.Entity));
         candidate.Publish();
         if (owner == PartyKey) SyncSlots();
-    }
-    internal (long Power, long Defense) Bonuses(string owner)
-    {
-        GearDefinition[] equipped = Items(owner).Where(i => i.Slots.Length > 0).Select(i => definitions.Item(i.Definition)).ToArray();
-        return (equipped.Sum(i => i.Power), equipped.Sum(i => i.Defense));
+        if (item.Slots.Length > 0 && BoundMember(owner, out var member)) member.Character.UnequipContribution(token);
     }
     internal InventorySnapshot Capture() => new(Owners.Select(owner =>
     {

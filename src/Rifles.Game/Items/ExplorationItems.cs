@@ -91,7 +91,7 @@ internal sealed class ExplorationItems
     internal bool Reachable(string key, ExplorationState party, DungeonScene scene) => Reachable(Point(key, scene), party, scene);
     internal void RequireAccess(string key, ExplorationState party, DungeonScene scene)
     {
-        if (ItemInventory.IsMember(key) || ItemInventory.IsParty(key)) return;
+        if (InventoryOwner.Parse(key) is MemberOwner or PartyOwner) return;
         if (!Reachable(key, party, scene)) throw new InvalidDataException("Move within reach of that anchor.");
         if (key == "crate" && OpenContainer != key) throw new InvalidDataException("Open the crate first.");
     }

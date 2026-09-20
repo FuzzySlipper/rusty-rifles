@@ -9,7 +9,7 @@ internal static class InventoryChecks
 {
     internal static void Run(GameDefinitions definitions)
     {
-        ItemInventory inventory = CreateInventory(definitions.Items);
+        ItemInventory inventory = CreateInventory(definitions);
 
         VerifyGrantTransferAndStaleProposals(definitions.Items, inventory);
         VerifyPartySlots(inventory);
@@ -17,25 +17,30 @@ internal static class InventoryChecks
         VerifyEquipmentViewsAndStats(definitions, inventory);
         VerifyCapacityFailureKeepsEquipment(definitions.Items);
         VerifySaveRestore(definitions.Items, inventory);
-        VerifyOldSavesRejected(definitions.Items);
+        VerifyOldSavesRejected(definitions);
         VerifyPartyFormationAndAuthoredResources(definitions);
         VerifyExplorationCreation(definitions);
 
         Console.WriteLine("Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.");
     }
 
-    private static ItemInventory CreateInventory(ItemDefinitions definitions)
+    private static ItemInventory CreateInventory(GameDefinitions definitions)
     {
         ulong ownerId = 1;
-        PackOwner[] owners = definitions.StartingItems.Select(item => item.Owner).Distinct(StringComparer.Ordinal)
+        HashSet<string> registered = definitions.Items.StartingItems.Select(item => item.Owner).ToHashSet(StringComparer.Ordinal);
+        // Product floors register a pack for every roster member, not just
+        // grant owners: the bind step requires complete member coverage.
+        foreach (string member in definitions.Characters.ResolvePreset(definitions.Characters.DefaultPresetId).Select(m => m.Id))
+            registered.Add("member:" + member);
+        PackOwner[] owners = registered
             .Select(key =>
             {
-                PackDefinition capacity = ItemInventory.IsMember(key) ? definitions.Backpack
-                    : key == "party" ? definitions.Party
-                    : key == "crate" ? definitions.Container : definitions.Anchor;
+                PackDefinition capacity = ItemInventory.IsMember(key) ? definitions.Items.Backpack
+                    : key == "party" ? definitions.Items.Party
+                    : key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
                 return new PackOwner(ownerId++, key, capacity.Mass, capacity.Space);
             }).ToArray();
-        ItemInventory inventory = new(definitions, owners);
+        ItemInventory inventory = new(definitions.Items, owners);
         ulong itemId = 100;
         inventory.GrantStarting(() => itemId++);
         return inventory;
@@ -112,14 +117,14 @@ internal static class InventoryChecks
     {
         PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
         RiflesCharacter warden = Member(party, "warden");
-        ApplyEquipment(inventory, warden);
+        inventory.BindMembers(party.Entities, party.Members);
         Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
             && warden.Defense == warden.Definition.BaseDefense + 4, "Engine-backed equipment sources contribute to member statistics.");
 
         string spareRifle = inventory.Items("party").Single(item => item.Definition == "rifle").Token;
         ulong spareId = inventory.Find("party", spareRifle).Entity;
         CarriedItem wornRifle = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
-        inventory.Equip("party", spareRifle, "main-hand", warden.Definition.BasePower, inventory.Revision, "member:warden");
+        inventory.Equip("party", spareRifle, "main-hand", warden.Power, inventory.Revision, "member:warden");
         CarriedItem nowWorn = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
         Require(nowWorn.Entity == spareId && inventory.SlotOf(spareRifle) < 0,
             "Equipping from the party grid vacates the grid slot.");
@@ -133,8 +138,7 @@ internal static class InventoryChecks
             "Dragging worn gear back to the grid unequips it into a grid slot.");
         Require(inventory.View("member:warden").UniqueItems.Count == 1, "Member packs retain only worn gear.");
 
-        ApplyEquipment(inventory, warden);
-        Require(inventory.Bonuses("member:warden") == (0L, 4L) && warden.EquipmentBonuses == new EquipmentStatBonuses(0, 4)
+        Require(warden.EquipmentBonuses == new EquipmentStatBonuses(0, 4)
             && warden.Power == warden.Definition.BasePower && warden.Defense == warden.Definition.BaseDefense + 4,
             "Equipment bonuses follow current Engine assignments rather than a parallel item ledger.");
     }
@@ -190,7 +194,7 @@ internal static class InventoryChecks
         Require(Describe(restored) == beforeStaleRestore, "A stale reconstructed-world proposal leaves inventory untouched.");
     }
 
-    private static void VerifyOldSavesRejected(ItemDefinitions definitions)
+    private static void VerifyOldSavesRejected(GameDefinitions definitions)
     {
         // A pre-party snapshot keeps loose items in member packs: loud reject.
         ItemInventory modern = CreateInventory(definitions);
@@ -204,7 +208,7 @@ internal static class InventoryChecks
             Stacks = [new SavedStack("shot", 3)],
             Items = [new SavedItem(9001, "knife")],
         };
-        RequireRejected(() => ItemInventory.Restore(definitions, saved with { Packs = packs }),
+        RequireRejected(() => ItemInventory.Restore(definitions.Items, saved with { Packs = packs }),
             "Saves that predate the shared party inventory are rejected loudly, never migrated silently.");
     }
 
@@ -244,12 +248,6 @@ internal static class InventoryChecks
         warden.ApplyDamage(long.MaxValue);
         party.Restore(saved);
         Require(party.Capture().SequenceEqual(saved), "Party restore preserves formation, injury, and resource values exactly.");
-    }
-
-    private static void ApplyEquipment(ItemInventory inventory, RiflesCharacter member)
-    {
-        (long power, long defense) = inventory.Bonuses("member:" + member.Definition.Id);
-        member.SetEquipmentBonuses(power, defense);
     }
 
     private static void VerifyExplorationCreation(GameDefinitions definitions)

@@ -36,10 +36,14 @@ event bus, or scripting layer.
 - `EffectsComponent` contributions apply to the same `StatsComponent` combat
   reads; equipment attach/removal preserves per-source identity. No per-tick
   aggregate rebuild when nothing changed. (Planned — #8359, #8361.)
-- Engine `InventoryStore` / `InventoryComponent` / `EquipmentComponent` bind to
-  actual character/party/container entities with typed owner/item references.
-  One ledger; Rifles owns capacities, grid layout, equip requirements, atomic
-  transfer/swap semantics. (Planned — #8359.)
+- Landed (#8359): `InventoryComponent` / `EquipmentComponent` attach to
+  character entities addressing their ledger records (`BindMembers`);
+  `InventoryOwner` typed references replace prefix dispatch in gameplay (UI
+  tokens stay strings at the edge). Equipment contributions attach per source
+  on the shared `StatsComponent` (aggregate push retired; live-stat equip
+  policy). One ledger; Rifles owns capacities, grid layout, equip
+  requirements, atomic transfer/swap semantics. Ledger re-keying to entity
+  values awaits run-scoped entity lifetime (#8363).
 
 ## Actions and commands
 
@@ -97,7 +101,7 @@ event bus, or scripting layer.
 | --- | --- | --- |
 | Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots (`PresetMemberDefinition`: instance id + archetype ref + display name + position); `ResolvePreset` builds `MemberDefinition` inputs carrying archetype ids; `PartyDefinition` keeps formation + capacity only | Landed (#8283). Spells/resistances key by archetype; books key by instance; rifle-drill stats converged to archetypes (formation/loadout identity kept) |
 | Entities/stats | `RiflesCharacter` over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` durable map | Landed (#8358) |
-| Inventory | `ItemInventory` numeric `PackOwner` + string prefixes over `InventoryStore` | Bound components + typed owners (#8359) |
+| Inventory | `ItemInventory` numeric `PackOwner` ledger + bound components + typed owners | Landed (#8359); ledger re-key follows #8363 |
 | Combat | `RiflesProduct.Combat/Enemies/CombatPresentation` partials + dictionaries | Concrete combat/action owner (#8360) |
 | Magic | `MagicState` string-keyed books/conditions; per-tick recompute | Attached spellbook/conditions via `EffectsComponent` (#8361) |
 | Commands | Global revisions + exception eligibility | Typed operations + availability contract (#8362) |

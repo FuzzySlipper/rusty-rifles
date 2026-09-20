@@ -19,10 +19,8 @@ internal sealed class RiflesCharacter
 
     private readonly Actor actor;
     private readonly StatsComponent stats;
-    private EquipmentStatBonuses equipmentBonuses = new(0, 0);
+    private readonly Dictionary<string, (EquipmentStatBonuses Bonuses, StatModifierHandle? Power, StatModifierHandle? Defense)> equipmentSources = new(StringComparer.Ordinal);
     private EquipmentStatBonuses developmentBonuses = new(0, 0);
-    private StatModifierHandle? equipmentPowerModifier;
-    private StatModifierHandle? equipmentDefenseModifier;
     private StatModifierHandle? developmentPowerModifier;
     private StatModifierHandle? developmentDefenseModifier;
 
@@ -57,7 +55,9 @@ internal sealed class RiflesCharacter
     internal bool IsLiving => Vitality > 0;
     internal long Power => stats.GetStat(RiflesStatIds.Power).ValueInt64;
     internal long Defense => stats.GetStat(RiflesStatIds.Defense).ValueInt64;
-    internal EquipmentStatBonuses EquipmentBonuses => equipmentBonuses;
+    internal EquipmentStatBonuses EquipmentBonuses => equipmentSources.Values
+        .Aggregate(new EquipmentStatBonuses(0, 0),
+            (total, source) => new EquipmentStatBonuses(total.Power + source.Bonuses.Power, total.Defense + source.Bonuses.Defense));
 
     internal long ApplyDamage(long requested)
     {
@@ -86,14 +86,27 @@ internal sealed class RiflesCharacter
             : 0;
     }
 
-    /// <summary>Receives the current aggregate from authoritative equipped items.</summary>
-    internal void SetEquipmentBonuses(long power, long defense)
+    /// <summary>
+    /// Attaches one equipped item's contribution, preserving per-source
+    /// identity so unequipping removes only its own contribution. Replaces
+    /// any previous contribution from the same item.
+    /// </summary>
+    internal void EquipContribution(string item, long power, long defense)
     {
         ValidateDerivedBonus(power, nameof(power));
         ValidateDerivedBonus(defense, nameof(defense));
-        ReplaceModifier(stats.GetStat(RiflesStatIds.Power), ref equipmentPowerModifier, power);
-        ReplaceModifier(stats.GetStat(RiflesStatIds.Defense), ref equipmentDefenseModifier, defense);
-        equipmentBonuses = new EquipmentStatBonuses(power, defense);
+        UnequipContribution(item);
+        StatModifierHandle? powerHandle = power == 0 ? null : stats.GetStat(RiflesStatIds.Power).AddModifier(power, StatModifierKind.Add);
+        StatModifierHandle? defenseHandle = defense == 0 ? null : stats.GetStat(RiflesStatIds.Defense).AddModifier(defense, StatModifierKind.Add);
+        equipmentSources.Add(item, (new EquipmentStatBonuses(power, defense), powerHandle, defenseHandle));
+    }
+
+    /// <summary>Removes one item's contribution; unknown items are ignored.</summary>
+    internal void UnequipContribution(string item)
+    {
+        if (!equipmentSources.Remove(item, out var source)) return;
+        if (source.Power is not null) stats.GetStat(RiflesStatIds.Power).RemoveModifier(source.Power);
+        if (source.Defense is not null) stats.GetStat(RiflesStatIds.Defense).RemoveModifier(source.Defense);
     }
 
     internal void SetDevelopmentBonuses(long power, long defense)

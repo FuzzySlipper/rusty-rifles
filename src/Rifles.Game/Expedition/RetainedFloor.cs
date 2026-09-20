@@ -19,7 +19,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
     {
         // Member packs and the shared party pack travel with the party;
         // retained floors keep anchors and drops only.
-        SavedPack[] packs = state.Inventory.Packs.Where(p => !ItemInventory.IsMember(p.Owner.Key) && p.Owner.Key != ItemInventory.PartyKey).ToArray();
+        SavedPack[] packs = state.Inventory.Packs.Where(p => InventoryOwner.Parse(p.Owner.Key) is not (MemberOwner or PartyOwner)).ToArray();
         var items = packs.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         return new(state.FloorId, state.Floor, state.Exploration, state.Actor, state.Features,
             new(packs), state.ItemWorld with { OpenContainer = null }, state.Combat.Enemies,
@@ -31,7 +31,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
 
     internal ExpeditionSnapshot Join(ExpeditionSnapshot party, ExplorationSnapshot pose)
     {
-        SavedPack[] travelling = party.Inventory.Packs.Where(p => ItemInventory.IsMember(p.Owner.Key) || p.Owner.Key == ItemInventory.PartyKey).ToArray();
+        SavedPack[] travelling = party.Inventory.Packs.Where(p => InventoryOwner.Parse(p.Owner.Key) is (MemberOwner or PartyOwner)).ToArray();
         var items = travelling.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         MagicSnapshot magic = party.Combat.Magic! with
         {

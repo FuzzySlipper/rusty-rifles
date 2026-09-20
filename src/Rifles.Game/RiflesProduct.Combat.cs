@@ -192,7 +192,7 @@ public sealed partial class RiflesProduct
                 _ = inventory!.Find(action.SourceOwner!, action.ItemToken!);
                 ulong pack = AllocateId(); flightOwner = "combat:flight:" + pack;
                 inventory!.RegisterOwner(new(pack, flightOwner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
-                inventory.Transfer(action.SourceOwner!, flightOwner, action.ItemToken!, 1, inventory.Revision); ApplyEquipment();
+                inventory.Transfer(action.SourceOwner!, flightOwner, action.ItemToken!, 1, inventory.Revision);
             }
             Launch(partyId, memberId, action.Kind, exploration.Position, cell, flightOwner, action.Target == 0 ? "plate" : null, new(action.AimOffsetX, action.AimOffsetY));
             CombatMessage(member.Definition.Name + " released " + action.Kind); return;
@@ -385,7 +385,7 @@ public sealed partial class RiflesProduct
     }
     private void RequireItemAccess(string owner)
     {
-        if (!owner.StartsWith("combat:", StringComparison.Ordinal)) { itemWorld!.RequireAccess(owner, exploration, scene!); return; }
+        if (InventoryOwner.Parse(owner) is not CombatOwner) { itemWorld!.RequireAccess(owner, exploration, scene!); return; }
         if (!DropReachable(owner)) throw new InvalidDataException("Those belongings are not within reach.");
     }
 }

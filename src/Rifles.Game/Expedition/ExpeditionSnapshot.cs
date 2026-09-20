@@ -78,21 +78,26 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
                 "saved generated key identity");
         }
         string[] expectedOwners = saved.Roster.Select(m => "member:" + m.Id).Append(Rifles.Game.Items.ItemInventory.PartyKey).Concat(definitions.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
-        GameDefinitions.Require(inventory.Owners.Where(o => !o.Key.StartsWith("combat:", StringComparison.Ordinal)).Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "saved inventory owners");
+        GameDefinitions.Require(inventory.Owners.Where(o => InventoryOwner.Parse(o.Key) is not CombatOwner).Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "saved inventory owners");
         foreach (PackOwner owner in inventory.Owners)
         {
-            bool combatOwner = owner.Key.StartsWith("combat:", StringComparison.Ordinal);
-            PackDefinition capacity = combatOwner ? definitions.Combat.DropCapacity : ItemInventory.IsMember(owner.Key) ? definitions.Items.Backpack : owner.Key == "crate" ? definitions.Items.Container : owner.Key == Rifles.Game.Items.ItemInventory.PartyKey ? definitions.Items.Party : definitions.Items.Anchor;
+            PackDefinition capacity = InventoryOwner.Parse(owner.Key) switch
+            {
+                CombatOwner => definitions.Combat.DropCapacity,
+                MemberOwner => definitions.Items.Backpack,
+                PartyOwner => definitions.Items.Party,
+                AnchorOwner anchor => anchor.Anchor == "crate" ? definitions.Items.Container : definitions.Items.Anchor,
+                _ => throw new InvalidDataException("Unknown inventory owner."),
+            };
             GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "saved pack capacity");
-            if (!combatOwner && !ItemInventory.IsMember(owner.Key) && owner.Key != Rifles.Game.Items.ItemInventory.PartyKey) GameDefinitions.Require(owner.Id == itemWorld.Anchor(owner.Key).Id, "saved anchor owner");
+            if (InventoryOwner.Parse(owner.Key) is AnchorOwner savedAnchor) GameDefinitions.Require(owner.Id == itemWorld.Anchor(savedAnchor.Anchor).Id, "saved anchor owner");
         }
         ValidateWorldObstructions(saved);
         PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
         party.Restore(saved.Members);
+        inventory.BindMembers(party.Entities, party.Members);
         foreach (RiflesCharacter member in party.Members)
         {
-            var bonus = inventory.Bonuses("member:" + member.Definition.Id);
-            member.SetEquipmentBonuses(bonus.Power, bonus.Defense);
             GameDefinitions.Require(inventory.Items("member:" + member.Definition.Id).Where(i => i.Slots.Length > 0)
                 .All(i => member.Definition.BasePower >= definitions.Items.Item(i.Definition).MinimumPower), "saved equipment requirements");
         }

@@ -16,14 +16,6 @@ public sealed partial class RiflesProduct
     private RiflesCharacter Member(string id) => party.Members.SingleOrDefault(m => m.Definition.Id == id)
         ?? throw new InvalidDataException("Character unavailable.");
 
-    private void ApplyEquipment()
-    {
-        foreach (RiflesCharacter member in party.Members)
-        {
-            var bonus = inventory!.Bonuses("member:" + member.Definition.Id);
-            member.SetEquipmentBonuses(bonus.Power, bonus.Defense);
-        }
-    }
     private void ItemCommand(SessionCommand command)
     {
         string source = command.Source ?? "member:" + selectedMember;
@@ -41,9 +33,9 @@ public sealed partial class RiflesProduct
                 break;
             case "equip":
                 string gearOwner = command.Destination ?? "member:" + selectedMember;
-                if (!ItemInventory.IsMember(gearOwner) || !Member(gearOwner["member:".Length..]).IsLiving)
+                if (InventoryOwner.Parse(gearOwner) is not MemberOwner wearer || !Member(wearer.Instance).IsLiving)
                     throw new InvalidDataException("Choose a living character to equip.");
-                inventory.Equip(source, token, command.Slot ?? "", Member(gearOwner["member:".Length..]).Definition.BasePower, revision, gearOwner);
+                inventory.Equip(source, token, command.Slot ?? "", Member(wearer.Instance).Power, revision, gearOwner);
                 feedback = "Equipment changed";
                 break;
             case "unequip": inventory.Unequip(source, token, revision); feedback = "Item returned to pack"; break;
@@ -65,7 +57,6 @@ public sealed partial class RiflesProduct
                 feedback = "Gate unlocked; the key is retained. Set the lever and weight the plate.";
                 break;
         }
-        ApplyEquipment();
         if (command.Action != "consume") audio!.Play(SoundCue.Interaction, Aim(exploration.Position));
     }
     private IEnumerable<InteractionCandidate> ItemCandidates()

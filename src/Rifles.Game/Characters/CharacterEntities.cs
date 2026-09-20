@@ -61,6 +61,26 @@ internal sealed class CharacterEntities
 
     internal bool TryGetEntity(string instanceKey, out EntityId entity) => instances.TryGetValue(instanceKey, out entity);
 
+    /// <summary>
+    /// Binds inventory/equipment owner facades to a character entity. The
+    /// facades address the member's ledger record (admitted pack id) while
+    /// living and dying with the entity; the instance map stays the explicit
+    /// durable relationship. Re-binding is idempotent.
+    /// </summary>
+    internal (InventoryComponent Inventory, EquipmentComponent Equipment) BindInventory(
+        string instanceKey, InventoryStore world, EntityId ledgerOwner)
+    {
+        if (!instances.TryGetValue(instanceKey, out EntityId entity))
+            throw new InvalidDataException($"Unknown character instance '{instanceKey}'.");
+        ArgumentNullException.ThrowIfNull(world);
+        Actor actor = new(store, entity);
+        if (!actor.Has<InventoryComponent>())
+            actor.Add(new InventoryComponent(world, ledgerOwner));
+        if (!actor.Has<EquipmentComponent>())
+            actor.Add(new EquipmentComponent(world, ledgerOwner));
+        return (actor.Get<InventoryComponent>(), actor.Get<EquipmentComponent>());
+    }
+
     internal string? TryGetInstance(EntityId entity)
     {
         foreach ((string key, EntityId id) in instances)

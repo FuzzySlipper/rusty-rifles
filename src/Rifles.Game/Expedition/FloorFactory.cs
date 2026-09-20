@@ -71,8 +71,8 @@ internal static class FloorFactory
             return new PackOwner(anchor.Id, anchor.Key, capacity.Mass, capacity.Space);
         });
         ItemInventory inventory = new(definitions.Items, memberPacks.Append(partyPack).Concat(anchorPacks));
+        inventory.BindMembers(party.Entities, party.Members);
         inventory.GrantStarting(Allocate, preset);
-        ApplyEquipment(party, inventory);
         scene.SetDoor(itemWorld.Capture().Door, false);
 
         MovementGrid movement = new(floor.Cells.ToHashSet(), scene.AdmitStep, definitions.Crowd);
@@ -102,15 +102,6 @@ internal static class FloorFactory
         _ = ExpeditionCodec.Validate(snapshot, definitions);
         nextObjectId = candidateNextObjectId;
         return snapshot;
-    }
-
-    private static void ApplyEquipment(PartyState party, ItemInventory inventory)
-    {
-        foreach (RiflesCharacter member in party.Members)
-        {
-            var bonus = inventory.Bonuses("member:" + member.Definition.Id);
-            member.SetEquipmentBonuses(bonus.Power, bonus.Defense);
-        }
     }
 
     private static void ConfigureDoorClearance(MovementGrid movement, DungeonFloor floor, GridPoint door, float clearance)
