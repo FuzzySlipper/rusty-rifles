@@ -197,7 +197,7 @@ internal static class CombatRestore
         foreach (EnemyState enemy in enemies)
             GameDefinitions.Require(enemy.Alive ? !dropOwners.Contains(enemy.Owner) : dropOwners.Contains(enemy.Owner), "saved enemy drop");
 
-        HashSet<string> inventoryCombatOwners = inventory.Owners.Where(owner => owner.Key.StartsWith("combat:", StringComparison.Ordinal))
+        HashSet<string> inventoryCombatOwners = inventory.Owners.Where(owner => InventoryOwner.Parse(owner.Key) is CombatOwner)
             .Select(owner => owner.Key).ToHashSet(StringComparer.Ordinal);
         HashSet<string> knownOwners = new(enemyOwners, StringComparer.Ordinal);
         knownOwners.UnionWith(flightOwners);

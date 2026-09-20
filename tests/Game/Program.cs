@@ -216,7 +216,7 @@ foreach (var placed in savedEncounterPlacement.Instances)
     EnemyDefinition enemy = definitions.Combat.Enemy(spawn.Enemy);
     ulong id = AllocateDressingId(); string owner = "combat:enemy:" + id;
     savedInventory.RegisterOwner(new PackOwner(AllocateDressingId(), owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
-    foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(owner, loot.Definition, loot.Quantity, AllocateDressingId);
+    foreach (StartingItem loot in enemy.Loot) savedInventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, AllocateDressingId);
     GridPoint cell = placed.Cell;
     ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id, enemy.Footprint, enemy.Faction, enemy.Share);
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));

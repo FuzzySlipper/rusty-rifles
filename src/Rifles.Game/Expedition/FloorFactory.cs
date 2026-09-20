@@ -88,6 +88,7 @@ internal static class FloorFactory
         EncounterPlacementResult encounterPlacement = CreateEnemies(floor, definitions, inventory, itemWorld, movement,
             generatedFeatures, drops, Allocate, party.Entities, out EnemyState[] enemies);
         generatedFeatures = AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, Allocate);
+        inventory.BindRemaining(party.Entities);
 
         MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)));
         CombatSnapshot combat = new(enemies.Select(enemy => enemy.Capture()).ToArray(),
@@ -124,7 +125,7 @@ internal static class FloorFactory
             string owner = "combat:flight:" + packId;
             inventory.RegisterOwner(new PackOwner(packId, owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
             ulong entity = allocate();
-            inventory.Grant(owner, definitions.GeneratedFeatures.KeyItem, 1, () => entity);
+            inventory.Grant(InventoryOwner.Parse(owner), definitions.GeneratedFeatures.KeyItem, 1, () => entity);
             drops.Add(owner, grant.Cell);
             keys.Add(new GeneratedKey(grant.Item, entity, owner, grant.Cell));
         }
@@ -140,7 +141,7 @@ internal static class FloorFactory
             inventory.RegisterOwner(new PackOwner(packId, owner, definitions.Combat.DropCapacity.Mass,
                 definitions.Combat.DropCapacity.Space, "Counterweight plate"));
             drops.Add(owner, route.Cells[0]);
-            inventory.Grant(key.Owner, definitions.GeneratedFeatures.WeightItem, 1, allocate);
+            inventory.Grant(InventoryOwner.Parse(key.Owner), definitions.GeneratedFeatures.WeightItem, 1, allocate);
             plates.Add(new GeneratedPlate(plateId, gate.Id, owner, route.Cells[0], key.Cell, definitions.GeneratedFeatures.PlateWeight));
         }
 
@@ -177,7 +178,7 @@ internal static class FloorFactory
             ulong id = allocate();
             string owner = "combat:enemy:" + id;
             inventory.RegisterOwner(new PackOwner(allocate(), owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
-            foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, allocate);
+            foreach (StartingItem loot in definition.Loot) inventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, allocate);
             ExplorationState motion = new(placed.Cell, definitions.Exploration with { StepSeconds = definition.StepSeconds });
             GridPoint[] patrol = PatrolRoute(floor, itemWorld.Capture().Door, placed.Cell, spawn);
             EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false,
@@ -209,7 +210,7 @@ internal static class FloorFactory
             ulong packId = allocate();
             string owner = "combat:flight:" + packId;
             inventory.RegisterOwner(new PackOwner(packId, owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
-            inventory.Grant(owner, supply.Item, supply.Quantity, allocate);
+            inventory.Grant(InventoryOwner.Parse(owner), supply.Item, supply.Quantity, allocate);
             drops.Add(owner, supply.Cell);
         }
         return features with { Supplies = supplies };

@@ -3,6 +3,7 @@ using System.Numerics;
 using Rifles.Game.Combat;
 using Rifles.Game.Magic;
 using Rifles.Game.Characters;
+using Rifles.Game.Items;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
 using Rusty.Engine;
@@ -144,7 +145,7 @@ public sealed partial class RiflesProduct
         {
             ValidateSpell(memberId, spell, action.TargetMember!, action.Target, action.FeatureRevision, true);
             if (Member(memberId).Resource < action.Cost) throw new InvalidDataException("Insufficient resource at commit.");
-            if (spell.Effect == SpellEffect.Revive) inventory!.Consume("member:" + memberId, definitions.Magic.RevivalItem, 1);
+            if (spell.Effect == SpellEffect.Revive) inventory!.Consume(new MemberOwner(memberId), definitions.Magic.RevivalItem, 1);
             Member(memberId).SpendResource(action.Cost);
         }
         else
@@ -267,7 +268,7 @@ public sealed partial class RiflesProduct
                     if (!Member(owner).IsLiving || !HasItem(owner, definitions.Magic.RestItem)) CombatMessage("Rest failed: remedy unavailable.");
                     else
                     {
-                        inventory!.Consume("member:" + owner, definitions.Magic.RestItem, 1);
+                        inventory!.Consume(new MemberOwner(owner), definitions.Magic.RestItem, 1);
                         foreach (RiflesCharacter member in party.Members.Where(m => m.IsLiving))
                         {
                             member.Heal(definitions.Magic.RestVitality); member.RecoverResource(definitions.Magic.RestResource);

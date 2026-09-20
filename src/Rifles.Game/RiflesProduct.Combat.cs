@@ -166,7 +166,7 @@ public sealed partial class RiflesProduct
             && (Weapon(memberId)?.Entity ?? 0) != action.Weapon) throw new InvalidDataException("Equipment changed; action interrupted.");
         if (action.Kind == CombatActionKind.Reload)
         {
-            inventory!.Consume(ItemInventory.PartyKey, Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
+            inventory!.Consume(new PartyOwner(), Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
             audio!.Play(SoundCue.Reload, Aim(exploration.Position));
             CombatMessage(member.Definition.Name + " loaded one round."); return;
         }
@@ -174,7 +174,7 @@ public sealed partial class RiflesProduct
         {
             RequireItemAccess(action.SourceOwner!); ValidateRemedy(action.SourceOwner!, action.ItemToken!, action.TargetMember!);
             GearDefinition use = definitions.Items.Item(inventory!.Find(action.SourceOwner!, action.ItemToken!).Definition);
-            inventory.PrepareUse(action.SourceOwner!, action.ItemToken!, inventory.Revision).Publish();
+            inventory.PrepareUse(ItemRef.Parse(action.SourceOwner!, action.ItemToken!), inventory.Revision).Publish();
             RiflesCharacter target = Member(action.TargetMember!);
             long restored = use.Use == ItemUse.Vitality ? target.Heal(use.Effect) : target.RecoverResource(use.Effect);
             CombatMessage(target.Definition.Name + " restored " + restored + " " + use.Use); return;
@@ -192,7 +192,8 @@ public sealed partial class RiflesProduct
                 _ = inventory!.Find(action.SourceOwner!, action.ItemToken!);
                 ulong pack = AllocateId(); flightOwner = "combat:flight:" + pack;
                 inventory!.RegisterOwner(new(pack, flightOwner, Combat.DropCapacity.Mass, Combat.DropCapacity.Space));
-                inventory.Transfer(action.SourceOwner!, flightOwner, action.ItemToken!, 1, inventory.Revision);
+                inventory.BindRemaining(party.Entities);
+                inventory.Transfer(ItemRef.Parse(action.SourceOwner!, action.ItemToken!), InventoryOwner.Parse(flightOwner), 1, inventory.Revision);
             }
             Launch(partyId, memberId, action.Kind, exploration.Position, cell, flightOwner, action.Target == 0 ? "plate" : null, new(action.AimOffsetX, action.AimOffsetY));
             CombatMessage(member.Definition.Name + " released " + action.Kind); return;
@@ -234,7 +235,7 @@ public sealed partial class RiflesProduct
         if (action.Kind == CombatActionKind.Cast) { CommitSpell(null, enemy, action); return; }
         if (action.Kind == CombatActionKind.Reload)
         {
-            inventory!.Consume(enemy.Owner, Combat.AmmunitionItem, 1); enemy.Loaded = true;
+            inventory!.Consume(InventoryOwner.Parse(enemy.Owner), Combat.AmmunitionItem, 1); enemy.Loaded = true;
             audio!.Play(SoundCue.Reload, EnemyAim(enemy));
             CombatMessage(enemy.Definition.Name + " loaded a round."); return;
         }
@@ -345,13 +346,13 @@ public sealed partial class RiflesProduct
                     if (!Combat.RecoverThrownItems)
                     {
                         CarriedItem consumed = inventory!.Items(flight.Owner).Single();
-                        inventory.Destroy(flight.Owner, consumed.Token); loadedWeapons.Remove(consumed.Entity);
+                        inventory.Destroy(ItemRef.Parse(flight.Owner, consumed.Token)); loadedWeapons.Remove(consumed.Entity);
                         CombatMessage("Thrown item consumed on impact."); continue;
                     }
                     if (landed == itemWorld!.Anchor("plate").Cell)
                     {
                         CarriedItem item = inventory!.Items(flight.Owner).Single();
-                        try { inventory.Transfer(flight.Owner, "plate", item.Token, item.Quantity, inventory.Revision); }
+                        try { inventory.Transfer(ItemRef.Parse(flight.Owner, item.Token), InventoryOwner.Parse("plate"), item.Quantity, inventory.Revision); }
                         catch (InvalidDataException) { /* Occupied plate: keep the recoverable pile at this cell. */ }
                     }
                     CombatMessage("Thrown item landed; recover it from nearby ground inventory.");

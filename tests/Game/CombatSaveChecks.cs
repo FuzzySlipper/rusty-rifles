@@ -146,7 +146,7 @@ internal static class CombatSaveChecks
                 ulong id = (ulong)(10 + index);
                 string owner = "combat:enemy:" + id;
                 inventory.RegisterOwner(new PackOwner(nextId++, owner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
-                foreach (StartingItem loot in definition.Loot) inventory.Grant(owner, loot.Definition, loot.Quantity, () => nextId++);
+                foreach (StartingItem loot in definition.Loot) inventory.Grant(InventoryOwner.Parse(owner), loot.Definition, loot.Quantity, () => nextId++);
                 ExplorationState motion = new(floor.Cells.First(), definitions.Exploration with { StepSeconds = definition.StepSeconds });
                 return new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false, owner, new EnemyBrain(definition.Brain, motion.Position, [motion.Position]).Capture(), spawn.Id);
             }).ToArray();

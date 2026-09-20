@@ -375,6 +375,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         expeditionId = saved.Id; floorId = saved.FloorId; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
         inventory = restoredInventory; itemWorld = restoredItems; preset = saved.Preset;
         inventory.BindMembers(restored.Party.Entities, restored.Party.Members);
+        inventory.BindRemaining(restored.Party.Entities);
         ApplyCombatRestore(restoredCombat);
         paused = saved.Paused;
         selectedMember = saved.SelectedMember;

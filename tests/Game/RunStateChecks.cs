@@ -92,7 +92,7 @@ internal static class RunStateChecks
         int commits = 0;
         action.Advance(reload.Windup, _ =>
         {
-            inventory.Consume(ammoOwner, definitions.Combat.AmmunitionItem, 1);
+            inventory.Consume(InventoryOwner.Parse(ammoOwner), definitions.Combat.AmmunitionItem, 1);
             commits++;
         });
         ActionSnapshot recovery = action.Capture() ?? throw new InvalidOperationException("Reload did not enter recovery.");

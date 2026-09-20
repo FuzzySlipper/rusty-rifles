@@ -23,22 +23,23 @@ public sealed partial class RiflesProduct
         if (revision != inventory!.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
         RequireItemAccess(source);
         string token = command.Item ?? throw new InvalidDataException("Select an item first.");
+        ItemRef subject = ItemRef.Parse(source, token);
         switch (command.Action)
         {
             case "transfer":
                 string destination = command.Destination ?? throw new InvalidDataException("Choose a destination.");
                 RequireItemAccess(destination);
-                inventory.Transfer(source, destination, token, command.Quantity ?? 1, revision);
+                inventory.Transfer(subject, InventoryOwner.Parse(destination), command.Quantity ?? 1, revision);
                 feedback = "Item transferred";
                 break;
             case "equip":
                 string gearOwner = command.Destination ?? "member:" + selectedMember;
                 if (InventoryOwner.Parse(gearOwner) is not MemberOwner wearer || !Member(wearer.Instance).IsLiving)
                     throw new InvalidDataException("Choose a living character to equip.");
-                inventory.Equip(source, token, command.Slot ?? "", Member(wearer.Instance).Power, revision, gearOwner);
+                inventory.Equip(subject, command.Slot ?? "", Member(wearer.Instance).Power, revision, wearer);
                 feedback = "Equipment changed";
                 break;
-            case "unequip": inventory.Unequip(source, token, revision); feedback = "Item returned to pack"; break;
+            case "unequip": inventory.Unequip(subject, revision); feedback = "Item returned to pack"; break;
             case "arrange":
                 inventory.Arrange(token, command.PartySlot ?? throw new InvalidDataException("Choose a grid slot."), revision);
                 feedback = "Item rearranged";
@@ -98,7 +99,7 @@ public sealed partial class RiflesProduct
         itemWorld.RequireAccess(anchor.Key, exploration, scene!);
         CarriedItem? item = inventory!.Items(anchor.Key).SingleOrDefault();
         if (item is null) return "Choose a pack item and place it here from Inventory.";
-        inventory.Transfer(anchor.Key, ItemInventory.PartyKey, item.Token, item.Quantity, inventory.Revision);
+        inventory.Transfer(ItemRef.Parse(anchor.Key, item.Token), new PartyOwner(), item.Quantity, inventory.Revision);
         return "Picked up " + definitions.Items.Item(item.Definition).Name;
     }
 }

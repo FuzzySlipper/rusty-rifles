@@ -67,22 +67,21 @@ internal sealed class ItemInventory
         int free = definitions.PartySlots - slots.Count;
         if (fresh > free) throw new InvalidDataException("The party inventory is full.");
     }
-    private static bool IsCombatOwner(string key) => key.StartsWith("combat:", StringComparison.Ordinal);
     internal void RegisterOwner(PackOwner owner)
     {
         GameDefinitions.Require(owner.Id > 0 && !string.IsNullOrWhiteSpace(owner.Key)
             && owner.MassCapacity > 0 && owner.SpaceCapacity > 0
             && !owners.ContainsKey(owner.Key) && owners.Values.All(existing => existing.Id != owner.Id), "pack owner");
         world.RegisterInventory(new InventoryState(new(owner.Id), [new(MassMetric, owner.MassCapacity), new(SpaceMetric, owner.SpaceCapacity)]));
-        if (IsMember(owner.Key)) world.RegisterEquipment(new EquipmentState(new(owner.Id)));
+        if (InventoryOwner.Parse(owner.Key) is MemberOwner) world.RegisterEquipment(new EquipmentState(new(owner.Id)));
         owners.Add(owner.Key, owner);
     }
     internal PackOwner Owner(string key) => owners.TryGetValue(key, out PackOwner? value) ? value : throw new InvalidDataException("Pack unavailable.");
 
-    private readonly Dictionary<string, (EntityId Ledger, InventoryComponent Inventory, EquipmentComponent Equipment, RiflesCharacter Character)> bound = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (InventoryComponent Inventory, EquipmentComponent? Equipment, RiflesCharacter? Character)> bound = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// Binds member packs to canonical character entities: owner facades attach
+    /// Binds member and party packs to canonical entities: owner facades attach
     /// to the entity while addressing its ledger record, and currently equipped
     /// items attach per-source contributions. Re-binding is idempotent.
     /// </summary>
@@ -93,23 +92,62 @@ internal sealed class ItemInventory
         foreach (RiflesCharacter member in members)
         {
             PackOwner owner = Owner("member:" + member.Definition.Id);
-            (InventoryComponent inventory, EquipmentComponent equipment) =
+            (InventoryComponent inventory, EquipmentComponent? equipment) =
                 entities.BindInventory(member.Definition.Id, world, new(owner.Id));
-            bound[member.Definition.Id] = (new(owner.Id), inventory, equipment, member);
+            bound[owner.Key] = (inventory, equipment, member);
             foreach (CarriedItem worn in Items(owner.Key).Where(i => i.Slots.Length > 0))
             {
                 GearDefinition gear = definitions.Item(worn.Definition);
                 member.EquipContribution(worn.Token, gear.Power, gear.Defense);
             }
         }
+
+        PackOwner party = Owner(PartyKey);
+        bound[party.Key] = (entities.BindParty(world, new(party.Id)), null, null);
     }
 
-    private bool BoundMember(string key, out (EntityId Ledger, InventoryComponent Inventory, EquipmentComponent Equipment, RiflesCharacter Character) member)
+    /// <summary>
+    /// Binds every remaining registered pack (anchors, enemy packs, flights) to
+    /// an entity facade: enemy packs attach to their live enemy entity, the
+    /// rest get container entities keyed by pack key. Called once floor
+    /// assembly has registered all packs; re-binding is idempotent.
+    /// </summary>
+    internal void BindRemaining(CharacterEntities entities)
     {
-        if (key.StartsWith("member:", StringComparison.Ordinal)
-            && bound.TryGetValue(key["member:".Length..], out member))
+        ArgumentNullException.ThrowIfNull(entities);
+        foreach (PackOwner owner in Owners)
+        {
+            if (bound.ContainsKey(owner.Key)) continue;
+            EntityId ledger = new(owner.Id);
+            InventoryComponent facade;
+            if (InventoryOwner.Parse(owner.Key) is CombatOwner combat
+                && combat.EnemyPackId is { } enemyPack
+                && entities.TryGetEntity("enemy:" + enemyPack, out _))
+            {
+                (facade, _) = entities.BindInventory("enemy:" + enemyPack, world, ledger, equipment: false);
+            }
+            else
+            {
+                facade = entities.BindContainer(owner.Key, world, ledger);
+            }
+
+            bound[owner.Key] = (facade, null, null);
+        }
+    }
+
+    internal bool IsBound(string key) => bound.ContainsKey(key);
+
+    private bool BoundMember(string key, out RiflesCharacter member)
+    {
+        if (InventoryOwner.Parse(key) is MemberOwner
+            && bound.TryGetValue(key, out var entry)
+            && entry.Character is { } character)
+        {
+            member = character;
             return true;
-        member = default;
+        }
+
+        member = null!;
         return false;
     }
     internal InventoryView View(string owner) => world.View(new(Owner(owner).Id));
@@ -160,20 +198,20 @@ internal sealed class ItemInventory
         foreach ((string owner, string token, long power, long defense) in equipped)
         {
             if (BoundMember(owner, out var member))
-                member.Character.EquipContribution(token, power, defense);
+                member.EquipContribution(token, power, defense);
         }
     }
-    internal void Grant(string owner, string definition, ulong quantity, Func<ulong> allocate)
+    internal void Grant(InventoryOwner owner, string definition, ulong quantity, Func<ulong> allocate)
     {
         GearDefinition item = definitions.Item(definition);
         if (quantity == 0 || quantity > item.MaximumQuantity) throw new InvalidDataException("Choose an available quantity.");
-        EntityId destination = new(Owner(owner).Id);
+        EntityId destination = new(Owner(owner.Key).Id);
         List<string> partyTokens = [];
         InventoryEdit candidate = world.Prepare();
         if (item.Kind == ItemKind.Fungible)
         {
             candidate.Grant(destination, item.Mechanical, quantity);
-            if (owner == PartyKey) partyTokens.Add("s:" + item.Id);
+            if (owner is PartyOwner) partyTokens.Add("s:" + item.Id);
         }
         else
         {
@@ -181,75 +219,74 @@ internal sealed class ItemInventory
             {
                 EntityId id = new(allocate());
                 candidate.MaterializeUnique(new ItemState(id, item.Mechanical), destination);
-                if (owner == PartyKey) partyTokens.Add("i:" + id.Value);
+                if (owner is PartyOwner) partyTokens.Add("i:" + id.Value);
             }
         }
         RequirePartyRoom(partyTokens);
         candidate.Publish();
         foreach (string token in partyTokens) TakeSlot(token);
     }
-    internal void Consume(string owner, string definition, ulong quantity)
+    internal void Consume(InventoryOwner owner, string definition, ulong quantity)
     {
         GearDefinition item = definitions.Item(definition);
         if (item.Kind != ItemKind.Fungible || quantity == 0) throw new InvalidDataException("Choose available ammunition.");
         InventoryEdit candidate = world.Prepare();
-        candidate.Consume(new(Owner(owner).Id), item.Mechanical, quantity);
+        candidate.Consume(new(Owner(owner.Key).Id), item.Mechanical, quantity);
         candidate.Publish();
-        if (owner == PartyKey) SyncSlots();
+        if (owner is PartyOwner) SyncSlots();
     }
-    internal void Transfer(string from, string to, string token, ulong quantity, ulong expectedRevision)
+    internal void Transfer(ItemRef item, InventoryOwner to, ulong quantity, ulong expectedRevision)
     {
-        if (from == to) throw new InvalidDataException("Choose a different destination.");
+        if (item.OwnerKey == to.Key) throw new InvalidDataException("Choose a different destination.");
         // Characters carry equipped gear only; loose items live in the party.
         // Equip (with its slot and power validation) is the way onto a member.
-        if (IsMember(to)) throw new InvalidDataException("Characters carry only equipped gear — send it to the party instead.");
-        CarriedItem item = Find(from, token);
-        if (quantity == 0 || quantity > item.Quantity) throw new InvalidDataException("Choose an available quantity.");
+        if (to is MemberOwner) throw new InvalidDataException("Characters carry only equipped gear — send it to the party instead.");
+        CarriedItem found = Find(item.OwnerKey, item.Token);
+        if (quantity == 0 || quantity > found.Quantity) throw new InvalidDataException("Choose an available quantity.");
         // A floor quadrant/alcove/plate holds one item kind, with stack merging permitted.
         // The party pack is a real multi-kind inventory and skips this rule.
-        if (!IsMember(to) && !IsParty(to) && to != "crate" && !IsCombatOwner(to))
+        if (to is AnchorOwner anchor && anchor.Anchor != "crate")
         {
-            IReadOnlyList<CarriedItem> existing = Items(to);
-            if (existing.Any(i => i.Entity != 0 || item.Entity != 0 || i.Definition != item.Definition))
+            IReadOnlyList<CarriedItem> existing = Items(to.Key);
+            if (existing.Any(i => i.Entity != 0 || found.Entity != 0 || i.Definition != found.Definition))
                 throw new InvalidDataException("That anchor is occupied.");
         }
         InventoryEdit candidate = world.Prepare(expectedRevision);
-        EntityId source = new(Owner(from).Id), destination = new(Owner(to).Id);
-        if (item.Entity == 0) candidate.TransferFungible(source, destination, definitions.Item(item.Definition).Mechanical, quantity);
+        EntityId source = new(Owner(item.OwnerKey).Id), destination = new(Owner(to.Key).Id);
+        if (found.Entity == 0) candidate.TransferFungible(source, destination, definitions.Item(found.Definition).Mechanical, quantity);
         else
         {
-            EntityId id = new(item.Entity);
-            if (item.Slots.Length > 0) candidate.Unequip(source, id);
+            EntityId id = new(found.Entity);
+            if (found.Slots.Length > 0) candidate.Unequip(source, id);
             candidate.TransferUnique(id, source, destination);
         }
-        if (to == PartyKey) RequirePartyRoom([token]);
+        if (to is PartyOwner) RequirePartyRoom([item.Token]);
         candidate.Publish();
-        if (to == PartyKey) TakeSlot(token);
-        if (from == PartyKey) SyncSlots();
-        if (item.Slots.Length > 0 && BoundMember(from, out var member)) member.Character.UnequipContribution(token);
+        if (to is PartyOwner) TakeSlot(item.Token);
+        if (item.Owner is PartyOwner) SyncSlots();
+        if (found.Slots.Length > 0 && BoundMember(item.OwnerKey, out var member)) member.UnequipContribution(item.Token);
     }
-    internal void Equip(string owner, string token, string slot, long wielderPower, ulong expectedRevision, string? destination = null)
+    internal void Equip(ItemRef item, string slot, long wielderPower, ulong expectedRevision, MemberOwner destination)
     {
-        destination ??= owner;
-        if (InventoryOwner.Parse(destination) is not MemberOwner) throw new InvalidDataException("Only characters can equip gear.");
-        CarriedItem item = Find(owner, token);
-        GearDefinition definition = definitions.Item(item.Definition);
+        ArgumentNullException.ThrowIfNull(destination);
+        CarriedItem found = Find(item.OwnerKey, item.Token);
+        GearDefinition definition = definitions.Item(found.Definition);
         if (!definition.Slots.Contains(slot)) throw new InvalidDataException("This item cannot use that slot.");
         if (wielderPower < definition.MinimumPower) throw new InvalidDataException("This character needs more power to use that gear.");
-        EntityId id = new(Owner(destination).Id);
+        EntityId id = new(Owner(destination.Key).Id);
         InventoryEdit candidate = world.Prepare(expectedRevision);
-        if (owner != destination)
+        if (item.OwnerKey != destination.Key)
         {
-            if (item.Slots.Length > 0) candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
-            candidate.TransferUnique(new(item.Entity), new(Owner(owner).Id), id);
+            if (found.Slots.Length > 0) candidate.Unequip(new(Owner(item.OwnerKey).Id), new(found.Entity));
+            candidate.TransferUnique(new(found.Entity), new(Owner(item.OwnerKey).Id), id);
         }
         // Swapping out of the party grid returns the displaced gear to the
         // grid, not into the member pack: equipping from anywhere else keeps
         // the old behavior. The incoming item vacates its own slot first.
-        bool toParty = owner == PartyKey;
+        bool toParty = item.Owner is PartyOwner;
         List<string> displacedParty = [];
         List<string> displacedTokens = [];
-        foreach (CarriedItem displaced in Items(destination).Where(i => i.Slots.Intersect(definition.Slots).Any()))
+        foreach (CarriedItem displaced in Items(destination.Key).Where(i => i.Slots.Intersect(definition.Slots).Any()))
         {
             candidate.Unequip(id, new(displaced.Entity));
             displacedTokens.Add(displaced.Token);
@@ -265,41 +302,41 @@ internal sealed class ItemInventory
             if (displacedParty.Distinct(StringComparer.Ordinal).Count() > spare)
                 throw new InvalidDataException("The party inventory is full.");
         }
-        candidate.Equip(id, new(item.Entity), Slots(definition.Slots));
+        candidate.Equip(id, new(found.Entity), Slots(definition.Slots));
         candidate.Publish();
         if (toParty)
         {
             SyncSlots();
             foreach (string placed in displacedParty) TakeSlot(placed);
         }
-        else if (owner == PartyKey) SyncSlots();
+        else if (item.Owner is PartyOwner) SyncSlots();
         // Per-source contributions mirror the ledger: displaced gear loses its
         // own contribution and the incoming item gains its own, so unequipping
         // later removes exactly what this equip added.
-        if (BoundMember(destination, out var wearer))
+        if (BoundMember(destination.Key, out var wearer))
         {
-            foreach (string displaced in displacedTokens) wearer.Character.UnequipContribution(displaced);
-            wearer.Character.EquipContribution(token, definition.Power, definition.Defense);
+            foreach (string displaced in displacedTokens) wearer.UnequipContribution(displaced);
+            wearer.EquipContribution(item.Token, definition.Power, definition.Defense);
         }
     }
-    internal void Unequip(string owner, string token, ulong expectedRevision)
+    internal void Unequip(ItemRef item, ulong expectedRevision)
     {
-        CarriedItem item = Find(owner, token);
-        if (item.Slots.Length == 0) throw new InvalidDataException("That item is not equipped.");
+        CarriedItem found = Find(item.OwnerKey, item.Token);
+        if (found.Slots.Length == 0) throw new InvalidDataException("That item is not equipped.");
         InventoryEdit candidate = world.Prepare(expectedRevision);
-        candidate.Unequip(new(Owner(owner).Id), new(item.Entity));
+        candidate.Unequip(new(Owner(item.OwnerKey).Id), new(found.Entity));
         candidate.Publish();
-        if (BoundMember(owner, out var member)) member.Character.UnequipContribution(token);
+        if (BoundMember(item.OwnerKey, out var member)) member.UnequipContribution(item.Token);
     }
-    internal InventoryEdit PrepareUse(string owner, string token, ulong expectedRevision)
+    internal InventoryEdit PrepareUse(ItemRef item, ulong expectedRevision)
     {
-        CarriedItem item = Find(owner, token);
-        GearDefinition definition = definitions.Item(item.Definition);
+        CarriedItem found = Find(item.OwnerKey, item.Token);
+        GearDefinition definition = definitions.Item(found.Definition);
         InventoryEdit candidate = world.Prepare(expectedRevision);
         if (definition.Cost > 0)
         {
-            if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definition.Mechanical, definition.Cost);
-            else if (definition.Cost == 1) candidate.DestroyUnique(new(item.Entity));
+            if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), definition.Mechanical, definition.Cost);
+            else if (definition.Cost == 1) candidate.DestroyUnique(new(found.Entity));
             else throw new InvalidDataException("Invalid unique item cost.");
         }
         candidate.Validate();
@@ -319,15 +356,15 @@ internal sealed class ItemInventory
         if (occupant is not null) slots[occupant] = SlotOf(token);
         slots[token] = slot;
     }
-    internal void Destroy(string owner, string token)
+    internal void Destroy(ItemRef item)
     {
-        CarriedItem item = Find(owner, token);
+        CarriedItem found = Find(item.OwnerKey, item.Token);
         InventoryEdit candidate = world.Prepare();
-        if (item.Entity == 0) candidate.Consume(new(Owner(owner).Id), definitions.Item(item.Definition).Mechanical, item.Quantity);
-        else candidate.DestroyUnique(new(item.Entity));
+        if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), definitions.Item(found.Definition).Mechanical, found.Quantity);
+        else candidate.DestroyUnique(new(found.Entity));
         candidate.Publish();
-        if (owner == PartyKey) SyncSlots();
-        if (item.Slots.Length > 0 && BoundMember(owner, out var member)) member.Character.UnequipContribution(token);
+        if (item.Owner is PartyOwner) SyncSlots();
+        if (found.Slots.Length > 0 && BoundMember(item.OwnerKey, out var member)) member.UnequipContribution(item.Token);
     }
     internal InventorySnapshot Capture() => new(Owners.Select(owner =>
     {
@@ -349,7 +386,7 @@ internal sealed class ItemInventory
             // Saves that predate the shared party inventory kept loose items
             // in member packs. They cannot load: reject loudly, never migrate
             // silently into a model the player did not choose.
-            if (IsMember(pack.Owner.Key) && (pack.Stacks.Length > 0
+            if (InventoryOwner.Parse(pack.Owner.Key) is MemberOwner && (pack.Stacks.Length > 0
                 || pack.Items.Any(item => !pack.Equipment.Any(equipment => equipment.Item == item.Id))))
                 throw new InvalidDataException("This save predates the shared party inventory; start a new expedition.");
             foreach (SavedStack stack in pack.Stacks) candidate.Grant(owner, definitions.Item(stack.Definition).Mechanical, stack.Quantity);
@@ -373,7 +410,7 @@ internal sealed class ItemInventory
                 foreach (SavedSlot saved in savedSlots) result.slots[saved.Token] = saved.Slot;
                 foreach (string token in live.Where(token => result.SlotOf(token) < 0)) result.TakeSlot(token);
             }
-            if (!IsMember(pack.Owner.Key) && pack.Owner.Key != "crate" && !IsCombatOwner(pack.Owner.Key) && pack.Owner.Key != PartyKey)
+            if (InventoryOwner.Parse(pack.Owner.Key) is AnchorOwner anchor && anchor.Anchor != "crate")
                 GameDefinitions.Require(pack.Items.Length + pack.Stacks.Length <= 1, "saved anchor occupancy");
         }
         candidate.Publish();

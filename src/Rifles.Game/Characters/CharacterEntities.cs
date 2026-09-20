@@ -62,13 +62,56 @@ internal sealed class CharacterEntities
     internal bool TryGetEntity(string instanceKey, out EntityId entity) => instances.TryGetValue(instanceKey, out entity);
 
     /// <summary>
+    /// Binds the travelling party pack to its own entity. The party has
+    /// inventory but never equipment or stats; the entity gives it the same
+    /// lifetime and discovery surface as character packs. Idempotent.
+    /// </summary>
+    internal InventoryComponent BindParty(InventoryStore world, EntityId ledgerOwner)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        const string key = "party";
+        if (!instances.TryGetValue(key, out EntityId entity))
+        {
+            entity = store.Create(new EntityTypeId("rifles:party"), EntityLifecycle.Active);
+            instances.Add(key, entity);
+        }
+
+        Actor actor = new(store, entity);
+        if (!actor.Has<InventoryComponent>())
+            actor.Add(new InventoryComponent(world, ledgerOwner));
+        return actor.Get<InventoryComponent>();
+    }
+
+    /// <summary>
+    /// Binds a floor container or transient combat pack to its own entity.
+    /// Containers have no durable character counterpart; the pack key is the
+    /// durable identity and the entity gives it lifetime and discovery.
+    /// Idempotent per key.
+    /// </summary>
+    internal InventoryComponent BindContainer(string key, InventoryStore world, EntityId ledgerOwner)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(world);
+        if (!instances.TryGetValue(key, out EntityId entity))
+        {
+            entity = store.Create(new EntityTypeId("rifles:container:" + key), EntityLifecycle.Active);
+            instances.Add(key, entity);
+        }
+
+        Actor actor = new(store, entity);
+        if (!actor.Has<InventoryComponent>())
+            actor.Add(new InventoryComponent(world, ledgerOwner));
+        return actor.Get<InventoryComponent>();
+    }
+
+    /// <summary>
     /// Binds inventory/equipment owner facades to a character entity. The
     /// facades address the member's ledger record (admitted pack id) while
     /// living and dying with the entity; the instance map stays the explicit
     /// durable relationship. Re-binding is idempotent.
     /// </summary>
-    internal (InventoryComponent Inventory, EquipmentComponent Equipment) BindInventory(
-        string instanceKey, InventoryStore world, EntityId ledgerOwner)
+    internal (InventoryComponent Inventory, EquipmentComponent? Equipment) BindInventory(
+        string instanceKey, InventoryStore world, EntityId ledgerOwner, bool equipment = true)
     {
         if (!instances.TryGetValue(instanceKey, out EntityId entity))
             throw new InvalidDataException($"Unknown character instance '{instanceKey}'.");
@@ -76,9 +119,11 @@ internal sealed class CharacterEntities
         Actor actor = new(store, entity);
         if (!actor.Has<InventoryComponent>())
             actor.Add(new InventoryComponent(world, ledgerOwner));
-        if (!actor.Has<EquipmentComponent>())
+        // Equipment facades attach only where the ledger holds equipment
+        // state (member packs); enemy packs never equip.
+        if (equipment && !actor.Has<EquipmentComponent>())
             actor.Add(new EquipmentComponent(world, ledgerOwner));
-        return (actor.Get<InventoryComponent>(), actor.Get<EquipmentComponent>());
+        return (actor.Get<InventoryComponent>(), equipment ? actor.Get<EquipmentComponent>() : null);
     }
 
     internal string? TryGetInstance(EntityId entity)

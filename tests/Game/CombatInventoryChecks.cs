@@ -12,25 +12,25 @@ internal static class CombatInventoryChecks
         RequireRejected(() => inventory.RegisterOwner(flight), "Duplicate combat owner registration is rejected.");
 
         ulong itemId = 100;
-        inventory.Grant("member:warden", "rifle", 1, () => itemId++);
+        inventory.Grant(InventoryOwner.Parse("member:warden"), "rifle", 1, () => itemId++);
         string rifleToken = inventory.Items("member:warden").Single(item => item.Definition == "rifle").Token;
         ulong rifleId = inventory.Find("member:warden", rifleToken).Entity;
-        inventory.Equip("member:warden", rifleToken, "main-hand", long.MaxValue, inventory.Revision);
-        inventory.Transfer("member:warden", flight.Key, rifleToken, 1, inventory.Revision);
+        inventory.Equip(ItemRef.Parse("member:warden", rifleToken), "main-hand", long.MaxValue, inventory.Revision, new MemberOwner("warden"));
+        inventory.Transfer(ItemRef.Parse("member:warden", rifleToken), InventoryOwner.Parse(flight.Key), 1, inventory.Revision);
 
         Require(inventory.Items("member:warden").All(item => item.Entity != rifleId), "Transferred weapon leaves the member pack.");
         CarriedItem flyingRifle = inventory.Items(flight.Key).Single(item => item.Entity == rifleId);
         Require(flyingRifle.Definition == "rifle" && flyingRifle.Slots.Length == 0,
             "A weapon keeps its Engine identity and is unequipped when transferred to combat flight.");
 
-        inventory.Grant(flight.Key, "shot", 4, () => itemId++);
-        inventory.Grant(flight.Key, "tonic", 2, () => itemId++);
+        inventory.Grant(InventoryOwner.Parse(flight.Key), "shot", 4, () => itemId++);
+        inventory.Grant(InventoryOwner.Parse(flight.Key), "tonic", 2, () => itemId++);
         Require(ItemQuantity(inventory, flight.Key, "shot") == 4 && ItemQuantity(inventory, flight.Key, "tonic") == 2,
             "Combat flight owners admit multiple fungible item kinds.");
-        inventory.Consume(flight.Key, "shot", 3);
+        inventory.Consume(InventoryOwner.Parse(flight.Key), "shot", 3);
         Require(ItemQuantity(inventory, flight.Key, "shot") == 1, "Ammo consumption settles against the Engine item stack.");
         string beforeOverdraw = Describe(inventory);
-        RequireRejected(() => inventory.Consume(flight.Key, "shot", 2), "Ammo consumption cannot overdraw the flight stack.");
+        RequireRejected(() => inventory.Consume(InventoryOwner.Parse(flight.Key), "shot", 2), "Ammo consumption cannot overdraw the flight stack.");
         Require(Describe(inventory) == beforeOverdraw, "Rejected ammo consumption leaves the combat inventory unchanged.");
 
         InventorySnapshot saved = inventory.Capture();
