@@ -127,9 +127,9 @@ internal sealed class RiflesCombat
 
     private void CombatMessage(string message)
     {
+        // Single enqueue path: the product message writer sets feedback and
+        // appends to this log. Enqueuing here as well duplicated every line.
         scope.Message(message);
-        log.Enqueue(message);
-        while (log.Count > Combat.LogLength) log.Dequeue();
     }
 
     private RiflesCharacter Member(string id) => party.Members.SingleOrDefault(m => m.Definition.Id == id)
