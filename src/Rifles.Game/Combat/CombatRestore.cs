@@ -34,7 +34,7 @@ internal static class CombatRestore
         GameDefinitions.Require(saved.SelectedTarget == 0 || enemies.Any(enemy => enemy.Id == saved.SelectedTarget), "saved combat target");
 
         MagicState magic = MagicState.Restore(saved.Magic ?? throw new InvalidDataException("Saved spell state missing."), definitions.Magic,
-            party.Members.Select(m => m.Definition.Id), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
+            party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Members.Where(m => m.IsLiving).Select(m => "member:" + m.Definition.Id)
                 .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), expeditionRewards ?? enemies.Where(e => !e.Alive).Select(e => e.Spawn), completionExperience);
         foreach (var entry in actions)
             if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)

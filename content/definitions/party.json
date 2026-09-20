@@ -25,31 +25,5 @@
     { "id": "r4c2", "name": "Rear center", "rank": 4, "offsetForward": -0.5, "offsetLeft": 0.0 },
     { "id": "r4c3", "name": "Rear right", "rank": 4, "offsetForward": -0.5, "offsetLeft": -0.25 },
     { "id": "r4c4", "name": "Rear far right", "rank": 4, "offsetForward": -0.5, "offsetLeft": -0.5 }
-  ],
-  "members": [
-    {
-      "id": "warden",
-      "name": "Warden",
-      "position": "r0c1",
-      "maximumVitality": 40
-    },
-    {
-      "id": "blade",
-      "name": "Blade",
-      "position": "r0c3",
-      "maximumVitality": 32
-    },
-    {
-      "id": "seeker",
-      "name": "Seeker",
-      "position": "r4c1",
-      "maximumVitality": 26
-    },
-    {
-      "id": "mender",
-      "name": "Mender",
-      "position": "r4c3",
-      "maximumVitality": 28
-    }
   ]
 }

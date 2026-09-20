@@ -98,14 +98,37 @@ Require(grid.TryReserve(1, new(10, 10)), "Cancellation releases reservation.");
 grid.SetBlocked(new(10, 10), new(11, 10), true);
 Require(!grid.Commit(1) && grid.Position(1) == new GridPoint(11, 10), "Closing edge cancels move without displacing actor.");
 
-PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Party.Members);
+MemberDefinition[] roster = definitions.Characters.ResolvePreset(definitions.Characters.DefaultPresetId);
+Require(roster.Single(m => m.Id == "warden").MaximumVitality == 40 && roster.Single(m => m.Id == "warden").BasePower == 7
+    && roster.Single(m => m.Id == "seeker").MaximumResource == 16 && roster.Single(m => m.Id == "seeker").InitialResource == 7
+    && roster.All(m => m.Archetype == m.Id), "Supplied presets retain their authored values through archetype references.");
+PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, roster);
 Require(party.Members.Select(m => m.Definition.Position).Distinct(StringComparer.Ordinal).Count() == party.Members.Count, "Authored formation positions are distinct.");
+CharacterOptionsDefinition twins = definitions.Characters with
+{
+    Presets =
+    [
+        new StarterPartyPresetDefinition("twin-watch", "Twin watch",
+        [
+            new PresetMemberDefinition("warden-a", "warden", "Warden A", "r0c1"),
+            new PresetMemberDefinition("warden-b", "warden", "Warden B", "r0c3"),
+        ]),
+    ],
+};
+MemberDefinition[] twinRoster = twins.ResolvePreset("twin-watch");
+Require(twinRoster.Select(m => m.Id).Distinct(StringComparer.Ordinal).Count() == 2
+    && twinRoster.All(m => m.Archetype == "warden" && m.MaximumVitality == 40 && m.BasePower == 7),
+    "Shared archetype instances resolve with distinct instance ids and identical authored stats, without code branches.");
+PartyState twinParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, twinRoster);
+MagicState twinMagic = new(definitions.Magic, twinRoster.Select(m => (m.Id, m.Archetype)));
+Require(twinParty.Members.Count == 2 && twinMagic.For("warden-a").Known.SetEquals(twinMagic.For("warden-b").Known),
+    "A different roster with shared archetypes constructs party state and spellbooks per instance.");
 List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
     new FormationPositionDefinition("reserve-a", "Reserve A", 1),
     new FormationPositionDefinition("reserve-b", "Reserve B", 2)];
-List<MemberDefinition> six = [.. definitions.Party.Members,
-    new MemberDefinition("fifth", "Fifth", "reserve-a", 20),
-    new MemberDefinition("sixth", "Sixth", "reserve-b", 20)];
+List<MemberDefinition> six = [.. roster,
+    new MemberDefinition("fifth", "warden", "Fifth", "reserve-a", 20),
+    new MemberDefinition("sixth", "blade", "Sixth", "reserve-b", 20)];
 PartyState large = new(openPositions, definitions.Party.MaxPartySize, six);
 Require(large.Members.Count == 6 && large.EligibleMembers(PartyReach.Melee).Count() == 2
     && large.CanUseReach("fifth", PartyReach.Ranged) && !large.CanUseReach("sixth", PartyReach.Melee),
@@ -149,7 +172,7 @@ PatrolActor saveActor = PatrolActor.Create(3, savedFloor,
 MovementGrid saveGrid = new(savedFloor.Cells.ToHashSet(), (_, _) => true, definitions.Crowd);
 savePose.Bind(saveGrid, 2); saveActor.Bind(saveGrid);
 saveActor.Advance(.1);
-PartyState saveParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+PartyState saveParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
 saveParty.Members[0].ApplyDamage(9);
 ulong dressingId = 6;
 ulong AllocateDressingId() => dressingId++;
@@ -180,7 +203,7 @@ foreach (var placed in savedEncounterPlacement.Instances)
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), enemy.Vitality, null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
 CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
-    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => m.Definition.Id)).Capture());
+    new[] { new AllySnapshot(saveActor.Id, definitions.Combat.AllyVitality), new AllySnapshot(savedDressing.ObserverId, definitions.Combat.AllyVitality) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype))).Capture());
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
     saveParty.Members[2].Definition.Id, saveActor.Capture(), new FeatureSnapshot(4, 5, 2, false, true, savedDressing),

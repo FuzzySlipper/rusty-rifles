@@ -63,7 +63,10 @@ public sealed partial class RiflesProduct
         flights.Clear(); flights.AddRange(restored.Flights);
         drops.Clear(); foreach (DropSnapshot drop in restored.Drops) drops.Add(drop.Owner, drop.Cell);
         allies.Clear(); foreach (AllySnapshot ally in restored.Allies)
-            allies.Add(ally.Id, new PartyMemberState(new MemberDefinition(ally.Id.ToString(), "Garrison ally",
+            // Synthetic stand-in, not an admitted archetype instance: the
+            // archetype tag names the concept for #8358/#8360 to adopt.
+            // Never validated or resolved; never touches spellbooks.
+            allies.Add(ally.Id, new PartyMemberState(new MemberDefinition(ally.Id.ToString(), "garrison-ally", "Garrison ally",
                 definitions.Party.Positions.OrderBy(p => p.Rank).First().Id, Combat.AllyVitality, StartingVitality: ally.Vitality),
                 definitions.Party.Positions.OrderBy(p => p.Rank).First().Rank));
         selectedTarget = restored.SelectedTarget; combatLog.Clear();

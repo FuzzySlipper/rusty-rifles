@@ -226,8 +226,8 @@ public sealed partial class RiflesProduct
             PartyMemberState? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
             if (member is null) return;
             CancelRest("Rest interrupted by hostile magic.");
-            if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Id));
-            else if (definitions.Magic.Resistances[member.Definition.Id] < 100) magic!.Apply("member:" + member.Definition.Id, spell, spell.Duration * (100 - definitions.Magic.Resistances[member.Definition.Id]) / 100);
+            if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));
+            else if (definitions.Magic.Resistances[member.Definition.Archetype] < 100) magic!.Apply("member:" + member.Definition.Id, spell, spell.Duration * (100 - definitions.Magic.Resistances[member.Definition.Archetype]) / 100);
         }
         CombatMessage(spell.Name + " struck " + (foe?.Definition.Name ?? "the party") + ".");
         RecomputeMagic();

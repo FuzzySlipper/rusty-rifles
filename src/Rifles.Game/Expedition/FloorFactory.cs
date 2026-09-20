@@ -47,7 +47,7 @@ internal static class FloorFactory
         if (floor.IntentFloorId != resolved.Id || floor.Seed != resolved.Candidate.Seed
             || floor.IntentGraphIdentity != Rifles.Procgen.CanonicalIdentity.Hash(resolved.Candidate))
             throw new InvalidDataException("Resolved floor does not belong to the requested expedition floor.");
-        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(preset));
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, preset);
         ExplorationState exploration = new(floor.Entrance, definitions.Exploration);
 
         using DungeonScene scene = new(engine, materialCache, floor, definitions.Exploration, definitions.Appearance,
@@ -88,7 +88,7 @@ internal static class FloorFactory
             generatedFeatures, drops, Allocate, out EnemyState[] enemies);
         generatedFeatures = AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, Allocate);
 
-        MagicState magic = new(definitions.Magic, party.Members.Select(member => member.Definition.Id));
+        MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)));
         CombatSnapshot combat = new(enemies.Select(enemy => enemy.Capture()).ToArray(),
             party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, new ActionState().Capture())).ToArray(), [], [],
             drops.Select(drop => new DropSnapshot(drop.Key, drop.Value)).ToArray(),

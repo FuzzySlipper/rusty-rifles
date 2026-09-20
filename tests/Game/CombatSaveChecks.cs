@@ -133,7 +133,7 @@ internal static class CombatSaveChecks
         internal static CombatFixture Create(GameDefinitions definitions)
         {
             DungeonFloor floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms);
-            PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+            PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
             ulong partyId = 1;
             ulong[] allyIds = [2, 3];
             ulong nextId = 100;
@@ -152,7 +152,7 @@ internal static class CombatSaveChecks
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
             AllySnapshot[] allies = allyIds.Select(id => new AllySnapshot(id, definitions.Combat.AllyVitality)).ToArray();
-            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => m.Definition.Id)).Capture());
+            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype))).Capture());
             return new CombatFixture(floor, inventory, party, saved, partyId, allyIds);
         }
     }

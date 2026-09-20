@@ -70,11 +70,19 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
         Require(result.Items.Items.All(i => result.ItemArt.Images.Any(image => image.Id == i.Image)), "item image references");
-        string[] ownerKeys = result.Characters.Presets[0].Members.Select(m => "member:" + m.Id)
-            .Append(ItemInventory.PartyKey)
-            .Concat(result.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
-        Require(result.Items.StartingItems.All(g => ownerKeys.Contains(g.Owner)
-            && (g.Preset is null || result.Characters.Presets.Any(p => p.Id == g.Preset))), "starting loadout owners/presets");
+        // Starting loadouts resolve against the selected actual roster: a
+        // preset-agnostic grant must name an instance present in every preset,
+        // while a preset-scoped grant must name one of that preset's instances.
+        foreach (StarterPartyPresetDefinition preset in result.Characters.Presets)
+        {
+            string[] rosterKeys = preset.Members.Select(m => "member:" + m.Id)
+                .Append(ItemInventory.PartyKey)
+                .Concat(result.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
+            Require(result.Items.StartingItems.Where(g => g.Preset is null || g.Preset == preset.Id)
+                .All(g => rosterKeys.Contains(g.Owner)), $"starting loadout owners for preset '{preset.Id}'");
+        }
+
+        Require(result.Items.StartingItems.All(g => g.Preset is null || result.Characters.Presets.Any(p => p.Id == g.Preset)), "starting loadout presets");
         Require(result.Items.Item(result.Combat.AmmunitionItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible, "combat ammunition");
         Require(result.Items.Items.Where(i => i.Kind == Rusty.Engine.Mechanics.ItemKind.Unique && i.Ammunition.Length > 0)
             .All(i => i.Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "combat rifle ammunition compatibility");
@@ -85,15 +93,20 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Require(enemy.Attack != CombatActionKind.Fire || enemy.Loot.Any(l => result.Items.Item(l.Definition).Kind == Rusty.Engine.Mechanics.ItemKind.Unique
                 && result.Items.Item(l.Definition).Ammunition == result.Items.Item(result.Combat.AmmunitionItem).Ammunition), "ranged enemy rifle");
         }
-        string[] memberIds = result.Characters.Presets[0].Members.Select(m => m.Id).ToArray();
         HashSet<string> positionIds = result.Party.Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var preset in result.Characters.Presets)
         {
             Require(preset.Members.Length >= 1 && preset.Members.Length <= result.Party.MaxPartySize, "preset party capacity");
             Require(preset.Members.All(m => positionIds.Contains(m.Position)), "preset formation positions");
+            // Spell and resistance configuration is referenced by archetype, so
+            // every archetype on the selected actual roster must resolve.
+            Require(preset.Members.All(m => result.Magic.StartingSpells.ContainsKey(m.Archetype)),
+                $"starting spells for preset '{preset.Id}' roster");
+            Require(preset.Members.All(m => result.Magic.Resistances.ContainsKey(m.Archetype)),
+                $"magic resistance for preset '{preset.Id}' roster");
         }
-        Require(result.Magic.StartingSpells.Keys.ToHashSet().SetEquals(memberIds), "starting spell roster");
-        Require(memberIds.Concat(result.Combat.Enemies.Select(e => e.Id)).All(result.Magic.Resistances.ContainsKey), "magic resistance profiles");
+
+        Require(result.Combat.Enemies.Select(e => e.Id).All(result.Magic.Resistances.ContainsKey), "magic resistance profiles");
         Require(result.Magic.EnemySpells.Keys.All(id => result.Combat.Enemies.Any(e => e.Id == id)), "enemy spell profiles");
         Require(result.Items.Item(result.Magic.RestItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible
             && result.Items.Item(result.Magic.RevivalItem).Kind == Rusty.Engine.Mechanics.ItemKind.Fungible, "recovery consumables");
@@ -126,7 +139,11 @@ internal sealed record GenerationDefinition(ulong Seed, ExpeditionDefinition Exp
     }
 }
 
-internal sealed record PartyDefinition(FormationPositionDefinition[] Positions, int MaxPartySize, MemberDefinition[] Members)
+/// <summary>
+/// Authored formation and capacity policy. The roster is not duplicated here:
+/// parties build from the selected character preset's archetype references.
+/// </summary>
+internal sealed record PartyDefinition(FormationPositionDefinition[] Positions, int MaxPartySize)
 {
     internal void Validate()
     {
@@ -136,11 +153,5 @@ internal sealed record PartyDefinition(FormationPositionDefinition[] Positions, 
             && Positions.Any(p => p.Rank == 0), "Positions fields");
         foreach (FormationPositionDefinition position in Positions) position.Validate();
         GameDefinitions.Require(MaxPartySize >= 1, "MaxPartySize capacity");
-        GameDefinitions.Require(Members is { Length: > 0 } && Members.Length <= MaxPartySize, "Members capacity");
-        GameDefinitions.Require(Members.All(m => m is not null && !string.IsNullOrWhiteSpace(m.Id)
-            && !string.IsNullOrWhiteSpace(m.Name) && !string.IsNullOrWhiteSpace(m.Position) && m.MaximumVitality > 0), "Members fields");
-        GameDefinitions.Require(Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal).IsSupersetOf(Members.Select(m => m.Position)), "Members positions");
-        GameDefinitions.Require(Members.Select(m => m.Id).Distinct(StringComparer.Ordinal).Count() == Members.Length, "Members.Id uniqueness");
-        GameDefinitions.Require(Members.Select(m => m.Position).Distinct(StringComparer.Ordinal).Count() == Members.Length, "Members.Position uniqueness");
     }
 }

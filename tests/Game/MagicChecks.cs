@@ -206,9 +206,10 @@ internal static class MagicChecks
 
     private static MagicState NewState(GameDefinitions definitions) => new(definitions.Magic, Members(definitions));
 
-    private static string[] Members(GameDefinitions definitions) => definitions.Party.Members.Select(member => member.Id).ToArray();
+    private static (string Instance, string Archetype)[] Members(GameDefinitions definitions) => definitions.Characters
+        .ResolvePreset(definitions.Characters.DefaultPresetId).Select(member => (member.Id, member.Archetype)).ToArray();
 
-    private static string[] Targets(GameDefinitions definitions) => [.. Members(definitions), "enemy:42", "party"];
+    private static string[] Targets(GameDefinitions definitions) => [.. Members(definitions).Select(member => member.Instance), "enemy:42", "party"];
 
     private static void AwardTwoEnemies(MagicState state)
     {

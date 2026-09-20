@@ -91,7 +91,7 @@ event bus, or scripting layer.
 
 | Concern | Current | Target (#) |
 | --- | --- | --- |
-| Archetypes/party | `PartyState.MemberDefinition` + presets; `GameDefinitions.PartyDefinition` duplicate roster | Referenced archetypes + party formation (#8283) |
+| Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots (`PresetMemberDefinition`: instance id + archetype ref + display name + position); `ResolvePreset` builds `MemberDefinition` inputs carrying archetype ids; `PartyDefinition` keeps formation + capacity only | Landed (#8283). Spells/resistances key by archetype; books key by instance; rifle-drill stats converged to archetypes (formation/loadout identity kept) |
 | Entities/stats | `PartyMemberState` private stats; `EnemyState` separate shape; parallel identity maps | Canonical entities + facade; `StatsComponent` (#8358) |
 | Inventory | `ItemInventory` numeric `PackOwner` + string prefixes over `InventoryStore` | Bound components + typed owners (#8359) |
 | Combat | `RiflesProduct.Combat/Enemies/CombatPresentation` partials + dictionaries | Concrete combat/action owner (#8360) |

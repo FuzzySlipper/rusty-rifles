@@ -17,7 +17,7 @@ internal static class InventoryChecks
         VerifyCapacityFailureKeepsEquipment(definitions.Items);
         VerifySaveRestore(definitions.Items, inventory);
         VerifyOldSavesRejected(definitions.Items);
-        VerifyPartyFormationAndAuthoredResources(definitions, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+        VerifyPartyFormationAndAuthoredResources(definitions);
         VerifyExplorationCreation(definitions);
 
         Console.WriteLine("Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.");
@@ -109,7 +109,7 @@ internal static class InventoryChecks
 
     private static void VerifyEquipmentViewsAndStats(GameDefinitions definitions, ItemInventory inventory)
     {
-        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId));
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
         PartyMemberState warden = Member(party, "warden");
         ApplyEquipment(inventory, warden);
         Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
@@ -207,9 +207,10 @@ internal static class InventoryChecks
             "Saves that predate the shared party inventory are rejected loudly, never migrated silently.");
     }
 
-    private static void VerifyPartyFormationAndAuthoredResources(GameDefinitions definitions, StarterPartyPresetDefinition preset)
+    private static void VerifyPartyFormationAndAuthoredResources(GameDefinitions definitions)
     {
-        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, preset);
+        StarterPartyPresetDefinition preset = definitions.Characters.GetPreset(definitions.Characters.DefaultPresetId);
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, preset.Id);
         Require(party.Members.All(member => member.Vitality == member.Definition.InitialVitality
             && member.Resource == member.Definition.InitialResource), "Authored starting injuries and resources initialize party state.");
         Require(party.Members.Any(member => member.Vitality < member.MaximumVitality)
@@ -228,7 +229,7 @@ internal static class InventoryChecks
         Require(!party.EligibleMembers(PartyReach.Melee).Any(member => member.Definition.Id == "blade"),
             "Dead members are excluded from reach eligibility.");
 
-        PartyState openParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, preset.Members);
+        PartyState openParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.ResolvePreset(preset.Id));
         Require(openParty.MoveFormation("warden", "r0c0") && Member(openParty, "warden").Position == "r0c0",
             "Living members can move into an unoccupied formation position.");
         Require(!openParty.MoveFormation("warden", "r0c3") && !openParty.MoveFormation("no-such-member", "r0c0")

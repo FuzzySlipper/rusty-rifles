@@ -40,16 +40,21 @@ internal sealed class MagicState
     private readonly Dictionary<string, TargetConditions> conditions = new(StringComparer.Ordinal);
     private readonly HashSet<string> rewards = new(StringComparer.Ordinal);
 
-    internal MagicState(MagicDefinition definition, IEnumerable<string> members)
+    /// <summary>
+    /// Builds one spellbook per roster instance. Starting spells resolve by
+    /// archetype, so shared archetype instances start from the same spells
+    /// under distinct instance ids.
+    /// </summary>
+    internal MagicState(MagicDefinition definition, IEnumerable<(string Instance, string Archetype)> roster)
     {
         this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
-        ArgumentNullException.ThrowIfNull(members);
+        ArgumentNullException.ThrowIfNull(roster);
         definition.Validate();
 
-        string[] roster = ValidateRoster(members);
-        books = roster.ToDictionary(
-            member => member,
-            member => new MagicBook(definition.StartingSpells[member], definition.ExperiencePerPoint),
+        (string Instance, string Archetype)[] members = ValidateRoster(roster);
+        books = members.ToDictionary(
+            member => member.Instance,
+            member => new MagicBook(member.Archetype, SpellsForArchetype(member.Archetype), definition.ExperiencePerPoint),
             StringComparer.Ordinal);
         effectDefinitions = definition.Spells.ToDictionary(
             spell => spell.Id,
@@ -231,7 +236,7 @@ internal sealed class MagicState
     internal static MagicState Restore(
         MagicSnapshot snapshot,
         MagicDefinition definition,
-        IEnumerable<string> members,
+        IEnumerable<(string Instance, string Archetype)> members,
         IEnumerable<string> validTargets,
         IEnumerable<string> validRewards, long completionExperience = 0)
     {
@@ -365,11 +370,18 @@ internal sealed class MagicState
 
     private static double InitialTick(SpellDefinition spell) => spell.Period > 0 ? spell.Period : 0;
 
-    private static string[] ValidateRoster(IEnumerable<string> members)
+    private string[] SpellsForArchetype(string archetype)
     {
-        string[] roster = members.ToArray();
-        if (roster.Length == 0 || roster.Any(string.IsNullOrWhiteSpace)
-            || roster.Distinct(StringComparer.Ordinal).Count() != roster.Length)
+        if (string.IsNullOrWhiteSpace(archetype) || !definition.StartingSpells.TryGetValue(archetype, out string[]? spells))
+            throw new InvalidDataException($"No starting spells for archetype '{archetype}'.");
+        return spells;
+    }
+
+    private static (string Instance, string Archetype)[] ValidateRoster(IEnumerable<(string Instance, string Archetype)> members)
+    {
+        (string Instance, string Archetype)[] roster = members.ToArray();
+        if (roster.Length == 0 || roster.Any(member => string.IsNullOrWhiteSpace(member.Instance))
+            || roster.Select(member => member.Instance).Distinct(StringComparer.Ordinal).Count() != roster.Length)
             throw new InvalidDataException("Spellbook members must be nonempty and distinct.");
         return roster;
     }
@@ -431,7 +443,7 @@ internal sealed class MagicState
             if (book.Choices.Length > book.Experience / state.definition.ExperiencePerPoint)
                 throw new InvalidDataException("Magic snapshot spends unavailable advancement.");
 
-            HashSet<string> expectedKnown = state.definition.StartingSpells[book.Member].ToHashSet(StringComparer.Ordinal);
+            HashSet<string> expectedKnown = state.definition.StartingSpells[state.books[book.Member].Archetype].ToHashSet(StringComparer.Ordinal);
             foreach (string choice in book.Choices) expectedKnown.UnionWith(state.definition.Choice(choice).Unlocks);
             if (!expectedKnown.SetEquals(book.Known))
                 throw new InvalidDataException("Magic snapshot known spells do not match its advancement choices.");
@@ -453,12 +465,14 @@ internal sealed class MagicState
 
     internal sealed class MagicBook
     {
-        internal MagicBook(IEnumerable<string> known, long experiencePerPoint)
+        internal MagicBook(string archetype, IEnumerable<string> known, long experiencePerPoint)
         {
+            Archetype = archetype;
             Known = known.ToHashSet(StringComparer.Ordinal);
             ExperiencePerPoint = experiencePerPoint;
         }
 
+        internal string Archetype { get; }
         internal string Selected { get; set; } = "";
         internal HashSet<string> Known { get; }
         internal string[] Hotbar { get; } = ["", "", ""];

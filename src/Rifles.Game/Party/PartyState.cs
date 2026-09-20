@@ -67,8 +67,74 @@ internal sealed record FormationPositionDefinition(string Id, string Name, int R
     }
 }
 
+/// <summary>
+/// One authored character archetype: identity, base stats/resources, and the
+/// key other content references by this id. Presets reference archetypes;
+/// they never copy these stat blocks.
+/// </summary>
+internal sealed record CharacterArchetypeDefinition(
+    string Id,
+    string Name,
+    long MaximumVitality,
+    long BasePower = 0,
+    long BaseDefense = 0,
+    long MaximumResource = 0,
+    long? StartingVitality = null,
+    long? StartingResource = null)
+{
+    internal const long MaximumTrackValue = 1_000_000_000_000;
+
+    internal long InitialVitality => StartingVitality ?? MaximumVitality;
+    internal long InitialResource => StartingResource ?? MaximumResource;
+
+    internal void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
+            || MaximumVitality <= 0 || MaximumResource < 0
+            || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
+            || BasePower < 0 || BaseDefense < 0
+            || BasePower > PartyMemberState.MaximumDerivedStatistic || BaseDefense > PartyMemberState.MaximumDerivedStatistic
+            || StartingVitality is long startingVitality && (startingVitality < 0 || startingVitality > MaximumVitality)
+            || StartingResource is long startingResource && (startingResource < 0 || startingResource > MaximumResource))
+        {
+            throw new InvalidDataException($"Invalid character archetype '{Id}'.");
+        }
+    }
+
+    internal MemberDefinition Resolve(string instanceId, string displayName, string position)
+    {
+        if (string.IsNullOrWhiteSpace(instanceId) || string.IsNullOrWhiteSpace(position))
+            throw new InvalidDataException($"Invalid '{Id}' instance reference.");
+        return new MemberDefinition(instanceId, Id, string.IsNullOrWhiteSpace(displayName) ? Name : displayName,
+            position, MaximumVitality, BasePower, BaseDefense, MaximumResource, StartingVitality, StartingResource);
+    }
+}
+
+/// <summary>
+/// One authored preset slot: runtime instance identity, archetype reference,
+/// display customization, and formation position. Stats come from the
+/// archetype at resolution time.
+/// </summary>
+internal sealed record PresetMemberDefinition(string Id, string Archetype, string Name, string Position)
+{
+    internal void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Archetype)
+            || string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Position))
+        {
+            throw new InvalidDataException($"Invalid preset member '{Id}'.");
+        }
+    }
+}
+
+/// <summary>
+/// Resolved per-instance construction input consumed by party runtime and
+/// saves. Instances carry their archetype id; two instances may share one
+/// archetype with distinct instance ids.
+/// </summary>
 internal sealed record MemberDefinition(
     string Id,
+    string Archetype,
     string Name,
     string Position,
     long MaximumVitality,
@@ -85,7 +151,8 @@ internal sealed record MemberDefinition(
 
     internal void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Name)
+        if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(Archetype)
+            || string.IsNullOrWhiteSpace(Name)
             || string.IsNullOrWhiteSpace(Position) || MaximumVitality <= 0 || MaximumResource < 0
             || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
             || BasePower < 0 || BaseDefense < 0
@@ -99,7 +166,7 @@ internal sealed record MemberDefinition(
 }
 
 /// <summary>One authored starter party. Loadout ownership stays with Inventory.</summary>
-internal sealed record StarterPartyPresetDefinition(string Id, string Name, MemberDefinition[] Members)
+internal sealed record StarterPartyPresetDefinition(string Id, string Name, PresetMemberDefinition[] Members)
 {
     internal void Validate()
     {
@@ -109,7 +176,7 @@ internal sealed record StarterPartyPresetDefinition(string Id, string Name, Memb
             throw new InvalidDataException($"Invalid starter party preset '{Id}'.");
         }
 
-        foreach (MemberDefinition member in Members)
+        foreach (PresetMemberDefinition member in Members)
         {
             if (member is null) throw new InvalidDataException($"Starter party preset '{Id}' has a null member.");
             member.Validate();
@@ -123,8 +190,11 @@ internal sealed record StarterPartyPresetDefinition(string Id, string Name, Memb
     }
 }
 
-/// <summary>Authored starter choices; a preset is chosen only when an expedition begins.</summary>
-internal sealed record CharacterOptionsDefinition(string DefaultPresetId, StarterPartyPresetDefinition[] Presets)
+/// <summary>
+/// Authored characters: the archetype catalogue plus starter presets that
+/// reference it. A preset is chosen only when an expedition begins.
+/// </summary>
+internal sealed record CharacterOptionsDefinition(string DefaultPresetId, CharacterArchetypeDefinition[] Archetypes, StarterPartyPresetDefinition[] Presets)
 {
     internal void Validate()
     {
@@ -133,10 +203,33 @@ internal sealed record CharacterOptionsDefinition(string DefaultPresetId, Starte
             throw new InvalidDataException("Character options need a default preset and at least one preset.");
         }
 
+        if (Archetypes is not { Length: > 0 })
+        {
+            throw new InvalidDataException("Character options need at least one archetype.");
+        }
+
+        foreach (CharacterArchetypeDefinition archetype in Archetypes)
+        {
+            if (archetype is null) throw new InvalidDataException("Character options contain a null archetype.");
+            archetype.Validate();
+        }
+
+        if (Archetypes.Select(archetype => archetype.Id).Distinct(StringComparer.Ordinal).Count() != Archetypes.Length)
+        {
+            throw new InvalidDataException("Character archetype ids must be unique.");
+        }
+
         foreach (StarterPartyPresetDefinition preset in Presets)
         {
             if (preset is null) throw new InvalidDataException("Character options contain a null preset.");
             preset.Validate();
+            foreach (PresetMemberDefinition slot in preset.Members)
+            {
+                if (Archetypes.All(archetype => archetype.Id != slot.Archetype))
+                {
+                    throw new InvalidDataException($"Starter party preset '{preset.Id}' member '{slot.Id}' references unknown archetype '{slot.Archetype}'.");
+                }
+            }
         }
 
         if (Presets.Select(preset => preset.Id).Distinct(StringComparer.Ordinal).Count() != Presets.Length
@@ -144,17 +237,36 @@ internal sealed record CharacterOptionsDefinition(string DefaultPresetId, Starte
         {
             throw new InvalidDataException("Character option preset ids must be unique and include the default.");
         }
-
-        string[] expectedMemberIds = Presets[0].Members.Select(member => member.Id).OrderBy(id => id, StringComparer.Ordinal).ToArray();
-        if (Presets.Skip(1).Any(preset => !preset.Members.Select(member => member.Id)
-            .OrderBy(id => id, StringComparer.Ordinal).SequenceEqual(expectedMemberIds, StringComparer.Ordinal)))
-        {
-            throw new InvalidDataException("Each starter preset must retain the same stable member ids.");
-        }
     }
 
     internal StarterPartyPresetDefinition GetPreset(string id) => Presets.SingleOrDefault(preset => preset.Id == id)
         ?? throw new InvalidOperationException($"Unknown starter party preset '{id}'.");
+
+    internal CharacterArchetypeDefinition Archetype(string id) => Archetypes.SingleOrDefault(archetype => archetype.Id == id)
+        ?? throw new InvalidDataException($"Unknown character archetype '{id}'.");
+
+    /// <summary>
+    /// Resolves a preset against the admitted archetype catalogue into
+    /// per-instance construction input consumed by party runtime and saves.
+    /// </summary>
+    internal MemberDefinition[] ResolvePreset(string id)
+    {
+        StarterPartyPresetDefinition preset = GetPreset(id);
+        return preset.Members.Select(slot =>
+        {
+            CharacterArchetypeDefinition archetype;
+            try
+            {
+                archetype = Archetype(slot.Archetype);
+            }
+            catch (InvalidDataException error)
+            {
+                throw new InvalidDataException($"Starter party preset '{preset.Id}' member '{slot.Id}': {error.Message}", error);
+            }
+
+            return archetype.Resolve(slot.Id, slot.Name, slot.Position);
+        }).ToArray();
+    }
 }
 
 /// <summary>
@@ -181,7 +293,7 @@ internal sealed class PartyMemberState
 
     internal PartyMemberState(MemberDefinition definition, int rank)
     {
-        definition.Validate();
+        ArgumentNullException.ThrowIfNull(definition);
         if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
         Definition = definition;
         Position = definition.Position;
@@ -298,10 +410,9 @@ internal sealed class PartyState
     {
     }
 
-    internal PartyState(IReadOnlyList<FormationPositionDefinition> positions, int maxSize, StarterPartyPresetDefinition preset)
-        : this(GetPresetId(preset), positions, maxSize, GetPresetMembers(preset))
+    internal PartyState(IReadOnlyList<FormationPositionDefinition> positions, int maxSize, CharacterOptionsDefinition characters, string presetId)
+        : this(GetPresetId(characters, presetId), positions, maxSize, characters.ResolvePreset(presetId))
     {
-        preset.Validate();
     }
 
     private PartyState(string? presetId, IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions)
@@ -317,11 +428,12 @@ internal sealed class PartyState
         members = roster.Select(definition => new PartyMemberState(definition, RankOf(definition.Position))).ToArray();
     }
 
-    private static string GetPresetId(StarterPartyPresetDefinition? preset) => preset?.Id
-        ?? throw new ArgumentNullException(nameof(preset));
-
-    private static IReadOnlyList<MemberDefinition> GetPresetMembers(StarterPartyPresetDefinition? preset) => preset?.Members
-        ?? throw new ArgumentNullException(nameof(preset));
+    private static string GetPresetId(CharacterOptionsDefinition? characters, string presetId)
+    {
+        ArgumentNullException.ThrowIfNull(characters);
+        if (string.IsNullOrWhiteSpace(presetId)) throw new ArgumentNullException(nameof(presetId));
+        return characters.GetPreset(presetId).Id;
+    }
 
     /// <summary>Set for a starter-preset party and immutable for its expedition.</summary>
     internal string? PresetId { get; }
