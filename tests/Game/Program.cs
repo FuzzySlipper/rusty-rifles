@@ -1,10 +1,13 @@
 using Rifles.Game.Magic;
 using Rifles.Game.Items;
 using Rifles.Game.Combat;
+using Rifles.Game.Characters;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Content;
 using Rifles.Game.Party;
 using Rifles.Procgen.Generation;
+using Rusty.Engine.Entities;
+using Rusty.Engine.Mechanics;
 
 static void Require(bool condition, string message)
 {
@@ -123,6 +126,20 @@ PartyState twinParty = new(definitions.Party.Positions, definitions.Party.MaxPar
 MagicState twinMagic = new(definitions.Magic, twinRoster.Select(m => (m.Id, m.Archetype)));
 Require(twinParty.Members.Count == 2 && twinMagic.For("warden-a").Known.SetEquals(twinMagic.For("warden-b").Known),
     "A different roster with shared archetypes constructs party state and spellbooks per instance.");
+RiflesCharacter twinA = twinParty.Members.Single(m => m.Definition.Id == "warden-a");
+RiflesCharacter twinB = twinParty.Members.Single(m => m.Definition.Id == "warden-b");
+Require(twinA.Entity != twinB.Entity
+    && ReferenceEquals(twinA.Stats, twinParty.Entities.Store.Get<StatsComponent>(twinA.Entity)),
+    "Same-archetype instances are distinct entities sharing no state; the facade reads the attached component live.");
+Require(twinParty.Entities.TryGetEntity("warden-a", out EntityId twinEntity) && twinEntity == twinA.Entity
+    && twinParty.Entities.TryGetInstance(twinB.Entity) == "warden-b",
+    "Durable instance ids reconstruct to runtime entities in both directions.");
+long twinVitality = twinB.Vitality;
+twinA.ApplyDamage(5);
+Require(twinB.Vitality == twinVitality && twinA.Vitality == twinVitality - 5,
+    "Damaging one same-archetype instance leaves the other untouched.");
+Require(party.Members.All(m => ReferenceEquals(m.Stats.GetTrack(RiflesStatIds.Vitality).Maximum, m.Stats.GetStat(RiflesStatIds.VitalityMax))),
+    "Tracks share their maximum Stat references.");
 List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
     new FormationPositionDefinition("reserve-a", "Reserve A", 1),
     new FormationPositionDefinition("reserve-b", "Reserve B", 2)];

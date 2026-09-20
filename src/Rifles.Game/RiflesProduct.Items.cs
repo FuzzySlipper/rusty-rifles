@@ -1,5 +1,6 @@
 using Rifles.Game.Audio;
 using Rifles.Game.Items;
+using Rifles.Game.Characters;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
 using Rusty.Engine.Interaction;
@@ -12,12 +13,12 @@ public sealed partial class RiflesProduct
     private ItemInventory? inventory;
     private ExplorationItems? itemWorld;
     private ItemArt? itemArt;
-    private PartyMemberState Member(string id) => party.Members.SingleOrDefault(m => m.Definition.Id == id)
+    private RiflesCharacter Member(string id) => party.Members.SingleOrDefault(m => m.Definition.Id == id)
         ?? throw new InvalidDataException("Character unavailable.");
 
     private void ApplyEquipment()
     {
-        foreach (PartyMemberState member in party.Members)
+        foreach (RiflesCharacter member in party.Members)
         {
             var bonus = inventory!.Bonuses("member:" + member.Definition.Id);
             member.SetEquipmentBonuses(bonus.Power, bonus.Defense);

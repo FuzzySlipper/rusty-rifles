@@ -1,3 +1,4 @@
+using Rifles.Game.Characters;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
@@ -110,7 +111,7 @@ internal static class InventoryChecks
     private static void VerifyEquipmentViewsAndStats(GameDefinitions definitions, ItemInventory inventory)
     {
         PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters, definitions.Characters.DefaultPresetId);
-        PartyMemberState warden = Member(party, "warden");
+        RiflesCharacter warden = Member(party, "warden");
         ApplyEquipment(inventory, warden);
         Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
             && warden.Defense == warden.Definition.BaseDefense + 4, "Engine-backed equipment sources contribute to member statistics.");
@@ -216,9 +217,9 @@ internal static class InventoryChecks
         Require(party.Members.Any(member => member.Vitality < member.MaximumVitality)
             && party.Members.Any(member => member.Resource < member.MaximumResource), "The selected preset contains authored injury and resource state.");
 
-        PartyMemberState warden = Member(party, "warden");
-        PartyMemberState blade = Member(party, "blade");
-        PartyMemberState seeker = Member(party, "seeker");
+        RiflesCharacter warden = Member(party, "warden");
+        RiflesCharacter blade = Member(party, "blade");
+        RiflesCharacter seeker = Member(party, "seeker");
         string seekerPosition = seeker.Position;
         Require(party.SwapFormation("warden", "seeker") && warden.Position == seekerPosition,
             "Living members can change the authored formation.");
@@ -245,7 +246,7 @@ internal static class InventoryChecks
         Require(party.Capture().SequenceEqual(saved), "Party restore preserves formation, injury, and resource values exactly.");
     }
 
-    private static void ApplyEquipment(ItemInventory inventory, PartyMemberState member)
+    private static void ApplyEquipment(ItemInventory inventory, RiflesCharacter member)
     {
         (long power, long defense) = inventory.Bonuses("member:" + member.Definition.Id);
         member.SetEquipmentBonuses(power, defense);
@@ -308,7 +309,7 @@ internal static class InventoryChecks
         }
     }
 
-    private static PartyMemberState Member(PartyState party, string id) => party.Members.Single(member => member.Definition.Id == id);
+    private static RiflesCharacter Member(PartyState party, string id) => party.Members.Single(member => member.Definition.Id == id);
 
     private static ulong ItemQuantity(ItemInventory inventory, string owner, string definition) => inventory.Items(owner)
         .Where(item => item.Definition == definition).Aggregate(0UL, (total, item) => checked(total + item.Quantity));

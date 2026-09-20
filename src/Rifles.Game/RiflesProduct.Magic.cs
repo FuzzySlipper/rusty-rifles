@@ -2,6 +2,7 @@ using Rifles.Game.Audio;
 using System.Numerics;
 using Rifles.Game.Combat;
 using Rifles.Game.Magic;
+using Rifles.Game.Characters;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
 using Rusty.Engine;
@@ -18,7 +19,7 @@ public sealed partial class RiflesProduct
 
     private void RecomputeMagic()
     {
-        foreach (PartyMemberState member in party.Members)
+        foreach (RiflesCharacter member in party.Members)
             member.SetDevelopmentBonuses(magic!.Power(member.Definition.Id),
                 magic.Defense(member.Definition.Id) + magic.DefenseBonus("member:" + member.Definition.Id));
     }
@@ -75,7 +76,7 @@ public sealed partial class RiflesProduct
     private long SpellCost(string member, SpellDefinition spell) => Math.Max(0, spell.Cost - magic!.CostDiscount(member));
     private void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
-        PartyMemberState member = Member(memberId);
+        RiflesCharacter member = Member(memberId);
         if (!member.IsLiving || !magic!.For(memberId).Known.Contains(spell.Id)) throw new InvalidDataException("That character cannot cast this spell.");
         if (member.Resource < SpellCost(memberId, spell)) throw new InvalidDataException("Insufficient resource.");
         if (!committing && actions[memberId].Busy) throw new InvalidDataException("That character is still acting.");
@@ -87,7 +88,7 @@ public sealed partial class RiflesProduct
         }
         if (spell.Target == SpellTarget.Ally)
         {
-            PartyMemberState ally = Member(targetMember);
+            RiflesCharacter ally = Member(targetMember);
             if (spell.Effect == SpellEffect.Revive)
             {
                 if (ally.IsLiving || magic.For(targetMember).Revivals >= definitions.Magic.MaximumRevivals || Threatened)
@@ -171,7 +172,7 @@ public sealed partial class RiflesProduct
         else if (spell.Target == SpellTarget.Party) magic!.Apply("party", spell);
         else
         {
-            PartyMemberState target = Member(action.TargetMember!);
+            RiflesCharacter target = Member(action.TargetMember!);
             string key = "member:" + target.Definition.Id;
             switch (spell.Effect)
             {
@@ -223,7 +224,7 @@ public sealed partial class RiflesProduct
         }
         else if (target == partyId && (shooter != partyId || Combat.FriendlyFire))
         {
-            PartyMemberState? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
+            RiflesCharacter? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
             if (member is null) return;
             CancelRest("Rest interrupted by hostile magic.");
             if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));
@@ -232,7 +233,7 @@ public sealed partial class RiflesProduct
         CombatMessage(spell.Name + " struck " + (foe?.Definition.Name ?? "the party") + ".");
         RecomputeMagic();
     }
-    private long DamageMember(PartyMemberState member, long damage)
+    private long DamageMember(RiflesCharacter member, long damage)
     {
         CancelRest("Rest interrupted by injury.");
         long applied = member.ApplyDamage(checked((long)Math.Ceiling(damage * definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier)));
@@ -245,7 +246,7 @@ public sealed partial class RiflesProduct
         {
             if (target.StartsWith("member:", StringComparison.Ordinal))
             {
-                PartyMemberState member = Member(target["member:".Length..]);
+                RiflesCharacter member = Member(target["member:".Length..]);
                 DamageMember(member, Resisted(spell.Power, member.Definition.Id));
             }
             else if (target.StartsWith("enemy:", StringComparison.Ordinal))
@@ -267,7 +268,7 @@ public sealed partial class RiflesProduct
                     else
                     {
                         inventory!.Consume("member:" + owner, definitions.Magic.RestItem, 1);
-                        foreach (PartyMemberState member in party.Members.Where(m => m.IsLiving))
+                        foreach (RiflesCharacter member in party.Members.Where(m => m.IsLiving))
                         {
                             member.Heal(definitions.Magic.RestVitality); member.RecoverResource(definitions.Magic.RestResource);
                             magic.Clear("member:" + member.Definition.Id, true);
@@ -291,7 +292,7 @@ public sealed partial class RiflesProduct
                 else
                 {
                     bool valid = false;
-                    foreach (PartyMemberState candidate in party.Members)
+                    foreach (RiflesCharacter candidate in party.Members)
                     {
                         try { ValidateSpell(selectedMember, spell, candidate.Definition.Id, selectedTarget, itemWorld!.Revision, false); valid = true; break; }
                         catch (InvalidDataException error) { reason = error.Message; }

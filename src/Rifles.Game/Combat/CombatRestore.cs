@@ -1,5 +1,6 @@
 using System.Numerics;
 using Rifles.Game.Magic;
+using Rifles.Game.Characters;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
@@ -25,7 +26,7 @@ internal static class CombatRestore
         ArgumentNullException.ThrowIfNull(saved);
         ArgumentNullException.ThrowIfNull(allyIds);
 
-        EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor);
+        EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor, party.Entities);
         Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions, floor, party);
         ValidateLoadedWeapons(saved.LoadedWeapons, definitions, inventory);
         FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory, party, partyId, enemies);
@@ -54,7 +55,7 @@ internal static class CombatRestore
         return new RestoredCombat(enemies, actions, saved.LoadedWeapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
     }
 
-    private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor)
+    private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor, CharacterEntities entities)
     {
         GameDefinitions.Require(snapshots is { Length: > 0 } && snapshots.Length <= definitions.Combat.Encounter.Length
             && snapshots.Select(snapshot => snapshot.Spawn).Distinct(StringComparer.Ordinal).Count() == snapshots.Length
@@ -74,7 +75,7 @@ internal static class CombatRestore
                 GameDefinitions.Require(definitions.Magic.EnemySpells.GetValueOrDefault(definition.Id) == cast.Spell
                     && cast.Cost == definitions.Magic.Spell(cast.Spell!).Cost && cast.TargetMember is null
                     && (cast.Phase == ActionPhase.Recovery || snapshot.Resource >= cast.Cost), "saved enemy cast");
-            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
+            enemies[index] = new EnemyState(snapshot, definition, floor, definitions.Exploration, entities, definitions.Magic.EnemyResource);
             var placement = definitions.Crowd.Footprint(definition.Footprint).Placement(snapshot.Motion.Placement);
             enemies[index].Motion.RestoreVisualOffset(new(placement.OffsetX, placement.OffsetY));
         }
@@ -93,7 +94,7 @@ internal static class CombatRestore
         Dictionary<string, ActionState> actions = new(StringComparer.Ordinal);
         foreach (MemberActionSnapshot snapshot in snapshots)
         {
-            PartyMemberState member = party.Members.Single(member => member.Definition.Id == snapshot.Member);
+            RiflesCharacter member = party.Members.Single(member => member.Definition.Id == snapshot.Member);
             ValidateAction(snapshot.Action, definitions, floor);
             ActionState action = ActionState.Restore(snapshot.Action);
             GameDefinitions.Require(member.IsLiving || !action.Busy, "dead member action");

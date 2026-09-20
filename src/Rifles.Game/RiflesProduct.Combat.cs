@@ -5,6 +5,7 @@ using Rifles.Game.Magic;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Items;
+using Rifles.Game.Characters;
 using Rifles.Game.Party;
 using Rifles.Game.Presentation;
 using Rifles.Procgen.Generation;
@@ -20,7 +21,7 @@ public sealed partial class RiflesProduct
     private readonly HashSet<ulong> loadedWeapons = [];
     private readonly List<FlightSnapshot> flights = [];
     private readonly Dictionary<string, GridPoint> drops = [];
-    private readonly Dictionary<ulong, PartyMemberState> allies = [];
+    private readonly Dictionary<ulong, RiflesCharacter> allies = [];
     private readonly Queue<string> combatLog = [];
     private ulong selectedTarget;
     private WorldArt? combatArt;
@@ -87,7 +88,7 @@ public sealed partial class RiflesProduct
             selectedTarget = target.Id; CombatMessage("Target: " + target.Definition.Name); return;
         }
         if (paused || Defeated) throw new InvalidDataException("Resume with a living party before acting.");
-        PartyMemberState member = Member(selectedMember);
+        RiflesCharacter member = Member(selectedMember);
         if (!member.IsLiving) throw new InvalidDataException("Choose a living character.");
         ActionState state = actions[selectedMember];
         if (command.Action == "interrupt")
@@ -150,7 +151,7 @@ public sealed partial class RiflesProduct
     }
     private void ValidateRemedy(string source, string token, string targetId)
     {
-        PartyMemberState target = Member(targetId);
+        RiflesCharacter target = Member(targetId);
         GearDefinition use = definitions.Items.Item(inventory!.Find(source, token).Definition);
         if (!target.IsLiving || use.Use is not (ItemUse.Vitality or ItemUse.Resource)) throw new InvalidDataException("Choose a living character and a remedy.");
         if (use.Use == ItemUse.Vitality && target.Vitality == target.MaximumVitality || use.Use == ItemUse.Resource && target.Resource == target.MaximumResource)
@@ -158,7 +159,7 @@ public sealed partial class RiflesProduct
     }
     private void CommitMember(string memberId, ActionSnapshot action)
     {
-        PartyMemberState member = Member(memberId);
+        RiflesCharacter member = Member(memberId);
         if (!member.IsLiving) return;
         if (action.Kind == CombatActionKind.Cast) { CommitSpell(memberId, null, action); return; }
         if (action.Kind is CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Melee
@@ -174,7 +175,7 @@ public sealed partial class RiflesProduct
             RequireItemAccess(action.SourceOwner!); ValidateRemedy(action.SourceOwner!, action.ItemToken!, action.TargetMember!);
             GearDefinition use = definitions.Items.Item(inventory!.Find(action.SourceOwner!, action.ItemToken!).Definition);
             inventory.PrepareUse(action.SourceOwner!, action.ItemToken!, inventory.Revision).Publish();
-            PartyMemberState target = Member(action.TargetMember!);
+            RiflesCharacter target = Member(action.TargetMember!);
             long restored = use.Use == ItemUse.Vitality ? target.Heal(use.Effect) : target.RecoverResource(use.Effect);
             CombatMessage(target.Definition.Name + " restored " + restored + " " + use.Use); return;
         }
@@ -208,7 +209,7 @@ public sealed partial class RiflesProduct
         AdvanceFlights(seconds);
         foreach ((string id, ActionState state) in actions)
         {
-            PartyMemberState member = Member(id);
+            RiflesCharacter member = Member(id);
             if (!member.IsLiving) { state.Cancel(); continue; }
             if (state.Current is { Phase: ActionPhase.Windup } pending
                 && pending.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload
@@ -265,7 +266,7 @@ public sealed partial class RiflesProduct
             if (shooter == partyId && !Combat.FriendlyFire) return;
             // Directional hits meet whoever stands closest to the incoming
             // side; directionless cases fall back to front-rank order.
-            PartyMemberState? target = MemberInLineOfFire(direction)
+            RiflesCharacter? target = MemberInLineOfFire(direction)
                 ?? party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
             if (target is null) return;
             CancelRest("Rest interrupted by damage.");
@@ -274,7 +275,7 @@ public sealed partial class RiflesProduct
             if (!target.IsLiving) { actions[target.Definition.Id].Cancel(); magic!.Clear("member:" + target.Definition.Id); }
             return;
         }
-        if (allies.TryGetValue(hit.Entity, out PartyMemberState? ally) && Combat.FriendlyFire)
+        if (allies.TryGetValue(hit.Entity, out RiflesCharacter? ally) && Combat.FriendlyFire)
         {
             ally.ApplyDamage(damage);
             if (!ally.IsLiving) { if (hit.Entity == actor!.Id) { actor.Motion.Stop(); actor.Motion.Detach(); } movement!.Remove(hit.Entity); }
@@ -368,7 +369,7 @@ public sealed partial class RiflesProduct
     /// correctly whether the attack comes from the front, flank, or rear.
     /// Null means degenerate direction — the caller keeps rank order.
     /// </summary>
-    private PartyMemberState? MemberInLineOfFire(Vector3 direction)
+    private RiflesCharacter? MemberInLineOfFire(Vector3 direction)
     {
         Rifles.Procgen.Generation.GridPoint facing = exploration.Facing.Offset();
         float forwardX = facing.X, forwardZ = facing.Y, leftX = facing.Y, leftZ = -facing.X;

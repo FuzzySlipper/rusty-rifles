@@ -17,12 +17,16 @@ event bus, or scripting layer.
   Engine `EntityId`s. Multiple instances of one archetype are supported with
   distinct IDs. Party formation/selected member is party state referencing
   characters, not a second character set.
-- Target: a composed `RiflesCharacter` facade over canonical Engine
-  `EntityStore` entities, exposing attached Stats, Effects, Action,
-  inventory/progression/spellbook state. Factories assemble from admitted
-  definitions; `EntityTypeId` records kind/origin at creation. Enemies/allies
-  share stats/action/effects capabilities; enemy motion/brain stays a concrete
-  component. (Planned — #8358.)
+- Landed (#8358): `Characters/CharacterEntities` owns one `EntityStore` per
+  party scope with `AttachStats`/`ReplaceStats`/`Detach` and a durable
+  instance-id map; `RiflesCharacter` facade exposes attached `StatsComponent`
+  (shared maximum `Stat` references, `rifles.*` ids) plus formation state.
+  Factories assemble from admitted definitions with archetype-derived
+  `EntityTypeId` (`rifles:member:<archetype>`, `rifles:enemy:<id>`,
+  `rifles:ally`); wrapping attaches nothing. Enemies share stats via the same
+  owner (motion/brain stay concrete); allies are real characters from an
+  explicit stand-in definition. Action/inventory/progression attachment is
+  #8359–#8361; floor-lifetime consolidation is #8363.
 
 ## Stats, effects, inventory
 
@@ -92,7 +96,7 @@ event bus, or scripting layer.
 | Concern | Current | Target (#) |
 | --- | --- | --- |
 | Archetypes/party | `CharacterArchetypeDefinition` catalogue in `character-options.json`; presets hold instance slots (`PresetMemberDefinition`: instance id + archetype ref + display name + position); `ResolvePreset` builds `MemberDefinition` inputs carrying archetype ids; `PartyDefinition` keeps formation + capacity only | Landed (#8283). Spells/resistances key by archetype; books key by instance; rifle-drill stats converged to archetypes (formation/loadout identity kept) |
-| Entities/stats | `PartyMemberState` private stats; `EnemyState` separate shape; parallel identity maps | Canonical entities + facade; `StatsComponent` (#8358) |
+| Entities/stats | `RiflesCharacter` over `EntityStore` entities; `StatsComponent` with shared maxima; `CharacterEntities` durable map | Landed (#8358) |
 | Inventory | `ItemInventory` numeric `PackOwner` + string prefixes over `InventoryStore` | Bound components + typed owners (#8359) |
 | Combat | `RiflesProduct.Combat/Enemies/CombatPresentation` partials + dictionaries | Concrete combat/action owner (#8360) |
 | Magic | `MagicState` string-keyed books/conditions; per-tick recompute | Attached spellbook/conditions via `EffectsComponent` (#8361) |

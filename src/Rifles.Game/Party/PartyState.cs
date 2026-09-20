@@ -1,4 +1,6 @@
+using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
+using Rifles.Game.Characters;
 
 namespace Rifles.Game.Party;
 
@@ -93,7 +95,7 @@ internal sealed record CharacterArchetypeDefinition(
             || MaximumVitality <= 0 || MaximumResource < 0
             || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
             || BasePower < 0 || BaseDefense < 0
-            || BasePower > PartyMemberState.MaximumDerivedStatistic || BaseDefense > PartyMemberState.MaximumDerivedStatistic
+            || BasePower > RiflesCharacter.MaximumDerivedStatistic || BaseDefense > RiflesCharacter.MaximumDerivedStatistic
             || StartingVitality is long startingVitality && (startingVitality < 0 || startingVitality > MaximumVitality)
             || StartingResource is long startingResource && (startingResource < 0 || startingResource > MaximumResource))
         {
@@ -156,7 +158,7 @@ internal sealed record MemberDefinition(
             || string.IsNullOrWhiteSpace(Position) || MaximumVitality <= 0 || MaximumResource < 0
             || MaximumVitality > MaximumTrackValue || MaximumResource > MaximumTrackValue
             || BasePower < 0 || BaseDefense < 0
-            || BasePower > PartyMemberState.MaximumDerivedStatistic || BaseDefense > PartyMemberState.MaximumDerivedStatistic
+            || BasePower > RiflesCharacter.MaximumDerivedStatistic || BaseDefense > RiflesCharacter.MaximumDerivedStatistic
             || StartingVitality is long startingVitality && (startingVitality < 0 || startingVitality > MaximumVitality)
             || StartingResource is long startingResource && (startingResource < 0 || startingResource > MaximumResource))
         {
@@ -275,135 +277,14 @@ internal sealed record CharacterOptionsDefinition(string DefaultPresetId, Charac
 /// </summary>
 internal sealed record MemberSnapshot(string Id, long Vitality, string? Position = null, long? Resource = null);
 
-internal sealed record EquipmentStatBonuses(long Power, long Defense);
-
-internal sealed class PartyMemberState
-{
-    internal const long MaximumDerivedStatistic = 1_000_000_000_000;
-    private readonly Track vitality;
-    private readonly Track? resource;
-    private readonly Stat powerStatistic;
-    private readonly Stat defenseStatistic;
-    private EquipmentStatBonuses equipmentBonuses = new(0, 0);
-    private EquipmentStatBonuses developmentBonuses = new(0, 0);
-    private StatModifierHandle? equipmentPowerModifier;
-    private StatModifierHandle? equipmentDefenseModifier;
-    private StatModifierHandle? developmentPowerModifier;
-    private StatModifierHandle? developmentDefenseModifier;
-
-    internal PartyMemberState(MemberDefinition definition, int rank)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-        if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
-        Definition = definition;
-        Position = definition.Position;
-        Rank = rank;
-        powerStatistic = CreateDerivedStatistic(definition.BasePower);
-        defenseStatistic = CreateDerivedStatistic(definition.BaseDefense);
-        vitality = new Track(definition.MaximumVitality, definition.InitialVitality,
-            quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
-        if (definition.MaximumResource > 0)
-        {
-            resource = new Track(definition.MaximumResource, definition.InitialResource,
-                quantum: 1, rounding: MidpointRounding.ToZero, integerRounding: MidpointRounding.ToZero);
-        }
-    }
-
-    internal MemberDefinition Definition { get; }
-    internal string Position { get; private set; }
-    internal int Rank { get; private set; }
-    internal long Vitality => vitality.ValueInt64;
-    internal long MaximumVitality => checked((long)vitality.MaximumValue);
-    internal long Resource => resource?.ValueInt64 ?? 0;
-    internal long MaximumResource => resource is null ? 0 : checked((long)resource.MaximumValue);
-    internal bool IsLiving => Vitality > 0;
-    internal long Power => powerStatistic.ValueInt64;
-    internal long Defense => defenseStatistic.ValueInt64;
-    internal EquipmentStatBonuses EquipmentBonuses => equipmentBonuses;
-
-    internal long ApplyDamage(long requested)
-    {
-        if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        long applied = Math.Min(Vitality, requested);
-        vitality.Spend(applied);
-        return applied;
-    }
-
-    internal long Heal(long requested)
-    {
-        if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return checked((long)vitality.Restore(requested));
-    }
-
-    internal long SpendResource(long requested)
-    {
-        if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        if (resource is null) return 0;
-        long applied = Math.Min(Resource, requested);
-        resource.Spend(applied);
-        return applied;
-    }
-
-    internal long RecoverResource(long requested)
-    {
-        if (requested < 0) throw new ArgumentOutOfRangeException(nameof(requested));
-        return resource is null ? 0 : checked((long)resource.Restore(requested));
-    }
-
-    /// <summary>Receives the current aggregate from authoritative equipped items.</summary>
-    internal void SetEquipmentBonuses(long power, long defense)
-    {
-        ValidateDerivedBonus(power, nameof(power));
-        ValidateDerivedBonus(defense, nameof(defense));
-        ReplaceModifier(powerStatistic, ref equipmentPowerModifier, power);
-        ReplaceModifier(defenseStatistic, ref equipmentDefenseModifier, defense);
-        equipmentBonuses = new EquipmentStatBonuses(power, defense);
-    }
-
-    internal void SetDevelopmentBonuses(long power, long defense)
-    {
-        ValidateDerivedBonus(power, nameof(power));
-        ValidateDerivedBonus(defense, nameof(defense));
-        ReplaceModifier(powerStatistic, ref developmentPowerModifier, power);
-        ReplaceModifier(defenseStatistic, ref developmentDefenseModifier, defense);
-        developmentBonuses = new(power, defense);
-    }
-
-    internal void SetPosition(string position, int rank)
-    {
-        if (string.IsNullOrWhiteSpace(position)) throw new ArgumentOutOfRangeException(nameof(position));
-        if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
-        Position = position;
-        Rank = rank;
-    }
-
-    private static Stat CreateDerivedStatistic(long baseValue) => new(
-        baseValue,
-        minimum: 0,
-        maximum: MaximumDerivedStatistic,
-        quantum: 1,
-        integerRounding: MidpointRounding.ToZero);
-
-    private static void ReplaceModifier(Stat statistic, ref StatModifierHandle? existing, long value)
-    {
-        if (existing is not null) statistic.RemoveModifier(existing);
-        existing = value == 0 ? null : statistic.AddModifier(value);
-    }
-
-    private static void ValidateDerivedBonus(long value, string parameter)
-    {
-        if (value < -MaximumDerivedStatistic || value > MaximumDerivedStatistic)
-            throw new ArgumentOutOfRangeException(parameter, value, "Derived statistic bonuses must remain within product bounds.");
-    }
-}
-
 internal sealed class PartyState
 {
     private const int FrontRank = 0;
+    private readonly CharacterEntities entities = new();
     private readonly MemberDefinition[] roster;
     private readonly Dictionary<string, FormationPositionDefinition> positions;
     private readonly int maxSize;
-    private PartyMemberState[] members;
+    private RiflesCharacter[] members;
 
     internal PartyState(IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions)
         : this(null, positions, maxSize, definitions)
@@ -425,7 +306,21 @@ internal sealed class PartyState
         roster = definitions.ToArray();
         ValidateRoster(roster);
         PresetId = presetId;
-        members = roster.Select(definition => new PartyMemberState(definition, RankOf(definition.Position))).ToArray();
+        members = roster.Select(definition => CreateMember(definition, RankOf(definition.Position))).ToArray();
+    }
+
+    /// <summary>
+    /// The entity owner behind this party's characters. Enemy creation for the
+    /// same floor attaches here too, so one store holds the floor's characters
+    /// until #8363 consolidates floor lifetime.
+    /// </summary>
+    internal CharacterEntities Entities => entities;
+
+    private RiflesCharacter CreateMember(MemberDefinition definition, int rank)
+    {
+        (EntityId entity, StatsComponent stats) = entities.AttachStats(
+            definition.Id, "rifles:member:" + definition.Archetype, () => RiflesStats.ForMember(definition));
+        return new RiflesCharacter(new Actor(entities.Store, entity), definition, stats, definition.Position, rank);
     }
 
     private static string GetPresetId(CharacterOptionsDefinition? characters, string presetId)
@@ -437,15 +332,15 @@ internal sealed class PartyState
 
     /// <summary>Set for a starter-preset party and immutable for its expedition.</summary>
     internal string? PresetId { get; }
-    internal IReadOnlyList<PartyMemberState> Members => Array.AsReadOnly(members);
+    internal IReadOnlyList<RiflesCharacter> Members => Array.AsReadOnly(members);
     internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members
         .Select(member => new MemberSnapshot(member.Definition.Id, member.Vitality, member.Position, member.Resource)).ToArray();
 
     internal bool SwapFormation(string memberId, string otherMemberId)
     {
-        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        PartyMemberState? other = members.SingleOrDefault(candidate => candidate.Definition.Id == otherMemberId);
+        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        RiflesCharacter? other = members.SingleOrDefault(candidate => candidate.Definition.Id == otherMemberId);
         if (member is null || other is null || ReferenceEquals(member, other) || !member.IsLiving || !other.IsLiving)
         {
             return false;
@@ -459,7 +354,7 @@ internal sealed class PartyState
 
     internal bool MoveFormation(string memberId, string position)
     {
-        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
         if (member is null || !member.IsLiving || string.IsNullOrEmpty(position)
             || !positions.TryGetValue(position, out FormationPositionDefinition? target))
         {
@@ -477,19 +372,19 @@ internal sealed class PartyState
 
     internal bool CanUseReach(string memberId, PartyReach reach)
     {
-        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
         return member is not null && member.IsLiving && IsReachAllowed(member.Rank, reach);
     }
 
     internal FormationPositionDefinition PositionOf(string memberId)
     {
-        PartyMemberState? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
+        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
         return member is not null && positions.TryGetValue(member.Position, out FormationPositionDefinition? position)
             ? position
             : throw new InvalidDataException($"Unknown party member '{memberId}'.");
     }
 
-    internal IReadOnlyList<PartyMemberState> EligibleMembers(PartyReach reach) => members
+    internal IReadOnlyList<RiflesCharacter> EligibleMembers(PartyReach reach) => members
         .Where(member => member.IsLiving && IsReachAllowed(member.Rank, reach)).ToArray();
 
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
@@ -505,7 +400,7 @@ internal sealed class PartyState
             throw new InvalidOperationException("Party snapshot roster mismatch.");
         }
 
-        PartyMemberState[] restored = saved.Select(value =>
+        RiflesCharacter[] restored = saved.Select(value =>
         {
             MemberDefinition definition = roster.SingleOrDefault(candidate => candidate.Id == value.Id)
                 ?? throw new InvalidOperationException("Party snapshot member missing.");
@@ -522,7 +417,10 @@ internal sealed class PartyState
                 throw new InvalidOperationException("Party snapshot member state is out of range.");
             }
 
-            PartyMemberState member = new(definition, target.Rank);
+            // Rebuilt characters start modifier-free on fresh entities, exactly
+            // like fresh construction; callers re-apply equipment afterwards.
+            entities.Detach(value.Id);
+            RiflesCharacter member = CreateMember(definition, target.Rank);
             member.Heal(definition.MaximumVitality);
             member.ApplyDamage(definition.MaximumVitality - value.Vitality);
             member.RecoverResource(definition.MaximumResource);

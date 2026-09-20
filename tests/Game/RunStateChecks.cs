@@ -1,4 +1,5 @@
 using System.Buffers;
+using Rifles.Game.Characters;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -195,7 +196,7 @@ internal static class RunStateChecks
 
         PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, decodedWindup.Active.Roster);
         party.Restore(decodedWindup.Active.Members);
-        PartyMemberState caster = party.Members.Single(saved => saved.Definition.Id == member);
+        RiflesCharacter caster = party.Members.Single(saved => saved.Definition.Id == member);
         long resourceBefore = caster.Resource;
         ActionState action = ActionState.Restore(decodedCast);
         int commits = 0;

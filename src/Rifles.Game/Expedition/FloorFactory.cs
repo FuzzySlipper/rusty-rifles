@@ -1,3 +1,4 @@
+using Rifles.Game.Characters;
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -85,7 +86,7 @@ internal static class FloorFactory
         Dictionary<string, GridPoint> drops = [];
         GeneratedFeatureSnapshot generatedFeatures = CreateGeneratedFeatures(intent, floor, definitions, inventory, drops, scene, Allocate);
         EncounterPlacementResult encounterPlacement = CreateEnemies(floor, definitions, inventory, itemWorld, movement,
-            generatedFeatures, drops, Allocate, out EnemyState[] enemies);
+            generatedFeatures, drops, Allocate, party.Entities, out EnemyState[] enemies);
         generatedFeatures = AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, Allocate);
 
         MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)));
@@ -105,7 +106,7 @@ internal static class FloorFactory
 
     private static void ApplyEquipment(PartyState party, ItemInventory inventory)
     {
-        foreach (PartyMemberState member in party.Members)
+        foreach (RiflesCharacter member in party.Members)
         {
             var bonus = inventory.Bonuses("member:" + member.Definition.Id);
             member.SetEquipmentBonuses(bonus.Power, bonus.Defense);
@@ -167,7 +168,7 @@ internal static class FloorFactory
 
     private static EncounterPlacementResult CreateEnemies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
         ExplorationItems itemWorld, MovementGrid movement, GeneratedFeatureSnapshot generatedFeatures,
-        Dictionary<string, GridPoint> drops, Func<ulong> allocate, out EnemyState[] enemies)
+        Dictionary<string, GridPoint> drops, Func<ulong> allocate, CharacterEntities entities, out EnemyState[] enemies)
     {
         HashSet<GridPoint> excluded = floor.Cells.Where(movement.Occupied).Concat(generatedFeatures.Gates.Select(gate => gate.Cell))
             .Concat(generatedFeatures.Hazards.Select(hazard => hazard.Cell)).Concat(floor.Grants.Select(grant => grant.Cell))
@@ -190,7 +191,7 @@ internal static class FloorFactory
             GridPoint[] patrol = PatrolRoute(floor, itemWorld.Capture().Door, placed.Cell, spawn);
             EnemyState enemy = new(new EnemySnapshot(id, definition.Id, motion.Capture(), definition.Vitality, null, 0, false, false,
                 owner, new EnemyBrain(definition.Brain, placed.Cell, patrol).Capture(), spawn.Id, definitions.Magic.EnemyResource),
-                definition, floor, definitions.Exploration, definitions.Magic.EnemyResource);
+                definition, floor, definitions.Exploration, entities, definitions.Magic.EnemyResource);
             enemy.Motion.Bind(movement, id, definition.Footprint, definition.Faction, definition.Share);
             GameDefinitions.Require(enemy.Motion.Capture().Placement == placed.PlacementId, "resolved enemy crowd slot");
             created.Add(enemy);

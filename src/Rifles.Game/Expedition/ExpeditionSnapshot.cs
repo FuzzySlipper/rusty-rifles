@@ -3,6 +3,7 @@ using Rifles.Procgen;
 using Rifles.Procgen.Expeditions;
 using Rifles.Procgen.Generation;
 using System.Buffers;
+using Rifles.Game.Characters;
 using Rifles.Game.Combat;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -88,7 +89,7 @@ internal sealed class ExpeditionCodec : IProductStateCodec<ExpeditionSnapshot>
         ValidateWorldObstructions(saved);
         PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
         party.Restore(saved.Members);
-        foreach (PartyMemberState member in party.Members)
+        foreach (RiflesCharacter member in party.Members)
         {
             var bonus = inventory.Bonuses("member:" + member.Definition.Id);
             member.SetEquipmentBonuses(bonus.Power, bonus.Defense);
