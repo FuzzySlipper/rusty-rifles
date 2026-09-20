@@ -487,13 +487,13 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             var routes = Connections().Where(c => c.Forward == (stair.Id == features.Capture().ExitId)).ToArray();
             if (routes.Length == 0 && stair.Id == features.Capture().ExitId)
             {
-                try { CompleteRun(); } catch (Exception error) { feedback = error.Message; }
+                try { CompleteRun(); } catch (InvalidDataException error) { feedback = error.Message; }
                 return;
             }
             if (routes.Length == 1)
             {
                 try { Travel(routes[0].Link.Id); }
-                catch (Exception error) { feedback = error.Message; }
+                catch (InvalidDataException error) { feedback = error.Message; }
                 return;
             }
         }
