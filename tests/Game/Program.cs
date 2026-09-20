@@ -126,6 +126,8 @@ PartyState twinParty = new(definitions.Party.Positions, definitions.Party.MaxPar
 MagicState twinMagic = new(definitions.Magic, twinRoster.Select(m => (m.Id, m.Archetype)));
 Require(twinParty.Members.Count == 2 && twinMagic.For("warden-a").Known.SetEquals(twinMagic.For("warden-b").Known),
     "A different roster with shared archetypes constructs party state and spellbooks per instance.");
+Require(twinRoster.All(m => m.Id != m.Archetype && definitions.Magic.Resistances.ContainsKey(m.Archetype)),
+    "Resistance lookups resolve through the archetype, so condition ticks on shared-archetype twins stay covered.");
 RiflesCharacter twinA = twinParty.Members.Single(m => m.Definition.Id == "warden-a");
 RiflesCharacter twinB = twinParty.Members.Single(m => m.Definition.Id == "warden-b");
 Require(twinA.Entity != twinB.Entity

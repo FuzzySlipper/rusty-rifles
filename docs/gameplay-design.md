@@ -32,7 +32,7 @@ event bus, or scripting layer.
 
 - Canonical stat/track ownership is Engine `StatsComponent` with shared maximum
   `Stat` references and named accessors. Formulas/rounding stay Rifles-owned.
-  No duplicated long-only mirrors or shadow scalars. (Planned — #8358.)
+  No duplicated long-only mirrors or shadow scalars. (Landed — #8358.)
 - `EffectsComponent` contributions apply to the same `StatsComponent` combat
   reads; equipment attach/removal preserves per-source identity. No per-tick
   aggregate rebuild when nothing changed. (Planned — #8359, #8361.)

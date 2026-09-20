@@ -247,7 +247,7 @@ public sealed partial class RiflesProduct
             if (target.StartsWith("member:", StringComparison.Ordinal))
             {
                 RiflesCharacter member = Member(target["member:".Length..]);
-                DamageMember(member, Resisted(spell.Power, member.Definition.Id));
+                DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));
             }
             else if (target.StartsWith("enemy:", StringComparison.Ordinal))
             {
