@@ -20,9 +20,6 @@ internal sealed class RiflesCharacter
     private readonly Actor actor;
     private readonly StatsComponent stats;
     private readonly Dictionary<string, (EquipmentStatBonuses Bonuses, StatModifierHandle? Power, StatModifierHandle? Defense)> equipmentSources = new(StringComparer.Ordinal);
-    private EquipmentStatBonuses developmentBonuses = new(0, 0);
-    private StatModifierHandle? developmentPowerModifier;
-    private StatModifierHandle? developmentDefenseModifier;
 
     internal RiflesCharacter(Actor actor, MemberDefinition definition, StatsComponent stats, string position, int rank)
     {
@@ -109,27 +106,12 @@ internal sealed class RiflesCharacter
         if (source.Defense is not null) stats.GetStat(RiflesStatIds.Defense).RemoveModifier(source.Defense);
     }
 
-    internal void SetDevelopmentBonuses(long power, long defense)
-    {
-        ValidateDerivedBonus(power, nameof(power));
-        ValidateDerivedBonus(defense, nameof(defense));
-        ReplaceModifier(stats.GetStat(RiflesStatIds.Power), ref developmentPowerModifier, power);
-        ReplaceModifier(stats.GetStat(RiflesStatIds.Defense), ref developmentDefenseModifier, defense);
-        developmentBonuses = new(power, defense);
-    }
-
     internal void SetPosition(string position, int rank)
     {
         if (string.IsNullOrWhiteSpace(position)) throw new ArgumentOutOfRangeException(nameof(position));
         if (rank < 0) throw new ArgumentOutOfRangeException(nameof(rank));
         Position = position;
         Rank = rank;
-    }
-
-    private static void ReplaceModifier(Stat statistic, ref StatModifierHandle? existing, long value)
-    {
-        if (existing is not null) statistic.RemoveModifier(existing);
-        existing = value == 0 ? null : statistic.AddModifier(value, StatModifierKind.Add);
     }
 
     private static void ValidateDerivedBonus(long value, string parameter)
