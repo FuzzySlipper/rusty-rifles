@@ -37,6 +37,7 @@ namespace Rifles.Game.Expedition;
         typeof(JsonStringEnumConverter<TraversalKind>),
         typeof(JsonStringEnumConverter<MidpointRounding>),
         typeof(JsonStringEnumConverter<TrackMaximumChangePolicy>),
+        typeof(JsonStringEnumConverter<StatModifierKind>),
     ],
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(RunSnapshot))]
