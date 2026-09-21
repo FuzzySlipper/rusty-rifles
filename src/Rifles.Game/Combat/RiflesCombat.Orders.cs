@@ -93,8 +93,9 @@ internal sealed partial class RiflesCombat
             CarriedItem? carried = Weapon(soldier.Definition.Id);
             WeaponCapabilities? weapon = Capabilities(carried);
             string? reach = kind == CombatActionKind.Fire ? weapon?.FireReach : weapon?.MeleeReach;
+            bool cancelReload = kind == CombatActionKind.Melee && MusketActionRules.CanInterruptReload(state.Current);
             OrderTarget[] candidates = [];
-            if (reach is not null && soldier.IsLiving && !state.Busy && !party.Formation.Affects(soldier.InstanceId)
+            if (reach is not null && soldier.IsLiving && (!state.Busy || cancelReload) && !party.Formation.Affects(soldier.InstanceId)
                 && (kind != CombatActionKind.Fire || weapon!.Loaded))
             {
                 if (!targetsByReach.TryGetValue(reach, out var cached))
@@ -102,12 +103,13 @@ internal sealed partial class RiflesCombat
                 candidates = cached;
             }
             ForwardOrderAvailability availability = ForwardOrderRules.Assess(definitions.Formation, soldier.Position, soldier.IsLiving,
-                state.Busy, party.Formation.Affects(soldier.InstanceId), weapon is not null, reach, kind == CombatActionKind.Fire, weapon?.Loaded ?? false, candidates.Select(target => new ForwardOrderCandidate(
+                state.Busy && !cancelReload, party.Formation.Affects(soldier.InstanceId), weapon is not null, reach, kind == CombatActionKind.Fire, weapon?.Loaded ?? false, candidates.Select(target => new ForwardOrderCandidate(
                     target.Enemy.Id, target.Target.ForwardDistance, target.Target.LeftOffset, target.Target.Exposed)));
             if (!availability.Eligible) { readout.Add(new(soldier.Definition.Id, false, availability.Reason, "", "")); continue; }
             OrderTarget target = candidates.Single(candidate => candidate.Enemy.Id == availability.Selection!.Target);
             if (!start) { readout.Add(new(soldier.Definition.Id, true, availability.Reason,
                 target.Enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), target.Lane.ToString())); continue; }
+            if (cancelReload) InterruptReloadForManeuver(soldier);
             ActionSnapshot action = NewAction(kind, carried!.Entity, target: target.Enemy.Id, aim: target.Enemy.Motion.Position,
                 capabilities: weapon, orderOrigin: origin, orderFacing: facing) with
             { AimOffsetX = target.Enemy.Motion.CrowdOffset.X, AimOffsetY = target.Enemy.Motion.CrowdOffset.Y };

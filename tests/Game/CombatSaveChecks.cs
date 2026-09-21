@@ -77,6 +77,33 @@ internal static class CombatSaveChecks
         RequireRejected(() => Validate(fixture.Saved with { Magic = magic with
             { Conditions = [new("enemy:" + fixture.Saved.Enemies[0].Id, "ward", 1, 0)] } }, definitions, fixture),
             "Ally-only wards cannot be forged on enemy targets; hostile enemy spells on party members remain valid.");
+
+        SpellDefinition spark = definitions.Magic.Spell("spark");
+        Require(fixture.Saved.Magic!.Books.Single(book => book.Member == "warden").Known.Contains(spark.Id),
+            "The hostile-cast save fixture uses a real known provider.");
+        ActionSnapshot hostile = new(CombatActionKind.Cast, 0, null, null, fixture.Saved.Enemies[0].Id, null,
+            spark.Windup, ActionPhase.Windup, spark.Recovery, fixture.Floor.Entrance, Spell: spark.Id, Cost: spark.Cost,
+            OrderOrigin: fixture.Floor.Entrance, OrderFacing: CardinalDirection.North);
+        Validate(WithCast(hostile), definitions, fixture);
+        RequireRejected(() => Validate(WithCast(hostile with { TargetMember = "warden" }), definitions, fixture),
+            "A forward hostile cast retains no ally target in its save payload.");
+
+        SpellDefinition lantern = definitions.Magic.Spell("lantern");
+        Require(fixture.Saved.Magic!.Books.Single(book => book.Member == "seeker").Known.Contains(lantern.Id),
+            "The shared-party cast save fixture uses a real known provider.");
+        ActionSnapshot supportingLantern = new(CombatActionKind.Cast, 0, null, null, 0, null,
+            lantern.Recovery, ActionPhase.Recovery, lantern.Recovery, Spell: lantern.Id, Cost: lantern.Cost,
+            SuppressSharedEffect: true);
+        CombatSnapshot WithSeekerCast(ActionSnapshot action) => fixture.Saved with
+        {
+            Members = fixture.Saved.Members.Select(member => member.Member == "seeker" ? member with { Action = action } : member).ToArray(),
+        };
+        Validate(WithSeekerCast(supportingLantern), definitions, fixture);
+        RequireRejected(() => CombatRestore.ValidateAction(hostile with { SuppressSharedEffect = true }, definitions, fixture.Floor),
+            "Only a party cast may suppress duplicate shared-effect settlement.");
+        RequireRejected(() => Validate(WithSeekerCast(supportingLantern with { Spell = spark.Id, Cost = spark.Cost,
+            Remaining = spark.Recovery, RecoverySeconds = spark.Recovery, AimCell = fixture.Floor.Entrance }), definitions, fixture),
+            "A non-party cast cannot claim shared-effect suppression in a saved action.");
     }
 
     private static void VerifyCorruptPositionsAreRejected(GameDefinitions definitions, CombatFixture fixture)

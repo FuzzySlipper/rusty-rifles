@@ -6,8 +6,8 @@
   "finaleExperience": 30,
   "defaultDifficulty": "normal",
   "difficulties": [
-    { "id": "normal", "name": "Normal", "description": "Standard enemy pressure with ammunition for missed shots and exploration.", "incomingDamageMultiplier": 1.0, "ammunitionAllowance": 2.2 },
-    { "id": "hard", "name": "Hard", "description": "Heavier incoming damage and tighter ammunition reserves; use cover and recovery carefully.", "incomingDamageMultiplier": 1.35, "ammunitionAllowance": 1.5 }
+    { "id": "normal", "name": "Normal", "description": "Standard enemy pressure with time to recover between fights.", "incomingDamageMultiplier": 1.0 },
+    { "id": "hard", "name": "Hard", "description": "Heavier incoming damage; use cover and recovery carefully.", "incomingDamageMultiplier": 1.35 }
   ],
   "mapRevealCells": 2,
   "seedIncrement": 1

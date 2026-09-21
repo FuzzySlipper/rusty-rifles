@@ -45,10 +45,15 @@ internal static class CombatRestore
                 .Concat(enemies.Where(e => e.Alive).Select(e => "enemy:" + e.Id)).Append("party"), travellingBooks);
         foreach (var entry in actions)
             if (entry.Value.Current is { Kind: CombatActionKind.Cast } cast)
+            {
+                SpellDefinition spell = definitions.Magic.Spell(cast.Spell!);
                 GameDefinitions.Require(magic.For(entry.Key).Known.Contains(cast.Spell!)
-                    && cast.Cost == Math.Max(0, definitions.Magic.Spell(cast.Spell!).Cost - magic.CostDiscount(entry.Key))
+                    && cast.Cost == Math.Max(0, spell.Cost - magic.CostDiscount(entry.Key))
                     && (cast.Phase == ActionPhase.Recovery || party.Members.Single(m => m.Definition.Id == entry.Key).Resource >= cast.Cost)
-                    && cast.TargetMember is not null && party.Members.Any(m => m.Definition.Id == cast.TargetMember), "saved caster spell and target");
+                    && (spell.Target == SpellTarget.Ally
+                        ? cast.TargetMember is not null && party.Members.Any(member => member.Definition.Id == cast.TargetMember)
+                        : cast.TargetMember is null), "saved caster spell and target");
+            }
         GameDefinitions.Require(party.RestRemaining == 0 || party.Members.Any(m => m.Definition.Id == party.RestOwner && m.IsLiving)
             && actions.Values.All(a => !a.Busy), "saved rest eligibility");
         // Condition timers and target kinds are admitted inside
@@ -90,6 +95,8 @@ internal static class CombatRestore
             EnemyDefinition definition = definitions.Combat.Enemy(spawn.Enemy);
             GameDefinitions.Require(snapshot.Owner == EnemyOwner(snapshot.Id), "saved combat enemy owner");
             ValidateAction(snapshot.Action, definitions, floor);
+            GameDefinitions.Require(snapshot.Action is null or { Kind: CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Cast },
+                "saved enemy action kind");
             if (snapshot.Action is { Kind: CombatActionKind.Cast } cast)
                 GameDefinitions.Require(definitions.Magic.EnemySpells.GetValueOrDefault(definition.Id) == cast.Spell
                     && cast.Cost == definitions.Magic.Spell(cast.Spell!).Cost && cast.TargetMember is null
@@ -125,8 +132,10 @@ internal static class CombatRestore
         GameDefinitions.Require(float.IsFinite(action.AimOffsetX) && Math.Abs(action.AimOffsetX) <= .5f
             && float.IsFinite(action.AimOffsetY) && Math.Abs(action.AimOffsetY) <= .5f, "saved aim offset");
         _ = ActionState.Restore(action);
-        GameDefinitions.Require(action.OrderOrigin is null || action.Kind is CombatActionKind.Melee or CombatActionKind.Fire
-            && floor.Cells.Contains(action.OrderOrigin.Value) && action.OrderFacing is { } facing && Enum.IsDefined(facing), "saved order origin");
+        bool ordered = action.Kind is CombatActionKind.Melee or CombatActionKind.Fire
+            || action.Kind == CombatActionKind.Cast && definitions.Magic.Spell(action.Spell ?? "").Target == SpellTarget.Enemy;
+        GameDefinitions.Require(action.OrderOrigin is null || ordered && floor.Cells.Contains(action.OrderOrigin.Value)
+            && action.OrderFacing is { } facing && Enum.IsDefined(facing), "saved order origin");
         if (action.Kind == CombatActionKind.Cast)
         {
             SpellDefinition spell = definitions.Magic.Spell(action.Spell ?? "");
@@ -134,10 +143,24 @@ internal static class CombatRestore
                 && action.Remaining <= (action.Phase == ActionPhase.Windup ? spell.Windup : spell.Recovery)
                 && action.RecoverySeconds == spell.Recovery
                 && (spell.Target == SpellTarget.Enemy) == action.AimCell.HasValue
-                && (!action.AimCell.HasValue || floor.Cells.Contains(action.AimCell.Value)), "saved spell action");
+                && (!action.AimCell.HasValue || floor.Cells.Contains(action.AimCell.Value))
+                && (!action.SuppressSharedEffect || spell.Target == SpellTarget.Party), "saved spell action");
             return;
         }
-        GameDefinitions.Require(action.Spell is null && action.Cost == 0, "nonspell action payload");
+        GameDefinitions.Require(action.Spell is null && action.Cost == 0 && !action.SuppressSharedEffect, "nonspell action payload");
+        if (action.Kind is CombatActionKind.FixBayonet or CombatActionKind.UnfixBayonet)
+        {
+            IEnumerable<BayonetActionTiming> timings = definitions.Items.Items
+                .Select(item => item.Weapon?.Bayonet)
+                .Where(bayonet => bayonet is not null)
+                .Select(bayonet => action.Kind == CombatActionKind.FixBayonet ? bayonet!.Fix : bayonet!.Unfix);
+            double maximumBayonetWindup = timings.Max(timing => timing.WindupSeconds);
+            double maximumBayonetRecovery = timings.Max(timing => timing.RecoverySeconds);
+            GameDefinitions.Require(action.Weapon != 0 && action.Target == 0 && action.TargetMember is null && action.ItemToken is null
+                && action.SourceOwner is null && action.AimCell is null && action.Remaining <= (action.Phase == ActionPhase.Windup ? maximumBayonetWindup : maximumBayonetRecovery)
+                && action.RecoverySeconds <= maximumBayonetRecovery, "saved bayonet action");
+            return;
+        }
         ActionDefinition profile = definitions.Combat.Action(action.Kind);
         double maximumWindup = profile.Windup;
         double maximumRecovery = profile.Recovery;

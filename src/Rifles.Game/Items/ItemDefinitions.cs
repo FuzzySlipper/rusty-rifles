@@ -4,12 +4,24 @@ using Rusty.Engine.Mechanics;
 namespace Rifles.Game.Items;
 
 internal enum ItemUse { None, Vitality, Resource, Key }
-internal sealed record BayonetDefinition(string Reach, long MeleeDamage, float AccuracyMultiplier, float ReloadSecondsMultiplier, bool ChargeEligible)
+/// <summary>Authored windup and recovery for fixing or removing a musket bayonet.</summary>
+internal sealed record BayonetActionTiming(double WindupSeconds, double RecoverySeconds)
+{
+    internal void Validate()
+    {
+        GameDefinitions.Require(double.IsFinite(WindupSeconds) && WindupSeconds > 0
+            && double.IsFinite(RecoverySeconds) && RecoverySeconds > 0, "bayonet action timing");
+    }
+}
+
+internal sealed record BayonetDefinition(string Reach, long MeleeDamage, float AccuracyMultiplier, float ReloadSecondsMultiplier,
+    bool ChargeEligible, BayonetActionTiming Fix, BayonetActionTiming Unfix)
 {
     internal void Validate()
     {
         GameDefinitions.Require(!string.IsNullOrWhiteSpace(Reach) && MeleeDamage > 0 && float.IsFinite(AccuracyMultiplier) && AccuracyMultiplier is > 0 and <= 1
             && float.IsFinite(ReloadSecondsMultiplier) && ReloadSecondsMultiplier >= 1, "bayonet modifier");
+        Fix.Validate(); Unfix.Validate();
     }
 }
 

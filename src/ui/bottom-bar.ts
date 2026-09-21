@@ -1,7 +1,7 @@
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -110,7 +110,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   orderBar.setAttribute('aria-label', 'Party orders');
   orderBar.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
   const orderButtons = new Map<string, HTMLButtonElement>();
-  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]']]) {
+  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]'], ['fix-bayonets', 'Fix [B]'], ['unfix-bayonets', 'Unfix [N]']]) {
     const control = document.createElement('button');
     control.type = 'button'; control.textContent = label; control.dataset.partyOrder = kind;
     control.style.cssText = 'color:#f4e5bc;background:#42392c;border:1px solid #a48a57;border-radius:3px;padding:3px 10px';
@@ -363,7 +363,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.select.removeAttribute('aria-disabled');
       token.select.setAttribute('aria-label', commander
         ? `Commander ${name}, fixed at the center; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Selectable for inventory and ally targeting.`
-        : `Soldier ${name}, ${positionName}; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another soldier to swap.`);
+        : `Soldier ${name}, ${positionName}; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Use Change formation to move or exchange positions.`);
       token.select.title = commander
         ? `Commander ${name} · fixed center · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`
         : `${name} · ${positionName} · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
@@ -512,10 +512,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const combat = record(state.combat);
     for (const [kind, control] of orderButtons) {
       const order = record(record(combat.orders)[kind]);
-      control.textContent = `${kind === 'fire' ? 'Fire [Space]' : 'Melee [V]'} · ${number(order.eligible)}/${number(order.total)}`;
+      control.textContent = `${({ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' } as Record<string, string>)[kind]} · ${number(order.eligible)}/${number(order.total)}`;
       control.disabled = number(combat.defeated) === 1 || number(state.paused) === 1 || number(order.eligible) === 0;
       control.style.opacity = control.disabled ? '0.5' : '1';
-      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason)}`).join('\n');
+      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
     }
   };
 

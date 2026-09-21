@@ -55,8 +55,7 @@ internal static class FloorCompositionChecks
         encounters.Validate(floor, definitions.Combat, definitions.Crowd);
         if (encounters.Instances.Any(instance => exclusions.Contains(instance.Cell)))
             throw new Exception("Encounter composition overlaps a realized obstacle, gate, hazard, grant, or arrival cell.");
-        var supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies,
-            encounters.Instances.Sum(e => definitions.Combat.Enemy(e.EnemyId).Vitality));
+        var supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies);
         string[] args = Environment.GetCommandLineArgs();
         int export = Array.IndexOf(args, "--export-floors");
         if (export >= 0 && export + 1 < args.Length)

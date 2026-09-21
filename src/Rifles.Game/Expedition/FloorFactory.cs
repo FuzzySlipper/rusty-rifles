@@ -116,10 +116,9 @@ internal static class FloorFactory
     }
 
     internal static GeneratedFeatureSnapshot AddRouteSupplies(DungeonFloor floor, GameDefinitions definitions, ItemInventory inventory,
-        EncounterPlacementResult placement, Dictionary<string, GridPoint> drops, GeneratedFeatureSnapshot features, Func<ulong> allocate)
+        Dictionary<string, GridPoint> drops, GeneratedFeatureSnapshot features, Func<ulong> allocate)
     {
-        ResolvedSupply[] supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies,
-            placement.Instances.Sum(instance => definitions.Combat.Enemy(instance.EnemyId).Vitality));
+        ResolvedSupply[] supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies);
         foreach (ResolvedSupply supply in supplies)
         {
             ulong packId = allocate();

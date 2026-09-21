@@ -1,8 +1,4 @@
 {
-  "ammunition": "shot",
-  "expectedDamagePerShot": 6,
-  "ammunitionAllowance": 1.5,
-  "maximumAmmunition": 90,
   "maximumPlacements": 8,
   "supplies": [
     {

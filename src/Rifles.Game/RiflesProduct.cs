@@ -188,7 +188,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             string intent = Encoding.UTF8.GetString(input.Intent.Span);
             if (input.Phase == InputPhase.Released) continue;
             if (intent is "rifles.command" or "rifles.pause" or "rifles.save" or "rifles.load"
-                or "rifles.use" or "rifles.cycle" or "rifles.attack" or "rifles.melee" or "rifles.reload") immediateHud = true;
+                or "rifles.use" or "rifles.cycle" or "rifles.attack" or "rifles.melee" or "rifles.fix-bayonets" or "rifles.unfix-bayonets") immediateHud = true;
             if (intent == "rifles.command")
             {
                 try { Command(SessionCommand.Parse(input.PayloadData.Span)); }
@@ -201,13 +201,16 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.load") { Load(); suppressMovement = true; continue; }
             if (intent == "rifles.use") { Use(active.Features.Readout?.Selected); suppressMovement = true; continue; }
             if (intent == "rifles.cycle") { active.Features.Observe(active.Exploration, 1); continue; }
-            if (intent is "rifles.attack" or "rifles.melee" or "rifles.reload")
+            if (intent is "rifles.attack" or "rifles.melee" or "rifles.fix-bayonets" or "rifles.unfix-bayonets")
             {
                 try
                 {
-                    GameOutcome outcome = intent == "rifles.reload"
-                        ? active.Combat.BeginCombat(new SessionCommand("reload", null, null, null), selectedMember, paused)
-                        : active.Combat.BeginOrder(intent == "rifles.melee" ? CombatActionKind.Melee : CombatActionKind.Fire, paused);
+                    GameOutcome outcome = intent switch
+                    {
+                        "rifles.fix-bayonets" => active.Combat.BeginBayonetOrder(true, paused),
+                        "rifles.unfix-bayonets" => active.Combat.BeginBayonetOrder(false, paused),
+                        _ => active.Combat.BeginOrder(intent == "rifles.melee" ? CombatActionKind.Melee : CombatActionKind.Fire, paused),
+                    };
                     ApplyOutcome(outcome);
                 }
                 catch (InvalidDataException error) { feedback = error.Message; }
@@ -272,9 +275,11 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             "transfer" or "equip" or "unequip" or "consume" or "item-feature" or "arrange" => ItemCommand(command),
             "attack" or "fire" => active.Combat.BeginOrder(CombatActionKind.Fire, paused),
             "melee" => active.Combat.BeginOrder(CombatActionKind.Melee, paused),
+            "fix-bayonets" => active.Combat.BeginBayonetOrder(true, paused),
+            "unfix-bayonets" => active.Combat.BeginBayonetOrder(false, paused),
             "target" or "reload" or "throw" or "interrupt" => active.Combat.BeginCombat(command, selectedMember, paused),
             "spell-select" or "spell-cancel" or "spell-assign" or "spell-hotbar"
-                or "cast" or "rest" or "rest-cancel" or "advance" => MagicCommand(command),
+                or "cast" or "ability" or "rest" or "rest-cancel" or "advance" => MagicCommand(command),
             "formation-open" or "formation-place" or "formation-execute" or "formation-cancel" => FormationCommand(command),
             "formation" or "move" => GameOutcome.Reject("Use Change formation to plan a repositioning order."),
             "choose-party" => ChooseParty(command.Preset ?? ""),

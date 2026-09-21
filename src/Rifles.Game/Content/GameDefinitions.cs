@@ -132,9 +132,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         Require(result.Items.Item(result.GeneratedFeatures.WeightItem).Mass >= result.GeneratedFeatures.PlateWeight,
             "generated counterweight supply");
         result.EncounterPlacement.ValidateAgainst(result.Combat, result.Crowd);
-        Require(result.RouteSupplies.Ammunition == result.Combat.AmmunitionItem
-            && result.RouteSupplies.Supplies.All(s => s.Quantity <= result.Items.Item(s.Item).MaximumQuantity)
-            && result.RouteSupplies.MaximumAmmunition <= result.Items.Item(result.RouteSupplies.Ammunition).MaximumQuantity, "generated supply items");
+        Require(result.RouteSupplies.Supplies.All(s => s.Quantity <= result.Items.Item(s.Item).MaximumQuantity), "generated supply items");
         return result;
     }
 

@@ -1,5 +1,6 @@
 import { UiProfile } from './ui-profile.js';
 import { mountRunPanel } from './run-panel.js';
+import { mountAbilityMenu } from './ability-menu.js';
 import { mountFormationPlanner } from './formation-planner.js';
 import { mountBottomBar } from './bottom-bar.js';
 import { mountDebugTools } from './debug.js';
@@ -11,7 +12,7 @@ type UiContext = Readonly<{
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -141,12 +142,13 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const attack = button('Fire [Space]', () => command('fire'));
   const melee = button('Melee [V]', () => command('melee'));
   attack.dataset.order = 'fire'; melee.dataset.order = 'melee';
-  const reload = button('Reload [T]', () => command('reload'));
+  const fixBayonets = button('Fix bayonets [B]', () => command('fix-bayonets'));
+  const unfixBayonets = button('Unfix bayonets [N]', () => command('unfix-bayonets'));
   const bolt = button('Spark', () => { magicPanel.open = true; command('spell-select', { spell: 'spark' }); }); bolt.dataset.spellShortcut = 'spark';
   const interrupt = button('Interrupt', () => command('interrupt'));
   const toss = button('Throw selected', () => throwSelectedItem());
   const plate = button('Toss onto plate', () => throwSelectedItem('plate'));
-  combatActions.append(attack, melee, reload, bolt, interrupt, toss, plate);
+  combatActions.append(attack, melee, fixBayonets, unfixBayonets, bolt, interrupt, toss, plate);
   combat.append(combatTitle, combatStatus, combatTargets, combatMembers, combatActions, combatLog);
   const enemyRows = new Map<string, Readonly<{ row: HTMLElement; target: HTMLButtonElement; details: HTMLOutputElement }>>();
   const memberRows = new Map<string, HTMLOutputElement>();
@@ -448,14 +450,13 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const defeated = numeric(combatState.defeated) === 1;
     combatStatus.textContent = defeated ? 'The commander has fallen.' : 'Orders attack forward. Turn the party to change direction.';
     const targetVisible = numeric(selectedEnemy.visible) === 1;
-    for (const [kind, control] of [['fire', attack], ['melee', melee]] as const) {
+    for (const [kind, control] of [['fire', attack], ['melee', melee], ['fix-bayonets', fixBayonets], ['unfix-bayonets', unfixBayonets]] as const) {
       const order = record(record(combatState.orders)[kind]);
-      control.textContent = `${kind === 'fire' ? 'Fire [Space]' : 'Melee [V]'} · ${numeric(order.eligible)}/${numeric(order.total)}`;
+      control.textContent = `${{ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' }[kind]} · ${numeric(order.eligible)}/${numeric(order.total)}`;
       control.disabled = defeated || numeric(state.paused) === 1 || numeric(order.eligible) === 0;
-      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${numeric(member.eligible) === 1 ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason)}`).join('\n');
+      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${numeric(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
     }
     bolt.disabled = defeated;
-    reload.disabled = defeated;
     toss.disabled = defeated || selectedItem === null || !targetVisible;
     plate.disabled = defeated || selectedItem === null;
 
@@ -496,7 +497,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       }
       const partyMember = record(party[id]);
       const remaining = Math.max(0, numeric(member.remaining));
-      row.textContent = `${text(partyMember.name, id)} · ${text(member.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(member.weapon, 'unarmed')} · ${text(member.loaded, '0')}/${text(member.ammunition, '0')}${numeric(member.reloadSeconds, 0) > 0 ? ` · bayonet ${numeric(member.bayonetFixed, 0) === 1 ? 'fixed' : 'unfixed'} · ${Math.round(numeric(member.accuracy, 0) * 100)}% accuracy · reload ${numeric(member.reloadSeconds, 0).toFixed(1)}s` : ''}`;
+      row.textContent = `${text(partyMember.name, id)} · ${text(member.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(member.weapon, 'unarmed')}${numeric(member.reloadSeconds, 0) > 0 ? ` · ${numeric(member.loaded) === 1 ? 'loaded' : 'unloaded'}` : ''}${numeric(member.reloadSeconds, 0) > 0 ? ` · bayonet ${numeric(member.bayonetFixed, 0) === 1 ? 'fixed' : 'unfixed'} · ${Math.round(numeric(member.accuracy, 0) * 100)}% accuracy · reload ${numeric(member.reloadSeconds, 0).toFixed(1)}s` : ''}`;
     }
     for (const [id, row] of memberRows) {
       if (!presentMembers.has(id)) { row.remove(); memberRows.delete(id); }
@@ -692,6 +693,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     runPanel.update(state.run);
     bottomBar.update(state);
     formationPlanner.update(state);
+    abilityMenu.update(state);
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';
     productFeedback = nextFeedback;
@@ -738,6 +740,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
   panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
   const formationPlanner = mountFormationPlanner(root, command);
+  const abilityMenu = mountAbilityMenu(root, bottomBar.element.querySelector('[aria-label="Party orders"]')!, command);
   // Party panel: the game-UI inventory. Right side, full height above the
   // bottom bar. Current-member equipment plus a party cycler on top, the
   // fixed party grid below. All mutations reuse the legacy flows (transfer,
@@ -877,7 +880,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · muskets reload automatically · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
   readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; Change formation pauses into a larger planner. Execute resumes a timed repositioning order, locking movement and affected soldiers; Cancel discards the draft.');
   readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
@@ -947,7 +950,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     // isolation runs after this window-capture listener) or from editable
     // fields. Menu-focus Escape still toggles: the menu holds no inputs.
     if (event.target instanceof Node) {
-      if (event.target instanceof HTMLElement && event.target.closest('input,textarea,select,[contenteditable="true"],#rifles-debug-console')) return;
+      if (event.target instanceof HTMLElement && event.target.closest('input,textarea,select,[contenteditable="true"],#rifles-debug-console,[data-ability-menu]')) return;
       if (document.querySelector('[aria-label="Debug tools"]')?.contains(event.target)) return;
     }
     event.preventDefault();
@@ -970,5 +973,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   root.append(menuButtonTop);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); formationPlanner.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); formationPlanner.dispose(); abilityMenu.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
 }

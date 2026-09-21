@@ -52,15 +52,11 @@ internal static class GeneratedFeatureChecks
         try { GeneratedFeatures.Validate(state with { Gates = [] }, floor); }
         catch (InvalidDataException) { rejected = true; }
         if (!rejected) throw new Exception("Missing generated barriers must reject the save.");
-        var supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies, 120);
-        if (supplies.Single(s => s.Item == definitions.RouteSupplies.Ammunition).Quantity != 30)
-            throw new Exception("Ammo allowance must reflect encounter pressure.");
-        if (!supplies.SequenceEqual(RouteSupplies.Resolve(floor, definitions.RouteSupplies, 120)))
+        var supplies = RouteSupplies.Resolve(floor, definitions.RouteSupplies);
+        if (supplies.Any(s => s.Item == definitions.Combat.AmmunitionItem))
+            throw new Exception("Ordinary ammunition is not generated as an active player supply.");
+        if (!supplies.SequenceEqual(RouteSupplies.Resolve(floor, definitions.RouteSupplies)))
             throw new Exception("Supply placements must replay exactly.");
-        rejected = false;
-        try { RouteSupplies.Resolve(floor, definitions.RouteSupplies with { MaximumAmmunition = 1 }, 120); }
-        catch (InvalidDataException) { rejected = true; }
-        if (!rejected) throw new Exception("Insufficient ammo budget must reject explicitly.");
         long damage = 0;
         var hazard = new GeneratedHazard(1, "test", floor.Entrance, 0, false, false);
         hazard = GeneratedHazards.Advance(hazard, definitions.Hazards, .1, floor.Entrance, value => damage += value);

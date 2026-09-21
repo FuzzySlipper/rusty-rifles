@@ -54,11 +54,12 @@ public sealed partial class RiflesProduct
                 CombatMessage("Advancement learned."); return GameOutcome.Accept();
             case "rest-cancel": CancelRest("Rest cancelled; no recovery granted."); return GameOutcome.Accept();
             case "rest": return BeginRest(id);
+            case "ability":
             case "cast":
                 if (paused || active.Combat.Defeated) return GameOutcome.Reject("Resume with a living commander before casting.");
                 string spellId = command.Spell ?? SelectedSpell(id);
                 if (spellId.Length == 0) return GameOutcome.Reject("Select a known spell.");
-                return active.Combat.BeginSpell(id, definitions.Magic.Spell(spellId), command.Member ?? id);
+                return active.Combat.BeginAbilityOrder(spellId, command.Member ?? id, paused);
             default: return GameOutcome.Reject("Unknown command");
         }
     }

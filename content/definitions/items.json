@@ -54,7 +54,15 @@
           "meleeDamage": 8,
           "accuracyMultiplier": 0.75,
           "reloadSecondsMultiplier": 1.25,
-          "chargeEligible": true
+          "chargeEligible": true,
+          "fix": {
+            "windupSeconds": 0.55,
+            "recoverySeconds": 0.3
+          },
+          "unfix": {
+            "windupSeconds": 0.4,
+            "recoverySeconds": 0.25
+          }
         }
       }
     },
@@ -280,12 +288,6 @@
       "equipped": true
     },
     {
-      "owner": "party",
-      "definition": "shot",
-      "quantity": 8,
-      "equipped": false
-    },
-    {
       "owner": "member:blade",
       "definition": "knife",
       "quantity": 1,
@@ -331,12 +333,6 @@
       "owner": "party",
       "definition": "rifle",
       "quantity": 1,
-      "equipped": false
-    },
-    {
-      "owner": "party",
-      "definition": "shot",
-      "quantity": 6,
       "equipped": false
     },
     {

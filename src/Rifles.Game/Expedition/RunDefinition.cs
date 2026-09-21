@@ -4,7 +4,7 @@ using Rifles.Procgen.Generation;
 namespace Rifles.Game.Expedition;
 
 internal sealed record DifficultyProfile(string Id, string Name, string Description,
-    double IncomingDamageMultiplier, double AmmunitionAllowance);
+    double IncomingDamageMultiplier);
 internal sealed record RunDefinition(string Goal, string FinaleLabel, string SuccessText, string DefeatText,
     long FinaleExperience, string DefaultDifficulty, DifficultyProfile[] Difficulties,
     int MapRevealCells, ulong SeedIncrement)
@@ -17,8 +17,7 @@ internal sealed record RunDefinition(string Goal, string FinaleLabel, string Suc
             && FinaleExperience >= 0 && MapRevealCells > 0 && MapRevealCells <= 8 && SeedIncrement > 0, "expedition rules");
         GameDefinitions.Require(Difficulties.Length > 0 && Difficulties.Select(d => d.Id).Distinct().Count() == Difficulties.Length
             && Difficulties.All(d => !string.IsNullOrWhiteSpace(d.Id) && !string.IsNullOrWhiteSpace(d.Name)
-                && double.IsFinite(d.IncomingDamageMultiplier) && d.IncomingDamageMultiplier > 0
-                && double.IsFinite(d.AmmunitionAllowance) && d.AmmunitionAllowance >= 1), "difficulty profiles");
+                && double.IsFinite(d.IncomingDamageMultiplier) && d.IncomingDamageMultiplier > 0), "difficulty profiles");
         _ = Difficulty(DefaultDifficulty);
     }
 }

@@ -12,14 +12,18 @@ internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinit
     float CorpseScale, float WindupScale, float BoltScale, int LogLength, string AmmunitionItem,
     PackDefinition DropCapacity, bool RecoverThrownItems, float[] BoltColor, int PathQueriesPerStep, int PathGoalsPerDecision, float DoorClearance, int CandidateCellsPerDecision, bool ActorsBlockSight)
 {
-    internal ActionDefinition Action(CombatActionKind kind) => Actions.Single(a => a.Kind == kind);
+    internal static bool UsesCombatTuning(CombatActionKind kind) => kind is CombatActionKind.Melee or CombatActionKind.Fire
+        or CombatActionKind.Reload or CombatActionKind.Throw or CombatActionKind.Consume;
+
+    internal ActionDefinition Action(CombatActionKind kind) => UsesCombatTuning(kind)
+        ? Actions.Single(a => a.Kind == kind) : throw new InvalidOperationException($"{kind} has item-authored timing.");
     internal EnemyDefinition Enemy(string id) => Enemies.Single(e => e.Id == id);
     internal void Validate()
     {
-        GameDefinitions.Require(Actions.Length == Enum.GetValues<CombatActionKind>().Count(kind => kind != CombatActionKind.Cast)
+        GameDefinitions.Require(Actions.Length == Enum.GetValues<CombatActionKind>().Count(UsesCombatTuning)
             && Actions.Select(a => a.Kind).Distinct().Count() == Actions.Length, "combat actions");
         foreach (ActionDefinition action in Actions)
-            GameDefinitions.Require(Enum.IsDefined(action.Kind) && action.Kind != CombatActionKind.Cast && double.IsFinite(action.Windup) && action.Windup > 0
+            GameDefinitions.Require(UsesCombatTuning(action.Kind) && double.IsFinite(action.Windup) && action.Windup > 0
                 && double.IsFinite(action.Recovery) && action.Recovery > 0 && float.IsFinite(action.Range) && action.Range > 0
                 && action.Damage >= 0 && action.Damage <= 1000 && float.IsFinite(action.Speed) && action.Speed > 0
                 && action.ResourceCost >= 0 && action.ResourceCost <= 1000, "combat action " + action.Kind);

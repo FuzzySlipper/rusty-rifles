@@ -251,7 +251,7 @@ internal sealed class ActiveFloor : IDisposable
         GeneratedFeatureSnapshot generatedFeatures = FloorFactory.CreateGeneratedFeatures(intent, floor, definitions, inventory, drops, scene, allocate);
         EncounterPlacementResult encounterPlacement = FloorFactory.CreateEnemies(floor, definitions, inventory, itemWorld, movement,
             generatedFeatures, drops, allocate, party.Entities, out EnemyState[] enemies);
-        generatedFeatures = FloorFactory.AddRouteSupplies(floor, definitions, inventory, encounterPlacement, drops, generatedFeatures, allocate);
+        generatedFeatures = FloorFactory.AddRouteSupplies(floor, definitions, inventory, drops, generatedFeatures, allocate);
         inventory.BindRemaining(party.Entities);
 
         MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)),

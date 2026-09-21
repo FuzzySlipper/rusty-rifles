@@ -49,7 +49,9 @@ internal static class InventoryChecks
 
     private static void VerifyGrantTransferAndStaleProposals(ItemDefinitions definitions, ItemInventory inventory)
     {
-        Require(FungibleQuantity(inventory, "shot") == 14, "Starting fungible quantities are admitted once.");
+        ulong next = 10_000;
+        inventory.Grant(new PartyOwner(), "shot", 14, () => next++);
+        Require(FungibleQuantity(inventory, "shot") == 14, "A focused fungible ledger stack is admitted once.");
         CarriedItem[] unique = inventory.Owners.SelectMany(owner => inventory.Items(owner.Key))
             .Where(item => item.Entity != 0).ToArray();
         Require(unique.Select(item => item.Entity).Distinct().Count() == unique.Length, "Engine materializes unique item identities.");

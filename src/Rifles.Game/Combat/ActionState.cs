@@ -7,6 +7,8 @@ internal enum CombatActionKind
     Melee,
     Fire,
     Reload,
+    FixBayonet,
+    UnfixBayonet,
     Throw,
     Consume,
     Cast,
@@ -29,7 +31,7 @@ internal sealed record ActionSnapshot(
     ActionPhase Phase,
     double RecoverySeconds,
     GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0, string? Spell = null, long Cost = 0, ulong FeatureRevision = 0,
-    GridPoint? OrderOrigin = null, CardinalDirection? OrderFacing = null);
+    GridPoint? OrderOrigin = null, CardinalDirection? OrderFacing = null, bool SuppressSharedEffect = false);
 
 /// <summary>
 /// The current party action. The caller supplies only admitted simulation time;

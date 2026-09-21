@@ -212,17 +212,18 @@ internal sealed partial class RiflesCombat
         string? reach = kind == CombatActionKind.Fire ? weapon?.FireReach : kind == CombatActionKind.Melee ? weapon?.MeleeReach : null;
         return reach is null ? Combat.Action(kind).Range : definitions.Formation.Weapon(reach).MaximumForwardDistance;
     }
-    // Rifle ammunition is pooled: reload draws from the shared party
-    // inventory, never from a character pack. Enemies keep their own packs.
+    // Enemy rifles retain their finite ammunition packs. Player muskets load
+    // from their own persistent weapon state and never consume a party stack.
     private ulong Ammo(string owner) => inventory.Items(owner).SingleOrDefault(i => i.Definition == Combat.AmmunitionItem)?.Quantity ?? 0;
-    internal ulong PartyAmmo() => Ammo(ItemInventory.PartyKey);
     private ActionSnapshot NewAction(CombatActionKind kind, ulong weapon = 0, string? token = null, string? source = null,
         ulong target = 0, string? member = null, GridPoint? aim = null, WeaponCapabilities? capabilities = null,
-        GridPoint? orderOrigin = null, CardinalDirection? orderFacing = null)
+        GridPoint? orderOrigin = null, CardinalDirection? orderFacing = null, BayonetActionTiming? bayonetTiming = null)
     {
-        ActionDefinition tuning = Combat.Action(kind);
-        double windup = capabilities is null ? tuning.Windup : kind == CombatActionKind.Reload ? capabilities.ReloadSeconds : capabilities.WindupSeconds;
-        return new(kind, weapon, token, source, target, member, windup, ActionPhase.Windup, capabilities?.RecoverySeconds ?? tuning.Recovery,
+        ActionDefinition? tuning = CombatDefinition.UsesCombatTuning(kind) ? Combat.Action(kind) : null;
+        double windup = bayonetTiming?.WindupSeconds ?? (capabilities is null ? tuning!.Windup
+            : kind == CombatActionKind.Reload ? capabilities.ReloadSeconds : capabilities.WindupSeconds);
+        double recovery = bayonetTiming?.RecoverySeconds ?? capabilities?.RecoverySeconds ?? tuning!.Recovery;
+        return new(kind, weapon, token, source, target, member, windup, ActionPhase.Windup, recovery,
             aim, OrderOrigin: orderOrigin, OrderFacing: orderFacing);
     }
 
@@ -264,7 +265,6 @@ internal sealed partial class RiflesCombat
             if (capabilities is not { FireDamage: > 0 }) return GameOutcome.Reject("Equip a musket first.");
             if (kind == CombatActionKind.Fire && !capabilities.Loaded) return GameOutcome.Reject("Dry musket — reload first.");
             if (kind == CombatActionKind.Reload && capabilities.Loaded) return GameOutcome.Reject("Musket already loaded.");
-            if (kind == CombatActionKind.Reload && PartyAmmo() == 0) return GameOutcome.Reject("No rifle shot in the party inventory.");
         }
         if (kind == CombatActionKind.Melee && capabilities is not { MeleeDamage: > 0, MeleeReach: not null })
             return GameOutcome.Reject("Equip a melee weapon first.");
@@ -322,13 +322,19 @@ internal sealed partial class RiflesCombat
         RiflesCharacter member = Member(memberId);
         if (!member.IsLiving) return;
         if (action.Kind == CombatActionKind.Cast) { CommitSpell(memberId, null, action); return; }
-        if (action.Kind is CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Melee
+        if (action.Kind is CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.Melee or CombatActionKind.FixBayonet or CombatActionKind.UnfixBayonet
             && (Weapon(memberId)?.Entity ?? 0) != action.Weapon) throw new InvalidDataException("Equipment changed; action interrupted.");
         if (action.Kind == CombatActionKind.Reload)
         {
-            inventory.Consume(new PartyOwner(), Combat.AmmunitionItem, 1); weapons.SetLoaded(action.Weapon, inventory, true);
+            weapons.SetLoaded(action.Weapon, inventory, true);
             scope.Sound(SoundCue.Reload, Aim(scope.Exploration.Position));
             CombatMessage(member.Definition.Name + " loaded one round."); return;
+        }
+        if (action.Kind is CombatActionKind.FixBayonet or CombatActionKind.UnfixBayonet)
+        {
+            bool fix = action.Kind == CombatActionKind.FixBayonet;
+            weapons.SetBayonetFixed(action.Weapon, inventory, fix);
+            CombatMessage(member.Definition.Name + (fix ? " fixed a bayonet." : " removed a bayonet.")); return;
         }
         if (action.Kind == CombatActionKind.Consume)
         {
@@ -384,12 +390,13 @@ internal sealed partial class RiflesCombat
             ActionState state = ActionOf(member);
             if (!member.IsLiving) { state.Cancel(); continue; }
             if (state.Current is { Phase: ActionPhase.Windup } pending
-                && pending.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload
+                && pending.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload or CombatActionKind.FixBayonet or CombatActionKind.UnfixBayonet
                 && (Weapon(member.Definition.Id)?.Entity ?? 0) != pending.Weapon)
             { state.Cancel(); CombatMessage(member.Definition.Name + " interrupted by equipment change."); }
             try { state.Advance(seconds * magic.Speed(new MemberTarget(member.Definition.Id)), action => CommitMember(member.Definition.Id, action)); }
             catch (InvalidDataException error) { CombatMessage(error.Message); }
             catch (InvalidOperationException error) { CombatMessage("Action interrupted: " + error.Message); }
+            BeginAutomaticReload(member, state);
         }
         AdvanceEnemies(seconds);
     }
@@ -725,185 +732,4 @@ internal sealed partial class RiflesCombat
             .Select(c => c.Cell);
     }
 
-    private bool HasItem(string member, string item) => inventory.Items("member:" + member).Any(i => i.Definition == item && i.Quantity > 0);
-
-    /// <summary>
-    /// Planning-time spell eligibility shared by execution and projection.
-    /// Translates this owner's own rejection channel into a reason; only
-    /// InvalidDataException converts, programming failures still propagate.
-    /// </summary>
-    internal string? SpellAvailability(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision)
-    {
-        try { ValidateSpell(memberId, spell, targetMember, target, featureRevision, committing: false); return null; }
-        catch (InvalidDataException error) { return error.Message; }
-    }
-
-    internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
-    {
-        RiflesCharacter member = Member(memberId);
-        if (Defeated || member.Definition.Commander || !member.IsLiving || !magic.For(memberId).Known.Contains(spell.Id)) throw new InvalidDataException("That character cannot cast this spell.");
-        if (party.Formation.Affects(member.InstanceId)) throw new InvalidDataException("That character is repositioning.");
-        if (member.Resource < SpellCost(memberId, spell)) throw new InvalidDataException("Insufficient resource.");
-        if (!committing && ActionOf(member).Busy) throw new InvalidDataException("That character is still acting.");
-        if (spell.Target == SpellTarget.Enemy && !committing)
-        {
-            EnemyState? foe = enemies.SingleOrDefault(e => e.Id == target && Visible(e));
-            if (foe is null || Vector3.Distance(Aim(scope.Exploration.Position), EnemyAim(foe)) > spell.Range)
-                throw new InvalidDataException("Select a visible enemy within spell range.");
-        }
-        if (spell.Target == SpellTarget.Ally)
-        {
-            RiflesCharacter ally = Member(targetMember);
-            if (spell.Effect == SpellEffect.Revive)
-            {
-                if (ally.Definition.Commander || ally.IsLiving || magic.For(targetMember).Revivals >= definitions.Magic.MaximumRevivals || Threatened)
-                    throw new InvalidDataException("Revival needs a fallen ally with a revival remaining and no threats.");
-                if (!HasItem(memberId, definitions.Magic.RevivalItem)) throw new InvalidDataException("Caster needs " + definitions.Magic.RevivalItem + " for revival.");
-            }
-            else if (!ally.IsLiving) throw new InvalidDataException("Choose a living ally.");
-            if (spell.Effect == SpellEffect.Heal && ally.Vitality == ally.MaximumVitality) throw new InvalidDataException("Ally needs no healing.");
-        }
-        if (spell.Target == SpellTarget.Feature)
-        {
-            bool generated = scope.GeneratedFeatures.Gates.Any(g => g.Id == target) || scope.GeneratedFeatures.Hazards.Any(h => h.Id == target);
-            if (generated && scope.FeatureUseProblem(target) is { } problem) throw new InvalidDataException(problem);
-            Vector3 point = generated ? scope.FeaturePoint(target) : scope.ItemWorld.LeverPoint(scope.Scene);
-            ulong revision = generated ? scope.GeneratedFeatures.Revision : scope.ItemWorld.Revision;
-            if (!definitions.Magic.AllowLeverMagic || featureRevision != revision
-                || !scope.ItemWorld.Reachable(point, scope.Exploration, scope.Scene) || Vector3.Distance(Aim(scope.Exploration.Position), point) > spell.Range)
-                throw new InvalidDataException("No permitted mechanism within reach, or the feature changed.");
-        }
-    }
-
-    internal GameOutcome BeginSpell(string member, SpellDefinition spell, string targetMember)
-    {
-        ulong targetId = selectedTarget;
-        ulong targetRevision = scope.ItemWorld.Revision;
-        if (spell.Target == SpellTarget.Feature)
-        {
-            var focused = scope.Features().Readout?.Selected;
-            targetId = focused is { } selected && (scope.GeneratedFeatures.Gates.Any(g => g.Id == selected.Id)
-                || scope.GeneratedFeatures.Hazards.Any(h => h.Id == selected.Id)) ? focused.Value.Id : scope.ItemWorld.LeverId;
-            targetRevision = targetId == scope.ItemWorld.LeverId ? scope.ItemWorld.Revision : scope.GeneratedFeatures.Revision;
-        }
-        if (SpellAvailability(member, spell, targetMember, targetId, targetRevision) is { } reason) return GameOutcome.Reject(reason);
-        scope.CancelRest("Rest interrupted by casting.");
-        EnemyState? target = spell.Target == SpellTarget.Enemy ? enemies.Single(e => e.Id == selectedTarget) : null;
-        ActionOf(Member(member)).Start(new(CombatActionKind.Cast, 0, null, null, spell.Target == SpellTarget.Feature ? targetId : target?.Id ?? 0, targetMember,
-            spell.Windup, ActionPhase.Windup, spell.Recovery, target?.Motion.Position,
-            target?.Motion.CrowdOffset.X ?? 0, target?.Motion.CrowdOffset.Y ?? 0, spell.Id, SpellCost(member, spell), targetRevision));
-        CombatMessage(Member(member).Definition.Name + " prepares " + spell.Name + ".");
-        return GameOutcome.Accept();
-    }
-
-    private bool TryEnemySpell(EnemyState enemy, float distance)
-    {
-        if (!definitions.Magic.EnemySpells.TryGetValue(enemy.Definition.Id, out string? id)) return false;
-        SpellDefinition spell = definitions.Magic.Spell(id);
-        if (enemy.Resource < spell.Cost || distance > spell.Range) return false;
-        enemy.Action.Start(new(CombatActionKind.Cast, 0, null, null, scope.PartyId, null,
-            spell.Windup, ActionPhase.Windup, spell.Recovery, scope.Exploration.Position, Spell: id, Cost: spell.Cost));
-        return true;
-    }
-
-    private void CommitSpell(string? memberId, EnemyState? enemy, ActionSnapshot action)
-    {
-        SpellDefinition spell = definitions.Magic.Spell(action.Spell!);
-        if (memberId is not null)
-        {
-            ValidateSpell(memberId, spell, action.TargetMember!, action.Target, action.FeatureRevision, true);
-            if (Member(memberId).Resource < action.Cost) throw new InvalidDataException("Insufficient resource at commit.");
-            if (spell.Effect == SpellEffect.Revive) inventory.Consume(new MemberOwner(memberId), definitions.Magic.RevivalItem, 1);
-            Member(memberId).SpendResource(action.Cost);
-        }
-        else
-        {
-            if (enemy is null || !enemy.Alive || enemy.Resource < action.Cost) return;
-            enemy.SpendResource(action.Cost);
-        }
-        scope.Sound(SoundCue.Spell, enemy is null ? Aim(scope.Exploration.Position) : EnemyAim(enemy));
-        if (spell.Target == SpellTarget.Enemy)
-        {
-            Vector3 source = enemy is null ? Aim(scope.Exploration.Position) : EnemyAim(enemy);
-            Vector3 end = Aim(action.AimCell!.Value) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scope.Scene.LogicalCellSize;
-            Vector3 offset = end - source;
-            if (offset.LengthSquared() == 0) { CombatMessage("Spell dissipated at its origin."); return; }
-            Vector3 direction = Vector3.Normalize(offset);
-            flights.Add(new FlightState(scope.AllocateIds(), enemy?.Id ?? scope.PartyId, memberId, CombatActionKind.Cast,
-                source.X, source.Y, source.Z, direction.X, direction.Y, direction.Z, Math.Min(offset.Length(), spell.Range),
-                enemy?.Motion.Position ?? scope.Exploration.Position, null, null, spell.Id));
-        }
-        else if (spell.Effect == SpellEffect.Lever)
-        {
-            if (action.Target == scope.ItemWorld.LeverId) scope.ItemWorld.ToggleLever(scope.Exploration, scope.Scene, action.FeatureRevision);
-            else CombatMessage(scope.UseFeature(action.Target, action.FeatureRevision));
-        }
-        else if (spell.Target == SpellTarget.Party) magic.Apply(new PartyTarget(), spell);
-        else
-        {
-            RiflesCharacter target = Member(action.TargetMember!);
-            MemberTarget key = new(target.Definition.Id);
-            switch (spell.Effect)
-            {
-                case SpellEffect.Heal: target.Heal(spell.Power); break;
-                case SpellEffect.Revive: target.Heal(spell.Power); magic.For(target.Definition.Id).Revivals++; break;
-                case SpellEffect.Cleanse: magic.Clear(key, true); break;
-                default: magic.Apply(key, spell); break;
-            }
-        }
-        CombatMessage((memberId is null ? enemy!.Definition.Name : Member(memberId).Definition.Name) + " casts " + spell.Name + ".");
-    }
-
-    private void ResolveSpellImpact(FlightState flight, SpatialHit hit, Vector3 point)
-    {
-        SpellDefinition spell = definitions.Magic.Spell(flight.Spell!);
-        if (spell.Radius <= 0)
-        {
-            if (hit.Present && hit.Kind == SpatialHitKind.Entity) ApplySpellHit(hit.Entity, flight.Shooter, spell);
-            else CombatMessage(spell.Name + " stopped or missed.");
-            return;
-        }
-        // An explosion starts on the incoming side of its impact surface. Each victim
-        // needs its own masonry/furniture visibility ray, independent of other victims.
-        Vector3 origin = hit.Present ? new(MathF.BitDecrement(point.X), point.Y, MathF.BitDecrement(point.Z)) : point;
-        if (hit.Present)
-        {
-            float Before(float coordinate, float direction) => direction > 0 ? MathF.BitDecrement(coordinate) : direction < 0 ? MathF.BitIncrement(coordinate) : coordinate;
-            origin = new(Before(point.X, flight.DirectionX), point.Y, Before(point.Z, flight.DirectionZ));
-        }
-        var dressing = scope.Features().Dressing;
-        SpatialEntityCollider[] obstacles = CombatBodies().Where(b => b.Entity == dressing.BenchId || b.Entity == dressing.CrateId).ToArray();
-        foreach (EnemyState target in enemies.Where(e => e.Alive).ToArray())
-            if (Vector3.Distance(origin, EnemyAim(target)) <= spell.Radius && !scope.Scene.Trace(origin, EnemyAim(target), obstacles, 0).Present)
-                ApplySpellHit(target.Id, flight.Shooter, spell);
-        if (Vector3.Distance(origin, Aim(scope.Exploration.Position)) <= spell.Radius && !scope.Scene.Trace(origin, Aim(scope.Exploration.Position), obstacles, 0).Present)
-            ApplySpellHit(scope.PartyId, flight.Shooter, spell);
-        CombatMessage(spell.Name + " bursts; walls and closed gates block its spread.");
-    }
-
-    internal long Resisted(long power, string definition) => power * (100 - definitions.Magic.Resistances[definition]) / 100;
-
-    private void ApplySpellHit(ulong target, ulong shooter, SpellDefinition spell)
-    {
-        EnemyState? foe = enemies.SingleOrDefault(e => e.Id == target && e.Alive);
-        if (foe is not null)
-        {
-            if (shooter != scope.PartyId && !Combat.FriendlyFire) return;
-            if (spell.Effect == SpellEffect.Damage) DamageEnemy(foe, Resisted(spell.Power, foe.Definition.Id));
-            else if (definitions.Magic.Resistances[foe.Definition.Id] < 100) magic.Apply(new EnemyTarget(foe.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)), spell, spell.Duration * (100 - definitions.Magic.Resistances[foe.Definition.Id]) / 100);
-            foe.Brain.Observe(null, scope.Exploration.Position);
-        }
-        else if (target == scope.PartyId && (shooter != scope.PartyId || Combat.FriendlyFire))
-        {
-            // Hostile magic follows the caster approach; directionless effects reach the center.
-            EnemyState? caster = enemies.SingleOrDefault(enemy => enemy.Id == shooter);
-            RiflesCharacter? member = caster is null ? party.Commander
-                : MemberInLineOfFire(Aim(scope.Exploration.Position) - EnemyAim(caster));
-            if (member is null) return;
-            scope.CancelRest("Rest interrupted by hostile magic.");
-            if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));
-            else if (definitions.Magic.Resistances[member.Definition.Archetype] < 100) magic.Apply(new MemberTarget(member.Definition.Id), spell, spell.Duration * (100 - definitions.Magic.Resistances[member.Definition.Archetype]) / 100);
-        }
-        CombatMessage(spell.Name + " struck " + (foe?.Definition.Name ?? "the party") + ".");
-    }
 }

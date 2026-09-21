@@ -36,23 +36,37 @@ public sealed partial class RiflesProduct
                 ("fireReach", value.String(capability?.FireReach ?? "none")),
                 ("bayonetFixed", value.Number(capability?.BayonetFixed == true ? 1 : 0)),
                 ("accuracy", value.Number(capability?.Accuracy ?? 0)),
-                ("reloadSeconds", value.Number(capability?.ReloadSeconds ?? 0)),
-                ("ammunition", value.Number(active.Combat.PartyAmmo()))));
+                ("reloadSeconds", value.Number(capability?.ReloadSeconds ?? 0))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(active.Combat.SelectedTarget.ToString())), ("enemies", foes), ("members", members),
             ("orders", value.Object(("fire", OrderProjection(value, CombatActionKind.Fire)),
-                ("melee", OrderProjection(value, CombatActionKind.Melee)))),
-            ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", active.Combat.Log))), ("defeated", value.Number(active.Combat.Defeated ? 1 : 0)));
+                ("melee", OrderProjection(value, CombatActionKind.Melee)),
+                ("fix-bayonets", OrderReadoutProjection(value, active.Combat.ReadBayonetOrder(true))),
+                ("unfix-bayonets", OrderReadoutProjection(value, active.Combat.ReadBayonetOrder(false))))),
+            ("abilities", AbilityProjection(value)), ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", active.Combat.Log))), ("defeated", value.Number(active.Combat.Defeated ? 1 : 0)));
     }
     private uint OrderProjection(SessionValueBuilder value, CombatActionKind kind)
+        => OrderReadoutProjection(value, active.Combat.ReadOrder(kind));
+
+    private uint OrderReadoutProjection(SessionValueBuilder value, IReadOnlyList<MemberOrderReadout> members)
     {
-        var members = active.Combat.ReadOrder(kind);
         return value.Object(("eligible", value.Number(members.Count(member => member.Eligible))),
             ("total", value.Number(members.Count)),
             ("members", value.Object(members.Select(member => (member.Member, value.Object(
                 ("eligible", value.Number(member.Eligible ? 1 : 0)),
                 ("reason", value.String(member.Reason)), ("target", value.String(member.Target.ToString())),
                 ("lane", value.String(member.Lane.ToString()))))).ToArray())));
+    }
+
+    private uint AbilityProjection(SessionValueBuilder value)
+    {
+        return value.Object(active.Combat.ReadAbilities(selectedMember).Select(ability => (ability.Id, value.Object(
+            ("name", value.String(ability.Name)), ("effect", value.String(ability.Effect.ToString())),
+            ("target", value.String(ability.Target.ToString())), ("shared", value.Number(ability.Shared ? 1 : 0)),
+            ("eligible", value.Number(ability.Eligible)), ("total", value.Number(ability.Total)),
+            ("providers", value.Object(ability.Providers.Select(provider => (provider.Member, value.Object(
+                ("eligible", value.Number(provider.Eligible ? 1 : 0)), ("reason", value.String(provider.Reason)),
+                ("target", value.String(provider.Target)), ("lane", value.String(provider.Lane))))).ToArray()))))).ToArray());
     }
 
     private IEnumerable<AppearanceFact> CombatFacts()

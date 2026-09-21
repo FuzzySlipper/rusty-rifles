@@ -131,3 +131,13 @@ commander; ongoing conditions stay on their actual recipient rather than being
 screened again on every tick. A fallen commander cannot be revived. The commander
 has no starting spells, direct actions or advancement choices. Formation status
 projects the role and exposed approaches from C#.
+
+## Shared ability settlement
+
+A shared party-effect order starts every eligible provider's own cast, resource
+cost and recovery. The ready provider with the lowest stable member ID owns the
+single shared effect; the other casts are supporting contributions. That role
+is saved with each committed action. If the effect owner falls or is interrupted
+before impact, the shared effect fails rather than silently transferring to
+another contributor. Already incurred recovery remains. Individual hostile and
+ally effects still resolve once per eligible provider.

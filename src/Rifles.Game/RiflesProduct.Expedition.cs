@@ -15,9 +15,6 @@ public sealed partial class RiflesProduct
     private readonly Dictionary<string, RetainedFloor> inactiveFloors = [];
     private RunProgress progress;
     private RunSnapshot CaptureRun() => new(Capture(), inactiveFloors.Values.ToArray(), progress);
-    private GameDefinitions FloorDefinitions(string difficulty) => definitions with { RouteSupplies = definitions.RouteSupplies with
-        { AmmunitionAllowance = definitions.Run.Difficulty(difficulty).AmmunitionAllowance } };
-
     private IEnumerable<(ExpeditionConnector Link, string Destination, GridPoint Departure, bool Forward)> Connections()
     {
         foreach (var link in expedition.Connectors)
@@ -103,8 +100,8 @@ public sealed partial class RiflesProduct
             ulong floorId = Allocate();
             if (floorId == partyId) throw new InvalidDataException("Floor and party identities must differ.");
             DungeonFloor fresh = DungeonFloor.Generate(expedition.Floors.Single(f => f.Id == route.Destination),
-                FloorDefinitions(progress.Difficulty).Generation.Policy, definitions.Rooms,
-                FloorDefinitions(progress.Difficulty).Generation.Elevation).WithArchitecture(definitions.Architecture);
+                definitions.Generation.Policy, definitions.Rooms,
+                definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
             GridPoint arrival = route.Forward ? fresh.Entrance : fresh.Exit;
             var pose = new ExplorationSnapshot(arrival, active.Exploration.Facing, 0, null,
                 arrival, active.Exploration.Facing, 0);
@@ -140,7 +137,6 @@ public sealed partial class RiflesProduct
     private void StartNewRun(ulong seed, string? difficulty = null)
     {
         difficulty ??= progress.Difficulty;
-        var floorDefinitions = FloorDefinitions(difficulty);
         var generated = new ExpeditionGenerator().Generate(definitions.Generation.Expedition, seed);
         if (!generated.Accepted) throw new InvalidDataException("Expedition generation rejected: " + string.Join(", ", generated.Diagnostics.Select(d => d.Detail)));
         ulong next = nextObjectId;
@@ -154,7 +150,7 @@ public sealed partial class RiflesProduct
         ulong firstFloorId = Allocate();
         if (firstFloorId == runPartyId) throw new InvalidDataException("Floor and party identities must differ.");
         DungeonFloor firstFloor = DungeonFloor.Generate(generated.Expedition!.Floors.Single(f => f.Id == generated.Expedition!.EntranceFloor),
-            floorDefinitions.Generation.Policy, definitions.Rooms, floorDefinitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
+            definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation).WithArchitecture(definitions.Architecture);
         ExplorationSnapshot pose = new(firstFloor.Entrance, definitions.Exploration.InitialFacing, 0, null,
             firstFloor.Entrance, definitions.Exploration.InitialFacing, 0);
         expeditionId = Guid.NewGuid();
@@ -163,7 +159,7 @@ public sealed partial class RiflesProduct
         selectedMember = party.Members[0].Definition.Id;
         Mount(ActiveFloor.CreateFresh(definitions, generated.Expedition!, generated.Expedition!.EntranceFloor, firstFloorId, partyId,
             party, null, pose, engine, dungeonMaterials!, generatedArt!, AllocateLightId, Allocate, preset, artStyle,
-            floorDefinitions.Run.Difficulty(difficulty).IncomingDamageMultiplier,
+            definitions.Run.Difficulty(difficulty).IncomingDamageMultiplier,
             CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
             GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
             (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight), firstFloor));

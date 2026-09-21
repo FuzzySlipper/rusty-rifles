@@ -129,24 +129,15 @@ internal static class RunStateChecks
         Require(restoredWindup == windup && decodedWindup.Active.Combat.Weapons.Muskets.All(weapon => !weapon.Loaded),
             "Run reload preserves a windup action and its unloaded rifle state.");
 
-        ItemInventory inventory = ItemInventory.Restore(definitions.Items, decodedWindup.Active.Inventory);
-        const string ammoOwner = "party";
-        ulong beforeAmmo = ItemQuantity(inventory, ammoOwner, definitions.Combat.AmmunitionItem);
         ActionState action = ActionState.Restore(restoredWindup);
         int commits = 0;
-        action.Advance(reload.Windup, _ =>
-        {
-            inventory.Consume(InventoryOwner.Parse(ammoOwner), definitions.Combat.AmmunitionItem, 1);
-            commits++;
-        });
+        action.Advance(reload.Windup, _ => commits++);
         ActionSnapshot recovery = action.Capture() ?? throw new InvalidOperationException("Reload did not enter recovery.");
-        Require(commits == 1 && recovery.Phase == ActionPhase.Recovery
-            && ItemQuantity(inventory, ammoOwner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
-            "Resumed reload consumes exactly one Engine-ledger round and commits once.");
+        Require(commits == 1 && recovery.Phase == ActionPhase.Recovery,
+            "Resumed reload commits once without a party ammunition stack.");
 
         ExpeditionSnapshot committed = decodedWindup.Active with
         {
-            Inventory = inventory.Capture(),
             Combat = decodedWindup.Active.Combat with
             {
                 Members = decodedWindup.Active.Combat.Members.Select(saved => saved.Member == member
@@ -157,9 +148,8 @@ internal static class RunStateChecks
         RunSnapshot decodedRecovery = RoundTrip(definitions, CreateRun(definitions, committed));
         ActionSnapshot restoredRecovery = decodedRecovery.Active.Combat.Members.Single(saved => saved.Member == member).Action
             ?? throw new InvalidOperationException("Reload recovery action was lost from the run save.");
-        Require(restoredRecovery == recovery && decodedRecovery.Active.Combat.Weapons.Muskets.Where(weapon => weapon.Loaded).Select(weapon => weapon.Item).SequenceEqual([rifle])
-            && ItemQuantity(ItemInventory.Restore(definitions.Items, decodedRecovery.Active.Inventory), ammoOwner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
-            "Committed reload recovery preserves its action, loaded rifle, and spent ammunition.");
+        Require(restoredRecovery == recovery && decodedRecovery.Active.Combat.Weapons.Muskets.Where(weapon => weapon.Loaded).Select(weapon => weapon.Item).SequenceEqual([rifle]),
+            "Committed reload recovery preserves its action and loaded musket state.");
 
         ActionState resumedRecovery = ActionState.Restore(restoredRecovery);
         resumedRecovery.Advance(reload.Recovery, _ => commits++);
@@ -221,7 +211,7 @@ internal static class RunStateChecks
         SpellDefinition spell = definitions.Magic.Spell("spark");
         EnemySnapshot moving = MovingEnemy(definitions, fixture, fixture.Combat.Enemies.Length - 1);
         EnemySnapshot target = fixture.Combat.Enemies[0];
-        ActionSnapshot cast = new(CombatActionKind.Cast, 0, null, null, target.Id, member, spell.Windup,
+        ActionSnapshot cast = new(CombatActionKind.Cast, 0, null, null, target.Id, null, spell.Windup,
             ActionPhase.Windup, spell.Recovery, target.Motion.Position, Spell: spell.Id, Cost: spell.Cost);
         ExpeditionSnapshot casting = fixture with
         {
@@ -435,9 +425,6 @@ internal static class RunStateChecks
         RunCodec.Validate(decoded, definitions);
         return decoded;
     }
-
-    private static ulong ItemQuantity(ItemInventory inventory, string owner, string definition) => inventory.Items(owner)
-        .Where(item => item.Definition == definition).Aggregate(0UL, (total, item) => checked(total + item.Quantity));
 
     private static void RequireRejected(Action action, string message)
     {

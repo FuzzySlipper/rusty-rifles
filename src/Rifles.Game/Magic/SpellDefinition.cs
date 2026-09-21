@@ -42,6 +42,7 @@ internal sealed record SpellDefinition(
     double Period,
     float SpeedFactor,
     bool Harmful,
+    float ForwardHalfAngleDegrees = 0,
     EffectStackingPolicy Stacking = EffectStackingPolicy.Refresh)
 {
     internal void Validate()
@@ -55,7 +56,8 @@ internal sealed record SpellDefinition(
             && double.IsFinite(Recovery) && Recovery > 0 && float.IsFinite(Range) && Range > 0
             && float.IsFinite(Speed) && Speed >= 0 && float.IsFinite(Radius) && Radius >= 0
             && Power is >= 0 and <= MaximumAuthoredValue && double.IsFinite(Duration) && Duration >= 0
-            && double.IsFinite(Period) && Period >= 0 && float.IsFinite(SpeedFactor) && SpeedFactor is > 0 and <= 1,
+            && double.IsFinite(Period) && Period >= 0 && float.IsFinite(SpeedFactor) && SpeedFactor is > 0 and <= 1
+            && float.IsFinite(ForwardHalfAngleDegrees) && ForwardHalfAngleDegrees is >= 0 and < 90,
             "spell tuning " + Id);
 
         SpellTarget expectedTarget = Effect switch
@@ -69,6 +71,9 @@ internal sealed record SpellDefinition(
         GameDefinitions.Require(Target == expectedTarget, "spell target " + Id);
         GameDefinitions.Require(Harmful == (Effect is SpellEffect.Damage or SpellEffect.Injury or SpellEffect.Slow),
             "spell harmful flag " + Id);
+        GameDefinitions.Require(Target == SpellTarget.Enemy
+            ? ForwardHalfAngleDegrees > 0
+            : ForwardHalfAngleDegrees == 0, "spell forward targeting " + Id);
 
         switch (Effect)
         {
