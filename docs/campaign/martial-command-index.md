@@ -32,4 +32,3 @@ Each task carries detailed acceptance in Den and includes relevant typed content
 - M09 verifies source/build, runtime launch and visible interactions separately and tunes authored values from real play.
 
 The final scope excludes drummer/audio work, morale, multi-cell formations, independent soldier navigation, finite ordinary ammo, special ammo types, generic weapon/ability frameworks and new art. See the design for full boundaries.
-

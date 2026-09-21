@@ -65,4 +65,3 @@ Deferred: drummer/sounds, morale/suppression, multi-cell formations, independent
 Validate with focused rule/state tests plus the required repository check lane (pnpm install --frozen-lockfile once, then bash scripts/check.sh). Use an existing broker session for visible acceptance. Report source/build checks, runtime launch and visible interaction separately. Demonstrate three-lane volley and fallback concentration, weapon-specific melee reach, interruptible reload/bayonets, a casualty exposing the commander, planner cancel/execute under pressure, charge contact/blockage, per-soldier ability readiness, commander defeat with living soldiers, and save/resume/travel without timing resets or duplicated effects.
 
 Finish with bounded tuning from visible play, recording what felt wrong, authored adjustments and remaining limitations. This is an iteration-ready martial layer, not certification of the aspirational brief.
-
