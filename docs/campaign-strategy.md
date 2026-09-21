@@ -1,5 +1,11 @@
 # Classic blobber foundation campaign
 
+The next accepted layer is the [martial command design](martial-command-design.md)
+and [Den campaign #8388](campaign/martial-command-index.md). It supersedes this
+historical foundation plan where party size, combat targeting, equipment,
+ammunition and formation controls differ. The campaign is planned, not yet
+implemented; the foundation scope below remains its historical record.
+
 **Accepted campaign strategy — 2026-09-13.** Den campaign **#8187** contains
 63 implementation tasks across nine milestones, with 136 dependency links.
 The [task index](campaign/task-index.md) maps the scheduled work; Den owns live

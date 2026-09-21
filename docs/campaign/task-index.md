@@ -1,5 +1,8 @@
 # Classic blobber task campaign
 
+Next-layer work: [martial command campaign #8388](martial-command-index.md).
+This page retains the original foundation campaign rather than tracking new work.
+
 Den project: `rusty-rifles` · Aggregate campaign: **#8187**.
 
 Created 2026-09-13: **63 implementation tasks, nine milestones, 136 dependency links**. All tasks were read back from Den with matching acceptance descriptions, parent, priority and dependencies. The graph is acyclic and every implementation task feeds final acceptance #8250. Creation is planning, not implementation completion.

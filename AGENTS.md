@@ -11,6 +11,10 @@ games such as Dungeon Master, Eye of the Beholder, and Grimrock as behavioral
 references. Once those basics are established, customize them toward Rifles'
 specific gameplay. The owner-approved scope is in `docs/campaign-strategy.md`;
 `docs/campaign/task-index.md` maps Den campaign #8187 and its implementation tasks.
+The next accepted layer is `docs/martial-command-design.md`, with Den campaign
+#8388 mapped in `docs/campaign/martial-command-index.md`. It supersedes the
+foundation plan for party size, combat targeting, equipment, ammunition and
+formation controls; it is planned work, not a claim of implemented behavior.
 
 Build this game directly. Do not introduce a reusable blobber kit, ruleset
 framework, or abstraction layer for hypothetical games. Do not attempt a
