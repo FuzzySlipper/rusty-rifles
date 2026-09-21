@@ -45,6 +45,7 @@ CommandChecks.Run();
 EnemyBrainChecks.Run();
 CrowdChecks.Run();
 CrowdLaneChecks.Run(definitions);
+FormationRulesChecks.Run(definitions);
 CombatInventoryChecks.Run(definitions);
 CombatSaveChecks.Run(definitions);
 // Invalid authored files fail at admission, before creating any live world.

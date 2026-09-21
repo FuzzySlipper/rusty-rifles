@@ -15,7 +15,7 @@ using Rifles.Procgen.Generation;
 
 namespace Rifles.Game.Content;
 
-internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party,
+internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party, FormationDefinition Formation,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
     CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio)
 {
@@ -46,6 +46,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         }
         GameDefinitions result = new(Read<ExplorationTuning>("tuning/exploration.json", x => x.Validate()),
             Read<PartyDefinition>("definitions/party.json", x => x.Validate()),
+            Read<FormationDefinition>("definitions/formation.json", x => x.Validate()),
             Read<GenerationDefinition>("tuning/generation.json", x => x.Validate()),
             Read<AppearanceDefinition>("tuning/appearance.json", x => x.Validate()),
             Read<FeatureDefinition>("definitions/exploration-features.json", x => x.Validate()),

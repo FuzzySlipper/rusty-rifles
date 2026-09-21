@@ -1,0 +1,23 @@
+{
+  "laneBoundaryRatio": 0.35,
+  "offensiveLaneWidth": 0.5,
+  "maximumLaneFallback": 2,
+  "cells": [
+    { "id": "front-left", "name": "Front left", "forward": 1, "left": 1, "commander": false, "screening": [ { "sector": "Front", "lane": "Left" }, { "sector": "Left", "lane": "Front" } ] },
+    { "id": "front-center", "name": "Front center", "forward": 1, "left": 0, "commander": false, "screening": [ { "sector": "Front", "lane": "Center" } ] },
+    { "id": "front-right", "name": "Front right", "forward": 1, "left": -1, "commander": false, "screening": [ { "sector": "Front", "lane": "Right" }, { "sector": "Right", "lane": "Front" } ] },
+    { "id": "left-guard", "name": "Left guard", "forward": 0, "left": 1, "commander": false, "screening": [ { "sector": "Left", "lane": "Center" } ] },
+    { "id": "commander", "name": "Commander", "forward": 0, "left": 0, "commander": true, "screening": [] },
+    { "id": "right-guard", "name": "Right guard", "forward": 0, "left": -1, "commander": false, "screening": [ { "sector": "Right", "lane": "Center" } ] },
+    { "id": "rear-left", "name": "Rear left", "forward": -1, "left": 1, "commander": false, "screening": [ { "sector": "Rear", "lane": "Left" }, { "sector": "Left", "lane": "Rear" } ] },
+    { "id": "rear-center", "name": "Rear center", "forward": -1, "left": 0, "commander": false, "screening": [ { "sector": "Rear", "lane": "Center" } ] },
+    { "id": "rear-right", "name": "Rear right", "forward": -1, "left": -1, "commander": false, "screening": [ { "sector": "Rear", "lane": "Right" }, { "sector": "Right", "lane": "Rear" } ] }
+  ],
+  "weapons": [
+    { "id": "short-sword", "name": "Short sword and shield", "maximumRowsBehindFront": 0, "maximumLateralLaneDifference": 0, "maximumForwardDistance": 2.7, "aimHalfAngleDegrees": 45 },
+    { "id": "sword", "name": "Sword", "maximumRowsBehindFront": 0, "maximumLateralLaneDifference": 1, "maximumForwardDistance": 2.7, "aimHalfAngleDegrees": 45 },
+    { "id": "pike", "name": "Pike", "maximumRowsBehindFront": 2, "maximumLateralLaneDifference": 1, "maximumForwardDistance": 4.2, "aimHalfAngleDegrees": 28 },
+    { "id": "fixed-bayonet", "name": "Fixed bayonet", "maximumRowsBehindFront": 2, "maximumLateralLaneDifference": 1, "maximumForwardDistance": 4.2, "aimHalfAngleDegrees": 24 },
+    { "id": "musket", "name": "Musket", "maximumRowsBehindFront": 2, "maximumLateralLaneDifference": 2, "maximumForwardDistance": 16, "aimHalfAngleDegrees": 35 }
+  ]
+}

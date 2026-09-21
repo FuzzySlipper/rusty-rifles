@@ -65,3 +65,53 @@ Deferred: drummer/sounds, morale/suppression, multi-cell formations, independent
 Validate with focused rule/state tests plus the required repository check lane (pnpm install --frozen-lockfile once, then bash scripts/check.sh). Use an existing broker session for visible acceptance. Report source/build checks, runtime launch and visible interaction separately. Demonstrate three-lane volley and fallback concentration, weapon-specific melee reach, interruptible reload/bayonets, a casualty exposing the commander, planner cancel/execute under pressure, charge contact/blockage, per-soldier ability readiness, commander defeat with living soldiers, and save/resume/travel without timing resets or duplicated effects.
 
 Finish with bounded tuning from visible play, recording what felt wrong, authored adjustments and remaining limitations. This is an iteration-ready martial layer, not certification of the aspirational brief.
+
+## M01 prototype examples: screening and reach
+
+The initial screening model classifies the source relative to the party's facing
+into a cardinal approach sector and one of three lateral lanes. Sector selection
+uses the dominant axis; exact diagonals choose front/rear consistently. Lane
+boundaries are authored angular ratios, so a tightly grouped distant crowd may
+fall in the center lane. This is a tuning choice, not physical soldier collision.
+World queries still determine whether the attack reaches the party at all.
+
+Read this formation facing upward; C is the fixed commander, dots are empty
+positions, and letters identify living soldiers rather than character classes:
+
+```text
+Intact front       Center casualty     One left guard
+ A B D               A . D               . . .
+ . C .               . C .               G C .
+ E F H               E F H               . . .
+```
+
+- An intact front screens left, center and right frontal approaches with A, B
+  and D respectively. One ordinary hit has one recipient; lethal excess does
+  not spill through to the commander.
+- With B gone, a central frontal attack reaches C. A and D retain their own
+  frontal coverage, but neither becomes a universal replacement for B.
+- G screens the center lane of a left-side approach. G does not protect against
+  a frontal or right-side attack simply because G is alive.
+- In the intact example, a central rear approach meets F. If F is absent, B
+  cannot protect C from behind: B lies beyond the commander on that approach.
+- Corner soldiers cover their corresponding corner lanes on both adjoining
+  sectors. They do not cover the middle lane of either sector by default.
+- Rotating the whole party rotates every coverage assignment. Turning right
+  presents the original front to an attacker to the world's right; the same
+  relative attack has the same recipient after both positions are rotated.
+- If the relevant screening position has no living soldier, the commander is
+  exposed regardless of living soldiers on other sides. Fallen soldiers do
+  not absorb attacks.
+
+Outgoing preference is separate. Soldiers first need a legal weapon reach and
+an exposed enemy in the committed forward area. A short sword has direct-lane
+front-rank access; a sword can cover neighboring frontage; pikes and fixed
+bayonets can reach from farther back past friendly positions. Muskets can aim
+across the permitted frontage. Preference selects own lane before the nearest
+permitted alternative, then nearest enemy, with stable identity resolving ties.
+An empty preferred lane never authorizes a short sword to exceed its reach.
+
+These examples establish the prototype's expected behavior; admitted content
+and focused checks implement the exact thresholds. Runtime commander and combat
+integration follow in M02/M04. Visible tuning in M09 may change coverage without
+turning the formation into independently navigable world cells.
