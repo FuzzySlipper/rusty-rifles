@@ -82,6 +82,23 @@ bug: charge planning computed trace exposure but checked reach alone. It now
 requires both an unobstructed first hit and authored reach. Visible replay is
 still required.
 
+## Visible progress on `831208d`
+
+Session `458ed3da-3387-4979-bb0c-717ea4d7af62` confirmed:
+
+- [Charge contact](evidence/martial-command/charge-contact.png): six soldiers
+  committed, the raider took 24 then 8 damage and fell, and the maneuver reached
+  its planned contact.
+- [Blocked charge](evidence/martial-command/charge-obstructed.png): no legal
+  first step, no charge movement or contact.
+- [Unfixed](evidence/martial-command/bayonets-unfixed.png) then
+  [fixed bayonets](evidence/martial-command/bayonets-fixed.png): all three rifle
+  providers completed each order; ready Fire returned to 3/6. Fixed state
+  survived ordinary [Save/Load](evidence/martial-command/bayonets-restored.png).
+- [Unique ability rows](evidence/martial-command/unique-ability-list.png): one
+  Lantern entry represented three ready providers and one shared effect.
+  Actual casting and differing readiness remain pending.
+
 ## Remaining visible matrix
 
 The first drill activation and ordinary paused-menu Save both rejected the fresh
@@ -93,11 +110,14 @@ combat. The fix carries that existing ledger into fresh combat, including new
 travel destinations. All six drill snapshots pass normal save admission;
 live Save/Load and the successfully activated drills are recorded above.
 
-- Three distinct forward target selections in one volley.
-- Reload interruption, fixed/unfixed penalties and final readiness.
+- Reload interruption by a bayonet or melee order.
 - Unique abilities with independent provider readiness.
-- Formation cancel, execute, fixed commander, movement locks and unaffected soldiers acting.
-- Charge contact, obstruction, lost target and no repeated impact.
-- Timed save/resume and whole-run floor travel.
+- Whole-run floor travel.
+
+The three-lane volley demonstrated firing against multiple targets but did not
+prove three distinct selections through its miss outcomes. Pure targeting checks
+cover that selection rule. Charge lost-target and contributor-loss behavior,
+mid-step persistence and recovery restoration are covered by source checks;
+live charge evidence is the bounded contact and obstruction cases above.
 
 No new art, audio, drummer, morale or separate soldier navigation is part of this campaign.

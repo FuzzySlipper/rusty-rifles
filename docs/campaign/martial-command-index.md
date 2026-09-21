@@ -2,7 +2,7 @@
 
 Den project: `rusty-rifles` · Aggregate campaign: **#8388**.
 
-Created 2026-09-20: nine implementation/acceptance tasks. This is planned work, not delivered gameplay. [Accepted design](../martial-command-design.md) records scope and provisional tuning decisions. [Current ownership](../gameplay-design.md) describes existing code; [foundation campaign](task-index.md) remains historical context. Den owns live status and dependencies.
+Created 2026-09-20: nine implementation/acceptance tasks. This index preserves the original sequence; the [acceptance record](../martial-command-acceptance.md) describes delivered behavior and verification. [Accepted design](../martial-command-design.md) records scope and provisional tuning decisions. [Current ownership](../gameplay-design.md) describes existing code; [foundation campaign](task-index.md) remains historical context. Den owns live status and dependencies.
 
 Start with **#8389 (M01)**. The parent is an aggregate and should close only after final visible acceptance. M01 resolves the remaining coverage examples into a concrete tunable prototype; it is not a broad architecture study or a new approval gate.
 

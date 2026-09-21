@@ -257,7 +257,8 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
       travel.append(action);
     }
     if (connectors.length === 0) travel.textContent = 'No known routes from this floor.';
-    travelMessage.textContent = firstProblem || 'Reach a marked connector to travel.';
+    const available = connectors.some(([, connector]) => text(connector.problem, '') === '');
+    travelMessage.textContent = available ? 'Choose a route to travel.' : firstProblem;
   };
 
   const update = (raw: unknown): void => {
