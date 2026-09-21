@@ -36,6 +36,15 @@ captures.
 
 ## Remaining visible matrix
 
+The first drill activation and ordinary paused-menu Save both rejected the fresh
+floor with `Invalid saved combat inventory owners.` The original
+[Save failure](evidence/martial-command/pre-fix-fresh-save-failure.png) confirms
+this was not limited to drill setup. Fresh floor construction created generated
+key, plate and supply inventories but did not pass their drop positions into
+combat. The fix carries that existing ledger into fresh combat, including new
+travel destinations. Drill snapshot checks now use normal save admission;
+live Save/Load and drill verification on the corrected build remain pending.
+
 - Three forward lanes and fallback onto one exposed target.
 - Weapon reach, automatic reload, interruption and fixed/unfixed penalties.
 - Unique abilities with independent provider readiness.

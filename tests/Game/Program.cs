@@ -245,6 +245,7 @@ var defeatedParty = Rifles.Game.Expedition.ExpeditionCodec.Validate(commanderDef
 Require(defeatedParty.Defeated && defeatedParty.Soldiers.Any(member => member.IsLiving),
     "Whole expedition restore retains commander defeat with surviving soldiers.");
 RunStateChecks.Run(definitions, decoded);
+MartialDrillChecks.VerifySnapshot(definitions, decoded);
 Require(decoded.Intent.Identity == snapshot.Intent.Identity
     && decoded.Intent.Connectors.SequenceEqual(snapshot.Intent.Connectors), "Resolved expedition and connector identities survive the save.");
 var changedGeneration = definitions with { Generation = definitions.Generation with { Seed = 999 } };

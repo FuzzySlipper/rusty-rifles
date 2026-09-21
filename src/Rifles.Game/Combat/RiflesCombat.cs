@@ -90,12 +90,13 @@ internal sealed partial class RiflesCombat
     internal bool Threatened => enemies.Any(e => e.Alive && (e.Aware
         || Vector3.Distance(EnemyAim(e), scope.Aim(scope.Exploration.Position)) <= definitions.Magic.ThreatRange && SeesParty(e)));
 
-    /// <summary>Fresh combat for a newly built floor: empty actions/flights, no drops.</summary>
+    /// <summary>Fresh combat with generated world drops and empty actions/flights.</summary>
     internal static RiflesCombat CreateFresh(GameDefinitions definitions, CharacterEntities entities, PartyState party,
         MagicState magic, ItemInventory inventory, CombatScope scope, List<EnemyState> enemies, AllySnapshot[] allies,
-        WeaponStateSnapshot? travellingWeapons = null)
+        IReadOnlyDictionary<string, GridPoint> generatedDrops, WeaponStateSnapshot? travellingWeapons = null)
     {
         RiflesCombat combat = new(definitions, entities, party, magic, inventory, [], scope, enemies);
+        foreach ((string owner, GridPoint cell) in generatedDrops) combat.drops.Add(owner, cell);
         foreach (RiflesCharacter member in party.Members)
             entities.AttachComponent(member.Definition.Id, () => new ActionState());
         combat.BuildAllies(allies);

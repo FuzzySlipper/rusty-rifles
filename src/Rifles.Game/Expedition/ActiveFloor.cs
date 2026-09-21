@@ -278,7 +278,7 @@ internal sealed class ActiveFloor : IDisposable
             // idle); the multiplier never applies here since no damage runs.
             RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
                 [RiflesCombat.FreshAlly(actor.Id, definitions), RiflesCombat.FreshAlly(features.Dressing.ObserverId, definitions)],
-                travelling?.Weapons);
+                drops, travelling?.Weapons);
             return new ActiveFloor(floor, scene, movement, world, actor, exploration, itemWorld, inventory, magic, combat,
                 generatedFeatures, encounterPlacement, floorId, party);
         }

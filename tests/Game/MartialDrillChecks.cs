@@ -1,5 +1,7 @@
 using Rifles.Game.Debugging;
 using Rifles.Game.Content;
+using Rifles.Game.Expedition;
+using Rifles.Game.Items;
 using Rifles.Game.Party;
 
 internal static class MartialDrillChecks
@@ -26,6 +28,34 @@ internal static class MartialDrillChecks
         RequireRejected(() => (lanes with { Enemies = [lanes.Enemies[0] with { Forward = 0 }] }).Validate(),
             "Enemy offsets behind the party fail at content admission.");
         Console.WriteLine("Martial drill checks passed: authored formation, lanes, casualty and charge fixtures.");
+    }
+
+    /// <summary>Exercises the same saved-floor admission path used by a live debug command, without an Engine host.</summary>
+    internal static void VerifySnapshot(GameDefinitions definitions, ExpeditionSnapshot snapshot)
+    {
+        ExpeditionSnapshot? concentration = null;
+        foreach (MartialDrillDefinition drill in definitions.MartialDrills.Drills)
+        {
+            ExpeditionSnapshot prepared = Rifles.Game.RiflesProduct.PrepareMartialDrill(definitions, snapshot, drill);
+            _ = ExpeditionCodec.Validate(prepared, definitions);
+            if (drill.Id == "concentration") concentration = prepared;
+        }
+        ExpeditionSnapshot preparedConcentration = concentration
+            ?? throw new InvalidOperationException("The concentration drill is required.");
+
+        Require(preparedConcentration.Combat.SelectedTarget == 0 && preparedConcentration.Paused,
+            "A drill starts paused and has no selected-enemy dependency.");
+        Require(preparedConcentration.Combat.Enemies.Select(enemy => enemy.Spawn).SequenceEqual(definitions.MartialDrills.Drill("concentration").Enemies.Select(enemy => enemy.SpawnId)),
+            "A drill retains exactly its authored enemy identities.");
+        HashSet<string> inventoryCombatOwners = preparedConcentration.Inventory.Packs.Where(pack => InventoryOwner.Parse(pack.Owner.Key) is CombatOwner)
+            .Select(pack => pack.Owner.Key).ToHashSet(StringComparer.Ordinal);
+        HashSet<string> expectedCombatOwners = preparedConcentration.Combat.Enemies.Select(enemy => enemy.Owner)
+            .Concat(preparedConcentration.Combat.Drops.Select(drop => drop.Owner))
+            .Concat(preparedConcentration.Combat.Flights.Where(flight => flight.Owner is not null).Select(flight => flight.Owner!))
+            .ToHashSet(StringComparer.Ordinal);
+        Require(inventoryCombatOwners.SetEquals(expectedCombatOwners),
+            "The drill culls enemy packs and preserves every remaining combat owner in the saved ledger.");
+        Console.WriteLine("Martial drill snapshot checks passed: prepared fixture restores through normal save admission.");
     }
 
     private static void RequireRejected(Action action, string message)

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Rifles.Game.Characters;
 using Rifles.Game.Combat;
+using Rifles.Game.Content;
 using Rifles.Game.Debugging;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Expedition;
@@ -43,7 +44,7 @@ public sealed partial class RiflesProduct
         {
             StartNewRun(definitions.Generation.Seed);
             ExpeditionSnapshot fresh = Capture();
-            ExpeditionSnapshot prepared = PrepareMartialDrill(fresh, drill);
+            ExpeditionSnapshot prepared = PrepareMartialDrill(definitions, fresh, drill);
             Activate(prepared);
             feedback = "Authored drill '" + drill.Name + "' ready. " + drill.Expected;
             Publish();
@@ -57,13 +58,14 @@ public sealed partial class RiflesProduct
         }
     }
 
-    private ExpeditionSnapshot PrepareMartialDrill(ExpeditionSnapshot fresh, MartialDrillDefinition drill)
+    /// <summary>Builds a normal save payload for an authored fixture; live commands still restore it through ActiveFloor.</summary>
+    internal static ExpeditionSnapshot PrepareMartialDrill(GameDefinitions definitions, ExpeditionSnapshot fresh, MartialDrillDefinition drill)
     {
         Dictionary<string, EnemySnapshot> original = fresh.Combat.Enemies.ToDictionary(enemy => enemy.Spawn, StringComparer.Ordinal);
         EnemySnapshot[] selected = drill.Enemies.Select(enemy => original.GetValueOrDefault(enemy.SpawnId)
             ?? throw new InvalidDataException("The generated floor did not resolve required spawn '" + enemy.SpawnId + "'."))
             .ToArray();
-        MartialDrillLayout layout = FindMartialDrillLayout(fresh, drill, selected);
+        MartialDrillLayout layout = FindMartialDrillLayout(definitions, fresh, drill, selected);
         Dictionary<string, ResolvedEncounterInstance> placed = fresh.EncounterPlacement.Instances
             .ToDictionary(instance => instance.SpawnId, StringComparer.Ordinal);
         HashSet<string> keptOwners = selected.Select(enemy => enemy.Owner).ToHashSet(StringComparer.Ordinal);
@@ -95,7 +97,7 @@ public sealed partial class RiflesProduct
             EnemyDefinition definition = definitions.Combat.Enemy(enemy.Definition);
             GridPoint cell = layout.EnemyCells[index];
             ResolvedRoom room = fresh.Floor.Rooms.Single(room => room.Cells.Contains(cell));
-            GridPoint[] attackPositions = DrillAttackPositions(fresh.Floor, definition, cell);
+            GridPoint[] attackPositions = DrillAttackPositions(definitions, fresh.Floor, definition, cell);
             return new ResolvedEncounterInstance(enemy.Spawn, enemy.Definition, "martial-drill:" + drill.Id, room.RegionId,
                 cell, drill.Enemies[index].Placement, prior.Role, prior.DifficultyCost, attackPositions);
         }).ToArray();
@@ -134,7 +136,7 @@ public sealed partial class RiflesProduct
             Combat = combat, EncounterPlacement = encounters, RestRemaining = 0, RestOwner = "", Formation = null };
     }
 
-    private MartialDrillLayout FindMartialDrillLayout(ExpeditionSnapshot snapshot, MartialDrillDefinition drill,
+    private static MartialDrillLayout FindMartialDrillLayout(GameDefinitions definitions, ExpeditionSnapshot snapshot, MartialDrillDefinition drill,
         IReadOnlyList<EnemySnapshot> enemies)
     {
         HashSet<GridPoint> unavailable =
@@ -165,7 +167,7 @@ public sealed partial class RiflesProduct
             try
             {
                 for (int index = 0; index < enemies.Count; index++)
-                    _ = DrillAttackPositions(snapshot.Floor, definitions.Combat.Enemy(enemies[index].Definition), cells[index]);
+                    _ = DrillAttackPositions(definitions, snapshot.Floor, definitions.Combat.Enemy(enemies[index].Definition), cells[index]);
                 return new MartialDrillLayout(origin, cells);
             }
             catch (InvalidDataException) { }
@@ -173,7 +175,7 @@ public sealed partial class RiflesProduct
         throw new InvalidDataException("No generated room fits the authored " + drill.Id + " offsets and crowd slots.");
     }
 
-    private GridPoint[] DrillAttackPositions(DungeonFloor floor, EnemyDefinition enemy, GridPoint cell)
+    private static GridPoint[] DrillAttackPositions(GameDefinitions definitions, DungeonFloor floor, EnemyDefinition enemy, GridPoint cell)
     {
         HashSet<GridPoint> floorCells = floor.Cells.ToHashSet();
         if (!EncounterPlacementResolver.TryReachable(floor, floorCells, floor.Entrance, floorCells.Count,
