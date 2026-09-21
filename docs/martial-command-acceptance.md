@@ -97,7 +97,27 @@ Session `458ed3da-3387-4979-bb0c-717ea4d7af62` confirmed:
   survived ordinary [Save/Load](evidence/martial-command/bayonets-restored.png).
 - [Unique ability rows](evidence/martial-command/unique-ability-list.png): one
   Lantern entry represented three ready providers and one shared effect.
-  Actual casting and differing readiness remain pending.
+  Subsequent root-driven, supervised ordinary controls showed
+  [Lantern at 1/3 ready](evidence/martial-command/ability-readiness.png) while
+  the musketeers recovered from Fire. The
+  [cast](evidence/martial-command/ability-cast.png) started only Seeker,
+  consumed his resource (7 to 5), and left the busy providers untouched.
+- [Reload interruption](evidence/martial-command/reload-interruption.png):
+  Unfix stopped Warden and both musketeers during unfinished reload. All three
+  removed bayonets, [started fresh reloads](evidence/martial-command/reload-restarted.png),
+  then [loaded one round each](evidence/martial-command/reload-complete.png).
+- [Travel to Flooded Stores](evidence/martial-command/floor-travel.png)
+  retained the seven-member party and increased visited floors to 2/3. Root
+  used live HUD coordinates and ordinary visible Expedition controls to reach
+  the stair. Saving afterward exposed
+  [a retained-floor validation failure](evidence/martial-command/retained-save-failure.png).
+  Whole-run persistence and return travel remain pending its fix.
+
+The retained save failure came from inconsistent ownership validation: capture
+kept floor-local enemy loot and supply packs, while retained validation admitted
+anchors only. The fix validates anchors, enemy loot, projectile packs and drops
+against the same combat ledger and capacities used by the active floor. A
+focused codec regression passes with dead-enemy loot and generated supplies.
 
 ## Remaining visible matrix
 
@@ -110,9 +130,7 @@ combat. The fix carries that existing ledger into fresh combat, including new
 travel destinations. All six drill snapshots pass normal save admission;
 live Save/Load and the successfully activated drills are recorded above.
 
-- Reload interruption by a bayonet or melee order.
-- Unique abilities with independent provider readiness.
-- Whole-run floor travel.
+- Whole-run Save/Load and return travel after the retained-inventory fix.
 
 The three-lane volley demonstrated firing against multiple targets but did not
 prove three distinct selections through its miss outcomes. Pure targeting checks

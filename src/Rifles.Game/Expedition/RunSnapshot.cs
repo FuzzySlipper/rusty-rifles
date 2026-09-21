@@ -52,7 +52,7 @@ internal static class RunCodec
         // Retained floors validate as floors: floor-local consistency only,
         // no entities, no party, no synthetic expedition merge.
         IReadOnlyDictionary<string, string> roster = active.Roster.ToDictionary(m => m.Id, m => m.Archetype, StringComparer.Ordinal);
-        foreach (var floor in run.Inactive) RetainedFloor.Validate(floor, definitions, active.Intent, items, roster);
+        foreach (var floor in run.Inactive) RetainedFloor.Validate(floor, definitions, active.Intent, items, roster, active.PartyId);
         SaveIdentities.RequireCrossFloorUnique(run);
     }
 }

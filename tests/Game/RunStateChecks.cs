@@ -5,6 +5,7 @@ using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Game.Expedition;
+using Rifles.Game.Generation;
 using Rifles.Game.Items;
 using Rifles.Game.Magic;
 using Rifles.Game.Party;
@@ -23,6 +24,7 @@ internal static class RunStateChecks
         VerifyBarrierSafeSaveAdmission(definitions, fixture);
         VerifyRunProgress(definitions, fixture);
         VerifyRetainedFloorKeepsOnlyFloorState(definitions, fixture);
+        VerifyRetainedCombatOwnersRoundTrip(definitions, fixture);
         VerifyInvalidRunsAreRejected(definitions, fixture);
         Console.WriteLine("Run state checks passed: retained floors, travelling party state, and run validation.");
     }
@@ -80,6 +82,69 @@ internal static class RunStateChecks
             "Returning to a retained floor preserves its door, patrol actor, and enemy facts.");
 
         RunCodec.Validate(CreateRun(definitions, joined), definitions);
+    }
+
+    private static void VerifyRetainedCombatOwnersRoundTrip(GameDefinitions definitions, ExpeditionSnapshot fixture)
+    {
+        ItemInventory inventory = ItemInventory.Restore(definitions.Items, fixture.Inventory);
+        ulong next = fixture.NextObjectId;
+        ulong supplyPackId = next++;
+        string supplyOwner = "combat:flight:" + supplyPackId;
+        inventory.RegisterOwner(new PackOwner(supplyPackId, supplyOwner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
+        inventory.Grant(InventoryOwner.Parse(supplyOwner), "tonic", 1, () => next++);
+
+        ulong flightPackId = next++;
+        string flightOwner = "combat:flight:" + flightPackId;
+        inventory.RegisterOwner(new PackOwner(flightPackId, flightOwner, definitions.Combat.DropCapacity.Mass, definitions.Combat.DropCapacity.Space));
+        CarriedItem thrown = inventory.Items(ItemInventory.PartyKey).First(item => item.Definition == "tonic");
+        inventory.Transfer(ItemRef.Parse(ItemInventory.PartyKey, thrown.Token), InventoryOwner.Parse(flightOwner), 1, inventory.Revision);
+
+        EnemySnapshot defeated = fixture.Combat.Enemies[0] with
+        {
+            Stats = StatSnapshotHelpers.WithTrack(fixture.Combat.Enemies[0].Stats, RiflesStatIds.Vitality, 0),
+            Action = null,
+        };
+        GridPoint supplyCell = fixture.Floor.Cells.First(cell => cell != defeated.Motion.Position);
+        GridPoint source = fixture.Exploration.Position;
+        FlightSnapshot flight = new(next++, fixture.PartyId, "warden", CombatActionKind.Throw,
+            (source.X + .5f) * definitions.Exploration.CellSize, 1, (source.Y + .5f) * definitions.Exploration.CellSize,
+            1, 0, 0, 1, source, flightOwner, null);
+        ExpeditionSnapshot departed = fixture with
+        {
+            NextObjectId = next,
+            Inventory = inventory.Capture(),
+            GeneratedFeatures = fixture.GeneratedFeatures with
+            {
+                Supplies = [.. fixture.GeneratedFeatures.Supplies, new ResolvedSupply("tonic", 1, supplyCell, "Retained supply fixture")],
+            },
+            Combat = fixture.Combat with
+            {
+                Enemies = fixture.Combat.Enemies.Select(enemy => enemy.Id == defeated.Id ? defeated : enemy).ToArray(),
+                Flights = [flight],
+                Drops = [new DropSnapshot(defeated.Owner, defeated.Motion.Position), new DropSnapshot(supplyOwner, supplyCell)],
+            },
+        };
+        RetainedFloor retained = RetainedFloor.Capture(departed);
+        HashSet<string> owners = retained.Inventory.Packs.Select(pack => pack.Owner.Key).ToHashSet(StringComparer.Ordinal);
+        Require(owners.Contains(defeated.Owner) && owners.Contains(supplyOwner) && owners.Contains(flightOwner),
+            "Retained capture keeps dead-enemy loot, generated supply, and launched-item combat packs.");
+
+        // The full run validator intentionally forbids retaining a second copy
+        // of its active floor. Encode the frozen floor through that real codec,
+        // then validate the decoded local floor with its travelling party id.
+        RunSnapshot carrier = new(departed, [retained], new RunProgress(definitions.Run.DefaultDifficulty, false, []));
+        var codec = RunCodec.CreateStoreCodec();
+        ArrayBufferWriter<byte> bytes = new();
+        codec.Encode(carrier, bytes);
+        RetainedFloor restored = codec.Decode(bytes.WrittenSpan).Inactive.Single();
+        IReadOnlyDictionary<ulong, string> retainedItems = restored.Inventory.Packs.SelectMany(pack => pack.Items)
+            .ToDictionary(item => item.Id, item => item.Definition);
+        IReadOnlyDictionary<string, string> roster = departed.Roster.ToDictionary(member => member.Id, member => member.Archetype,
+            StringComparer.Ordinal);
+        RetainedFloor.Validate(restored, definitions, departed.Intent, retainedItems, roster, departed.PartyId);
+        Require(restored.Flights.Single().Owner == flightOwner && restored.Drops.Select(drop => drop.Owner).ToHashSet()
+            .SetEquals([defeated.Owner, supplyOwner]),
+            "The retained codec round-trip preserves combat flight, supply, and enemy-loot ownership for a later thaw.");
     }
 
     private static void VerifyFormationRoundTrip(GameDefinitions definitions, ExpeditionSnapshot fixture)

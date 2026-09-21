@@ -23,7 +23,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
     internal static RetainedFloor Capture(ExpeditionSnapshot state)
     {
         // Member packs and the shared party pack travel with the party;
-        // retained floors keep anchors and drops only.
+        // anchors and combat drop, flight, and enemy-loot packs remain local.
         SavedPack[] packs = state.Inventory.Packs.Where(p => InventoryOwner.Parse(p.Owner.Key) is not (MemberOwner or PartyOwner)).ToArray();
         var items = packs.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         return new(state.FloorId, state.Floor, state.Exploration, state.Actor, state.Features,
@@ -40,7 +40,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
     /// the live merge through the active snapshot.
     /// </summary>
     internal static void Validate(RetainedFloor floor, GameDefinitions definitions, ResolvedExpedition intent,
-        IReadOnlyDictionary<ulong, string> items, IReadOnlyDictionary<string, string> roster)
+        IReadOnlyDictionary<ulong, string> items, IReadOnlyDictionary<string, string> roster, ulong partyId)
     {
         ArgumentNullException.ThrowIfNull(floor);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -79,13 +79,23 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
                 && carried.Length == 1 && carried[0].Definition == definitions.GeneratedFeatures.KeyItem,
                 "retained generated key identity");
         }
-        string[] expectedOwners = definitions.ItemExploration.Anchors.Select(a => a.Key).ToArray();
+        HashSet<string> expectedOwners = definitions.ItemExploration.Anchors.Select(anchor => anchor.Key)
+            .Concat(floor.Enemies.Select(enemy => enemy.Owner))
+            .Concat(floor.Flights.Where(flight => flight.Owner is not null).Select(flight => flight.Owner!))
+            .Concat(floor.Drops.Select(drop => drop.Owner))
+            .ToHashSet(StringComparer.Ordinal);
         GameDefinitions.Require(inventory.Owners.Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "retained inventory owners");
         foreach (PackOwner owner in inventory.Owners)
         {
-            PackDefinition capacity = owner.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
+            PackDefinition capacity = InventoryOwner.Parse(owner.Key) switch
+            {
+                CombatOwner => definitions.Combat.DropCapacity,
+                AnchorOwner anchorOwner => anchorOwner.Anchor == "crate" ? definitions.Items.Container : definitions.Items.Anchor,
+                _ => throw new InvalidDataException("Unknown retained inventory owner."),
+            };
             GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "retained pack capacity");
-            GameDefinitions.Require(owner.Id == itemWorld.Anchor(InventoryOwner.Parse(owner.Key) is AnchorOwner anchor ? anchor.Anchor : owner.Key).Id, "retained anchor owner");
+            if (InventoryOwner.Parse(owner.Key) is AnchorOwner anchor)
+                GameDefinitions.Require(owner.Id == itemWorld.Anchor(anchor.Anchor).Id, "retained anchor owner");
         }
         ExpeditionCodec.ValidateWorldObstructions(floor.Floor, floor.Actor, floor.Features.Dressing, floor.ItemWorld, floor.GeneratedFeatures);
         _ = ExplorationState.Restore(floor.Departure, floor.Floor, definitions.Exploration);
@@ -112,7 +122,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
         HashSet<string> members = roster.Keys.ToHashSet(StringComparer.Ordinal);
         (ulong Id, string Owner, string Definition, bool Alive)[] enemies =
             floor.Enemies.Select(e => (e.Id, e.Owner, e.Definition, RiflesStats.TrackCurrent(e.Stats, RiflesStatIds.Vitality) > 0)).ToArray();
-        FlightSnapshot[] flights = CombatRestore.RestoreFlights(floor.Flights, definitions, floor.Floor, inventory, members, 0, enemies);
+        FlightSnapshot[] flights = CombatRestore.RestoreFlights(floor.Flights, definitions, floor.Floor, inventory, members, partyId, enemies);
         CombatRestore.ValidateDropsAndCombatOwners(floor.Drops, flights, enemies, floor.Floor, inventory);
         _ = WeaponState.Restore(definitions.Items, floor.Weapons, inventory);
         HashSet<string> targets = enemies.Where(e => e.Alive)
