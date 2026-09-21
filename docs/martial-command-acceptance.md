@@ -59,7 +59,11 @@ The authored scenarios use the normal game commands after debug setup:
   inputs. Two unaffected soldiers started Fire while the changed pair remained
   committed. Ordinary [Save](evidence/martial-command/formation-execution-save.png)
   and [Load](evidence/martial-command/formation-execution-load.png) both retained
-  the paused 1.9s remaining transition. Final slot commitment is still pending.
+  the paused 1.9s remaining transition. After resuming, the
+  [completed formation](evidence/martial-command/formation-execution-complete.png)
+  placed Seeker front-left and Warden rear-left without moving or turning the
+  party. The unaffected Fire order was admitted; damage from that particular
+  volley was not clearly attributable in the capture.
 
 The fresh charge-clear drill rejected C with
 `No forward target is reachable at a legal charge stop.` The
