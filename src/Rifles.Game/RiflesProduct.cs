@@ -188,7 +188,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             string intent = Encoding.UTF8.GetString(input.Intent.Span);
             if (input.Phase == InputPhase.Released) continue;
             if (intent is "rifles.command" or "rifles.pause" or "rifles.save" or "rifles.load"
-                or "rifles.use" or "rifles.cycle" or "rifles.attack" or "rifles.reload") immediateHud = true;
+                or "rifles.use" or "rifles.cycle" or "rifles.attack" or "rifles.melee" or "rifles.reload") immediateHud = true;
             if (intent == "rifles.command")
             {
                 try { Command(SessionCommand.Parse(input.PayloadData.Span)); }
@@ -201,9 +201,15 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             if (intent == "rifles.load") { Load(); suppressMovement = true; continue; }
             if (intent == "rifles.use") { Use(active.Features.Readout?.Selected); suppressMovement = true; continue; }
             if (intent == "rifles.cycle") { active.Features.Observe(active.Exploration, 1); continue; }
-            if (intent is "rifles.attack" or "rifles.reload")
+            if (intent is "rifles.attack" or "rifles.melee" or "rifles.reload")
             {
-                try { ApplyOutcome(active.Combat.BeginCombat(new SessionCommand(intent == "rifles.attack" ? "attack" : "reload", null, null, null), selectedMember, paused)); }
+                try
+                {
+                    GameOutcome outcome = intent == "rifles.reload"
+                        ? active.Combat.BeginCombat(new SessionCommand("reload", null, null, null), selectedMember, paused)
+                        : active.Combat.BeginOrder(intent == "rifles.melee" ? CombatActionKind.Melee : CombatActionKind.Fire, paused);
+                    ApplyOutcome(outcome);
+                }
                 catch (InvalidDataException error) { feedback = error.Message; }
                 suppressMovement = true; continue;
             }
@@ -223,7 +229,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             {
                 double seconds = update.Facts.FixedDeltaSeconds;
                 GridPoint previousCell = active.Exploration.Position;
-                if (!active.Combat.Defeated) active.Exploration.Advance(seconds, PartySpeed);
+                if (!active.Combat.Defeated && !party.Formation.Executing) active.Exploration.Advance(seconds, PartySpeed);
                 if (active.Exploration.Position != previousCell)
                 {
                     active.Combat.EmitNoise(active.Exploration.Position, RiflesCombat.NoiseKind.Footstep);
@@ -237,8 +243,9 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 if (active.Combat.Allies[active.Actor.Id].IsLiving) active.Actor.Advance(seconds);
                 AdvanceCombat(seconds);
                 AdvanceGeneratedHazards(seconds);
+                party.Formation.Advance(seconds);
             }
-            if (!suppressMovement && !active.Combat.Defeated) controls.Apply(active.Exploration);
+            if (!suppressMovement && !active.Combat.Defeated && !party.Formation.Executing) controls.Apply(active.Exploration);
         }
         phaseStarted = updateProfile.Record(UpdatePhase.Simulation, phaseStarted);
         active.ItemWorld.CheckOpen(active.Exploration, active.Scene);
@@ -263,13 +270,13 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         GameOutcome outcome = command.Action switch
         {
             "transfer" or "equip" or "unequip" or "consume" or "item-feature" or "arrange" => ItemCommand(command),
-            "target" or "attack" or "reload" or "throw" or "interrupt" => active.Combat.BeginCombat(command, selectedMember, paused),
+            "attack" or "fire" => active.Combat.BeginOrder(CombatActionKind.Fire, paused),
+            "melee" => active.Combat.BeginOrder(CombatActionKind.Melee, paused),
+            "target" or "reload" or "throw" or "interrupt" => active.Combat.BeginCombat(command, selectedMember, paused),
             "spell-select" or "spell-cancel" or "spell-assign" or "spell-hotbar"
                 or "cast" or "rest" or "rest-cancel" or "advance" => MagicCommand(command),
-            "formation" => party.SwapFormation(command.Member ?? selectedMember, command.OtherMember ?? "")
-                ? GameOutcome.Accept("Formation changed") : GameOutcome.Reject("Choose two living members"),
-            "move" => party.MoveFormation(command.Member ?? selectedMember, command.Position ?? "")
-                ? GameOutcome.Accept("Formation changed") : GameOutcome.Reject("Choose a living member and an empty position"),
+            "formation-open" or "formation-place" or "formation-execute" or "formation-cancel" => FormationCommand(command),
+            "formation" or "move" => GameOutcome.Reject("Use Change formation to plan a repositioning order."),
             "choose-party" => ChooseParty(command.Preset ?? ""),
             "open-container" => OpenContainer(command.Target),
             "close-container" => CloseContainer(),
@@ -387,7 +394,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
     private void SetPaused(bool value)
     {
-        paused = value || progress.Completed || active.Combat.Defeated; controls.Clear();
+        paused = value || party.Formation.Open || progress.Completed || active.Combat.Defeated; controls.Clear();
         feedback = paused ? "Paused" : "Resumed";
     }
     public void Pause() { if (started && !shutdown) { SetPaused(true); Publish(); } }
@@ -401,12 +408,13 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     private ExpeditionSnapshot Capture() => new(expeditionId, active.FloorId, partyId, nextObjectId,
-        active.Floor, active.Exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, active.Actor.Capture(), active.Features.Capture(), preset, active.Inventory.Capture(), active.ItemWorld.Capture(), active.Combat.Capture(), expedition, active.GeneratedFeatures, active.EncounterPlacement, party.RestRemaining, party.RestOwner);
+        active.Floor, active.Exploration.Capture(), party.Members.Select(m => m.Definition).ToArray(), party.Capture().ToArray(), paused, selectedMember, active.Actor.Capture(), active.Features.Capture(), preset, active.Inventory.Capture(), active.ItemWorld.Capture(), active.Combat.Capture(), expedition, active.GeneratedFeatures, active.EncounterPlacement, party.RestRemaining, party.RestOwner, party.Formation.Capture());
 
     private void Save()
     {
         try
         {
+            if (party.Formation.Open) throw new InvalidDataException("Execute or cancel the formation draft before saving.");
             RunSnapshot saved = CaptureRun();
             RunCodec.Validate(saved, definitions);
             PersistenceSaveReceipt receipt = saves!.Save("current", saved);

@@ -41,6 +41,8 @@
     <RustyEngineProductInputMapping Include="rifles.load.keyboard" Intent="rifles.load" Trigger="key:key-l:pressed" />
     <RustyEngineProductInputIntent Include="rifles.attack" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.attack.keyboard" Intent="rifles.attack" Trigger="key:space:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.melee" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.melee.keyboard" Intent="rifles.melee" Trigger="key:key-v:pressed" />
     <RustyEngineProductInputIntent Include="rifles.reload" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.reload.keyboard" Intent="rifles.reload" Trigger="key:key-t:pressed" />
     <!-- Press edges retain short taps between simulation steps; held mappings repeat movement. -->

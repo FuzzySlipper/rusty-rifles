@@ -28,7 +28,8 @@ internal sealed record ActionSnapshot(
     double Remaining,
     ActionPhase Phase,
     double RecoverySeconds,
-    GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0, string? Spell = null, long Cost = 0, ulong FeatureRevision = 0);
+    GridPoint? AimCell = null, float AimOffsetX = 0, float AimOffsetY = 0, string? Spell = null, long Cost = 0, ulong FeatureRevision = 0,
+    GridPoint? OrderOrigin = null, CardinalDirection? OrderFacing = null);
 
 /// <summary>
 /// The current party action. The caller supplies only admitted simulation time;
@@ -112,5 +113,8 @@ internal sealed class ActionState
             throw new InvalidDataException("Action remaining time must be finite and positive.");
         if (!double.IsFinite(action.RecoverySeconds) || action.RecoverySeconds <= 0)
             throw new InvalidDataException("Action recovery time must be finite and positive.");
+        if (action.OrderOrigin.HasValue != action.OrderFacing.HasValue
+            || action.OrderFacing is { } facing && !Enum.IsDefined(facing))
+            throw new InvalidDataException("Order actions need a valid origin pose.");
     }
 }

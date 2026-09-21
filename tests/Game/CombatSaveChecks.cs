@@ -23,6 +23,7 @@ internal static class CombatSaveChecks
             definitions.Combat.Action(CombatActionKind.Melee).Recovery, fixture.Floor.Entrance);
         RequireRejected(() => Validate(fixture.Saved with { Members = fixture.Saved.Members.Select(member => member.Member == "commander"
             ? member with { Action = commanderAction } : member).ToArray() }, definitions, fixture), "Commander cannot restore a direct action.");
+        VerifyOrderAim(definitions, fixture);
         VerifySpellSettlementAndTargets(definitions, fixture);
         VerifyCorruptPositionsAreRejected(definitions, fixture);
         VerifyNonFiniteFlightIsRejected(definitions, fixture);
@@ -38,6 +39,24 @@ internal static class CombatSaveChecks
             "Multiple instances of one archetype keep separate identities and inventories across restore.");
 
         Console.WriteLine("Combat save checks passed: combat owners, action phases, flights, drops, and allies.");
+    }
+
+    private static void VerifyOrderAim(GameDefinitions definitions, CombatFixture fixture)
+    {
+        ulong weapon = fixture.Inventory.Owners.SelectMany(owner => fixture.Inventory.Items(owner.Key))
+            .First(item => item.Definition == "rifle").Entity;
+        MartialWeaponDefinition tuning = definitions.Items.Item("rifle").Weapon!;
+        ActionSnapshot fire = new(CombatActionKind.Fire, weapon, null, null, fixture.Saved.Enemies[0].Id, null,
+            tuning.WindupSeconds, ActionPhase.Windup, tuning.RecoverySeconds, fixture.Floor.Entrance,
+            OrderOrigin: fixture.Floor.Entrance, OrderFacing: CardinalDirection.North);
+        CombatRestore.ValidateAction(fire, definitions, fixture.Floor);
+        Require(ActionState.Restore(fire).Capture() == fire, "Committed forward area survives action restoration.");
+        RequireRejected(() => CombatRestore.ValidateAction(fire with { OrderFacing = null }, definitions, fixture.Floor),
+            "Saved order needs both original origin and facing.");
+        RequireRejected(() => CombatRestore.ValidateAction(fire with { OrderOrigin = new(9000, 9000) }, definitions, fixture.Floor),
+            "Saved order origin must be on the floor.");
+        RequireRejected(() => CombatRestore.ValidateAction(fire with { OrderFacing = (CardinalDirection)9000 }, definitions, fixture.Floor),
+            "Saved order facing must be cardinal.");
     }
 
     private static void VerifySpellSettlementAndTargets(GameDefinitions definitions, CombatFixture fixture)

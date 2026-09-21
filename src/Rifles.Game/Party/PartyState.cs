@@ -265,6 +265,7 @@ internal sealed class PartyState
         ValidateRoster(roster);
         PresetId = presetId;
         members = roster.Select(definition => CreateMember(definition, RankOf(definition.Position))).ToArray();
+        Formation = new(this);
     }
 
     /// <summary>
@@ -273,6 +274,7 @@ internal sealed class PartyState
     /// until #8363 consolidates floor lifetime.
     /// </summary>
     internal CharacterEntities Entities => entities;
+    internal FormationPlanner Formation { get; }
 
     private RiflesCharacter CreateMember(MemberDefinition definition, int rank, Func<StatsComponent>? build = null)
     {

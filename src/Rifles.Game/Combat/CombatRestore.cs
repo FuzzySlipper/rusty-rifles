@@ -29,6 +29,8 @@ internal static class CombatRestore
 
         EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor, party.Entities);
         Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions, floor, party);
+        GameDefinitions.Require(actions.All(entry => !party.Formation.Affects(entry.Key) || !entry.Value.Busy),
+            "repositioning soldiers cannot retain actions");
         WeaponState weapons = WeaponState.Restore(definitions.Items, saved.Weapons, inventory);
         FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory,
             party.Members.Select(member => member.Definition.Id).ToHashSet(StringComparer.Ordinal), partyId,
@@ -123,6 +125,8 @@ internal static class CombatRestore
         GameDefinitions.Require(float.IsFinite(action.AimOffsetX) && Math.Abs(action.AimOffsetX) <= .5f
             && float.IsFinite(action.AimOffsetY) && Math.Abs(action.AimOffsetY) <= .5f, "saved aim offset");
         _ = ActionState.Restore(action);
+        GameDefinitions.Require(action.OrderOrigin is null || action.Kind is CombatActionKind.Melee or CombatActionKind.Fire
+            && floor.Cells.Contains(action.OrderOrigin.Value) && action.OrderFacing is { } facing && Enum.IsDefined(facing), "saved order origin");
         if (action.Kind == CombatActionKind.Cast)
         {
             SpellDefinition spell = definitions.Magic.Spell(action.Spell ?? "");

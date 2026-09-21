@@ -15,6 +15,7 @@ internal static class RunStateChecks
     internal static void Run(GameDefinitions definitions, ExpeditionSnapshot fixture)
     {
         VerifySingleFloorRoundTrip(definitions, fixture);
+        VerifyFormationRoundTrip(definitions, fixture);
         VerifyReloadRoundTrips(definitions, fixture);
         VerifyCastingEnemyAndProjectileRoundTrips(definitions, fixture);
         VerifyOpenContainerState(definitions, fixture);
@@ -78,6 +79,31 @@ internal static class RunStateChecks
             "Returning to a retained floor preserves its door, patrol actor, and enemy facts.");
 
         RunCodec.Validate(CreateRun(definitions, joined), definitions);
+    }
+
+    private static void VerifyFormationRoundTrip(GameDefinitions definitions, ExpeditionSnapshot fixture)
+    {
+        PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, fixture.Roster);
+        party.Restore(fixture.Members);
+        var first = party.Soldiers[0]; var second = party.Soldiers[1];
+        party.Formation.Begin(false);
+        party.Formation.Place(first.InstanceId, second.Position);
+        party.Formation.Execute(definitions.Formation.RepositionSeconds);
+        party.Formation.Advance(definitions.Formation.RepositionSeconds / 2);
+        ExplorationState pose = ExplorationState.Restore(fixture.Exploration, fixture.Floor, definitions.Exploration);
+        pose.Stop();
+        ExpeditionSnapshot moving = fixture with { Exploration = pose.Capture(), Formation = party.Formation.Capture(),
+            RestRemaining = 0, RestOwner = "", Combat = fixture.Combat with {
+                Members = fixture.Combat.Members.Select(member => member with { Action = null }).ToArray() } };
+        RunSnapshot loaded = RoundTrip(definitions, CreateRun(definitions, moving));
+        var admitted = ExpeditionCodec.Validate(loaded.Active, definitions);
+        Require(admitted.Party.Formation.Executing && !admitted.Party.Formation.Open
+            && admitted.Party.Formation.Execution!.Remaining == definitions.Formation.RepositionSeconds / 2
+            && admitted.Party.Members.Single(member => member.InstanceId == first.InstanceId).Position == first.Position,
+            "Run saves retain in-progress formation time and old defensive positions without saving a draft.");
+        admitted.Party.Formation.Advance(definitions.Formation.RepositionSeconds / 2);
+        Require(admitted.Party.Members.Single(member => member.InstanceId == first.InstanceId).Position == second.Position,
+            "Restored formation execution commits once at the remaining deadline.");
     }
 
     private static void VerifyReloadRoundTrips(GameDefinitions definitions, ExpeditionSnapshot fixture)

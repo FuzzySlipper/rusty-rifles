@@ -1,5 +1,6 @@
 import { UiProfile } from './ui-profile.js';
 import { mountRunPanel } from './run-panel.js';
+import { mountFormationPlanner } from './formation-planner.js';
 import { mountBottomBar } from './bottom-bar.js';
 import { mountDebugTools } from './debug.js';
 
@@ -10,7 +11,7 @@ type UiContext = Readonly<{
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
-const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -137,13 +138,15 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     command('throw', payload);
   };
-  const attack = button('Attack [Space]', () => command('attack'));
+  const attack = button('Fire [Space]', () => command('fire'));
+  const melee = button('Melee [V]', () => command('melee'));
+  attack.dataset.order = 'fire'; melee.dataset.order = 'melee';
   const reload = button('Reload [T]', () => command('reload'));
   const bolt = button('Spark', () => { magicPanel.open = true; command('spell-select', { spell: 'spark' }); }); bolt.dataset.spellShortcut = 'spark';
   const interrupt = button('Interrupt', () => command('interrupt'));
   const toss = button('Throw selected', () => throwSelectedItem());
   const plate = button('Toss onto plate', () => throwSelectedItem('plate'));
-  combatActions.append(attack, reload, bolt, interrupt, toss, plate);
+  combatActions.append(attack, melee, reload, bolt, interrupt, toss, plate);
   combat.append(combatTitle, combatStatus, combatTargets, combatMembers, combatActions, combatLog);
   const enemyRows = new Map<string, Readonly<{ row: HTMLElement; target: HTMLButtonElement; details: HTMLOutputElement }>>();
   const memberRows = new Map<string, HTMLOutputElement>();
@@ -249,7 +252,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       const protection = text(member.protection, 'Protection unavailable');
       card.textContent = `${role} · ${name} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`;
       card.setAttribute('aria-pressed', String(id === state.selectedMember));
-      card.setAttribute('aria-label', `${role} ${name}, ${text(member.positionName, member.position)}; ${protection}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
+      card.setAttribute('aria-label', `${role} ${name}, ${text(member.positionName, member.position)}; ${protection}; orders follow the equipped weapon's reach and readiness`);
       card.title = `${commander ? 'Fixed at the center' : text(member.positionName, member.position)} · ${protection} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
       card.style.borderColor = id === state.selectedMember ? '#e4bd63' : '#827556';
       // Keep focused controls alive while health and recovery values change.
@@ -262,36 +265,9 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const renderPartyTools = (): void => {
     const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name, member.position, member.commander]), state.positions, state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
-    const members = entries(state.party); partyTools.replaceChildren();
-    const soldiers = members.filter(([, member]) => numeric(member.commander) !== 1);
-    const commander = members.find(([, member]) => numeric(member.commander) === 1)?.[1];
-    const commanderPosition = text(commander?.position, '');
-    const soldierPositions = entries(state.positions).filter(([id, position]) => id !== commanderPosition
-      && !(numeric(position.offsetForward) === 0 && numeric(position.offsetLeft) === 0));
+    partyTools.replaceChildren();
     const partySummary = document.createElement('summary'); partySummary.textContent = 'Formation & party preset';
-    partyTools.append(partySummary);
-    const formationTitle = document.createElement('strong'); formationTitle.textContent = 'Formation';
-    const first = document.createElement('select'), second = document.createElement('select'); first.dataset.formationMember = 'true'; second.dataset.formationOtherMember = 'true';
-    for (const [id, member] of soldiers) for (const select of [first, second]) { const option = document.createElement('option'); option.value = id; option.textContent = text(member.name, id); select.append(option); }
-    first.value = soldiers.some(([id]) => id === state.selectedMember) ? text(state.selectedMember) : (soldiers[0]?.[0] ?? '');
-    second.value = soldiers.find(([id]) => id !== first.value)?.[0] ?? first.value;
-    const swap = button('Swap positions', () => command('formation', { member: first.value, otherMember: second.value }));
-    swap.disabled = soldiers.length < 2;
-    partyTools.append(formationTitle, first, second, swap);
-    // Move backing for drag-and-drop: same `move` intent the future drop
-    // targets will send, operable here so agents can exercise gaps meanwhile.
-    const moveTarget = document.createElement('select'); moveTarget.dataset.formationPosition = 'true'; moveTarget.setAttribute('aria-label', 'Formation position');
-    for (const [id, position] of soldierPositions) {
-      const occupant = members.find(([, member]) => text(member.position) === id)?.[1];
-      const option = document.createElement('option'); option.value = id;
-      option.textContent = occupant ? `${text(position.name, id)} · ${text(occupant.name)}` : `${text(position.name, id)} · empty`;
-      moveTarget.append(option);
-    }
-    const firstEmpty = soldierPositions.find(([id]) => !members.some(([, member]) => text(member.position) === id))?.[0];
-    if (firstEmpty !== undefined) moveTarget.value = firstEmpty;
-    const move = button('Move to position', () => command('move', { member: first.value, position: moveTarget.value }));
-    move.disabled = soldiers.length === 0 || moveTarget.options.length === 0;
-    partyTools.append(moveTarget, move);
+    partyTools.append(partySummary, button('Change formation', () => command('formation-open')));
     const presets = entries(state.presets);
     if (presets.length > 0) { const presetTitle = document.createElement('strong'); presetTitle.textContent = 'Party preset'; presetTitle.style.marginLeft = '8px'; const select = document.createElement('select'); select.dataset.partyPreset = 'true'; for (const [id, preset] of presets) { const option = document.createElement('option'); option.value = id; option.textContent = text(preset.name, id); select.append(option); } select.value = text(state.preset, presets[0][0]); partyTools.append(presetTitle, select, button('Restart with party', () => command('choose-party', { preset: select.value }))); }
   };
@@ -468,15 +444,16 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     combat.hidden = Object.keys(combatState).length === 0;
     if (combat.hidden) return;
     const selectedTarget = text(combatState.selectedTarget, '');
-    const selectedTargetNumber = numeric(selectedTarget, -1);
     const selectedEnemy = record(record(combatState.enemies)[selectedTarget]);
     const defeated = numeric(combatState.defeated) === 1;
-    combatStatus.textContent = defeated
-      ? 'The party is defeated.'
-      : selectedTargetNumber > 0 ? `Target: ${text(selectedEnemy.name, selectedTarget)}${numeric(selectedEnemy.visible) === 1 ? '' : ' · out of sight'}` : 'Select a visible enemy.';
+    combatStatus.textContent = defeated ? 'The commander has fallen.' : 'Orders attack forward. Turn the party to change direction.';
     const targetVisible = numeric(selectedEnemy.visible) === 1;
-    attack.disabled = defeated || !targetVisible;
-    attack.title = targetVisible ? 'Attack the selected enemy.' : 'Choose a living enemy in sight.';
+    for (const [kind, control] of [['fire', attack], ['melee', melee]] as const) {
+      const order = record(record(combatState.orders)[kind]);
+      control.textContent = `${kind === 'fire' ? 'Fire [Space]' : 'Melee [V]'} · ${numeric(order.eligible)}/${numeric(order.total)}`;
+      control.disabled = defeated || numeric(state.paused) === 1 || numeric(order.eligible) === 0;
+      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${numeric(member.eligible) === 1 ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason)}`).join('\n');
+    }
     bolt.disabled = defeated;
     reload.disabled = defeated;
     toss.disabled = defeated || selectedItem === null || !targetVisible;
@@ -593,7 +570,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const renderPartyPanel = (): void => {
     if (drag !== null) return;
     const inventoryState = inventoryOf(state);
-    const signature = JSON.stringify([inventoryState, state.equipmentSlots, state.selectedMember, state.party]);
+    const equipped = record(record(record(state.combat).members)[text(state.selectedMember)]);
+    const signature = JSON.stringify([inventoryState, state.equipmentSlots, state.selectedMember, state.party, equipped.meleeReach, equipped.fireReach]);
     if (signature === previousPartyPanel) return;
     previousPartyPanel = signature;
     const memberId = text(state.selectedMember, '');
@@ -604,7 +582,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       `Health ${text(member.vitality, '?')}/${text(member.maximumVitality, '?')}`,
       `Energy ${text(member.resource, '0')}/${text(member.maxResource, '0')}`,
       `Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`,
-      `Melee/Ranged/Cast ${text(member.melee, '0')}/${text(member.ranged, '0')}/${text(member.casting, '0')}`,
+      `Weapon reach: melee ${text(equipped.meleeReach, 'none')} · fire ${text(equipped.fireReach, 'none')}`,
       `Station ${text(member.positionName, member.position)}`,
       `Facing ${text(member.facing, '')}`,
     ];
@@ -713,6 +691,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     runPanel.update(state.run);
     bottomBar.update(state);
+    formationPlanner.update(state);
     const nextFeedback = text(state.feedback, '');
     if (nextFeedback !== productFeedback) uiFeedback = '';
     productFeedback = nextFeedback;
@@ -758,6 +737,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
   panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
+  const formationPlanner = mountFormationPlanner(root, command);
   // Party panel: the game-UI inventory. Right side, full height above the
   // bottom bar. Current-member equipment plus a party cycler on top, the
   // fixed party grid below. All mutations reuse the legacy flows (transfer,
@@ -897,8 +877,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
-  readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; formation controls only move or swap soldiers, and the commander cannot be repositioned.');
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
+  readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; Change formation pauses into a larger planner. Execute resumes a timed repositioning order, locking movement and affected soldiers; Cancel discards the draft.');
   readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
@@ -962,6 +942,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   menuButton('Restart', () => { command('restart'); closeMenu(false); });
   const menuEscape = (event: KeyboardEvent): void => {
     if (event.code !== 'Escape') return;
+    if (numeric(record(state.formation).open) === 1) { event.preventDefault(); event.stopPropagation(); command('formation-cancel'); return; }
     // Never steal Escape from the Engine debug console (its bubble-phase
     // isolation runs after this window-capture listener) or from editable
     // fields. Menu-focus Escape still toggles: the menu holds no inputs.
@@ -989,5 +970,5 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   root.append(menuButtonTop);
   setLegacyVisible(false);
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); formationPlanner.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
 }

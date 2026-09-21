@@ -40,10 +40,11 @@ internal sealed record MartialWeaponReachDefinition(string Id, string Name, int 
 }
 
 internal sealed record FormationDefinition(float LaneBoundaryRatio, float OffensiveLaneWidth, int MaximumLaneFallback,
-    FormationCellDefinition[] Cells, MartialWeaponReachDefinition[] Weapons)
+    FormationCellDefinition[] Cells, MartialWeaponReachDefinition[] Weapons, double RepositionSeconds)
 {
     internal void Validate()
     {
+        GameDefinitions.Require(double.IsFinite(RepositionSeconds) && RepositionSeconds > 0, "formation reposition seconds");
         GameDefinitions.Require(float.IsFinite(LaneBoundaryRatio) && LaneBoundaryRatio is > 0 and < 1
             && float.IsFinite(OffensiveLaneWidth) && OffensiveLaneWidth > 0
             && MaximumLaneFallback is >= 0 and <= 2 && Cells is { Length: 9 } && Weapons is { Length: > 0 }, "formation tuning");

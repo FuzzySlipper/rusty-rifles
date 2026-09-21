@@ -21,7 +21,7 @@ namespace Rifles.Game.Combat;
 /// keeps lifecycle, update ordering, and defeat aftermath; saves use the
 /// snapshot DTOs via <see cref="Capture"/> and <see cref="Restore"/>.
 /// </summary>
-internal sealed class RiflesCombat
+internal sealed partial class RiflesCombat
 {
     private readonly GameDefinitions definitions;
     private readonly CharacterEntities entities;
@@ -217,15 +217,19 @@ internal sealed class RiflesCombat
     private ulong Ammo(string owner) => inventory.Items(owner).SingleOrDefault(i => i.Definition == Combat.AmmunitionItem)?.Quantity ?? 0;
     internal ulong PartyAmmo() => Ammo(ItemInventory.PartyKey);
     private ActionSnapshot NewAction(CombatActionKind kind, ulong weapon = 0, string? token = null, string? source = null,
-        ulong target = 0, string? member = null, GridPoint? aim = null, WeaponCapabilities? capabilities = null)
+        ulong target = 0, string? member = null, GridPoint? aim = null, WeaponCapabilities? capabilities = null,
+        GridPoint? orderOrigin = null, CardinalDirection? orderFacing = null)
     {
         ActionDefinition tuning = Combat.Action(kind);
         double windup = capabilities is null ? tuning.Windup : kind == CombatActionKind.Reload ? capabilities.ReloadSeconds : capabilities.WindupSeconds;
-        return new(kind, weapon, token, source, target, member, windup, ActionPhase.Windup, capabilities?.RecoverySeconds ?? tuning.Recovery, aim);
+        return new(kind, weapon, token, source, target, member, windup, ActionPhase.Windup, capabilities?.RecoverySeconds ?? tuning.Recovery,
+            aim, OrderOrigin: orderOrigin, OrderFacing: orderFacing);
     }
 
     internal GameOutcome BeginCombat(SessionCommand command, string selectedMember, bool paused)
     {
+        if (command.Action is "attack" or "fire") return BeginOrder(CombatActionKind.Fire, paused);
+        if (command.Action == "melee") return BeginOrder(CombatActionKind.Melee, paused);
         if (command.Action == "target")
         {
             EnemyState? target = enemies.SingleOrDefault(e => e.Id == command.Target && Visible(e));
@@ -237,6 +241,7 @@ internal sealed class RiflesCombat
         try { member = Member(selectedMember); }
         catch (InvalidDataException) { return GameOutcome.Reject("Choose a living character."); }
         if (!member.IsLiving || member.Definition.Commander) return GameOutcome.Reject("Choose a living soldier.");
+        if (party.Formation.Affects(member.InstanceId)) return GameOutcome.Reject("That character is repositioning.");
         ActionState state = ActionOf(member);
         if (command.Action == "interrupt")
         {
@@ -261,8 +266,8 @@ internal sealed class RiflesCombat
             if (kind == CombatActionKind.Reload && capabilities.Loaded) return GameOutcome.Reject("Musket already loaded.");
             if (kind == CombatActionKind.Reload && PartyAmmo() == 0) return GameOutcome.Reject("No rifle shot in the party inventory.");
         }
-        if (kind == CombatActionKind.Melee && (capabilities is not { MeleeDamage: > 0, MeleeReach: not null }
-            || !party.CanUseReach(selectedMember, PartyReach.Melee))) return GameOutcome.Reject("Equip a front-rank melee weapon first.");
+        if (kind == CombatActionKind.Melee && capabilities is not { MeleeDamage: > 0, MeleeReach: not null })
+            return GameOutcome.Reject("Equip a melee weapon first.");
         string? token = null, source = null, targetMember = null;
         GridPoint? aim = null; ulong targetId = 0;
         if (kind is CombatActionKind.Throw or CombatActionKind.Consume)
@@ -334,11 +339,16 @@ internal sealed class RiflesCombat
             long restored = use.Use == ItemUse.Vitality ? target.Heal(use.Effect) : target.RecoverResource(use.Effect);
             CombatMessage(target.Definition.Name + " restored " + restored + " " + use.Use); return;
         }
-        if (action.Kind == CombatActionKind.Melee && !party.CanUseReach(memberId, PartyReach.Melee)) throw new InvalidDataException("Formation changed; melee interrupted.");
+        WeaponCapabilities? capabilities = action.Weapon == 0 ? null : weapons.Capabilities(action.Weapon, inventory);
+        OrderTarget? orderedTarget = capabilities is null ? null : ResolveOrderTarget(member, action, capabilities);
+        if (action.OrderOrigin is not null && orderedTarget is null)
+        {
+            CombatMessage(member.Definition.Name + " found no replacement in the committed forward area."); return;
+        }
         if (action.Kind == CombatActionKind.Fire && !weapons.Capabilities(action.Weapon, inventory).Loaded) throw new InvalidDataException("Dry musket.");
         if (action.Kind == CombatActionKind.Fire) weapons.SetLoaded(action.Weapon, inventory, false);
         if (action.Kind == CombatActionKind.Fire) EmitNoise(scope.Exploration.Position, NoiseKind.Gunfire);
-        GridPoint cell = action.AimCell!.Value;
+        GridPoint cell = orderedTarget?.Enemy.Motion.Position ?? action.AimCell!.Value;
         if (action.Kind is CombatActionKind.Throw)
         {
             RequireItemAccess(action.SourceOwner!);
@@ -350,14 +360,15 @@ internal sealed class RiflesCombat
             Launch(scope.PartyId, memberId, action.Kind, scope.Exploration.Position, cell, flightOwner, action.Target == 0 ? "plate" : null, new(action.AimOffsetX, action.AimOffsetY));
             CombatMessage(member.Definition.Name + " released " + action.Kind); return;
         }
-        Vector3 start = Aim(scope.Exploration.Position), end = Aim(cell) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scope.Scene.LogicalCellSize;
-        WeaponCapabilities? capabilities = action.Weapon == 0 ? null : weapons.Capabilities(action.Weapon, inventory);
+        Vector3 start = Aim(scope.Exploration.Position), end = orderedTarget is null
+            ? Aim(cell) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scope.Scene.LogicalCellSize : EnemyAim(orderedTarget.Enemy);
         if (Vector3.Distance(start, end) > ActionRange(action.Kind, capabilities)) { CombatMessage("Attack missed — target outside reach."); return; }
-        if (action.Kind == CombatActionKind.Fire && capabilities is not null && !weapons.RollFireHit(action.Weapon, inventory, action.Target))
+        ulong attackTarget = orderedTarget?.Enemy.Id ?? action.Target;
+        if (action.Kind == CombatActionKind.Fire && capabilities is not null && !weapons.RollFireHit(action.Weapon, inventory, attackTarget))
         {
             CombatMessage(member.Definition.Name + " missed (accuracy " + (capabilities.Accuracy * 100).ToString("0") + "%)."); return;
         }
-        SpatialHit hit = scope.Scene.Trace(start, end, CombatBodies(), scope.PartyId);
+        SpatialHit hit = action.OrderOrigin is null ? scope.Scene.Trace(start, end, CombatBodies(), scope.PartyId) : TraceOrderHit(start, end);
         ResolveHit(hit, action.Kind, memberId, scope.PartyId, end - start,
             action.Kind == CombatActionKind.Fire ? capabilities?.FireDamage : capabilities?.MeleeDamage);
     }
@@ -731,6 +742,7 @@ internal sealed class RiflesCombat
     {
         RiflesCharacter member = Member(memberId);
         if (Defeated || member.Definition.Commander || !member.IsLiving || !magic.For(memberId).Known.Contains(spell.Id)) throw new InvalidDataException("That character cannot cast this spell.");
+        if (party.Formation.Affects(member.InstanceId)) throw new InvalidDataException("That character is repositioning.");
         if (member.Resource < SpellCost(memberId, spell)) throw new InvalidDataException("Insufficient resource.");
         if (!committing && ActionOf(member).Busy) throw new InvalidDataException("That character is still acting.");
         if (spell.Target == SpellTarget.Enemy && !committing)

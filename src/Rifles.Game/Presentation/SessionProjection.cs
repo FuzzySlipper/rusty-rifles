@@ -36,10 +36,7 @@ internal sealed class SessionProjection : IDisposable
             ("position", value.String(member.Position)),
             ("positionName", value.String(positionNames.GetValueOrDefault(member.Position, member.Position))),
             ("rank", value.Number(member.Rank)),
-            // Presentation only: the party moves as one blob, so every member
-            // currently faces the party direction. Projected per member so the
-            // formation display can show independent facings later without a
-            // projection change; no facing-dependent rules exist today.
+            // All formation positions rotate with the party.
             ("facing", value.String(exploration.Facing.ToString())),
             ("vitality", value.Number(member.Vitality)),
             ("maximumVitality", value.Number(member.MaximumVitality)),
@@ -69,6 +66,16 @@ internal sealed class SessionProjection : IDisposable
             ("roomLights", value.Number(roomLights ? 1 : 0)),
             ("lightPosition", value.Number(lightPosition + 1)),
             ("party", roster),
+            ("formation", value.Object(
+                ("open", value.Number(party.Formation.Open ? 1 : 0)),
+                ("executing", value.Number(party.Formation.Executing ? 1 : 0)),
+                ("remaining", value.Number(party.Formation.Execution?.Remaining ?? 0)),
+                ("duration", value.Number(formation.RepositionSeconds)),
+                ("changed", value.Number(party.Formation.Open ? party.Formation.PlannedMoves().Length : 0)),
+                ("draft", value.Object((party.Formation.Draft ?? new Dictionary<string, string>())
+                    .Select(entry => (entry.Key, value.String(entry.Value))).ToArray())),
+                ("moves", value.Object((party.Formation.Execution?.Moves ?? [])
+                    .Select(move => (move.Member, value.String(move.To))).ToArray())))),
             ("positions", value.Object(party.Positions.Select(p => (p.Id, value.Object(
                 ("name", value.String(p.Name)), ("rank", value.Number(p.Rank)),
                 ("offsetForward", value.Number(p.OffsetForward)), ("offsetLeft", value.Number(p.OffsetLeft))))).ToArray())),

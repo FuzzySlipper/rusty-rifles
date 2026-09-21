@@ -87,7 +87,7 @@ public sealed partial class RiflesProduct
     {
         if (paused || active.Combat.Defeated) return GameOutcome.Reject("Resume with a living party before acting.");
         if (party.RestRemaining > 0) return GameOutcome.Reject("Already resting.");
-        if (active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) return GameOutcome.Reject("Rest requires a still, idle party without threats.");
+        if (party.Formation.Executing || active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) return GameOutcome.Reject("Rest requires a still, idle party without threats.");
         if (!Member(id).IsLiving) return GameOutcome.Reject("A living member must supply the rest remedy.");
         if (!HasItem(id, definitions.Magic.RestItem)) return GameOutcome.Reject("Selected member needs " + definitions.Magic.RestItem + " for rest.");
         party.RestOwner = id; party.RestRemaining = definitions.Magic.RestSeconds;
@@ -124,7 +124,7 @@ public sealed partial class RiflesProduct
         });
         if (party.RestRemaining > 0)
         {
-            if (active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) CancelRest("Rest interrupted; no recovery granted.");
+            if (party.Formation.Executing || active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) CancelRest("Rest interrupted; no recovery granted.");
             else
             {
                 party.RestRemaining = Math.Max(0, party.RestRemaining - seconds);

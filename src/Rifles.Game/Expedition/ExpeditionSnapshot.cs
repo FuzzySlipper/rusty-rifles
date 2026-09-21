@@ -18,7 +18,7 @@ namespace Rifles.Game.Expedition;
 
 internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId, ulong NextObjectId,
     DungeonFloor Floor, ExplorationSnapshot Exploration, MemberDefinition[] Roster,
-    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent, GeneratedFeatureSnapshot GeneratedFeatures, EncounterPlacementResult EncounterPlacement, double RestRemaining = 0, string RestOwner = "");
+    MemberSnapshot[] Members, bool Paused, string SelectedMember, PatrolSnapshot Actor, FeatureSnapshot Features, string Preset, InventorySnapshot Inventory, ItemExplorationSnapshot ItemWorld, CombatSnapshot Combat, ResolvedExpedition Intent, GeneratedFeatureSnapshot GeneratedFeatures, EncounterPlacementResult EncounterPlacement, double RestRemaining = 0, string RestOwner = "", FormationExecutionSnapshot? Formation = null);
 
 /// <summary>
 /// Active-floor save admission. Encoding is the run codec's job; this class
@@ -96,6 +96,8 @@ internal static class ExpeditionCodec
             GameDefinitions.Require(inventory.Items("member:" + member.Definition.Id).Where(i => i.Slots.Length > 0)
                 .All(i => member.Definition.BasePower >= definitions.Items.Item(i.Definition).MinimumPower), "saved equipment requirements");
         }
+        party.Formation.Restore(saved.Formation, definitions.Formation.RepositionSeconds);
+        GameDefinitions.Require(saved.Formation is null || saved.Exploration.Action is null && saved.RestRemaining == 0, "formation locks party movement");
         ExplorationState exploration = ExplorationState.Restore(saved.Exploration, saved.Floor, definitions.Exploration);
         GameDefinitions.Require(party.Members.Any(m => m.Definition.Id == saved.SelectedMember), "Save.SelectedMember");
         GameDefinitions.Require(double.IsFinite(saved.RestRemaining) && saved.RestRemaining >= 0

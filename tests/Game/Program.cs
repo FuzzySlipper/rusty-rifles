@@ -48,6 +48,8 @@ CrowdLaneChecks.Run(definitions);
 FormationRulesChecks.Run(definitions);
 CommanderChecks.Run(definitions);
 WeaponChecks.Run(definitions);
+OrderChecks.Run(definitions);
+FormationPlannerChecks.Run(definitions);
 CombatInventoryChecks.Run(definitions);
 CombatSaveChecks.Run(definitions);
 // Invalid authored files fail at admission, before creating any live world.

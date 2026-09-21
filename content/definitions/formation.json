@@ -2,6 +2,7 @@
   "laneBoundaryRatio": 0.35,
   "offensiveLaneWidth": 0.5,
   "maximumLaneFallback": 2,
+  "repositionSeconds": 2.4,
   "cells": [
     { "id": "front-left", "name": "Front left", "forward": 1, "left": 1, "commander": false, "screening": [ { "sector": "Front", "lane": "Left" }, { "sector": "Left", "lane": "Front" } ] },
     { "id": "front-center", "name": "Front center", "forward": 1, "left": 0, "commander": false, "screening": [ { "sector": "Front", "lane": "Center" } ] },

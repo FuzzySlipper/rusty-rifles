@@ -1,7 +1,7 @@
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const gameplayKeys = new Set(['Space', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyT', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -105,8 +105,23 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   logView.dataset.barLog = 'true';
   logView.setAttribute('role', 'log');
   logView.textContent = 'No events yet.';
-  logView.style.cssText = 'display:block;height:104px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
-  logSection.append(logStatus, logView);
+  logView.style.cssText = 'display:block;height:74px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
+  const orderBar = document.createElement('div');
+  orderBar.setAttribute('aria-label', 'Party orders');
+  orderBar.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
+  const orderButtons = new Map<string, HTMLButtonElement>();
+  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]']]) {
+    const control = document.createElement('button');
+    control.type = 'button'; control.textContent = label; control.dataset.partyOrder = kind;
+    control.style.cssText = 'color:#f4e5bc;background:#42392c;border:1px solid #a48a57;border-radius:3px;padding:3px 10px';
+    control.addEventListener('click', () => { command(kind); control.blur(); });
+    orderButtons.set(kind, control); orderBar.append(control);
+  }
+  const changeFormation = document.createElement('button');
+  changeFormation.type = 'button'; changeFormation.textContent = 'Change formation'; changeFormation.dataset.changeFormation = 'true';
+  changeFormation.addEventListener('click', () => { command('formation-open'); changeFormation.blur(); });
+  orderBar.append(changeFormation);
+  logSection.append(logStatus, orderBar, logView);
 
   const mapSection = document.createElement('section');
   mapSection.setAttribute('aria-label', 'Minimap');
@@ -140,18 +155,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     emblem: HTMLElement;
     health: HTMLElement;
   }>;
-  // HTML5 drag source: the dragged member id. dataTransfer carries it too,
-  // but a local is robust when the drop lands in the same document.
-  let formationDragId: string | null = null;
-  const readFormationDrag = (event: DragEvent): string | null => {
-    if (formationDragId) return formationDragId;
-    try {
-      const text = event.dataTransfer?.getData('text/member-id') ?? '';
-      return text || null;
-    } catch {
-      return null;
-    }
-  };
   const createToken = (key: string): Token => {
     // Grid cell: compact medallion + facing chevron overlay + health bar.
     // Names live in title/aria-label (cells are ~34px; captions wrapped and
@@ -186,74 +189,13 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     formationGrid.append(anchor);
     select.addEventListener('click', () => {
       const memberId = select.dataset.memberId;
-      const gapPosition = select.dataset.gapPosition;
-      if (memberId) {
-        command('select', { member: memberId });
-        return;
-      }
-      // Click alternative to dragging: an empty soldier position moves the
-      // selected soldier there. The commander center is never a move target.
-      const at = select.parentElement?.dataset.gridCell?.split(',').map(Number) ?? [];
-      if ((commanderMemberId !== '' && selectedMemberId === commanderMemberId)
-        || (at.length === 2 && isCenterCell(at[0], at[1]))) return;
-      if (gapPosition && selectedMemberId) command('move', { member: selectedMemberId, position: gapPosition });
-    });
-    select.addEventListener('dragstart', event => {
-      const memberId = select.dataset.memberId;
-      if (!memberId || select.dataset.commander === 'true') {
-        event.preventDefault();
-        formationDragId = null;
-        return;
-      }
-      formationDragId = memberId;
-      try {
-        event.dataTransfer?.setData('text/member-id', memberId);
-        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-      } catch {
-        // setData may throw in locked-down contexts; the local still works.
-      }
-    });
-    select.addEventListener('dragend', () => {
-      formationDragId = null;
-    });
-    anchor.addEventListener('dragover', event => {
-      const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
-      if (at.length === 2 && isCenterCell(at[0], at[1])) return;
-      if (select.dataset.commander === 'true') return;
-      if (select.dataset.memberId || select.dataset.gapPosition) event.preventDefault();
-    });
-    anchor.addEventListener('drop', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      const dragged = readFormationDrag(event);
-      if (!dragged) return;
-      if (dragged === commanderMemberId || select.dataset.commander === 'true') {
-        formationDragId = null;
-        return;
-      }
-      // A restored or forged drag still cannot move or swap into the fixed
-      // commander position; the game rules enforce the same invariant.
-      const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
-      if (at.length === 2 && isCenterCell(at[0], at[1])) {
-        formationDragId = null;
-        return;
-      }
-      const targetMember = select.dataset.memberId;
-      const gapPosition = select.dataset.gapPosition;
-      if (targetMember) {
-        if (targetMember !== dragged) command('formation', { member: dragged, otherMember: targetMember });
-      } else if (gapPosition) {
-        command('move', { member: dragged, position: gapPosition });
-      }
-      formationDragId = null;
+      if (memberId) command('select', { member: memberId });
     });
     return { anchor, select, marker, chevron, emblem, health };
   };
   // Keyed by member id while occupied, by `empty:<slot>` for baseline gaps.
-  // Tokens persist across renders so focus and drag state survive updates.
+  // Tokens persist across renders so focus survives updates.
   const memberTokens = new Map<string, Token>();
-  let selectedMemberId = '';
-  let commanderMemberId = '';
   const paintCompass = (): void => {
     if (mapDial.querySelector('[data-compass]')) return;
     for (const [label, x, y] of [['N', 50, 3], ['E', 97, 50], ['S', 50, 97], ['W', 3, 50]] as Array<[string, number, number]>) {
@@ -337,8 +279,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   const renderFormation = (state: Values): void => {
     const party = record(state.party);
     const selectedMember = text(state.selectedMember, '');
-    selectedMemberId = selectedMember;
-    commanderMemberId = entries(party).find(([, member]) => number(member.commander) === 1)?.[0] ?? '';
     const partyFacing = text(state.facing, 'North');
     paintCompass();
     const signature = JSON.stringify([party, selectedMember, state.positions, partyFacing]);
@@ -416,7 +356,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.select.dataset.commander = commander ? 'true' : 'false';
       delete token.select.dataset.gapPosition;
       token.select.disabled = false;
-      token.select.draggable = !commander;
+      token.select.draggable = false;
       token.select.setAttribute('aria-pressed', String(selected));
       // paintOccupied never leaves a stale gap announcement: tokens are
       // keyed by role, but idempotence is cheap. See F4.
@@ -426,7 +366,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         : `Soldier ${name}, ${positionName}; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another soldier to swap.`);
       token.select.title = commander
         ? `Commander ${name} · fixed center · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`
-        : `${name} · ${positionName} · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
+        : `${name} · ${positionName} · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
       token.select.style.borderColor = selected || commander ? '#e4bd63' : item.color;
       token.select.style.borderStyle = 'solid';
       token.select.style.boxShadow = selected ? `0 0 0 2px #e4bd63,0 2px 6px #00000088` : '0 2px 6px #00000088';
@@ -473,18 +413,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         token.select.dataset.memberId = '';
         delete token.select.dataset.commander;
         token.select.dataset.gapPosition = item.position.id;
-        // Gaps stay enabled so they remain drop targets and the click
-        // alternative (move selected member here) works by keyboard too.
-        // aria-disabled announces the no-selection inert state to AT
-        // without disabling (which would also kill drop targeting).
-        token.select.disabled = false;
-        token.select.setAttribute('aria-disabled', selectedMember ? 'false' : 'true');
+        token.select.disabled = true;
+        token.select.setAttribute('aria-disabled', 'true');
         token.select.draggable = false;
         token.select.removeAttribute('aria-pressed');
-        const selectedName = selectedMember ? text(record(party[selectedMember]).name, selectedMember) : '';
-        const hint = selectedMember ? `Activate to move ${selectedName} here` : 'Empty cell';
-        token.select.setAttribute('aria-label', `${item.position.name}, empty. ${hint}. Or drop a member here to move them.`);
-        token.select.title = `${item.position.name} · empty · drop to move here`;
+        token.select.setAttribute('aria-label', `${item.position.name}, empty. Use Change formation to reposition soldiers.`);
+        token.select.title = `${item.position.name} · empty`;
         token.select.style.borderColor = '#574f3d';
         token.select.style.borderStyle = 'dashed';
         token.select.style.boxShadow = 'none';
@@ -571,6 +505,18 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     renderFormation(state);
     renderVitals(state);
     renderLog(state);
+    const formation = record(state.formation);
+    changeFormation.disabled = number(formation.executing) === 1 || number(formation.open) === 1 || number(record(state.combat).defeated) === 1;
+    changeFormation.textContent = number(formation.executing) === 1 ? `Repositioning ${number(formation.remaining).toFixed(1)}s` : 'Change formation';
+    changeFormation.title = Object.entries(record(formation.moves)).map(([id, position]) => `${text(record(record(state.party)[id]).name, id)} → ${text(position)}`).join('\n');
+    const combat = record(state.combat);
+    for (const [kind, control] of orderButtons) {
+      const order = record(record(combat.orders)[kind]);
+      control.textContent = `${kind === 'fire' ? 'Fire [Space]' : 'Melee [V]'} · ${number(order.eligible)}/${number(order.total)}`;
+      control.disabled = number(combat.defeated) === 1 || number(state.paused) === 1 || number(order.eligible) === 0;
+      control.style.opacity = control.disabled ? '0.5' : '1';
+      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason)}`).join('\n');
+    }
   };
 
   const stopGameplayKeys = (event: KeyboardEvent): void => {

@@ -32,14 +32,29 @@ public sealed partial class RiflesProduct
             return (member.Definition.Id, value.Object(("phase", value.String(!member.IsLiving ? "Dead" : action is null ? "Ready" : action.Kind + " " + action.Phase)),
                 ("remaining", value.Number(action?.Remaining ?? 0)), ("weapon", value.String(weapon is null ? "Unarmed" : definitions.Items.Item(weapon.Definition).Name)),
                 ("loaded", value.Number(capability?.Loaded == true ? 1 : 0)),
+                ("meleeReach", value.String(capability?.MeleeReach ?? "none")),
+                ("fireReach", value.String(capability?.FireReach ?? "none")),
                 ("bayonetFixed", value.Number(capability?.BayonetFixed == true ? 1 : 0)),
                 ("accuracy", value.Number(capability?.Accuracy ?? 0)),
                 ("reloadSeconds", value.Number(capability?.ReloadSeconds ?? 0)),
                 ("ammunition", value.Number(active.Combat.PartyAmmo()))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(active.Combat.SelectedTarget.ToString())), ("enemies", foes), ("members", members),
+            ("orders", value.Object(("fire", OrderProjection(value, CombatActionKind.Fire)),
+                ("melee", OrderProjection(value, CombatActionKind.Melee)))),
             ("magic", MagicProjection(value)), ("log", value.String(string.Join("\n", active.Combat.Log))), ("defeated", value.Number(active.Combat.Defeated ? 1 : 0)));
     }
+    private uint OrderProjection(SessionValueBuilder value, CombatActionKind kind)
+    {
+        var members = active.Combat.ReadOrder(kind);
+        return value.Object(("eligible", value.Number(members.Count(member => member.Eligible))),
+            ("total", value.Number(members.Count)),
+            ("members", value.Object(members.Select(member => (member.Member, value.Object(
+                ("eligible", value.Number(member.Eligible ? 1 : 0)),
+                ("reason", value.String(member.Reason)), ("target", value.String(member.Target.ToString())),
+                ("lane", value.String(member.Lane.ToString()))))).ToArray())));
+    }
+
     private IEnumerable<AppearanceFact> CombatFacts()
     {
         foreach (EnemyState enemy in active.Combat.Enemies)

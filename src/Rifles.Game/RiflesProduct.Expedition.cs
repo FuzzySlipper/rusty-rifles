@@ -32,6 +32,7 @@ public sealed partial class RiflesProduct
         if (progress.Completed) return "Expedition complete.";
         if (active.Combat.Defeated) return "A living party is required.";
         if (paused) return "Resume before travelling.";
+        if (party.Formation.Executing) return "Finish repositioning before travelling.";
         if (active.Exploration.Position != departure) return "Stand on the marked stair to travel.";
         if (active.Exploration.Moving || active.Combat.ActionsBusy || active.Combat.HasFlights || party.RestRemaining > 0)
             return "Finish movement, actions and projectile flights before travelling.";
