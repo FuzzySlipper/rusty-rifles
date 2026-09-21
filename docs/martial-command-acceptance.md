@@ -54,6 +54,12 @@ The authored scenarios use the normal game commands after debug setup:
 - [Commander defeat](evidence/martial-command/commander-defeat-survivors.png):
   Commander reached 0/35 while five soldiers remained alive, confirmed by HUD
   DOM health readback. Blade was the authored front-center casualty.
+- [Formation execution](evidence/martial-command/formation-execution-locks.png)
+  retained the party cell and North facing despite forward, strafe and turn
+  inputs. Two unaffected soldiers started Fire while the changed pair remained
+  committed. Ordinary [Save](evidence/martial-command/formation-execution-save.png)
+  and [Load](evidence/martial-command/formation-execution-load.png) both retained
+  the paused 1.9s remaining transition. Final slot commitment is still pending.
 
 The fresh charge-clear drill rejected C with
 `No forward target is reachable at a legal charge stop.` The
