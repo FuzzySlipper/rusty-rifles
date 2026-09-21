@@ -83,7 +83,7 @@
     {
       "id": "charge-clear",
       "name": "Charge contact",
-      "description": "A straight three-cell approach ends at one reachable opponent.",
+      "description": "One straight approach step ends at a near-side reachable opponent.",
       "facing": "North",
       "members": [
         { "member": "warden", "position": "front-left" },
@@ -94,9 +94,10 @@
         { "member": "musketeer-b", "position": "right-guard" },
         { "member": "commander", "position": "commander" }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 3, "left": 0, "placement": "north" } ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "south" } ],
       "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
       "forwardBlocked": false,
+      "initialEnemyDecisionDelaySeconds": 0.4,
       "expected": "Charge commits one admitted straight approach and settles contact once."
     },
     {

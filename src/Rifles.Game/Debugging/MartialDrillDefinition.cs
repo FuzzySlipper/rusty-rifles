@@ -49,6 +49,8 @@ internal sealed record MartialDrillDefinitionSet(MartialDrillDefinition[] Drills
                     ?? throw new InvalidDataException("Martial drill '" + drill.Id + "' names unknown spawn '" + enemy.SpawnId + "'.");
                 EnemyDefinition archetype = combat.Enemy(spawn.Enemy);
                 _ = crowd.Footprint(archetype.Footprint).Placement(enemy.Placement);
+                GameDefinitions.Require(drill.InitialEnemyDecisionDelaySeconds <= archetype.DecisionSeconds,
+                    "martial drill enemy decision delay");
             }
         }
     }
@@ -56,7 +58,7 @@ internal sealed record MartialDrillDefinitionSet(MartialDrillDefinition[] Drills
 
 internal sealed record MartialDrillDefinition(string Id, string Name, string Description, CardinalDirection Facing,
     MartialDrillMemberDefinition[] Members, MartialDrillEnemyDefinition[] Enemies, string[] BayonetMembers,
-    bool ForwardBlocked, string Expected)
+    bool ForwardBlocked, string Expected, double InitialEnemyDecisionDelaySeconds = 0)
 {
     internal void Validate()
     {
@@ -68,7 +70,8 @@ internal sealed record MartialDrillDefinition(string Id, string Name, string Des
             && Enemies.Select(enemy => enemy.SpawnId).Distinct(StringComparer.Ordinal).Count() == Enemies.Length
             && BayonetMembers is not null && BayonetMembers.Distinct(StringComparer.Ordinal).Count() == BayonetMembers.Length
             && (!ForwardBlocked || Enemies.Any(enemy => enemy.Forward == 1 && enemy.Left == 0))
-            && !string.IsNullOrWhiteSpace(Expected), "martial drill '" + Id + "'");
+            && !string.IsNullOrWhiteSpace(Expected) && double.IsFinite(InitialEnemyDecisionDelaySeconds)
+            && InitialEnemyDecisionDelaySeconds >= 0, "martial drill '" + Id + "'");
         foreach (MartialDrillMemberDefinition member in Members) member.Validate(Id);
         foreach (MartialDrillEnemyDefinition enemy in Enemies) enemy.Validate(Id);
     }

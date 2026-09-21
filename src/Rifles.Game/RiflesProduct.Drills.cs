@@ -81,7 +81,7 @@ public sealed partial class RiflesProduct
             {
                 Motion = new ExplorationSnapshot(cell, drill.Facing.Opposite(), 0, null, cell, drill.Facing.Opposite(), 0, authored.Placement),
                 Action = null,
-                DecisionRemaining = 0,
+                DecisionRemaining = drill.InitialEnemyDecisionDelaySeconds,
                 Aware = false,
                 Loaded = false,
                 Brain = enemy.Brain with { Home = cell, PatrolRoute = [cell], PatrolIndex = 0,

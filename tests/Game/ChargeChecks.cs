@@ -1,6 +1,7 @@
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
+using Rifles.Game.Party;
 using Rifles.Procgen.Generation;
 
 internal static class ChargeChecks
@@ -9,6 +10,7 @@ internal static class ChargeChecks
     {
         VerifyStraightProbeHonorsWallsAndCrowds();
         VerifyManeuverTimeAndFailedCommit(definitions.Exploration);
+        VerifyContactRequiresUnobstructedFirstHit(definitions.Formation);
         VerifyCommittedChargeStateAndRecovery();
         VerifyAuthoredChargeDefinition(definitions.Charge);
         Console.WriteLine("Charge checks passed: straight probes, dynamic stops, committed state, and authored recovery.");
@@ -76,6 +78,24 @@ internal static class ChargeChecks
         Require(action.Capture() is { Phase: ActionPhase.Recovery } partial && Math.Abs(partial.Remaining - 1.4) < .000001
             && !MusketActionRules.CanInterruptReload(recovery),
             "Committed charge recovery is durable and cannot be discarded as reload windup.");
+    }
+
+    private static void VerifyContactRequiresUnobstructedFirstHit(FormationDefinition formation)
+    {
+        var weapon = formation.Weapon("fixed-bayonet");
+        var attacker = formation.Cell("front-center");
+        FormationTarget blocked = new("raider", 2.5f, 0, false);
+        FormationTarget exposed = blocked with { Exposed = true };
+        Require(FormationRules.CanReach(formation, weapon, attacker, blocked)
+            && !ChargeContactRules.CanContact(formation, weapon, attacker, blocked)
+            && ChargeContactRules.CanContact(formation, weapon, attacker, exposed),
+            "Charge planning requires its hypothetical-stop trace to reach the target before reach alone can admit it.");
+
+        FormationTarget northSlot = new("north", 4.5f, 0, true);
+        FormationTarget southSlot = new("south", 3.5f, 0, true);
+        Require(!ChargeContactRules.CanContact(formation, weapon, attacker, northSlot)
+            && ChargeContactRules.CanContact(formation, weapon, attacker, southSlot),
+            "The charge drill's south crowd slot stays inside the authored bayonet reach where the north slot does not.");
     }
 
     private static void VerifyAuthoredChargeDefinition(ChargeDefinition charge)

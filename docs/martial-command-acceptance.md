@@ -34,6 +34,44 @@ These are original captures. The center tile's repeated commander label is being
 replaced with its current health; this minor display change is newer than these
 captures.
 
+## Visible progress on `a499e9a`
+
+Session `78aedf08-451f-45f5-8499-cf33c0467421` verified ordinary paused-menu
+[Save](evidence/martial-command/fresh-save.png) and
+[Load](evidence/martial-command/fresh-load.png) after the drop-ledger fix.
+The authored scenarios use the normal game commands after debug setup:
+
+- [Three-lane volley](evidence/martial-command/three-lane-volley.png): runner
+  killed, raider damaged, and one rifle miss. Three distinct target selections
+  remain uncertain from this capture alone.
+- [Automatic reload](evidence/martial-command/automatic-reload.png) loaded
+  Warden and both musketeers after the volley.
+- [Concentrated fire](evidence/martial-command/concentrated-fire.png) killed
+  the single exposed raider through multiple rifle contributions.
+- [Melee contact](evidence/martial-command/melee-contact.png) after turning
+  toward the enemy dealt 20 then 12 damage. The earlier forward order correctly
+  found no exposed target after the enemy moved outside that facing.
+- [Commander defeat](evidence/martial-command/commander-defeat-survivors.png):
+  Commander reached 0/35 while five soldiers remained alive, confirmed by HUD
+  DOM health readback. Blade was the authored front-center casualty.
+
+The fresh charge-clear drill rejected C with
+`No forward target is reachable at a legal charge stop.` The
+[original capture](evidence/martial-command/charge-rejected-investigation.png)
+is retained for investigation; charge contact is not yet accepted. Browser
+page errors were empty. These observations used DOM assistance and timed native
+input batches, with gameplay paused between observations.
+
+Source investigation found that an immediately deciding enemy can reserve the
+next approach cell before C arrives. With the original far-side crowd position,
+the nearest remaining charge stop was outside bayonet reach. The contact drill
+now places the enemy on its near side, two cells ahead, with its normal 0.4s
+decision interval initially remaining. This permits one ordinary charge step
+without altering normal enemy tuning. Investigation also found a separate
+bug: charge planning computed trace exposure but checked reach alone. It now
+requires both an unobstructed first hit and authored reach. Visible replay is
+still required.
+
 ## Remaining visible matrix
 
 The first drill activation and ordinary paused-menu Save both rejected the fresh
@@ -42,15 +80,14 @@ floor with `Invalid saved combat inventory owners.` The original
 this was not limited to drill setup. Fresh floor construction created generated
 key, plate and supply inventories but did not pass their drop positions into
 combat. The fix carries that existing ledger into fresh combat, including new
-travel destinations. Drill snapshot checks now use normal save admission;
-live Save/Load and drill verification on the corrected build remain pending.
+travel destinations. All six drill snapshots pass normal save admission;
+live Save/Load and the successfully activated drills are recorded above.
 
-- Three forward lanes and fallback onto one exposed target.
-- Weapon reach, automatic reload, interruption and fixed/unfixed penalties.
+- Three distinct forward target selections in one volley.
+- Reload interruption, fixed/unfixed penalties and final readiness.
 - Unique abilities with independent provider readiness.
 - Formation cancel, execute, fixed commander, movement locks and unaffected soldiers acting.
 - Charge contact, obstruction, lost target and no repeated impact.
-- Commander exposure and defeat while soldiers remain alive.
-- Timed save/resume, restart and whole-run floor travel.
+- Timed save/resume and whole-run floor travel.
 
 No new art, audio, drummer, morale or separate soldier navigation is part of this campaign.

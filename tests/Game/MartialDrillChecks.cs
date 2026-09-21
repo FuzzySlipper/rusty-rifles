@@ -24,9 +24,15 @@ internal static class MartialDrillChecks
             "The commander drill preserves an authored front-center casualty.");
         Require(drills.Drill("charge-blocked").ForwardBlocked && drills.Drill("charge-blocked").Enemies.Single().Forward == 1,
             "The blocked charge begins with the target in the first forward cell.");
+        MartialDrillDefinition chargeClear = drills.Drill("charge-clear");
+        Require(chargeClear.Enemies.Single() is { Forward: 2, Placement: "south" }
+            && chargeClear.InitialEnemyDecisionDelaySeconds == definitions.Combat.Enemy("raider").DecisionSeconds,
+            "The live charge fixture keeps its one-step contact target in bayonet reach until its normal first decision.");
         RequireRejected(() => new MartialDrillDefinitionSet([lanes, lanes]).Validate(), "Duplicate drill identities fail at content admission.");
         RequireRejected(() => (lanes with { Enemies = [lanes.Enemies[0] with { Forward = 0 }] }).Validate(),
             "Enemy offsets behind the party fail at content admission.");
+        RequireRejected(() => (chargeClear with { InitialEnemyDecisionDelaySeconds = double.NaN }).Validate(),
+            "Invalid drill decision delay fails at content admission.");
         Console.WriteLine("Martial drill checks passed: authored formation, lanes, casualty and charge fixtures.");
     }
 

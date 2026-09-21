@@ -9,6 +9,14 @@ using Rusty.Engine;
 
 namespace Rifles.Game.Combat;
 
+/// <summary>Charge contact needs both authored reach and an unobstructed first hit.</summary>
+internal static class ChargeContactRules
+{
+    internal static bool CanContact(FormationDefinition formation, MartialWeaponReachDefinition weapon,
+        FormationCellDefinition attacker, FormationTarget target) => target.Exposed
+            && FormationRules.CanReach(formation, weapon, attacker, target);
+}
+
 internal sealed partial class RiflesCombat
 {
     private sealed record ChargeParticipant(RiflesCharacter Member, CarriedItem Weapon, WeaponCapabilities Capabilities);
@@ -208,7 +216,7 @@ internal sealed partial class RiflesCombat
         SpatialHit hit = TraceOrderHit(start, end);
         FormationTarget candidate = new(target.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), forward, left,
             hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == target.Id);
-        return FormationRules.CanReach(definitions.Formation, definitions.Formation.Weapon(weapon.MeleeReach),
+        return ChargeContactRules.CanContact(definitions.Formation, definitions.Formation.Weapon(weapon.MeleeReach),
             definitions.Formation.Cell(member.Position), candidate);
     }
 }
