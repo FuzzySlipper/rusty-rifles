@@ -51,7 +51,9 @@ export function mountFormationPlanner(root: Element, command: (action: string, f
         const cell = document.createElement('button'); cell.type = 'button';
         cell.dataset.formationPosition = positionId;
         cell.style.cssText = `min-height:110px;white-space:pre-line;font:inherit;border:2px solid ${memberId && memberId === selected ? '#ffe197' : '#776e56'};border-radius:6px;background:${center ? '#4b3a20' : '#283128'};color:#f0e7ce;padding:12px`;
-        cell.textContent = `${text(position.name)}\n${memberId ? text(member.name) : 'Empty'}${center ? '\nCommander · fixed' : memberId ? `\n${text(member.vitality)}/${text(member.maximumVitality)} health` : ''}`;
+        cell.textContent = center
+          ? `${text(member.name) || 'Commander'}\n${text(member.vitality)}/${text(member.maximumVitality)} health\nFixed center`
+          : `${text(position.name)}\n${memberId ? text(member.name) : 'Empty'}${memberId ? `\n${text(member.vitality)}/${text(member.maximumVitality)} health` : ''}`;
         cell.disabled = center || (!!memberId && !living);
         cell.addEventListener('click', () => {
           if (selected) { command('formation-place', { member: selected, position: positionId }); selected = ''; }

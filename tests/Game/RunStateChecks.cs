@@ -144,6 +144,29 @@ internal static class RunStateChecks
             RequireRejected(() => RunCodec.Validate(CreateRun(definitions, charging with
                 { Exploration = charging.Exploration with { Action = null, RemainingSeconds = 0 } }), definitions),
                 "An active saved charge must retain its forward movement reservation.");
+            EnemySnapshot lostTarget = charging.Combat.Enemies.Single(enemy => enemy.Id == charge.Target);
+            ExpeditionSnapshot targetFallen = charging with
+            {
+                Combat = charging.Combat with
+                {
+                    Enemies = charging.Combat.Enemies.Select(enemy => enemy.Id == charge.Target ? enemy with
+                        { Stats = StatSnapshotHelpers.WithTrack(enemy.Stats, RiflesStatIds.Vitality, 0), Action = null } : enemy).ToArray(),
+                    Drops = [.. charging.Combat.Drops.Where(drop => drop.Owner != lostTarget.Owner),
+                        new(lostTarget.Owner, lostTarget.Motion.Position)],
+                },
+            };
+            Require(RoundTrip(definitions, CreateRun(definitions, targetFallen)).Active.Combat.Charge is not null,
+                "A target falling during a reserved charge step remains a valid save for contact revalidation.");
+            ExpeditionSnapshot contributorFallen = charging with
+            {
+                Members = charging.Members.Select(member => member.Id == "warden" ? member with
+                    { Stats = StatSnapshotHelpers.WithTrack(member.Stats, RiflesStatIds.Vitality, 0) } : member).ToArray(),
+            };
+            Require(RoundTrip(definitions, CreateRun(definitions, contributorFallen)).Active.Combat.Charge is not null,
+                "A contributor falling during a reserved charge step does not invalidate the maneuver save.");
+            RequireRejected(() => RunCodec.Validate(CreateRun(definitions, charging with
+                { Combat = charging.Combat with { Charge = charge with { Contributors = [] } } }), definitions),
+                "An active saved charge cannot invent a maneuver with no committed contributors.");
             double totalRecovery = definitions.Charge.RecoverySeconds + recovery;
             ActionSnapshot cooling = new(CombatActionKind.Charge, musket, null, null, 0, null,
                 totalRecovery / 2, ActionPhase.Recovery, totalRecovery);
