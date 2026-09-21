@@ -1,6 +1,6 @@
 # Martial command acceptance — campaign #8388
 
-This is the running acceptance record. Den owns completion status; this document does not certify unfinished checks.
+The bounded martial command acceptance matrix is complete. Den owns live task status. Source checks and visible observations are distinguished below; this is not a claim of a completed three-floor expedition.
 
 ## Source checkpoints
 
@@ -17,7 +17,7 @@ An isolated `10af92e` checkout was served through the existing broker on port 37
 
 The simulation had been running before browser attachment, so the party had already taken damage by the first observation. Time after browser connection is not time since the expedition began. Fresh runs now use the authored `startPaused` setting so the player explicitly resumes before combat advances. Saves retain their own pause state.
 
-Restart produced `CSHARP_APPEARANCE_IN_USE`: the previous published frame still referenced floor appearances when `Mount` disposed them. The fix clears the published appearance snapshot before disposing the old floor, using the same Engine lifecycle rule as shutdown. Live restart/load/travel verification remains required.
+Restart produced `CSHARP_APPEARANCE_IN_USE`: the previous published frame still referenced floor appearances when `Mount` disposed them. The fix clears the published appearance snapshot before disposing the old floor, using the same Engine lifecycle rule as shutdown. Subsequent live restart/load/travel verification is recorded below.
 
 The original diagnostic is [preserved here](evidence/martial-command/restart-failure-diagnostics.json), with original [fallen-party](evidence/martial-command/pre-fix-fallen-party.png) and [restart-attempt](evidence/martial-command/pre-fix-restart-failure.png) captures. Browser captures and event journal remain under `/home/agent/.local/state/crew-playtest/browser/d4487d87-624f-4f94-bc34-fbc72961de9d/`. That session was stopped and its slot released.
 
@@ -79,8 +79,7 @@ now places the enemy on its near side, two cells ahead, with its normal 0.4s
 decision interval initially remaining. This permits one ordinary charge step
 without altering normal enemy tuning. Investigation also found a separate
 bug: charge planning computed trace exposure but checked reach alone. It now
-requires both an unobstructed first hit and authored reach. Visible replay is
-still required.
+requires both an unobstructed first hit and authored reach. The successful visible replay is recorded below.
 
 ## Visible progress on `831208d`
 
@@ -111,7 +110,7 @@ Session `458ed3da-3387-4979-bb0c-717ea4d7af62` confirmed:
   used live HUD coordinates and ordinary visible Expedition controls to reach
   the stair. Saving afterward exposed
   [a retained-floor validation failure](evidence/martial-command/retained-save-failure.png).
-  Whole-run persistence and return travel remain pending its fix.
+  The final replay below verifies the fix.
 
 The retained save failure came from inconsistent ownership validation: capture
 kept floor-local enemy loot and supply packs, while retained validation admitted
@@ -119,7 +118,33 @@ anchors only. The fix validates anchors, enemy loot, projectile packs and drops
 against the same combat ledger and capacities used by the active floor. A
 focused codec regression passes with dead-enemy loot and generated supplies.
 
-## Remaining visible matrix
+## Final whole-run persistence replay on `d07bd00`
+
+The final source revision `d07bd008aefe10934f4ef5f5ccd5a5eb8ef40ff9` passed
+`bash scripts/check.sh`, including solution build, UI typecheck, procgen/game
+checks, offline tool self-check and CoreCLR staging. The retained inventory
+regression includes dead-enemy loot, supply drops and a thrown-item pack.
+The full gate log is `/tmp/rifles-m09-retained-full-check.log`.
+
+The isolated broker successfully launched that revision on port 37301. Root
+operated CLI session `e623abd7-3fd1-46a7-bf5e-ef8b0dbc4eef` using the existing
+charge-clear debug setup followed by ordinary native movement/charge and visible
+Expedition controls. After killing the raider and descending to Flooded Stores:
+
+- [Save succeeded](evidence/martial-command/whole-run-saved.png) with two visited floors.
+- [Load restored](evidence/martial-command/whole-run-restored.png) the paused
+  Receiving Bay at `(98,98)`, North, elapsed 1s, with the same party health.
+- [Return to Supply Approach](evidence/martial-command/return-retained-floor.png)
+  restored Watch Gallery at `(113,98)`, North. The raider remained dead at 0/32,
+  party health was retained, and the journal still showed 2/3 visited floors.
+
+The Save/Load DOM receipts reported no page errors; Chromium reported capture
+ReadPixels performance warnings. These are bounded two-floor roundtrip observations,
+not a full expedition victory. Original captures remain in the session evidence
+directory; copies above are unmodified. The owned browser session was stopped and
+its slot released after acceptance.
+
+## Resolved save findings and evidence limits
 
 The first drill activation and ordinary paused-menu Save both rejected the fresh
 floor with `Invalid saved combat inventory owners.` The original
@@ -129,8 +154,6 @@ key, plate and supply inventories but did not pass their drop positions into
 combat. The fix carries that existing ledger into fresh combat, including new
 travel destinations. All six drill snapshots pass normal save admission;
 live Save/Load and the successfully activated drills are recorded above.
-
-- Whole-run Save/Load and return travel after the retained-inventory fix.
 
 The three-lane volley demonstrated firing against multiple targets but did not
 prove three distinct selections through its miss outcomes. Pure targeting checks
