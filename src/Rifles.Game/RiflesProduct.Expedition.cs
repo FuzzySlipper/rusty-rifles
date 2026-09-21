@@ -54,10 +54,12 @@ public sealed partial class RiflesProduct
         party.Entities.RemoveInventoryFacades(keep);
         // Travelling gameplay rides live identity: books stay attached, packs
         // restore by id, conditions re-register timing onto the kept markers.
+        SavedPack[] travellingPacks = current.Inventory.Packs.Where(p => InventoryOwner.Parse(p.Owner.Key) is (MemberOwner or PartyOwner)).ToArray();
+        var travellingItems = travellingPacks.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         TravellingState travelling = new(active.Magic.Books,
             current.Combat.Magic!.Conditions.Where(c => !c.Target.StartsWith("enemy:", StringComparison.Ordinal)).ToArray(),
-            current.Inventory.Packs.Where(p => InventoryOwner.Parse(p.Owner.Key) is (MemberOwner or PartyOwner)).ToArray(),
-            current.Combat.LoadedWeapons.Where(current.Inventory.Packs.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet().Contains).ToArray());
+            travellingPacks,
+            new(current.Combat.Weapons.Muskets.Where(m => travellingItems.Contains(m.Item)).ToArray()));
         ulong next = nextObjectId;
         ulong Allocate()
         {

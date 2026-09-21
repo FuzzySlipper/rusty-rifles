@@ -161,6 +161,9 @@ internal sealed class ItemInventory
     }
     internal CarriedItem Find(string owner, string token) => Items(owner).SingleOrDefault(i => i.Token == token)
         ?? throw new InvalidDataException("That item is no longer in this pack.");
+    /// <summary>Locates a live unique identity across the one Engine ledger.</summary>
+    internal CarriedItem UniqueItem(ulong entity) => Owners.SelectMany(owner => Items(owner.Key)).SingleOrDefault(item => item.Entity == entity)
+        ?? throw new InvalidDataException("Weapon item is no longer in this inventory.");
     internal ulong Mass(string owner) => View(owner).Capacity.Single(c => c.Metric == MassMetric).Used;
     private EquipmentSlotDefinition[] Slots(IEnumerable<string> slots) => slots.Select(s =>
         new EquipmentSlotDefinition(EquipmentSlotId.Parse(s), [ItemClassificationId.Parse("gear")])).ToArray();

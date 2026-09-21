@@ -14,7 +14,7 @@ internal enum PartyReach { Melee, Ranged, Casting }
 /// rotated into the world by the facing at use time, so the same authored
 /// layout reads correctly no matter which way the party faces.
 /// </summary>
-internal sealed record FormationPositionDefinition(string Id, string Name, int Rank, float OffsetForward = 0, float OffsetLeft = 0)
+internal sealed record FormationPositionDefinition(string Id, string Name, int Rank, float OffsetForward = 0, float OffsetLeft = 0, bool Commander = false)
 {
     internal void Validate()
     {
@@ -24,48 +24,6 @@ internal sealed record FormationPositionDefinition(string Id, string Name, int R
         {
             throw new InvalidDataException($"Invalid formation position '{Id}'.");
         }
-    }
-
-    /// <summary>
-    /// Picks the living member first encountered by a ray in formation-local
-    /// direction, or null when the direction is degenerate. Ties break by
-    /// position id, then member id, so frontal attacks keep row-major order
-    /// deterministically.
-    /// </summary>
-    internal static string? FirstEncountered(float directionForward, float directionLeft,
-        IEnumerable<(string Id, string Position, float Forward, float Left, bool Living)> members)
-    {
-        float length = MathF.Sqrt(directionForward * directionForward + directionLeft * directionLeft);
-        if (!float.IsFinite(length) || !(length > 0)) return null;
-        float forward = directionForward / length, left = directionLeft / length;
-        string? best = null;
-        float bestAlong = 0;
-        string bestPosition = "", bestId = "";
-        // When no living member's projection differs (e.g. content without
-        // discriminating offsets), geometry says nothing: return null so the
-        // caller keeps rank order instead of silently switching to id order.
-        bool discriminates = false, haveLiving = false;
-        float firstAlong = 0;
-        foreach ((string id, string position, float memberForward, float memberLeft, bool living) in members)
-        {
-            if (!living) continue;
-            float along = memberForward * forward + memberLeft * left;
-            if (!haveLiving) { haveLiving = true; firstAlong = along; }
-            else if (along != firstAlong) discriminates = true;
-            if (best is not null && (along > bestAlong
-                || (along == bestAlong && (string.Compare(position, bestPosition, StringComparison.Ordinal) > 0
-                    || (position == bestPosition && string.Compare(id, bestId, StringComparison.Ordinal) > 0)))))
-            {
-                continue;
-            }
-
-            best = id;
-            bestAlong = along;
-            bestPosition = position;
-            bestId = id;
-        }
-
-        return best is not null && discriminates ? best : null;
     }
 }
 
@@ -82,7 +40,7 @@ internal sealed record CharacterArchetypeDefinition(
     long BaseDefense = 0,
     long MaximumResource = 0,
     long? StartingVitality = null,
-    long? StartingResource = null)
+    long? StartingResource = null, bool Commander = false)
 {
     internal const long MaximumTrackValue = 1_000_000_000_000;
 
@@ -108,7 +66,7 @@ internal sealed record CharacterArchetypeDefinition(
         if (string.IsNullOrWhiteSpace(instanceId) || string.IsNullOrWhiteSpace(position))
             throw new InvalidDataException($"Invalid '{Id}' instance reference.");
         return new MemberDefinition(instanceId, Id, string.IsNullOrWhiteSpace(displayName) ? Name : displayName,
-            position, MaximumVitality, BasePower, BaseDefense, MaximumResource, StartingVitality, StartingResource);
+            position, MaximumVitality, BasePower, BaseDefense, MaximumResource, StartingVitality, StartingResource, Commander);
     }
 }
 
@@ -144,7 +102,7 @@ internal sealed record MemberDefinition(
     long BaseDefense = 0,
     long MaximumResource = 0,
     long? StartingVitality = null,
-    long? StartingResource = null)
+    long? StartingResource = null, bool Commander = false)
 {
     private const long MaximumTrackValue = 1_000_000_000_000;
 
@@ -341,6 +299,17 @@ internal sealed class PartyState
 
     internal string RestOwner { get; set; } = "";
 
+    internal RiflesCharacter? Commander => members.SingleOrDefault(member => member.Definition.Commander);
+    internal bool Defeated => Commander is { } commander ? !commander.IsLiving : members.All(member => !member.IsLiving);
+    internal IReadOnlyList<RiflesCharacter> Soldiers => members.Where(member => !member.Definition.Commander).ToArray();
+
+    internal RiflesCharacter? ScreenedRecipient(FormationDefinition formation, FormationApproach approach)
+    {
+        string? id = FormationRules.SelectScreeningRecipient(formation, approach,
+            members.Select(member => new FormationOccupant(member.InstanceId, member.Position, member.IsLiving)));
+        return id is null ? Commander : members.Single(member => member.InstanceId == id);
+    }
+
     internal IReadOnlyList<RiflesCharacter> Members => Array.AsReadOnly(members);
     internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members
@@ -350,7 +319,7 @@ internal sealed class PartyState
     {
         RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
         RiflesCharacter? other = members.SingleOrDefault(candidate => candidate.Definition.Id == otherMemberId);
-        if (member is null || other is null || ReferenceEquals(member, other) || !member.IsLiving || !other.IsLiving)
+        if (member is null || other is null || ReferenceEquals(member, other) || member.Definition.Commander || other.Definition.Commander || !member.IsLiving || !other.IsLiving)
         {
             return false;
         }
@@ -364,8 +333,8 @@ internal sealed class PartyState
     internal bool MoveFormation(string memberId, string position)
     {
         RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        if (member is null || !member.IsLiving || string.IsNullOrEmpty(position)
-            || !positions.TryGetValue(position, out FormationPositionDefinition? target))
+        if (member is null || member.Definition.Commander || !member.IsLiving || string.IsNullOrEmpty(position)
+            || !positions.TryGetValue(position, out FormationPositionDefinition? target) || target.Commander)
         {
             return false;
         }
@@ -382,7 +351,7 @@ internal sealed class PartyState
     internal bool CanUseReach(string memberId, PartyReach reach)
     {
         RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        return member is not null && member.IsLiving && IsReachAllowed(member.Rank, reach);
+        return member is not null && !member.Definition.Commander && member.IsLiving && IsReachAllowed(member.Rank, reach);
     }
 
     internal FormationPositionDefinition PositionOf(string memberId)
@@ -394,7 +363,7 @@ internal sealed class PartyState
     }
 
     internal IReadOnlyList<RiflesCharacter> EligibleMembers(PartyReach reach) => members
-        .Where(member => member.IsLiving && IsReachAllowed(member.Rank, reach)).ToArray();
+        .Where(member => !member.Definition.Commander && member.IsLiving && IsReachAllowed(member.Rank, reach)).ToArray();
 
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
     {
@@ -413,7 +382,7 @@ internal sealed class PartyState
         {
             MemberDefinition definition = roster.SingleOrDefault(candidate => candidate.Id == value.Id)
                 ?? throw new InvalidOperationException("Party snapshot member missing.");
-            if (!positions.TryGetValue(value.Position, out FormationPositionDefinition? target))
+            if (!positions.TryGetValue(value.Position, out FormationPositionDefinition? target) || target.Commander != definition.Commander)
             {
                 throw new InvalidOperationException("Party snapshot formation position is unknown.");
             }
@@ -476,7 +445,11 @@ internal sealed class PartyState
             if (definition is null) throw new InvalidDataException("A party cannot contain a null member.");
             definition.Validate();
             _ = RankOf(definition.Position);
+            if (positions[definition.Position].Commander != definition.Commander)
+                throw new InvalidDataException("Commander must occupy the reserved center; soldiers cannot occupy it.");
         }
+
+        if (definitions.Count(definition => definition.Commander) > 1) throw new InvalidDataException("Only one commander is allowed.");
 
         if (definitions.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != definitions.Count
             || definitions.Select(definition => definition.Position).Distinct(StringComparer.Ordinal).Count() != definitions.Count)

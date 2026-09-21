@@ -176,7 +176,7 @@ internal sealed record MagicDefinition(
         foreach ((string member, string[] spells) in startingSpells)
         {
             GameDefinitions.Require(!string.IsNullOrWhiteSpace(member)
-                && spells is { Length: > 0 }
+                && spells is not null
                 && spells.Distinct(StringComparer.Ordinal).Count() == spells.Length
                 && spells.All(spellIds.Contains), "starting spells " + member);
         }

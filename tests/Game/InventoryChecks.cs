@@ -122,13 +122,13 @@ internal static class InventoryChecks
         inventory.BindRemaining(party.Entities);
         Require(inventory.Owners.All(o => inventory.IsBound(o.Key)),
             "Every registered pack — members, party, and containers — binds to an entity facade.");
-        Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 4) && warden.Power == warden.Definition.BasePower + 6
-            && warden.Defense == warden.Definition.BaseDefense + 4, "Engine-backed equipment sources contribute to member statistics.");
+        Require(warden.EquipmentBonuses == new EquipmentStatBonuses(6, 5) && warden.Power == warden.Definition.BasePower + 6
+            && warden.Defense == warden.Definition.BaseDefense + 5, "Engine-backed equipment sources contribute to member statistics.");
 
         string spareRifle = inventory.Items("party").Single(item => item.Definition == "rifle").Token;
         ulong spareId = inventory.Find("party", spareRifle).Entity;
         CarriedItem wornRifle = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
-        inventory.Equip(ItemRef.Parse("party", spareRifle), "main-hand", warden.Power, inventory.Revision, new MemberOwner("warden"));
+        inventory.Equip(ItemRef.Parse("party", spareRifle), "weapon", warden.Power, inventory.Revision, new MemberOwner("warden"));
         CarriedItem nowWorn = inventory.Items("member:warden").Single(item => item.Definition == "rifle");
         Require(nowWorn.Entity == spareId && inventory.SlotOf(spareRifle) < 0,
             "Equipping from the party grid vacates the grid slot.");
@@ -140,10 +140,10 @@ internal static class InventoryChecks
         CarriedItem bankedRifle = inventory.Items("party").Single(item => item.Entity == nowWorn.Entity);
         Require(bankedRifle.Slots.Length == 0 && inventory.SlotOf(bankedRifle.Token) >= 0,
             "Dragging worn gear back to the grid unequips it into a grid slot.");
-        Require(inventory.View("member:warden").UniqueItems.Count == 1, "Member packs retain only worn gear.");
+        Require(inventory.View("member:warden").UniqueItems.Count == 2, "Member packs retain only worn gear.");
 
-        Require(warden.EquipmentBonuses == new EquipmentStatBonuses(0, 4)
-            && warden.Power == warden.Definition.BasePower && warden.Defense == warden.Definition.BaseDefense + 4,
+        Require(warden.EquipmentBonuses == new EquipmentStatBonuses(0, 5)
+            && warden.Power == warden.Definition.BasePower && warden.Defense == warden.Definition.BaseDefense + 5,
             "Equipment bonuses follow current Engine assignments rather than a parallel item ledger.");
     }
 
@@ -173,8 +173,8 @@ internal static class InventoryChecks
         // Swapping grid gear onto the member is net-zero: the equipped rifle
         // displaces back into the vacated slot, so full grids still equip.
         string knife = inventory.Items("party").Single(i => i.Definition == "knife").Token;
-        inventory.Equip(ItemRef.Parse("party", knife), "main-hand", definitions.Item("knife").MinimumPower, inventory.Revision, new MemberOwner("source"));
-        Require(inventory.Items("member:source").Single(i => i.Definition == "knife").Slots.Contains("main-hand")
+        inventory.Equip(ItemRef.Parse("party", knife), "weapon", definitions.Item("knife").MinimumPower, inventory.Revision, new MemberOwner("source"));
+        Require(inventory.Items("member:source").Single(i => i.Definition == "knife").Slots.Contains("weapon")
             && inventory.Items("party").Single(i => i.Definition == "rifle").Slots.Length == 0,
             "A full grid still equips by swapping the displaced gear home.");
         Require(inventory.Revision != revision,
@@ -239,13 +239,13 @@ internal static class InventoryChecks
             "Dead members are excluded from reach eligibility.");
 
         PartyState openParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.ResolvePreset(preset.Id));
-        Require(openParty.MoveFormation("warden", "r0c0") && Member(openParty, "warden").Position == "r0c0",
+        Require(openParty.MoveFormation("warden", "left-guard") && Member(openParty, "warden").Position == "left-guard",
             "Living members can move into an unoccupied formation position.");
-        Require(!openParty.MoveFormation("warden", "r0c3") && !openParty.MoveFormation("no-such-member", "r0c0")
-            && !openParty.MoveFormation("warden", "no-such-position") && !openParty.MoveFormation("warden", "r2c2"),
+        Require(!openParty.MoveFormation("warden", "front-center") && !openParty.MoveFormation("no-such-member", "left-guard")
+            && !openParty.MoveFormation("warden", "no-such-position") && !openParty.MoveFormation("warden", "commander"),
             "Occupied, unknown-member, unknown-position, and reserved-center formation moves are rejected.");
         Member(openParty, "blade").ApplyDamage(long.MaxValue);
-        Require(!openParty.MoveFormation("blade", "r0c2"),
+        Require(!openParty.MoveFormation("blade", "rear-right"),
             "Dead members cannot change formation positions.");
 
         IReadOnlyList<MemberSnapshot> saved = party.Capture();

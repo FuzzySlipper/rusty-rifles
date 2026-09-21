@@ -18,10 +18,19 @@ internal sealed class SessionProjection : IDisposable
         stream = ui.OpenStream(new UiStreamRequest("rifles.session", "rifles.session.v1"));
     }
 
-    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run)
+    internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run, FormationDefinition formation)
     {
         SessionValueBuilder value = new();
         Dictionary<string, string> positionNames = party.Positions.ToDictionary(p => p.Id, p => p.Name);
+        string Protection(Rifles.Game.Characters.RiflesCharacter member)
+        {
+            if (!member.Definition.Commander)
+                return !member.IsLiving ? "Fallen: no screening" : string.Join(", ", formation.Cell(member.Position).Screening.Select(screen => $"{screen.Sector} {screen.Lane}"));
+            var exposed = formation.Cells.SelectMany(cell => cell.Screening).Distinct()
+                .Where(screen => party.ScreenedRecipient(formation, new(screen.Sector, screen.Lane)) == member)
+                .Select(screen => $"{screen.Sector} {screen.Lane}");
+            return "Exposed: " + string.Join(", ", exposed);
+        }
         uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
             ("name", value.String(member.Definition.Name)),
             ("position", value.String(member.Position)),
@@ -36,6 +45,8 @@ internal sealed class SessionProjection : IDisposable
             ("maximumVitality", value.Number(member.MaximumVitality)),
             ("power", value.Number(member.Power)), ("defense", value.Number(member.Defense)),
             ("resource", value.Number(member.Resource)), ("maxResource", value.Number(member.MaximumResource)),
+            ("commander", value.Number(member.Definition.Commander ? 1 : 0)),
+            ("protection", value.String(Protection(member))),
             ("melee", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Melee) ? 1 : 0)),
             ("ranged", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Ranged) ? 1 : 0)),
             ("casting", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Casting) ? 1 : 0))))).ToArray());

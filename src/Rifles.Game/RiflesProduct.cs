@@ -446,7 +446,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         expedition = saved.Intent;
         expeditionId = saved.Id; partyId = saved.PartyId; nextObjectId = saved.NextObjectId;
         preset = saved.Preset;
-        paused = saved.Paused;
+        paused = saved.Paused || party.Defeated;
         selectedMember = saved.SelectedMember;
         controls.Clear(); cameraCut = true;
         feedback = "Expedition restored";
@@ -499,7 +499,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             active.Combat.Allies[active.Actor.Id].IsLiving ? 1 : Combat.CorpseScale,
             active.Combat.Allies[active.Features.Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
-        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(active.Floor, active.Exploration, party, paused, feedback, selectedMember, active.Features.Readout, active.Features.Style, roomLights, active.Features.LightPosition, active.Inventory, active.ItemWorld, active.Scene, definitions.Characters, preset, active.Actor, definitions.ItemArt, CombatProjection, active.Combat.DropReachable, RunProjection);
+        if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(active.Floor, active.Exploration, party, paused, feedback, selectedMember, active.Features.Readout, active.Features.Style, roomLights, active.Features.LightPosition, active.Inventory, active.ItemWorld, active.Scene, definitions.Characters, preset, active.Actor, definitions.ItemArt, CombatProjection, active.Combat.DropReachable, RunProjection, definitions.Formation);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
     }
 

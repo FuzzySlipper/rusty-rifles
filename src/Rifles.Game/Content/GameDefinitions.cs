@@ -67,10 +67,21 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<ArchitectureDetailDefinition>("definitions/architecture-detail.json", x => x.Validate()),
             Read<RunDefinition>("definitions/expedition.json", x => x.Validate()),
             Read<AudioDefinition>("definitions/audio.json", x => x.Validate()));
+        // The formation file is the one authored layout. Adapt its integral
+        // 3x3 coordinates to the existing half-cell projection once at admission.
+        result = result with { Party = result.Party with { Positions = result.Formation.Cells.Select(cell =>
+            new FormationPositionDefinition(cell.Id, cell.Name, 1 - cell.Forward,
+                cell.Forward / 2f, cell.Left / 2f, cell.Commander)).ToArray() } };
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
         Require(result.Items.Items.All(i => result.ItemArt.Images.Any(image => image.Id == i.Image)), "item image references");
+        foreach (GearDefinition item in result.Items.Items.Where(item => item.Weapon is not null))
+        {
+            MartialWeaponDefinition weapon = item.Weapon!;
+            Require(result.Formation.Weapons.Any(reach => reach.Id == weapon.Reach), $"weapon reach for '{item.Id}'");
+            Require(weapon.Bayonet is null || result.Formation.Weapons.Any(reach => reach.Id == weapon.Bayonet.Reach), $"bayonet reach for '{item.Id}'");
+        }
         // Starting loadouts resolve against the selected actual roster: a
         // preset-agnostic grant must name an instance present in every preset,
         // while a preset-scoped grant must name one of that preset's instances.
@@ -97,8 +108,11 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         HashSet<string> positionIds = result.Party.Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var preset in result.Characters.Presets)
         {
-            Require(preset.Members.Length >= 1 && preset.Members.Length <= result.Party.MaxPartySize, "preset party capacity");
+            Require(preset.Members.Length == result.Party.MaxPartySize, "preset party capacity");
+            MemberDefinition[] roster = result.Characters.ResolvePreset(preset.Id);
+            Require(roster.Count(member => member.Commander) == 1, "preset commander");
             Require(preset.Members.All(m => positionIds.Contains(m.Position)), "preset formation positions");
+            Require(roster.All(member => result.Party.Positions.Single(position => position.Id == member.Position).Commander == member.Commander), "preset commander position");
             // Spell and resistance configuration is referenced by archetype, so
             // every archetype on the selected actual roster must resolve.
             Require(preset.Members.All(m => result.Magic.StartingSpells.ContainsKey(m.Archetype)),
@@ -144,15 +158,9 @@ internal sealed record GenerationDefinition(ulong Seed, ExpeditionDefinition Exp
 /// Authored formation and capacity policy. The roster is not duplicated here:
 /// parties build from the selected character preset's archetype references.
 /// </summary>
-internal sealed record PartyDefinition(FormationPositionDefinition[] Positions, int MaxPartySize)
+internal sealed record PartyDefinition(int MaxPartySize)
 {
-    internal void Validate()
-    {
-        GameDefinitions.Require(Positions is { Length: > 0 }
-            && Positions.All(p => p is not null)
-            && Positions.Select(p => p.Id).Distinct(StringComparer.Ordinal).Count() == Positions.Length
-            && Positions.Any(p => p.Rank == 0), "Positions fields");
-        foreach (FormationPositionDefinition position in Positions) position.Validate();
-        GameDefinitions.Require(MaxPartySize >= 1, "MaxPartySize capacity");
-    }
+    // Resolved at content admission from FormationDefinition; never authored twice.
+    internal FormationPositionDefinition[] Positions { get; init; } = [];
+    internal void Validate() => GameDefinitions.Require(MaxPartySize >= 1, "MaxPartySize capacity");
 }

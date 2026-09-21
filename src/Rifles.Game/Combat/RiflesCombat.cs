@@ -33,7 +33,7 @@ internal sealed class RiflesCombat
     private readonly List<EnemyState> enemies;
     private readonly List<FlightState> flights;
     private readonly Dictionary<string, GridPoint> drops;
-    private readonly HashSet<ulong> loadedWeapons;
+    private WeaponState weapons;
     private readonly Queue<string> log = [];
     private ulong selectedTarget;
     private int pathCursor;
@@ -52,19 +52,19 @@ internal sealed class RiflesCombat
         this.enemies = enemies;
         flights = [];
         drops = [];
-        loadedWeapons = [];
+        weapons = WeaponState.Create(definitions.Items, inventory);
     }
 
     private CombatDefinition Combat => definitions.Combat;
 
     internal IReadOnlyList<EnemyState> Enemies => enemies;
     internal IReadOnlyDictionary<string, GridPoint> Drops => drops;
-    internal IReadOnlyCollection<ulong> LoadedWeapons => loadedWeapons;
+    internal WeaponState Weapons => weapons;
     internal IReadOnlyList<FlightState> Flights => flights;
     internal IReadOnlyDictionary<ulong, RiflesCharacter> Allies => allies;
     internal ulong SelectedTarget => selectedTarget;
     internal IReadOnlyCollection<string> Log => log;
-    internal bool Defeated => party.Members.All(m => !m.IsLiving);
+    internal bool Defeated => party.Defeated;
 
     internal ActionState ActionOf(RiflesCharacter member) =>
         new Actor(entities.Store, member.Entity).Get<ActionState>();
@@ -90,13 +90,13 @@ internal sealed class RiflesCombat
     /// <summary>Fresh combat for a newly built floor: empty actions/flights, no drops.</summary>
     internal static RiflesCombat CreateFresh(GameDefinitions definitions, CharacterEntities entities, PartyState party,
         MagicState magic, ItemInventory inventory, CombatScope scope, List<EnemyState> enemies, AllySnapshot[] allies,
-        ulong[]? travellingLoaded = null)
+        WeaponStateSnapshot? travellingWeapons = null)
     {
         RiflesCombat combat = new(definitions, entities, party, magic, inventory, [], scope, enemies);
         foreach (RiflesCharacter member in party.Members)
             entities.AttachComponent(member.Definition.Id, () => new ActionState());
         combat.BuildAllies(allies);
-        if (travellingLoaded is not null) combat.loadedWeapons.UnionWith(travellingLoaded);
+        if (travellingWeapons is not null) combat.weapons = WeaponState.Restore(definitions.Items, travellingWeapons, inventory);
         return combat;
     }
 
@@ -115,7 +115,7 @@ internal sealed class RiflesCombat
 
         foreach (FlightSnapshot flight in saved.Flights) combat.flights.Add(FlightState.Restore(flight));
         foreach (DropSnapshot drop in saved.Drops) combat.drops.Add(drop.Owner, drop.Cell);
-        combat.loadedWeapons.UnionWith(saved.LoadedWeapons);
+        combat.weapons = saved.Weapons;
         combat.selectedTarget = saved.SelectedTarget;
         combat.BuildAllies(saved.Allies);
         return combat;
@@ -123,7 +123,7 @@ internal sealed class RiflesCombat
 
     internal CombatSnapshot Capture() => new(enemies.Select(e => e.Capture()).ToArray(),
         party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, ActionOf(member).Capture())).ToArray(),
-        loadedWeapons.ToArray(), flights.Select(f => f.Capture()).ToArray(),
+        weapons.Capture(inventory), flights.Select(f => f.Capture()).ToArray(),
         drops.Select(d => new DropSnapshot(d.Key, d.Value)).ToArray(),
         allies.Select(a => new AllySnapshot(a.Key, RiflesStats.SnapshotForPersistence(a.Value.Stats))).ToArray(), selectedTarget, magic.Capture());
 
@@ -204,16 +204,24 @@ internal sealed class RiflesCombat
         return hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
     }
 
-    internal CarriedItem? Weapon(string member) => inventory.Items("member:" + member).SingleOrDefault(i => i.Slots.Contains("main-hand"));
+    internal CarriedItem? Weapon(string member) => inventory.Items("member:" + member).SingleOrDefault(i => i.Slots.Contains("weapon"));
+    internal WeaponCapabilities? WeaponCapabilities(string member) => Capabilities(Weapon(member));
+    private WeaponCapabilities? Capabilities(CarriedItem? weapon) => weapon is null ? null : weapons.Capabilities(weapon.Entity, inventory);
+    private float ActionRange(CombatActionKind kind, WeaponCapabilities? weapon)
+    {
+        string? reach = kind == CombatActionKind.Fire ? weapon?.FireReach : kind == CombatActionKind.Melee ? weapon?.MeleeReach : null;
+        return reach is null ? Combat.Action(kind).Range : definitions.Formation.Weapon(reach).MaximumForwardDistance;
+    }
     // Rifle ammunition is pooled: reload draws from the shared party
     // inventory, never from a character pack. Enemies keep their own packs.
     private ulong Ammo(string owner) => inventory.Items(owner).SingleOrDefault(i => i.Definition == Combat.AmmunitionItem)?.Quantity ?? 0;
     internal ulong PartyAmmo() => Ammo(ItemInventory.PartyKey);
     private ActionSnapshot NewAction(CombatActionKind kind, ulong weapon = 0, string? token = null, string? source = null,
-        ulong target = 0, string? member = null, GridPoint? aim = null)
+        ulong target = 0, string? member = null, GridPoint? aim = null, WeaponCapabilities? capabilities = null)
     {
         ActionDefinition tuning = Combat.Action(kind);
-        return new(kind, weapon, token, source, target, member, tuning.Windup, ActionPhase.Windup, tuning.Recovery, aim);
+        double windup = capabilities is null ? tuning.Windup : kind == CombatActionKind.Reload ? capabilities.ReloadSeconds : capabilities.WindupSeconds;
+        return new(kind, weapon, token, source, target, member, windup, ActionPhase.Windup, capabilities?.RecoverySeconds ?? tuning.Recovery, aim);
     }
 
     internal GameOutcome BeginCombat(SessionCommand command, string selectedMember, bool paused)
@@ -228,7 +236,7 @@ internal sealed class RiflesCombat
         RiflesCharacter member;
         try { member = Member(selectedMember); }
         catch (InvalidDataException) { return GameOutcome.Reject("Choose a living character."); }
-        if (!member.IsLiving) return GameOutcome.Reject("Choose a living character.");
+        if (!member.IsLiving || member.Definition.Commander) return GameOutcome.Reject("Choose a living soldier.");
         ActionState state = ActionOf(member);
         if (command.Action == "interrupt")
         {
@@ -238,21 +246,23 @@ internal sealed class RiflesCombat
         scope.CancelRest("Rest interrupted by an action.");
         if (state.Busy) return GameOutcome.Reject("That character is still acting.");
         CarriedItem? weapon = Weapon(selectedMember);
+        WeaponCapabilities? capabilities = Capabilities(weapon);
         string owner = "member:" + selectedMember;
         CombatActionKind kind = command.Action switch
         {
             "reload" => CombatActionKind.Reload, "throw" => CombatActionKind.Throw,
             "consume" => CombatActionKind.Consume,
-            _ => weapon is not null && definitions.Items.Item(weapon.Definition).Ammunition.Length > 0 ? CombatActionKind.Fire : CombatActionKind.Melee,
+            _ => capabilities is { FireDamage: > 0 } ? CombatActionKind.Fire : CombatActionKind.Melee,
         };
         if (kind is CombatActionKind.Reload or CombatActionKind.Fire)
         {
-            if (weapon is null || definitions.Items.Item(weapon.Definition).Ammunition.Length == 0) return GameOutcome.Reject("Equip a rifle first.");
-            if (kind == CombatActionKind.Fire && !loadedWeapons.Contains(weapon.Entity)) return GameOutcome.Reject("Dry rifle — reload first.");
-            if (kind == CombatActionKind.Reload && loadedWeapons.Contains(weapon.Entity)) return GameOutcome.Reject("Rifle already loaded.");
+            if (capabilities is not { FireDamage: > 0 }) return GameOutcome.Reject("Equip a musket first.");
+            if (kind == CombatActionKind.Fire && !capabilities.Loaded) return GameOutcome.Reject("Dry musket — reload first.");
+            if (kind == CombatActionKind.Reload && capabilities.Loaded) return GameOutcome.Reject("Musket already loaded.");
             if (kind == CombatActionKind.Reload && PartyAmmo() == 0) return GameOutcome.Reject("No rifle shot in the party inventory.");
         }
-        if (kind == CombatActionKind.Melee && !party.CanUseReach(selectedMember, PartyReach.Melee)) return GameOutcome.Reject("Only the front row can reach with melee.");
+        if (kind == CombatActionKind.Melee && (capabilities is not { MeleeDamage: > 0, MeleeReach: not null }
+            || !party.CanUseReach(selectedMember, PartyReach.Melee))) return GameOutcome.Reject("Equip a front-rank melee weapon first.");
         string? token = null, source = null, targetMember = null;
         GridPoint? aim = null; ulong targetId = 0;
         if (kind is CombatActionKind.Throw or CombatActionKind.Consume)
@@ -282,10 +292,10 @@ internal sealed class RiflesCombat
             if (visibleTarget is null) return GameOutcome.Reject("Select a visible enemy.");
             aim = visibleTarget.Motion.Position;
         }
-        if (aim is { } cell && Vector3.Distance(Aim(scope.Exploration.Position), Aim(cell)) > Combat.Action(kind).Range)
+        if (aim is { } cell && Vector3.Distance(Aim(scope.Exploration.Position), Aim(cell)) > ActionRange(kind, capabilities))
             return GameOutcome.Reject("Target is out of range.");
         ActionSnapshot prepared = NewAction(kind, kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload ? weapon?.Entity ?? 0 : 0,
-            token, source, targetId, targetMember, aim);
+            token, source, targetId, targetMember, aim, capabilities);
         EnemyState? aimedEnemy = enemies.SingleOrDefault(e => e.Id == targetId);
         if (aimedEnemy is not null) prepared = prepared with { AimOffsetX = aimedEnemy.Motion.CrowdOffset.X, AimOffsetY = aimedEnemy.Motion.CrowdOffset.Y };
         state.Start(prepared);
@@ -311,7 +321,7 @@ internal sealed class RiflesCombat
             && (Weapon(memberId)?.Entity ?? 0) != action.Weapon) throw new InvalidDataException("Equipment changed; action interrupted.");
         if (action.Kind == CombatActionKind.Reload)
         {
-            inventory.Consume(new PartyOwner(), Combat.AmmunitionItem, 1); loadedWeapons.Add(action.Weapon);
+            inventory.Consume(new PartyOwner(), Combat.AmmunitionItem, 1); weapons.SetLoaded(action.Weapon, inventory, true);
             scope.Sound(SoundCue.Reload, Aim(scope.Exploration.Position));
             CombatMessage(member.Definition.Name + " loaded one round."); return;
         }
@@ -325,7 +335,8 @@ internal sealed class RiflesCombat
             CombatMessage(target.Definition.Name + " restored " + restored + " " + use.Use); return;
         }
         if (action.Kind == CombatActionKind.Melee && !party.CanUseReach(memberId, PartyReach.Melee)) throw new InvalidDataException("Formation changed; melee interrupted.");
-        if (action.Kind == CombatActionKind.Fire && !loadedWeapons.Remove(action.Weapon)) throw new InvalidDataException("Dry rifle.");
+        if (action.Kind == CombatActionKind.Fire && !weapons.Capabilities(action.Weapon, inventory).Loaded) throw new InvalidDataException("Dry musket.");
+        if (action.Kind == CombatActionKind.Fire) weapons.SetLoaded(action.Weapon, inventory, false);
         if (action.Kind == CombatActionKind.Fire) EmitNoise(scope.Exploration.Position, NoiseKind.Gunfire);
         GridPoint cell = action.AimCell!.Value;
         if (action.Kind is CombatActionKind.Throw)
@@ -340,17 +351,25 @@ internal sealed class RiflesCombat
             CombatMessage(member.Definition.Name + " released " + action.Kind); return;
         }
         Vector3 start = Aim(scope.Exploration.Position), end = Aim(cell) + new Vector3(action.AimOffsetX, 0, action.AimOffsetY) * scope.Scene.LogicalCellSize;
-        if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage("Attack missed — target outside reach."); return; }
+        WeaponCapabilities? capabilities = action.Weapon == 0 ? null : weapons.Capabilities(action.Weapon, inventory);
+        if (Vector3.Distance(start, end) > ActionRange(action.Kind, capabilities)) { CombatMessage("Attack missed — target outside reach."); return; }
+        if (action.Kind == CombatActionKind.Fire && capabilities is not null && !weapons.RollFireHit(action.Weapon, inventory, action.Target))
+        {
+            CombatMessage(member.Definition.Name + " missed (accuracy " + (capabilities.Accuracy * 100).ToString("0") + "%)."); return;
+        }
         SpatialHit hit = scope.Scene.Trace(start, end, CombatBodies(), scope.PartyId);
-        ResolveHit(hit, action.Kind, memberId, scope.PartyId, end - start);
+        ResolveHit(hit, action.Kind, memberId, scope.PartyId, end - start,
+            action.Kind == CombatActionKind.Fire ? capabilities?.FireDamage : capabilities?.MeleeDamage);
     }
 
     internal void Advance(double seconds)
     {
         if (seconds <= 0) return;
+        if (Defeated) { CancelAll(); return; }
         AdvanceFlights(seconds);
         foreach (RiflesCharacter member in party.Members)
         {
+            if (Defeated) { CancelAll(); break; }
             ActionState state = ActionOf(member);
             if (!member.IsLiving) { state.Cancel(); continue; }
             if (state.Current is { Phase: ActionPhase.Windup } pending
@@ -385,12 +404,12 @@ internal sealed class RiflesCombat
         ResolveHit(scope.Scene.Trace(start, end, CombatBodies(), enemy.Id), action.Kind, null, enemy.Id, end - start);
     }
 
-    private void ResolveHit(SpatialHit hit, CombatActionKind kind, string? member, ulong shooter, Vector3 direction)
+    private void ResolveHit(SpatialHit hit, CombatActionKind kind, string? member, ulong shooter, Vector3 direction, long? weaponDamage = null)
     {
         if (!hit.Present) { CombatMessage(kind + " missed."); return; }
         if (hit.Kind != SpatialHitKind.Entity) { CombatMessage(kind + " blocked by masonry or a closed gate."); return; }
         scope.Sound(SoundCue.Impact, hit.Entity == scope.PartyId ? Aim(scope.Exploration.Position) : Aim(enemies.FirstOrDefault(e => e.Id == hit.Entity)?.Motion.Position ?? scope.Exploration.Position));
-        long damage = Combat.Action(kind).Damage + (member is null ? 0 : Member(member).Power);
+        long damage = (weaponDamage ?? Combat.Action(kind).Damage) + (member is null ? 0 : Member(member).Power);
         EnemyState? enemy = enemies.SingleOrDefault(e => e.Id == hit.Entity && e.Alive);
         if (enemy is not null)
         {
@@ -401,10 +420,10 @@ internal sealed class RiflesCombat
         if (hit.Entity == scope.PartyId)
         {
             if (shooter == scope.PartyId && !Combat.FriendlyFire) return;
-            // Directional hits meet whoever stands closest to the incoming
-            // side; directionless cases fall back to front-rank order.
-            RiflesCharacter? target = MemberInLineOfFire(direction)
-                ?? party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
+            // Incoming direction selects one authored screening sector/lane.
+            // A gap, or a directionless source, exposes the commander; this
+            // single hit never falls through to another soldier.
+            RiflesCharacter? target = MemberInLineOfFire(direction);
             if (target is null) return;
             scope.CancelRest("Rest interrupted by damage.");
             long applied = DamageMember(target, Math.Max(Combat.MinimumDamage, damage - target.Defense));
@@ -434,7 +453,7 @@ internal sealed class RiflesCombat
             if (enemy.Loaded)
             {
                 CarriedItem? rifle = inventory.Items(enemy.Owner).FirstOrDefault(i => definitions.Items.Item(i.Definition).Ammunition.Length > 0 && i.Entity != 0);
-                if (rifle is not null) loadedWeapons.Add(rifle.Entity);
+                if (rifle is not null) weapons.SetLoaded(rifle.Entity, inventory, true);
                 enemy.Loaded = false;
             }
             CombatMessage(enemy.Definition.Name + " fell. Belongings can be recovered.");
@@ -493,7 +512,7 @@ internal sealed class RiflesCombat
                     if (!Combat.RecoverThrownItems)
                     {
                         CarriedItem consumed = inventory.Items(flight.Owner).Single();
-                        inventory.Destroy(ItemRef.Parse(flight.Owner, consumed.Token)); loadedWeapons.Remove(consumed.Entity);
+                        inventory.Destroy(ItemRef.Parse(flight.Owner, consumed.Token));
                         CombatMessage("Thrown item consumed on impact."); continue;
                     }
                     if (landed == scope.ItemWorld.Anchor("plate").Cell)
@@ -518,25 +537,16 @@ internal sealed class RiflesCombat
         && scope.ItemWorld.Reachable(Aim(cell), scope.Exploration, scope.Scene);
 
     /// <summary>
-    /// Whoever stands closest to the incoming side of the party cell meets a
-    /// directional hit. Formation offsets are authored facing-relative, so the
-    /// ray converts to facing-relative axes first: the same layout reads
-    /// correctly whether the attack comes from the front, flank, or rear.
-    /// Null means degenerate direction — the caller keeps rank order.
+    /// Converts an actual incoming world direction to the authored
+    /// facing-relative sector/lane. Screening is a PartyState lookup; a gap
+    /// returns the commander and never selects an unrelated living soldier.
     /// </summary>
     private RiflesCharacter? MemberInLineOfFire(Vector3 direction)
     {
-        Rifles.Procgen.Generation.GridPoint facing = scope.Exploration.Facing.Offset();
-        float forwardX = facing.X, forwardZ = facing.Y, leftX = facing.Y, leftZ = -facing.X;
-        string? id = FormationPositionDefinition.FirstEncountered(
-            direction.X * forwardX + direction.Z * forwardZ,
-            direction.X * leftX + direction.Z * leftZ,
-            party.Members.Select(member =>
-            {
-                FormationPositionDefinition position = party.PositionOf(member.Definition.Id);
-                return (member.Definition.Id, member.Position, position.OffsetForward, position.OffsetLeft, member.IsLiving);
-            }));
-        return id is null ? null : party.Members.Single(member => member.Definition.Id == id);
+        if (direction.X == 0 && direction.Z == 0) return party.Commander;
+        FormationApproach approach = FormationRules.DeriveApproach(scope.Exploration.Facing,
+            new Vector2(-direction.X, -direction.Z), definitions.Formation.LaneBoundaryRatio);
+        return party.ScreenedRecipient(definitions.Formation, approach);
     }
 
     internal void RequireItemAccess(string owner)
@@ -720,7 +730,7 @@ internal sealed class RiflesCombat
     internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
         RiflesCharacter member = Member(memberId);
-        if (!member.IsLiving || !magic.For(memberId).Known.Contains(spell.Id)) throw new InvalidDataException("That character cannot cast this spell.");
+        if (Defeated || member.Definition.Commander || !member.IsLiving || !magic.For(memberId).Known.Contains(spell.Id)) throw new InvalidDataException("That character cannot cast this spell.");
         if (member.Resource < SpellCost(memberId, spell)) throw new InvalidDataException("Insufficient resource.");
         if (!committing && ActionOf(member).Busy) throw new InvalidDataException("That character is still acting.");
         if (spell.Target == SpellTarget.Enemy && !committing)
@@ -734,7 +744,7 @@ internal sealed class RiflesCombat
             RiflesCharacter ally = Member(targetMember);
             if (spell.Effect == SpellEffect.Revive)
             {
-                if (ally.IsLiving || magic.For(targetMember).Revivals >= definitions.Magic.MaximumRevivals || Threatened)
+                if (ally.Definition.Commander || ally.IsLiving || magic.For(targetMember).Revivals >= definitions.Magic.MaximumRevivals || Threatened)
                     throw new InvalidDataException("Revival needs a fallen ally with a revival remaining and no threats.");
                 if (!HasItem(memberId, definitions.Magic.RevivalItem)) throw new InvalidDataException("Caster needs " + definitions.Magic.RevivalItem + " for revival.");
             }
@@ -873,7 +883,10 @@ internal sealed class RiflesCombat
         }
         else if (target == scope.PartyId && (shooter != scope.PartyId || Combat.FriendlyFire))
         {
-            RiflesCharacter? member = party.Members.Where(m => m.IsLiving).OrderBy(m => m.Rank).ThenBy(m => m.Position, StringComparer.Ordinal).FirstOrDefault();
+            // Hostile magic follows the caster approach; directionless effects reach the center.
+            EnemyState? caster = enemies.SingleOrDefault(enemy => enemy.Id == shooter);
+            RiflesCharacter? member = caster is null ? party.Commander
+                : MemberInLineOfFire(Aim(scope.Exploration.Position) - EnemyAim(caster));
             if (member is null) return;
             scope.CancelRest("Rest interrupted by hostile magic.");
             if (spell.Effect == SpellEffect.Damage) DamageMember(member, Resisted(spell.Power, member.Definition.Archetype));

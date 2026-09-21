@@ -15,7 +15,7 @@ namespace Rifles.Game.Expedition;
 // have one owner: the active expedition snapshot.
 internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSnapshot Departure,
     PatrolSnapshot Actor, FeatureSnapshot Features, InventorySnapshot Inventory,
-    ItemExplorationSnapshot ItemWorld, EnemySnapshot[] Enemies, ulong[] LoadedWeapons,
+    ItemExplorationSnapshot ItemWorld, EnemySnapshot[] Enemies, WeaponStateSnapshot Weapons,
     FlightSnapshot[] Flights, DropSnapshot[] Drops, AllySnapshot[] Allies,
     MagicConditionSnapshot[] Conditions, GeneratedFeatureSnapshot GeneratedFeatures,
     EncounterPlacementResult EncounterPlacement)
@@ -28,7 +28,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
         var items = packs.SelectMany(p => p.Items).Select(i => i.Id).ToHashSet();
         return new(state.FloorId, state.Floor, state.Exploration, state.Actor, state.Features,
             new(packs), state.ItemWorld with { OpenContainer = null }, state.Combat.Enemies,
-            state.Combat.LoadedWeapons.Where(items.Contains).ToArray(), state.Combat.Flights,
+            new(state.Combat.Weapons.Muskets.Where(m => items.Contains(m.Item)).ToArray()), state.Combat.Flights,
             state.Combat.Drops, state.Combat.Allies,
             state.Combat.Magic!.Conditions.Where(c => c.Target.StartsWith("enemy:", StringComparison.Ordinal)).ToArray(),
             state.GeneratedFeatures, state.EncounterPlacement);
@@ -114,7 +114,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
             floor.Enemies.Select(e => (e.Id, e.Owner, e.Definition, RiflesStats.TrackCurrent(e.Stats, RiflesStatIds.Vitality) > 0)).ToArray();
         FlightSnapshot[] flights = CombatRestore.RestoreFlights(floor.Flights, definitions, floor.Floor, inventory, members, 0, enemies);
         CombatRestore.ValidateDropsAndCombatOwners(floor.Drops, flights, enemies, floor.Floor, inventory);
-        CombatRestore.ValidateLoadedWeapons(floor.LoadedWeapons, definitions, inventory);
+        _ = WeaponState.Restore(definitions.Items, floor.Weapons, inventory);
         HashSet<string> targets = enemies.Where(e => e.Alive)
             .Select(e => "enemy:" + e.Id).ToHashSet(StringComparer.Ordinal);
         MagicState.ValidateConditions(floor.Conditions, targets, definitions.Magic);
@@ -130,7 +130,7 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
                 .Concat(Conditions).ToArray(),
         };
         CombatSnapshot combat = new(Enemies, party.Combat.Members,
-            party.Combat.LoadedWeapons.Where(items.Contains).Concat(LoadedWeapons).ToArray(),
+            new(party.Combat.Weapons.Muskets.Where(m => items.Contains(m.Item)).Concat(Weapons.Muskets).ToArray()),
             Flights, Drops, Allies, 0, magic);
         return party with { FloorId = Id, Floor = Floor, Exploration = pose, Actor = Actor,
             Features = Features, Inventory = new(travelling.Concat(Inventory.Packs).ToArray()),

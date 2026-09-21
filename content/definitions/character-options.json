@@ -1,30 +1,145 @@
 {
   "defaultPresetId": "balanced",
   "archetypes": [
-    { "id": "warden", "name": "Warden", "maximumVitality": 40, "basePower": 7, "baseDefense": 5, "maximumResource": 12, "startingVitality": 28 },
-    { "id": "blade", "name": "Blade", "maximumVitality": 32, "basePower": 8, "baseDefense": 3, "maximumResource": 8 },
-    { "id": "seeker", "name": "Seeker", "maximumVitality": 26, "basePower": 5, "baseDefense": 2, "maximumResource": 16, "startingResource": 7 },
-    { "id": "mender", "name": "Mender", "maximumVitality": 28, "basePower": 4, "baseDefense": 3, "maximumResource": 20 }
+    {
+      "id": "warden",
+      "name": "Warden",
+      "maximumVitality": 40,
+      "basePower": 7,
+      "baseDefense": 5,
+      "maximumResource": 12,
+      "startingVitality": 28
+    },
+    {
+      "id": "blade",
+      "name": "Blade",
+      "maximumVitality": 32,
+      "basePower": 8,
+      "baseDefense": 3,
+      "maximumResource": 8
+    },
+    {
+      "id": "seeker",
+      "name": "Seeker",
+      "maximumVitality": 26,
+      "basePower": 5,
+      "baseDefense": 2,
+      "maximumResource": 16,
+      "startingResource": 7
+    },
+    {
+      "id": "mender",
+      "name": "Mender",
+      "maximumVitality": 28,
+      "basePower": 4,
+      "baseDefense": 3,
+      "maximumResource": 20
+    },
+    {
+      "id": "commander",
+      "name": "Commander",
+      "maximumVitality": 35,
+      "basePower": 0,
+      "baseDefense": 2,
+      "maximumResource": 0,
+      "commander": true
+    }
   ],
   "presets": [
     {
       "id": "balanced",
       "name": "Balanced patrol",
       "members": [
-        { "id": "warden", "archetype": "warden", "name": "Warden", "position": "r0c1" },
-        { "id": "blade", "archetype": "blade", "name": "Blade", "position": "r0c3" },
-        { "id": "seeker", "archetype": "seeker", "name": "Seeker", "position": "r4c1" },
-        { "id": "mender", "archetype": "mender", "name": "Mender", "position": "r4c3" }
+        {
+          "id": "warden",
+          "archetype": "warden",
+          "name": "Warden",
+          "position": "front-left"
+        },
+        {
+          "id": "blade",
+          "archetype": "blade",
+          "name": "Blade",
+          "position": "front-center"
+        },
+        {
+          "id": "seeker",
+          "archetype": "seeker",
+          "name": "Seeker",
+          "position": "rear-left"
+        },
+        {
+          "id": "mender",
+          "archetype": "mender",
+          "name": "Mender",
+          "position": "rear-center"
+        },
+        {
+          "id": "musketeer-a",
+          "archetype": "seeker",
+          "name": "Musketeer A",
+          "position": "front-right"
+        },
+        {
+          "id": "musketeer-b",
+          "archetype": "seeker",
+          "name": "Musketeer B",
+          "position": "right-guard"
+        },
+        {
+          "id": "commander",
+          "archetype": "commander",
+          "name": "Commander",
+          "position": "commander"
+        }
       ]
     },
     {
       "id": "rifle-drill",
       "name": "Rifle drill",
       "members": [
-        { "id": "warden", "archetype": "warden", "name": "Warden", "position": "r0c1" },
-        { "id": "blade", "archetype": "blade", "name": "Blade", "position": "r0c3" },
-        { "id": "seeker", "archetype": "seeker", "name": "Seeker", "position": "r4c1" },
-        { "id": "mender", "archetype": "mender", "name": "Mender", "position": "r4c3" }
+        {
+          "id": "warden",
+          "archetype": "warden",
+          "name": "Warden",
+          "position": "front-left"
+        },
+        {
+          "id": "blade",
+          "archetype": "blade",
+          "name": "Blade",
+          "position": "front-center"
+        },
+        {
+          "id": "seeker",
+          "archetype": "seeker",
+          "name": "Seeker",
+          "position": "rear-left"
+        },
+        {
+          "id": "mender",
+          "archetype": "mender",
+          "name": "Mender",
+          "position": "rear-center"
+        },
+        {
+          "id": "musketeer-a",
+          "archetype": "seeker",
+          "name": "Musketeer A",
+          "position": "front-right"
+        },
+        {
+          "id": "musketeer-b",
+          "archetype": "seeker",
+          "name": "Musketeer B",
+          "position": "right-guard"
+        },
+        {
+          "id": "commander",
+          "archetype": "commander",
+          "name": "Commander",
+          "position": "commander"
+        }
       ]
     }
   ]

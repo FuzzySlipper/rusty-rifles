@@ -26,10 +26,15 @@ public sealed partial class RiflesProduct
         uint members = value.Object(party.Members.Select(member =>
         {
             CarriedItem? weapon = active.Combat.Weapon(member.Definition.Id);
+            WeaponCapabilities? capability = weapon is not null && definitions.Items.Item(weapon.Definition).Weapon is not null
+                ? active.Combat.Weapons.Capabilities(weapon.Entity, active.Inventory) : null;
             ActionSnapshot? action = active.Combat.ActionOf(member).Current;
             return (member.Definition.Id, value.Object(("phase", value.String(!member.IsLiving ? "Dead" : action is null ? "Ready" : action.Kind + " " + action.Phase)),
                 ("remaining", value.Number(action?.Remaining ?? 0)), ("weapon", value.String(weapon is null ? "Unarmed" : definitions.Items.Item(weapon.Definition).Name)),
-                ("loaded", value.Number(weapon is not null && active.Combat.LoadedWeapons.Contains(weapon.Entity) ? 1 : 0)),
+                ("loaded", value.Number(capability?.Loaded == true ? 1 : 0)),
+                ("bayonetFixed", value.Number(capability?.BayonetFixed == true ? 1 : 0)),
+                ("accuracy", value.Number(capability?.Accuracy ?? 0)),
+                ("reloadSeconds", value.Number(capability?.ReloadSeconds ?? 0)),
                 ("ammunition", value.Number(active.Combat.PartyAmmo()))));
         }).ToArray());
         return value.Object(("selectedTarget", value.String(active.Combat.SelectedTarget.ToString())), ("enemies", foes), ("members", members),

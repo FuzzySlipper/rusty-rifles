@@ -1,5 +1,6 @@
 using System.Numerics;
 using Rifles.Game.Magic;
+using Rifles.Game.Items;
 using Rifles.Game.Characters;
 using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
@@ -19,7 +20,7 @@ internal sealed record AllySnapshot(ulong Id, StatsComponentSnapshot Stats)
 {
     internal long Vitality => (long)RiflesStats.TrackCurrent(Stats, RiflesStatIds.Vitality);
 }
-internal sealed record CombatSnapshot(EnemySnapshot[] Enemies, MemberActionSnapshot[] Members, ulong[] LoadedWeapons,
+internal sealed record CombatSnapshot(EnemySnapshot[] Enemies, MemberActionSnapshot[] Members, WeaponStateSnapshot Weapons,
     FlightSnapshot[] Flights, DropSnapshot[] Drops, AllySnapshot[] Allies, ulong SelectedTarget, MagicSnapshot? Magic = null);
 
 internal sealed class EnemyState

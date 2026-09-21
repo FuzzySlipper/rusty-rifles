@@ -11,7 +11,7 @@ namespace Rifles.Game.Combat;
 internal sealed record RestoredCombat(
     EnemyState[] Enemies,
     Dictionary<string, ActionState> Actions,
-    ulong[] LoadedWeapons,
+    WeaponState Weapons,
     FlightSnapshot[] Flights,
     DropSnapshot[] Drops,
     AllySnapshot[] Allies,
@@ -29,7 +29,7 @@ internal static class CombatRestore
 
         EnemyState[] enemies = RestoreEnemies(saved.Enemies, definitions, floor, party.Entities);
         Dictionary<string, ActionState> actions = RestoreMemberActions(saved.Members, definitions, floor, party);
-        ValidateLoadedWeapons(saved.LoadedWeapons, definitions, inventory);
+        WeaponState weapons = WeaponState.Restore(definitions.Items, saved.Weapons, inventory);
         FlightSnapshot[] flights = RestoreFlights(saved.Flights, definitions, floor, inventory,
             party.Members.Select(member => member.Definition.Id).ToHashSet(StringComparer.Ordinal), partyId,
             enemies.Select(enemy => (enemy.Id, enemy.Owner, enemy.Definition.Id, enemy.Alive)).ToArray());
@@ -51,7 +51,7 @@ internal static class CombatRestore
             && actions.Values.All(a => !a.Busy), "saved rest eligibility");
         // Condition timers and target kinds are admitted inside
         // MagicState.Restore via shared data validation.
-        return new RestoredCombat(enemies, actions, saved.LoadedWeapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
+        return new RestoredCombat(enemies, actions, weapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
     }
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor, CharacterEntities entities)
@@ -111,6 +111,7 @@ internal static class CombatRestore
             ValidateAction(snapshot.Action, definitions, floor);
             ActionState action = ActionState.Restore(snapshot.Action);
             GameDefinitions.Require(member.IsLiving || !action.Busy, "dead member action");
+            GameDefinitions.Require(!member.Definition.Commander || !action.Busy, "commander cannot act");
             actions.Add(snapshot.Member, action);
         }
         return actions;
@@ -134,23 +135,27 @@ internal static class CombatRestore
         }
         GameDefinitions.Require(action.Spell is null && action.Cost == 0, "nonspell action payload");
         ActionDefinition profile = definitions.Combat.Action(action.Kind);
-        double maximumRemaining = action.Phase == ActionPhase.Windup ? profile.Windup : profile.Recovery;
-        GameDefinitions.Require(action.Remaining <= maximumRemaining && action.RecoverySeconds <= profile.Recovery
+        double maximumWindup = profile.Windup;
+        double maximumRecovery = profile.Recovery;
+        if (action.Weapon != 0 && action.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Reload)
+        {
+            // Recovery remains valid after a weapon is transferred or destroyed.
+            // Admit against authored timings, not the currently equipped item.
+            foreach (MartialWeaponDefinition weapon in definitions.Items.Items.Where(item => item.Weapon is not null).Select(item => item.Weapon!))
+            {
+                double windup = action.Kind == CombatActionKind.Reload
+                    ? weapon.ReloadSeconds * (weapon.Bayonet?.ReloadSecondsMultiplier ?? 1) : weapon.WindupSeconds;
+                maximumWindup = Math.Max(maximumWindup, windup);
+                maximumRecovery = Math.Max(maximumRecovery, weapon.RecoverySeconds);
+            }
+        }
+        double maximumRemaining = action.Phase == ActionPhase.Windup ? maximumWindup : maximumRecovery;
+        GameDefinitions.Require(action.Remaining <= maximumRemaining && action.RecoverySeconds <= maximumRecovery
             && (action.Phase != ActionPhase.Recovery || action.Remaining <= action.RecoverySeconds), "saved combat action duration");
 
         bool attacks = action.Kind is CombatActionKind.Melee or CombatActionKind.Fire or CombatActionKind.Throw;
         GameDefinitions.Require(attacks == action.AimCell.HasValue && (!action.AimCell.HasValue || floor.Cells.Contains(action.AimCell.Value)),
             "saved combat action aim");
-    }
-
-    internal static void ValidateLoadedWeapons(ulong[] loadedWeapons, GameDefinitions definitions, ItemInventory inventory)
-    {
-        if (loadedWeapons is null) throw new InvalidDataException("Invalid saved loaded weapons.");
-        GameDefinitions.Require(loadedWeapons.Distinct().Count() == loadedWeapons.Length, "saved loaded weapons");
-        HashSet<ulong> rifles = inventory.Owners.SelectMany(owner => inventory.Items(owner.Key))
-            .Where(item => item.Entity != 0 && definitions.Items.Item(item.Definition).Ammunition.Length > 0)
-            .Select(item => item.Entity).ToHashSet();
-        GameDefinitions.Require(loadedWeapons.All(rifles.Contains), "saved loaded weapon item");
     }
 
     internal static FlightSnapshot[] RestoreFlights(FlightSnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor,

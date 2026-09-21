@@ -46,6 +46,8 @@ EnemyBrainChecks.Run();
 CrowdChecks.Run();
 CrowdLaneChecks.Run(definitions);
 FormationRulesChecks.Run(definitions);
+CommanderChecks.Run(definitions);
+WeaponChecks.Run(definitions);
 CombatInventoryChecks.Run(definitions);
 CombatSaveChecks.Run(definitions);
 // Invalid authored files fail at admission, before creating any live world.
@@ -107,7 +109,7 @@ Require(!grid.Commit(1) && grid.Position(1) == new GridPoint(11, 10), "Closing e
 MemberDefinition[] roster = definitions.Characters.ResolvePreset(definitions.Characters.DefaultPresetId);
 Require(roster.Single(m => m.Id == "warden").MaximumVitality == 40 && roster.Single(m => m.Id == "warden").BasePower == 7
     && roster.Single(m => m.Id == "seeker").MaximumResource == 16 && roster.Single(m => m.Id == "seeker").InitialResource == 7
-    && roster.All(m => m.Archetype == m.Id), "Supplied presets retain their authored values through archetype references.");
+    && roster.Where(m => m.Id.StartsWith("musketeer-", StringComparison.Ordinal)).All(m => m.Archetype == "seeker"), "Supplied presets retain their authored values through archetype references.");
 PartyState party = new(definitions.Party.Positions, definitions.Party.MaxPartySize, roster);
 Require(party.Members.Select(m => m.Definition.Position).Distinct(StringComparer.Ordinal).Count() == party.Members.Count, "Authored formation positions are distinct.");
 CharacterOptionsDefinition twins = definitions.Characters with
@@ -116,8 +118,8 @@ CharacterOptionsDefinition twins = definitions.Characters with
     [
         new StarterPartyPresetDefinition("twin-watch", "Twin watch",
         [
-            new PresetMemberDefinition("warden-a", "warden", "Warden A", "r0c1"),
-            new PresetMemberDefinition("warden-b", "warden", "Warden B", "r0c3"),
+            new PresetMemberDefinition("warden-a", "warden", "Warden A", "front-left"),
+            new PresetMemberDefinition("warden-b", "warden", "Warden B", "front-center"),
         ]),
     ],
 };
@@ -148,7 +150,7 @@ Require(party.Members.All(m => ReferenceEquals(m.Stats.GetTrack(RiflesStatIds.Vi
 List<FormationPositionDefinition> openPositions = [.. definitions.Party.Positions,
     new FormationPositionDefinition("reserve-a", "Reserve A", 1),
     new FormationPositionDefinition("reserve-b", "Reserve B", 2)];
-List<MemberDefinition> six = [.. roster,
+List<MemberDefinition> six = [.. roster.Take(4),
     new MemberDefinition("fifth", "warden", "Fifth", "reserve-a", 20),
     new MemberDefinition("sixth", "blade", "Sixth", "reserve-b", 20)];
 PartyState large = new(openPositions, definitions.Party.MaxPartySize, six);
@@ -158,17 +160,6 @@ Require(large.Members.Count == 6 && large.EligibleMembers(PartyReach.Melee).Coun
 PartyState pair = new(openPositions, definitions.Party.MaxPartySize, six.Take(2).ToArray());
 Require(pair.Members.Count == 2 && pair.MoveFormation("warden", "reserve-b") && pair.Members[0].Position == "reserve-b",
     "Smaller parties construct and move within the same authored positions.");
-List<(string Id, string Position, float Forward, float Left, bool Living)> line = definitions.Party.Positions
-    .Select(p => (Id: p.Id, Position: p.Id, Forward: p.OffsetForward, Left: p.OffsetLeft, Living: true)).ToList();
-Require(FormationPositionDefinition.FirstEncountered(-1, 0, line) == "r0c0", "A frontal ray meets the front-row first cell first.");
-Require(FormationPositionDefinition.FirstEncountered(1, 0, line) == "r4c0", "A rear ray meets the rear rank first.");
-Require(FormationPositionDefinition.FirstEncountered(0, -1, line) == "r0c0", "A flank ray meets the near side first.");
-Require(FormationPositionDefinition.FirstEncountered(0, 1, line) == "r0c4", "The far flank meets its own side first.");
-Require(FormationPositionDefinition.FirstEncountered(0, 0, line) is null, "A degenerate ray selects nobody.");
-Require(FormationPositionDefinition.FirstEncountered(-1, 0, line.Select(m => m.Id == "r0c0" ? (m.Id, m.Position, m.Forward, m.Left, false) : m).ToList()) == "r0c1",
-    "Fallen members no longer block incoming fire.");
-Require(FormationPositionDefinition.FirstEncountered(1, 0, line.Select(m => (m.Id, m.Position, 0f, 0f, m.Living)).ToList()) is null,
-    "Content without discriminating offsets falls back to rank order.");
 party.Members[0].ApplyDamage(7);
 var saved = party.Capture();
 party.Members[0].ApplyDamage(long.MaxValue);
@@ -227,7 +218,7 @@ foreach (var placed in savedEncounterPlacement.Instances)
     ExplorationState motion = new(cell, definitions.Exploration with { StepSeconds = enemy.StepSeconds }); motion.Bind(saveGrid, id, enemy.Footprint, enemy.Faction, enemy.Share);
     saveEnemies.Add(new(id, enemy.Id, motion.Capture(), StatSnapshotHelpers.FullEnemy(enemy, definitions.Magic.EnemyResource), null, 0, false, false, owner, new EnemyBrain(enemy.Brain, cell, [cell]).Capture(), spawn.Id));
 }
-CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), [], [], [],
+CombatSnapshot saveCombat = new(saveEnemies.ToArray(), saveParty.Members.Select(m => new MemberActionSnapshot(m.Definition.Id, null)).ToArray(), new WeaponStateSnapshot([]), [], [],
     new[] { RiflesCombat.FreshAlly(saveActor.Id, definitions), RiflesCombat.FreshAlly(savedObserverId, definitions) }, 0, new MagicState(definitions.Magic, saveParty.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), saveParty.Entities).Capture());
 var snapshot = new Rifles.Game.Expedition.ExpeditionSnapshot(Guid.NewGuid(), 1, 2, dressingId,
     savedFloor, savePose.Capture(), saveParty.Members.Select(m => m.Definition).ToArray(), saveParty.Capture().ToArray(), true,
@@ -242,6 +233,11 @@ var decodedRun = codec.Decode(payload.WrittenSpan);
 Rifles.Game.Expedition.RunCodec.Validate(decodedRun, definitions);
 var decoded = decodedRun.Active;
 var restored = Rifles.Game.Expedition.ExpeditionCodec.Validate(decoded, definitions);
+var commanderDefeat = decoded with { Members = decoded.Members.Select(member => member.Id == "commander"
+    ? member with { Stats = StatSnapshotHelpers.WithTrack(member.Stats, RiflesStatIds.Vitality, 0) } : member).ToArray() };
+var defeatedParty = Rifles.Game.Expedition.ExpeditionCodec.Validate(commanderDefeat, definitions).Party;
+Require(defeatedParty.Defeated && defeatedParty.Soldiers.Any(member => member.IsLiving),
+    "Whole expedition restore retains commander defeat with surviving soldiers.");
 RunStateChecks.Run(definitions, decoded);
 Require(decoded.Intent.Identity == snapshot.Intent.Identity
     && decoded.Intent.Connectors.SequenceEqual(snapshot.Intent.Connectors), "Resolved expedition and connector identities survive the save.");

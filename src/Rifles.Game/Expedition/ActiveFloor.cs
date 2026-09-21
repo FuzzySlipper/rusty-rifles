@@ -23,7 +23,7 @@ internal sealed record TravellingState(
     IReadOnlyDictionary<string, MagicState.MagicBook> Books,
     MagicConditionSnapshot[] Conditions,
     SavedPack[] Packs,
-    ulong[] LoadedWeapons);
+    WeaponStateSnapshot Weapons);
 
 /// <summary>
 /// The live floor aggregate: floor data plus every built owner whose lifetime
@@ -124,7 +124,7 @@ internal sealed class ActiveFloor : IDisposable
             foreach (var direction in Rifles.Procgen.Generation.CardinalDirections.Ordered)
                 if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
                     replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), definitions.Combat.DoorClearance);
-            if (restored.Party.Members.Any(m => m.IsLiving)) restored.Exploration.Bind(replacementGrid, saved.PartyId);
+            if (!restored.Party.Defeated) restored.Exploration.Bind(replacementGrid, saved.PartyId);
             if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
         }
         catch { replacement.Dispose(); throw; }
@@ -278,7 +278,7 @@ internal sealed class ActiveFloor : IDisposable
             // idle); the multiplier never applies here since no damage runs.
             RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
                 [RiflesCombat.FreshAlly(actor.Id, definitions), RiflesCombat.FreshAlly(features.Dressing.ObserverId, definitions)],
-                travelling?.LoadedWeapons ?? []);
+                travelling?.Weapons);
             return new ActiveFloor(floor, scene, movement, world, actor, exploration, itemWorld, inventory, magic, combat,
                 generatedFeatures, encounterPlacement, floorId, party);
         }

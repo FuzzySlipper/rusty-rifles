@@ -36,23 +36,21 @@ function authoredPositions(state: Values): Array<{ id: string; name: string; ran
 }
 
 // Formation-local grid cell from authored offsets. The bank lays cells on a
-// 0.25 step around (forward 0, left 0); col grows to the party's right,
-// row grows toward the rear. Returns null outside the 5×5 board (including
+// 0.5 step around (forward 0, left 0); col grows to the party's right,
+// row grows toward the rear. Returns null outside the 3×3 board (including
 // non-finite input) so stray positions overflow instead of throwing.
-// INVARIANT: the bank uses exact 0.25 steps, so every authored cell maps
+// INVARIANT: the bank uses exact 0.5 steps, so every authored cell maps
 // 1:1 with no rounding collisions; update this if the lattice ever changes.
 function gridCell(offsetForward: number, offsetLeft: number): { col: number; row: number } | null {
   if (!Number.isFinite(offsetForward) || !Number.isFinite(offsetLeft)) return null;
-  const col = Math.round(2 - offsetLeft / 0.25);
-  const row = Math.round(2 - offsetForward / 0.25);
-  if (col < 0 || col > 4 || row < 0 || row > 4) return null;
+  const col = Math.round(1 - offsetLeft / 0.5);
+  const row = Math.round(1 - offsetForward / 0.5);
+  if (col < 0 || col > 2 || row < 0 || row > 2) return null;
   return { col, row };
 }
 
-// The middle cell is reserved for later rules: unauthored in C#, blocked in
-// the UI. Both sides reject it independently (defense in depth).
-function isBlockedCell(col: number, row: number): boolean {
-  return col === 2 && row === 2;
+function isCenterCell(col: number, row: number): boolean {
+  return col === 1 && row === 1;
 }
 
 const tokenPalette = ['#7fb3d5', '#8ca65c', '#e4bd63', '#c96a5a', '#9b7bd5', '#6fc2b4', '#d58cc0', '#a5c65c', '#6a9ae0', '#e08c5a'];
@@ -90,21 +88,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationGrid.dataset.barFormation = 'true';
   formationGrid.tabIndex = -1;
   formationGrid.setAttribute('role', 'group');
-  formationGrid.setAttribute('aria-label', 'Formation grid. Drag a member onto another cell to swap, onto an empty cell to move.');
-  formationGrid.style.cssText = 'box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
-  // Blocked middle cell: static, inert, never a token. C# leaves it
-  // unauthored too, so even a forged move intent is rejected server-side.
-  const blockedCell = document.createElement('div');
-  blockedCell.style.cssText = 'position:relative;grid-row:3;grid-column:3;display:flex;align-items:center;justify-content:center;min-height:0';
-  const blockedMark = document.createElement('button');
-  blockedMark.type = 'button';
-  blockedMark.disabled = true;
-  blockedMark.textContent = '×';
-  blockedMark.title = 'Blocked slot (reserved for later rules)';
-  blockedMark.setAttribute('aria-label', 'Blocked formation slot, reserved for later rules');
-  blockedMark.style.cssText = 'height:20px;width:20px;border-radius:50%;border:1px dashed #4a4438;background:#10120f;color:#5a5348;font:12px/1 system-ui;cursor:not-allowed';
-  blockedCell.append(blockedMark);
-  formationGrid.append(blockedCell);
+  formationGrid.setAttribute('aria-label', '3×3 party formation. The commander stays fixed at the center; select a party member for inventory or ally targeting.');
+  formationGrid.style.cssText = 'box-sizing:border-box;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
   const formationOverflow = document.createElement('div');
   formationOverflow.dataset.barFormationOverflow = 'true';
   formationOverflow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;min-height:0';
@@ -206,18 +191,18 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         command('select', { member: memberId });
         return;
       }
-      // Click alternative to dragging: an empty cell moves the selected
-      // member there. The blocked middle cell refuses clicks too, so the
-      // guard holds even if a future bank authors it (drops are guarded
-      // separately). Dragged swaps keep the legacy Swap button as backup.
+      // Click alternative to dragging: an empty soldier position moves the
+      // selected soldier there. The commander center is never a move target.
       const at = select.parentElement?.dataset.gridCell?.split(',').map(Number) ?? [];
-      if (at.length === 2 && isBlockedCell(at[0], at[1])) return;
+      if ((commanderMemberId !== '' && selectedMemberId === commanderMemberId)
+        || (at.length === 2 && isCenterCell(at[0], at[1]))) return;
       if (gapPosition && selectedMemberId) command('move', { member: selectedMemberId, position: gapPosition });
     });
     select.addEventListener('dragstart', event => {
       const memberId = select.dataset.memberId;
-      if (!memberId) {
+      if (!memberId || select.dataset.commander === 'true') {
         event.preventDefault();
+        formationDragId = null;
         return;
       }
       formationDragId = memberId;
@@ -232,6 +217,9 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       formationDragId = null;
     });
     anchor.addEventListener('dragover', event => {
+      const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
+      if (at.length === 2 && isCenterCell(at[0], at[1])) return;
+      if (select.dataset.commander === 'true') return;
       if (select.dataset.memberId || select.dataset.gapPosition) event.preventDefault();
     });
     anchor.addEventListener('drop', event => {
@@ -239,11 +227,14 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       event.stopPropagation();
       const dragged = readFormationDrag(event);
       if (!dragged) return;
-      // The middle cell is reserved for later rules: never accept a drop
-      // there. C# rejects the unauthored id today via TryGetValue; if a bank
-      // ever authors it, only this UI guard blocks drops.
+      if (dragged === commanderMemberId || select.dataset.commander === 'true') {
+        formationDragId = null;
+        return;
+      }
+      // A restored or forged drag still cannot move or swap into the fixed
+      // commander position; the game rules enforce the same invariant.
       const at = anchor.dataset.gridCell?.split(',').map(Number) ?? [];
-      if (at.length === 2 && isBlockedCell(at[0], at[1])) {
+      if (at.length === 2 && isCenterCell(at[0], at[1])) {
         formationDragId = null;
         return;
       }
@@ -262,6 +253,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   // Tokens persist across renders so focus and drag state survive updates.
   const memberTokens = new Map<string, Token>();
   let selectedMemberId = '';
+  let commanderMemberId = '';
   const paintCompass = (): void => {
     if (mapDial.querySelector('[data-compass]')) return;
     for (const [label, x, y] of [['N', 50, 3], ['E', 97, 50], ['S', 50, 97], ['W', 3, 50]] as Array<[string, number, number]>) {
@@ -346,6 +338,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const party = record(state.party);
     const selectedMember = text(state.selectedMember, '');
     selectedMemberId = selectedMember;
+    commanderMemberId = entries(party).find(([, member]) => number(member.commander) === 1)?.[0] ?? '';
     const partyFacing = text(state.facing, 'North');
     paintCompass();
     const signature = JSON.stringify([party, selectedMember, state.positions, partyFacing]);
@@ -354,7 +347,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     // Grid placement: every authored position renders in its formation-local
     // cell (row 0 = front, always at the top — turning the party never
     // shuffles the board; world rotation lives in C# hit geometry), with an
-    // empty gap cell where unoccupied. Offsets outside the 5x5 board, and
+    // empty gap cell where unoccupied. Offsets outside the 3x3 board, and
     // members on unauthored positions, overflow into the strip below so a
     // larger future party never breaks the layout.
     const claimed = new Set<string>();
@@ -405,6 +398,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       const fraction = Math.min(1, Math.max(0, vitality / maximum));
       const selected = item.id === selectedMember;
       const name = text(member.name, item.id);
+      const commander = number(member.commander) === 1;
+      const protection = text(member.protection, 'Protection unavailable');
       if (cell) {
         token.anchor.style.gridRow = String(cell.row + 1);
         token.anchor.style.gridColumn = String(cell.col + 1);
@@ -418,19 +413,24 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       }
       token.select.dataset.barMember = item.id;
       token.select.dataset.memberId = item.id;
+      token.select.dataset.commander = commander ? 'true' : 'false';
       delete token.select.dataset.gapPosition;
       token.select.disabled = false;
-      token.select.draggable = true;
+      token.select.draggable = !commander;
       token.select.setAttribute('aria-pressed', String(selected));
       // paintOccupied never leaves a stale gap announcement: tokens are
       // keyed by role, but idempotence is cheap. See F4.
       token.select.removeAttribute('aria-disabled');
-      token.select.setAttribute('aria-label', `${name}, ${positionName}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another cell to swap.`);
-      token.select.title = `${name} · ${positionName} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
-      token.select.style.borderColor = selected ? '#e4bd63' : item.color;
+      token.select.setAttribute('aria-label', commander
+        ? `Commander ${name}, fixed at the center; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Selectable for inventory and ally targeting.`
+        : `Soldier ${name}, ${positionName}; ${protection}; facing ${facing}; vitality ${vitality} of ${maximum}. Drag onto another soldier to swap.`);
+      token.select.title = commander
+        ? `Commander ${name} · fixed center · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`
+        : `${name} · ${positionName} · ${protection} · facing ${facing} · vitality ${vitality}/${maximum} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')} · drag to swap`;
+      token.select.style.borderColor = selected || commander ? '#e4bd63' : item.color;
       token.select.style.borderStyle = 'solid';
       token.select.style.boxShadow = selected ? `0 0 0 2px #e4bd63,0 2px 6px #00000088` : '0 2px 6px #00000088';
-      token.emblem.textContent = initials(name);
+      token.emblem.textContent = commander ? 'C' : initials(name);
       token.marker.setAttribute('transform', `rotate(${facingRotation(facing)} 7 7)`);
       token.marker.setAttribute('fill', item.color);
       (token.chevron as unknown as HTMLElement).style.visibility = 'visible';
@@ -438,13 +438,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       token.health.style.background = fraction > 0.5 ? '#8ca65c' : fraction > 0.25 ? '#e4bd63' : '#b0523c';
     };
     for (const item of placed) {
-      // The blocked middle cell never takes a token: the static × marks it,
-      // and an occupant there (only possible if a future bank authors it)
-      // renders in the overflow strip so no member is ever hidden. Off-board
-      // gap cells have nothing to show and are skipped the same way.
-      const blocked = item.cell !== null && isBlockedCell(item.cell.col, item.cell.row);
+      // The commander owns the center. If a malformed projection leaves it
+      // empty, omit a moveable gap there; off-board gaps stay omitted too.
       if (item.id === null) {
-        if (item.cell === null || blocked) {
+        if (item.cell === null || isCenterCell(item.cell.col, item.cell.row)) {
           // No UI for these: the post-loop relocation below restores focus
           // if the removed token had it.
           const stale = memberTokens.get(item.key);
@@ -474,6 +471,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         formationGrid.append(token.anchor);
         token.select.dataset.barMember = item.key;
         token.select.dataset.memberId = '';
+        delete token.select.dataset.commander;
         token.select.dataset.gapPosition = item.position.id;
         // Gaps stay enabled so they remain drop targets and the click
         // alternative (move selected member here) works by keyboard too.
@@ -497,12 +495,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
         continue;
       }
       // Authored cells place by their own offsets; an occupant on an
-      // off-board or blocked position (only possible if a future bank
-      // changes the lattice) falls to overflow so members stay visible.
+      // off-board position falls to overflow so members stay visible.
       const authored = layout.find(position => position.id === item.positionId);
       const raw = authored ? gridCell(authored.offsetForward, authored.offsetLeft) : null;
-      const cell = raw !== null && isBlockedCell(raw.col, raw.row) ? null : raw;
-      paintOccupied(item, cell);
+      paintOccupied(item, raw);
     }
     // Appending moves live nodes, so re-appending in order keeps the strip
     // sorted without detaching focus the way a full clear would.

@@ -47,6 +47,7 @@ public sealed partial class RiflesProduct
                     return GameOutcome.Reject("Unknown hotbar slot.");
                 return SelectSpell(id, active.Magic.For(id).Hotbar[hotbar]);
             case "advance":
+                if (Member(command.Member ?? id).Definition.Commander) return GameOutcome.Reject("Choose a soldier to advance.");
                 if (active.Combat.ActionOf(Member(command.Member ?? id)).Busy) return GameOutcome.Reject("Finish the current action before advancing.");
                 try { active.Magic.AdvanceMember(command.Member ?? id, command.Choice ?? ""); }
                 catch (InvalidDataException error) { return GameOutcome.Reject(error.Message); }
@@ -54,6 +55,7 @@ public sealed partial class RiflesProduct
             case "rest-cancel": CancelRest("Rest cancelled; no recovery granted."); return GameOutcome.Accept();
             case "rest": return BeginRest(id);
             case "cast":
+                if (paused || active.Combat.Defeated) return GameOutcome.Reject("Resume with a living commander before casting.");
                 string spellId = command.Spell ?? SelectedSpell(id);
                 if (spellId.Length == 0) return GameOutcome.Reject("Select a known spell.");
                 return active.Combat.BeginSpell(id, definitions.Magic.Spell(spellId), command.Member ?? id);

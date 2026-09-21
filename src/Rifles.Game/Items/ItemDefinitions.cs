@@ -4,9 +4,35 @@ using Rusty.Engine.Mechanics;
 namespace Rifles.Game.Items;
 
 internal enum ItemUse { None, Vitality, Resource, Key }
+internal sealed record BayonetDefinition(string Reach, long MeleeDamage, float AccuracyMultiplier, float ReloadSecondsMultiplier, bool ChargeEligible)
+{
+    internal void Validate()
+    {
+        GameDefinitions.Require(!string.IsNullOrWhiteSpace(Reach) && MeleeDamage > 0 && float.IsFinite(AccuracyMultiplier) && AccuracyMultiplier is > 0 and <= 1
+            && float.IsFinite(ReloadSecondsMultiplier) && ReloadSecondsMultiplier >= 1, "bayonet modifier");
+    }
+}
+
+/// <summary>Concrete martial capability owned by one unique gear definition.</summary>
+internal sealed record MartialWeaponDefinition(string Reach, long MeleeDamage, long FireDamage, double WindupSeconds,
+    double RecoverySeconds, float Accuracy, bool ChargeEligible, double ReloadSeconds, BayonetDefinition? Bayonet)
+{
+    internal bool IsMusket => FireDamage > 0;
+
+    internal void Validate()
+    {
+        GameDefinitions.Require(!string.IsNullOrWhiteSpace(Reach) && MeleeDamage >= 0 && FireDamage >= 0
+            && (MeleeDamage > 0 || FireDamage > 0) && double.IsFinite(WindupSeconds) && WindupSeconds > 0
+            && double.IsFinite(RecoverySeconds) && RecoverySeconds > 0 && float.IsFinite(Accuracy) && Accuracy is > 0 and <= 1
+            && double.IsFinite(ReloadSeconds) && ReloadSeconds >= 0, "martial weapon capability");
+        GameDefinitions.Require(IsMusket == (Bayonet is not null) && (IsMusket ? ReloadSeconds > 0 : ReloadSeconds == 0), "martial weapon musket fields");
+        Bayonet?.Validate();
+    }
+}
+
 internal sealed record GearDefinition(string Id, string Name, ItemKind Kind, ulong MaximumQuantity,
     ulong Mass, ulong Space, string[] Slots, long MinimumPower, long Power, long Defense,
-    string Ammunition, ItemUse Use, long Effect, ulong Cost, string Image)
+    string Ammunition, ItemUse Use, long Effect, ulong Cost, string Image, MartialWeaponDefinition? Weapon = null)
 {
     internal ItemDefinition Mechanical => new(ItemDefinitionId.Parse(Id), Kind, MaximumQuantity,
         Slots.Length == 0 ? [] : [ItemClassificationId.Parse("gear")],
@@ -34,6 +60,9 @@ internal sealed record ItemDefinitions(PackDefinition Backpack, PackDefinition C
                 && item.Slots.Distinct().Count() == item.Slots.Length && item.Slots.All(EquipmentSlots.Contains)
                 && (item.Slots.Length == 0 || item.Kind == ItemKind.Unique)
                 && (item.Use is not (ItemUse.Vitality or ItemUse.Resource) || item.Cost > 0 && item.Effect > 0 && item.Kind == ItemKind.Fungible), "item " + item.Id);
+            GameDefinitions.Require(item.Weapon is null || item.Kind == ItemKind.Unique && item.Slots.SequenceEqual(["weapon"])
+                && item.Use == ItemUse.None && (item.Weapon.IsMusket == !string.IsNullOrWhiteSpace(item.Ammunition)), "martial weapon item " + item.Id);
+            item.Weapon?.Validate();
             _ = item.Mechanical;
         }
         foreach (StartingItem grant in StartingItems)

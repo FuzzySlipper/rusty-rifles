@@ -63,6 +63,14 @@ internal static class RunStateChecks
             "Returning to a retained floor uses the current travelling member inventory.");
         Require(joined.Members.SequenceEqual(current.Members),
             "Returning to a retained floor uses current travelling member vitality and formation state.");
+        ulong travellingMusket = current.Inventory.Packs.Where(pack => ItemInventory.IsMember(pack.Owner.Key))
+            .SelectMany(pack => pack.Items).First(item => item.Definition == "rifle").Id;
+        MusketWeaponSnapshot musketState = new(travellingMusket, true, true);
+        ExpeditionSnapshot armedParty = current with { Combat = current.Combat with { Weapons = new([musketState]) } };
+        ExpeditionSnapshot armedJoin = retained.Join(armedParty, retained.Departure);
+        Require(armedJoin.Combat.Weapons.Muskets.Single(state => state.Item == travellingMusket) == musketState
+            && RetainedFloor.Capture(armedParty).Weapons.Muskets.All(state => state.Item != travellingMusket),
+            "Loaded and fixed bayonet state travels once with its unique musket and is not frozen on the departed floor.");
         Require(joined.Combat.Magic!.Books.SequenceEqual(current.Combat.Magic!.Books),
             "Returning to a retained floor uses current travelling spellbooks.");
         Require(joined.ItemWorld.Door == retained.ItemWorld.Door && joined.ItemWorld.DoorOpen == retained.ItemWorld.DoorOpen
@@ -86,13 +94,13 @@ internal static class RunStateChecks
             Combat = fixture.Combat with
             {
                 Members = fixture.Combat.Members.Select(saved => saved.Member == member ? saved with { Action = windup } : saved).ToArray(),
-                LoadedWeapons = [],
+                Weapons = new WeaponStateSnapshot([]),
             },
         };
         RunSnapshot decodedWindup = RoundTrip(definitions, CreateRun(definitions, reloading));
         ActionSnapshot restoredWindup = decodedWindup.Active.Combat.Members.Single(saved => saved.Member == member).Action
             ?? throw new InvalidOperationException("Reload windup action was lost from the run save.");
-        Require(restoredWindup == windup && decodedWindup.Active.Combat.LoadedWeapons.Length == 0,
+        Require(restoredWindup == windup && decodedWindup.Active.Combat.Weapons.Muskets.All(weapon => !weapon.Loaded),
             "Run reload preserves a windup action and its unloaded rifle state.");
 
         ItemInventory inventory = ItemInventory.Restore(definitions.Items, decodedWindup.Active.Inventory);
@@ -117,13 +125,13 @@ internal static class RunStateChecks
             {
                 Members = decodedWindup.Active.Combat.Members.Select(saved => saved.Member == member
                     ? saved with { Action = recovery } : saved).ToArray(),
-                LoadedWeapons = [rifle],
+                Weapons = new WeaponStateSnapshot([new MusketWeaponSnapshot(rifle, true, false)]),
             },
         };
         RunSnapshot decodedRecovery = RoundTrip(definitions, CreateRun(definitions, committed));
         ActionSnapshot restoredRecovery = decodedRecovery.Active.Combat.Members.Single(saved => saved.Member == member).Action
             ?? throw new InvalidOperationException("Reload recovery action was lost from the run save.");
-        Require(restoredRecovery == recovery && decodedRecovery.Active.Combat.LoadedWeapons.SequenceEqual([rifle])
+        Require(restoredRecovery == recovery && decodedRecovery.Active.Combat.Weapons.Muskets.Where(weapon => weapon.Loaded).Select(weapon => weapon.Item).SequenceEqual([rifle])
             && ItemQuantity(ItemInventory.Restore(definitions.Items, decodedRecovery.Active.Inventory), ammoOwner, definitions.Combat.AmmunitionItem) == beforeAmmo - 1,
             "Committed reload recovery preserves its action, loaded rifle, and spent ammunition.");
 

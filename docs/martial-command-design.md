@@ -115,3 +115,19 @@ These examples establish the prototype's expected behavior; admitted content
 and focused checks implement the exact thresholds. Runtime commander and combat
 integration follow in M02/M04. Visible tuning in M09 may change coverage without
 turning the formation into independently navigable world cells.
+
+## Commander integration policy
+
+The commander is an explicit authored character role, not an instance-name test.
+Actual expedition presets and restores require one commander at the reserved
+center. Generic small party fixtures remain usable for domain checks. Defeat is
+commander death; living soldiers cannot restore movement or casting after it.
+Soldiers may retreat with the living commander after all other soldiers fall.
+
+Directional weapon hits and hostile magic use the incoming approach and current
+screening positions. Directionless hostile magic reaches the commander. Existing
+whole-party environmental hazards damage each living member, including the
+commander; ongoing conditions stay on their actual recipient rather than being
+screened again on every tick. A fallen commander cannot be revived. The commander
+has no starting spells, direct actions or advancement choices. Formation status
+projects the role and exposed approaches from C#.

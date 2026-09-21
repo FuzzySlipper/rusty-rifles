@@ -243,10 +243,14 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       const id = String(member.id); present.add(id);
       let card = roster.querySelector<HTMLButtonElement>(`button[data-member="${CSS.escape(id)}"]`);
       if (!card) { card = button('', () => command('select', { member: id })); card.dataset.member = id; }
-      card.textContent = `${text(member.name)} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`;
+      const commander = numeric(member.commander) === 1;
+      const role = commander ? 'Commander' : 'Soldier';
+      const name = text(member.name, id);
+      const protection = text(member.protection, 'Protection unavailable');
+      card.textContent = `${role} · ${name} · ${text(member.vitality)}/${text(member.maximumVitality)} · ${text(member.resource, '0')}/${text(member.maxResource, '0')}`;
       card.setAttribute('aria-pressed', String(id === state.selectedMember));
-      card.setAttribute('aria-label', `${text(member.name)}, ${text(member.positionName, member.position)}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
-      card.title = `${text(member.positionName, member.position)} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
+      card.setAttribute('aria-label', `${role} ${name}, ${text(member.positionName, member.position)}; ${protection}; melee ${text(member.melee, '0')}, ranged ${text(member.ranged, '0')}, casting ${text(member.casting, '0')}`);
+      card.title = `${commander ? 'Fixed at the center' : text(member.positionName, member.position)} · ${protection} · Power ${text(member.power, '0')} · Defense ${text(member.defense, '0')}`;
       card.style.borderColor = id === state.selectedMember ? '#e4bd63' : '#827556';
       // Keep focused controls alive while health and recovery values change.
       const index = sortedMembers.findIndex(candidate => candidate.id === member.id);
@@ -257,27 +261,37 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     });
   };
   const renderPartyTools = (): void => {
-    const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name, member.position]), state.positions, state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
+    const signature = JSON.stringify([entries(state.party).map(([id, member]) => [id, member.name, member.position, member.commander]), state.positions, state.presets, state.preset, state.selectedMember]); if (signature === previousPartyTools) return; previousPartyTools = signature;
     const members = entries(state.party); partyTools.replaceChildren();
+    const soldiers = members.filter(([, member]) => numeric(member.commander) !== 1);
+    const commander = members.find(([, member]) => numeric(member.commander) === 1)?.[1];
+    const commanderPosition = text(commander?.position, '');
+    const soldierPositions = entries(state.positions).filter(([id, position]) => id !== commanderPosition
+      && !(numeric(position.offsetForward) === 0 && numeric(position.offsetLeft) === 0));
     const partySummary = document.createElement('summary'); partySummary.textContent = 'Formation & party preset';
     partyTools.append(partySummary);
     const formationTitle = document.createElement('strong'); formationTitle.textContent = 'Formation';
     const first = document.createElement('select'), second = document.createElement('select'); first.dataset.formationMember = 'true'; second.dataset.formationOtherMember = 'true';
-    for (const [id, member] of members) for (const select of [first, second]) { const option = document.createElement('option'); option.value = id; option.textContent = text(member.name, id); select.append(option); }
-    first.value = text(state.selectedMember, members[0]?.[0] ?? ''); second.value = members.find(([id]) => id !== first.value)?.[0] ?? first.value;
-    partyTools.append(formationTitle, first, second, button('Swap positions', () => command('formation', { member: first.value, otherMember: second.value })));
+    for (const [id, member] of soldiers) for (const select of [first, second]) { const option = document.createElement('option'); option.value = id; option.textContent = text(member.name, id); select.append(option); }
+    first.value = soldiers.some(([id]) => id === state.selectedMember) ? text(state.selectedMember) : (soldiers[0]?.[0] ?? '');
+    second.value = soldiers.find(([id]) => id !== first.value)?.[0] ?? first.value;
+    const swap = button('Swap positions', () => command('formation', { member: first.value, otherMember: second.value }));
+    swap.disabled = soldiers.length < 2;
+    partyTools.append(formationTitle, first, second, swap);
     // Move backing for drag-and-drop: same `move` intent the future drop
     // targets will send, operable here so agents can exercise gaps meanwhile.
     const moveTarget = document.createElement('select'); moveTarget.dataset.formationPosition = 'true'; moveTarget.setAttribute('aria-label', 'Formation position');
-    for (const [id, position] of entries(state.positions)) {
+    for (const [id, position] of soldierPositions) {
       const occupant = members.find(([, member]) => text(member.position) === id)?.[1];
       const option = document.createElement('option'); option.value = id;
       option.textContent = occupant ? `${text(position.name, id)} · ${text(occupant.name)}` : `${text(position.name, id)} · empty`;
       moveTarget.append(option);
     }
-    const firstEmpty = entries(state.positions).find(([id]) => !members.some(([, member]) => text(member.position) === id))?.[0];
+    const firstEmpty = soldierPositions.find(([id]) => !members.some(([, member]) => text(member.position) === id))?.[0];
     if (firstEmpty !== undefined) moveTarget.value = firstEmpty;
-    partyTools.append(moveTarget, button('Move to position', () => command('move', { member: first.value, position: moveTarget.value })));
+    const move = button('Move to position', () => command('move', { member: first.value, position: moveTarget.value }));
+    move.disabled = soldiers.length === 0 || moveTarget.options.length === 0;
+    partyTools.append(moveTarget, move);
     const presets = entries(state.presets);
     if (presets.length > 0) { const presetTitle = document.createElement('strong'); presetTitle.textContent = 'Party preset'; presetTitle.style.marginLeft = '8px'; const select = document.createElement('select'); select.dataset.partyPreset = 'true'; for (const [id, preset] of presets) { const option = document.createElement('option'); option.value = id; option.textContent = text(preset.name, id); select.append(option); } select.value = text(state.preset, presets[0][0]); partyTools.append(presetTitle, select, button('Restart with party', () => command('choose-party', { preset: select.value }))); }
   };
@@ -505,7 +519,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       }
       const partyMember = record(party[id]);
       const remaining = Math.max(0, numeric(member.remaining));
-      row.textContent = `${text(partyMember.name, id)} · ${text(member.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(member.weapon, 'unarmed')} · ${text(member.loaded, '0')}/${text(member.ammunition, '0')}`;
+      row.textContent = `${text(partyMember.name, id)} · ${text(member.phase)}${remaining > 0 ? ` ${remaining.toFixed(1)}s` : ''} · ${text(member.weapon, 'unarmed')} · ${text(member.loaded, '0')}/${text(member.ammunition, '0')}${numeric(member.reloadSeconds, 0) > 0 ? ` · bayonet ${numeric(member.bayonetFixed, 0) === 1 ? 'fixed' : 'unfixed'} · ${Math.round(numeric(member.accuracy, 0) * 100)}% accuracy · reload ${numeric(member.reloadSeconds, 0).toFixed(1)}s` : ''}`;
     }
     for (const [id, row] of memberRows) {
       if (!presentMembers.has(id)) { row.remove(); memberRows.delete(id); }
@@ -884,7 +898,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     readmeBody.append(section);
   };
   readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space attack · T reload · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
-  readmeSection('Formation', 'The left panel is a 5×5 formation grid, front row at the top. The chevron marks each member\u2019s facing. Drag a member onto another cell to swap them. Drop a member onto an empty cell \u2014 or click the cell with a member selected \u2014 to move them there. The middle cell is blocked for later rules.');
+  readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; formation controls only move or swap soldiers, and the commander cannot be repositioned.');
   readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));

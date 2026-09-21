@@ -17,9 +17,9 @@
   },
   "partySlots": 24,
   "equipmentSlots": [
-    "main-hand",
-    "off-hand",
-    "body"
+    "weapon",
+    "outfit",
+    "accessory"
   ],
   "items": [
     {
@@ -30,8 +30,7 @@
       "mass": 40,
       "space": 6,
       "slots": [
-        "main-hand",
-        "off-hand"
+        "weapon"
       ],
       "minimumPower": 4,
       "power": 6,
@@ -40,26 +39,54 @@
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "rifle"
+      "image": "rifle",
+      "weapon": {
+        "reach": "musket",
+        "meleeDamage": 0,
+        "fireDamage": 18,
+        "windupSeconds": 0.25,
+        "recoverySeconds": 1.0,
+        "accuracy": 0.8,
+        "chargeEligible": false,
+        "reloadSeconds": 2.4,
+        "bayonet": {
+          "reach": "fixed-bayonet",
+          "meleeDamage": 8,
+          "accuracyMultiplier": 0.75,
+          "reloadSecondsMultiplier": 1.25,
+          "chargeEligible": true
+        }
+      }
     },
     {
       "id": "knife",
-      "name": "Belt knife",
+      "name": "Short sword and shield",
       "kind": "Unique",
       "maximumQuantity": 1,
       "mass": 5,
       "space": 1,
       "slots": [
-        "main-hand"
+        "weapon"
       ],
       "minimumPower": 0,
-      "power": 2,
-      "defense": 0,
+      "power": 3,
+      "defense": 2,
       "ammunition": "",
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "knife"
+      "image": "knife",
+      "weapon": {
+        "reach": "short-sword",
+        "meleeDamage": 7,
+        "fireDamage": 0,
+        "windupSeconds": 0.35,
+        "recoverySeconds": 0.7,
+        "accuracy": 0.9,
+        "chargeEligible": true,
+        "reloadSeconds": 0,
+        "bayonet": null
+      }
     },
     {
       "id": "coat",
@@ -69,7 +96,7 @@
       "mass": 25,
       "space": 4,
       "slots": [
-        "body"
+        "outfit"
       ],
       "minimumPower": 0,
       "power": 0,
@@ -79,6 +106,79 @@
       "effect": 0,
       "cost": 0,
       "image": "coat"
+    },
+    {
+      "id": "sword",
+      "name": "Field sword",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 22,
+      "space": 3,
+      "slots": [ "weapon" ],
+      "minimumPower": 4,
+      "power": 5,
+      "defense": 0,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "knife",
+      "weapon": {
+        "reach": "sword",
+        "meleeDamage": 9,
+        "fireDamage": 0,
+        "windupSeconds": 0.35,
+        "recoverySeconds": 0.7,
+        "accuracy": 0.88,
+        "chargeEligible": true,
+        "reloadSeconds": 0,
+        "bayonet": null
+      }
+    },
+    {
+      "id": "pike",
+      "name": "Boarding pike",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 30,
+      "space": 5,
+      "slots": [ "weapon" ],
+      "minimumPower": 3,
+      "power": 4,
+      "defense": 0,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "knife",
+      "weapon": {
+        "reach": "pike",
+        "meleeDamage": 10,
+        "fireDamage": 0,
+        "windupSeconds": 0.45,
+        "recoverySeconds": 0.8,
+        "accuracy": 0.82,
+        "chargeEligible": true,
+        "reloadSeconds": 0,
+        "bayonet": null
+      }
+    },
+    {
+      "id": "signet",
+      "name": "Patrol signet",
+      "kind": "Unique",
+      "maximumQuantity": 1,
+      "mass": 1,
+      "space": 1,
+      "slots": [ "accessory" ],
+      "minimumPower": 0,
+      "power": 0,
+      "defense": 1,
+      "ammunition": "",
+      "use": "None",
+      "effect": 0,
+      "cost": 0,
+      "image": "key"
     },
     {
       "id": "key",
@@ -188,6 +288,36 @@
     {
       "owner": "member:blade",
       "definition": "knife",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:warden",
+      "definition": "signet",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:seeker",
+      "definition": "sword",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:mender",
+      "definition": "pike",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:musketeer-a",
+      "definition": "rifle",
+      "quantity": 1,
+      "equipped": true
+    },
+    {
+      "owner": "member:musketeer-b",
+      "definition": "rifle",
       "quantity": 1,
       "equipped": true
     },

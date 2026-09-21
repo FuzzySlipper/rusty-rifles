@@ -18,6 +18,11 @@ internal static class CombatSaveChecks
         Require(restored.Enemies.Length == definitions.Combat.Encounter.Length && restored.Actions.Count == fixture.Party.Members.Count,
             "Combat restore rebuilds exact enemy and party action owners.");
 
+        ActionSnapshot commanderAction = new(CombatActionKind.Melee, 0, null, null, fixture.Saved.Enemies[0].Id, null,
+            definitions.Combat.Action(CombatActionKind.Melee).Windup, ActionPhase.Windup,
+            definitions.Combat.Action(CombatActionKind.Melee).Recovery, fixture.Floor.Entrance);
+        RequireRejected(() => Validate(fixture.Saved with { Members = fixture.Saved.Members.Select(member => member.Member == "commander"
+            ? member with { Action = commanderAction } : member).ToArray() }, definitions, fixture), "Commander cannot restore a direct action.");
         VerifySpellSettlementAndTargets(definitions, fixture);
         VerifyCorruptPositionsAreRejected(definitions, fixture);
         VerifyNonFiniteFlightIsRejected(definitions, fixture);
@@ -90,7 +95,7 @@ internal static class CombatSaveChecks
     {
         ulong knife = fixture.Inventory.Owners.SelectMany(owner => fixture.Inventory.Items(owner.Key))
             .First(item => item.Definition == "knife" && item.Entity != 0).Entity;
-        RequireRejected(() => Validate(fixture.Saved with { LoadedWeapons = [knife] }, definitions, fixture),
+        RequireRejected(() => Validate(fixture.Saved with { Weapons = new WeaponStateSnapshot([new MusketWeaponSnapshot(knife, true, false)]) }, definitions, fixture),
             "A loaded item must be an actual rifle identity.");
     }
 
@@ -159,7 +164,7 @@ internal static class CombatSaveChecks
             }).ToArray();
             MemberActionSnapshot[] members = party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, null)).ToArray();
             AllySnapshot[] allies = allyIds.Select(id => RiflesCombat.FreshAlly(id, definitions)).ToArray();
-            CombatSnapshot saved = new(enemies, members, [], [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Entities).Capture());
+            CombatSnapshot saved = new(enemies, members, new WeaponStateSnapshot([]), [], [], allies, enemies[0].Id, new MagicState(definitions.Magic, party.Members.Select(m => (m.Definition.Id, m.Definition.Archetype)), party.Entities).Capture());
             return new CombatFixture(floor, inventory, party, saved, partyId, allyIds);
         }
     }

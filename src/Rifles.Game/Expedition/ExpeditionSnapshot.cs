@@ -89,6 +89,7 @@ internal static class ExpeditionCodec
         // and markers are live-continuous. Only fresh boots rebuild.
         PartyState party = travellingParty ?? new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
         if (travellingParty is null) party.Restore(saved.Members);
+        GameDefinitions.Require(party.Members.Count == definitions.Party.MaxPartySize && party.Commander is not null, "saved commander and squad roster");
         inventory.BindMembers(party.Entities, party.Members);
         foreach (RiflesCharacter member in party.Members)
         {
@@ -119,7 +120,7 @@ internal static class ExpeditionCodec
         foreach (var direction in Rifles.Procgen.Generation.CardinalDirections.Ordered)
             if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
                 grid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), definitions.Combat.DoorClearance);
-        if (party.Members.Any(m => m.IsLiving)) exploration.Bind(grid, saved.PartyId);
+        if (!party.Defeated) exploration.Bind(grid, saved.PartyId);
         if (combat.Allies.Single(a => a.Id == actor.Id).Vitality > 0) actor.Bind(grid);
         saved.Features.Dressing.Validate(saved.Floor);
         saved.Features.Dressing.Bind(grid, combat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);

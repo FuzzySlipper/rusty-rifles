@@ -211,10 +211,27 @@
     }
   ],
   "startingSpells": {
-    "warden": ["spark", "ward", "hand"],
-    "blade": ["spark", "bind"],
-    "seeker": ["spark", "blight", "lantern"],
-    "mender": ["mend", "cleanse", "reveal", "revive"]
+    "warden": [
+      "spark",
+      "ward",
+      "hand"
+    ],
+    "blade": [
+      "spark",
+      "bind"
+    ],
+    "seeker": [
+      "spark",
+      "blight",
+      "lantern"
+    ],
+    "mender": [
+      "mend",
+      "cleanse",
+      "reveal",
+      "revive"
+    ],
+    "commander": []
   },
   "choices": [
     {
@@ -224,7 +241,9 @@
       "power": 2,
       "defense": 0,
       "costDiscount": 1,
-      "unlocks": ["burst"]
+      "unlocks": [
+        "burst"
+      ]
     },
     {
       "id": "field-guardian",
@@ -265,7 +284,8 @@
     "runner": 0,
     "sapper": 10,
     "bulwark": 20,
-    "marksman": 15
+    "marksman": 15,
+    "commander": 0
   },
   "enemySpells": {
     "marksman": "blight"

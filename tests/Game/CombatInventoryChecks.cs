@@ -15,7 +15,7 @@ internal static class CombatInventoryChecks
         inventory.Grant(InventoryOwner.Parse("member:warden"), "rifle", 1, () => itemId++);
         string rifleToken = inventory.Items("member:warden").Single(item => item.Definition == "rifle").Token;
         ulong rifleId = inventory.Find("member:warden", rifleToken).Entity;
-        inventory.Equip(ItemRef.Parse("member:warden", rifleToken), "main-hand", long.MaxValue, inventory.Revision, new MemberOwner("warden"));
+        inventory.Equip(ItemRef.Parse("member:warden", rifleToken), "weapon", long.MaxValue, inventory.Revision, new MemberOwner("warden"));
         inventory.Transfer(ItemRef.Parse("member:warden", rifleToken), InventoryOwner.Parse(flight.Key), 1, inventory.Revision);
 
         Require(inventory.Items("member:warden").All(item => item.Entity != rifleId), "Transferred weapon leaves the member pack.");
