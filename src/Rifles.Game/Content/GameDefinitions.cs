@@ -1,4 +1,5 @@
 using Rifles.Game.Generation;
+using Rifles.Game.Debugging;
 using Rifles.Game.Audio;
 using Rifles.Game.Expedition;
 using Rifles.Procgen.Expeditions;
@@ -17,7 +18,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party, FormationDefinition Formation,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MartialDrillDefinitionSet MartialDrills)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -66,7 +67,10 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<EncounterPlacementDefinition>("definitions/encounter-placement.json", x => x.Validate()),
             Read<ArchitectureDetailDefinition>("definitions/architecture-detail.json", x => x.Validate()),
             Read<RunDefinition>("definitions/expedition.json", x => x.Validate()),
-            Read<AudioDefinition>("definitions/audio.json", x => x.Validate()));
+            Read<AudioDefinition>("definitions/audio.json", x => x.Validate()),
+            Read<ChargeDefinition>("definitions/charge.json", x => x.Validate()),
+            Read<MartialDrillDefinitionSet>("definitions/martial-drills.json", x => x.Validate()));
+        result.MartialDrills.ValidateAgainst(result.Characters, result.Formation, result.Combat, result.Crowd);
         // The formation file is the one authored layout. Adapt its integral
         // 3x3 coordinates to the existing half-cell projection once at admission.
         result = result with { Party = result.Party with { Positions = result.Formation.Cells.Select(cell =>

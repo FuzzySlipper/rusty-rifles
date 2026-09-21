@@ -58,6 +58,7 @@ internal sealed partial class RiflesCombat
     internal IReadOnlyList<MemberOrderReadout> ReadOrder(CombatActionKind kind)
     {
         if (kind is not (CombatActionKind.Fire or CombatActionKind.Melee)) throw new ArgumentOutOfRangeException(nameof(kind));
+        if (ChargeExecuting) return ChargeLockedReadout();
         return EvaluateOrder(kind, false).Readout;
     }
 
@@ -68,6 +69,7 @@ internal sealed partial class RiflesCombat
     internal GameOutcome BeginOrder(CombatActionKind kind, bool paused)
     {
         if (kind is not (CombatActionKind.Fire or CombatActionKind.Melee)) throw new ArgumentOutOfRangeException(nameof(kind));
+        if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
         IReadOnlyList<RiflesCharacter> soldiers = party.Members.Where(member => !member.Definition.Commander).ToArray();
         if (paused || Defeated)
         {

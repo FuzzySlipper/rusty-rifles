@@ -78,6 +78,23 @@ internal sealed class ExplorationState(GridPoint entrance, ExplorationTuning tun
         else if (grid!.Commit(actorId)) Position = destination;
         action = null; savedDestinationPlacement = null;
     }
+
+    /// <summary>
+    /// Advances a reserved forward maneuver while retaining normal movement
+    /// countdown units for existing visual progress and save restoration.
+    /// </summary>
+    internal void AdvanceManeuver(double seconds, double maneuverStepSeconds, double speed = 1)
+    {
+        if (!double.IsFinite(seconds) || seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+        if (!double.IsFinite(maneuverStepSeconds) || maneuverStepSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(maneuverStepSeconds));
+        if (!double.IsFinite(speed) || speed <= 0 || speed > 1) throw new ArgumentOutOfRangeException(nameof(speed));
+        ElapsedSeconds += seconds;
+        RecoverySeconds = Math.Max(0, RecoverySeconds - seconds * speed * tuning.StepSeconds / maneuverStepSeconds);
+        if (!Moving || RecoverySeconds > 0) return;
+        if (Turning) throw new InvalidOperationException("A forward maneuver cannot turn.");
+        if (grid!.Commit(actorId)) Position = destination;
+        action = null; savedDestinationPlacement = null;
+    }
     internal bool Act(ExplorationAction requested)
     {
         if (Moving) return false;

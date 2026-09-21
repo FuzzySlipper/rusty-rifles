@@ -107,6 +107,8 @@ internal static class ExpeditionCodec
         party.RestRemaining = saved.RestRemaining; party.RestOwner = saved.RestOwner;
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
             new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, travellingBooks);
+        ChargeState.ValidateSaved(saved.Combat.Charge, saved.Exploration, definitions, saved.Floor, party, inventory);
+        GameDefinitions.Require(saved.Combat.Charge is null || saved.Formation is null && saved.RestRemaining == 0, "charge cannot overlap formation or rest");
         inventory.BindRemaining(party.Entities);
         ulong[] ids = [saved.FloorId, saved.PartyId, saved.Actor.Id, saved.Features.LanternId, saved.Features.ExitId,
             saved.Features.Dressing.BenchId, saved.Features.Dressing.CrateId, saved.Features.Dressing.ObserverId, saved.ItemWorld.DoorId, saved.ItemWorld.LeverId, saved.ItemWorld.PlateId,

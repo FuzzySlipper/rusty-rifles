@@ -10,5 +10,6 @@
     { "id": "hard", "name": "Hard", "description": "Heavier incoming damage; use cover and recovery carefully.", "incomingDamageMultiplier": 1.35 }
   ],
   "mapRevealCells": 2,
-  "seedIncrement": 1
+  "seedIncrement": 1,
+  "startPaused": true
 }

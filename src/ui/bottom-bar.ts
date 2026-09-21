@@ -1,7 +1,7 @@
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -97,6 +97,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
 
   const logSection = document.createElement('section');
   logSection.setAttribute('aria-label', 'Event log');
+  logSection.style.cssText = 'display:flex;flex-direction:column;min-height:0;min-width:0';
   const logStatus = document.createElement('output');
   logStatus.dataset.barStatus = 'true';
   logStatus.textContent = 'Preparing…';
@@ -105,12 +106,12 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   logView.dataset.barLog = 'true';
   logView.setAttribute('role', 'log');
   logView.textContent = 'No events yet.';
-  logView.style.cssText = 'display:block;height:74px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
+  logView.style.cssText = 'display:block;flex:1 1 74px;min-height:24px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
   const orderBar = document.createElement('div');
   orderBar.setAttribute('aria-label', 'Party orders');
-  orderBar.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
+  orderBar.style.cssText = 'display:flex;flex:0 0 auto;flex-wrap:wrap;gap:4px;margin-bottom:4px';
   const orderButtons = new Map<string, HTMLButtonElement>();
-  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]'], ['fix-bayonets', 'Fix [B]'], ['unfix-bayonets', 'Unfix [N]']]) {
+  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]'], ['fix-bayonets', 'Fix [B]'], ['unfix-bayonets', 'Unfix [N]'], ['charge', 'Charge [C]']]) {
     const control = document.createElement('button');
     control.type = 'button'; control.textContent = label; control.dataset.partyOrder = kind;
     control.style.cssText = 'color:#f4e5bc;background:#42392c;border:1px solid #a48a57;border-radius:3px;padding:3px 10px';
@@ -506,16 +507,18 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     renderVitals(state);
     renderLog(state);
     const formation = record(state.formation);
-    changeFormation.disabled = number(formation.executing) === 1 || number(formation.open) === 1 || number(record(state.combat).defeated) === 1;
+    changeFormation.disabled = number(formation.executing) === 1 || number(formation.open) === 1 || number(record(record(state.combat).charge).executing) === 1 || number(record(state.combat).defeated) === 1;
     changeFormation.textContent = number(formation.executing) === 1 ? `Repositioning ${number(formation.remaining).toFixed(1)}s` : 'Change formation';
     changeFormation.title = Object.entries(record(formation.moves)).map(([id, position]) => `${text(record(record(state.party)[id]).name, id)} → ${text(position)}`).join('\n');
     const combat = record(state.combat);
     for (const [kind, control] of orderButtons) {
       const order = record(record(combat.orders)[kind]);
-      control.textContent = `${({ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' } as Record<string, string>)[kind]} · ${number(order.eligible)}/${number(order.total)}`;
-      control.disabled = number(combat.defeated) === 1 || number(state.paused) === 1 || number(order.eligible) === 0;
+      control.textContent = `${({ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]', charge: 'Charge [C]' } as Record<string, string>)[kind]} · ${number(order.eligible)}/${number(order.total)}`;
+      const charge = record(combat.charge);
+      if (kind === 'charge' && number(charge.executing) === 1) control.textContent = `Charging ${number(charge.completedSteps)}/${number(charge.plannedSteps)} · ${number(charge.remaining).toFixed(1)}s`;
+      control.disabled = number(charge.executing) === 1 || number(combat.defeated) === 1 || number(state.paused) === 1 || number(order.eligible) === 0;
       control.style.opacity = control.disabled ? '0.5' : '1';
-      control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
+      control.title = (kind === 'charge' ? `${text(charge.reason)}\n` : '') + entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
     }
   };
 

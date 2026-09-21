@@ -15,7 +15,7 @@ internal sealed record RestoredCombat(
     FlightSnapshot[] Flights,
     DropSnapshot[] Drops,
     AllySnapshot[] Allies,
-    ulong SelectedTarget, MagicState Magic);
+    ulong SelectedTarget, MagicState Magic, ChargeSnapshot? Charge);
 
 /// <summary>Validates saved combat facts before the product binds them to live movement or rendering resources.</summary>
 internal static class CombatRestore
@@ -58,7 +58,8 @@ internal static class CombatRestore
             && actions.Values.All(a => !a.Busy), "saved rest eligibility");
         // Condition timers and target kinds are admitted inside
         // MagicState.Restore via shared data validation.
-        return new RestoredCombat(enemies, actions, weapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic);
+        ChargeState.ValidateCombat(saved.Charge, enemies, party, inventory, definitions);
+        return new RestoredCombat(enemies, actions, weapons, flights, saved.Drops, saved.Allies, saved.SelectedTarget, magic, saved.Charge);
     }
 
     private static EnemyState[] RestoreEnemies(EnemySnapshot[] snapshots, GameDefinitions definitions, DungeonFloor floor, CharacterEntities entities)
@@ -159,6 +160,15 @@ internal static class CombatRestore
             GameDefinitions.Require(action.Weapon != 0 && action.Target == 0 && action.TargetMember is null && action.ItemToken is null
                 && action.SourceOwner is null && action.AimCell is null && action.Remaining <= (action.Phase == ActionPhase.Windup ? maximumBayonetWindup : maximumBayonetRecovery)
                 && action.RecoverySeconds <= maximumBayonetRecovery, "saved bayonet action");
+            return;
+        }
+        if (action.Kind == CombatActionKind.Charge)
+        {
+            double maximumChargeRecovery = definitions.Charge.RecoverySeconds + definitions.Items.Items
+                .Where(item => item.Weapon is not null).Max(item => item.Weapon!.RecoverySeconds);
+            GameDefinitions.Require(action.Weapon != 0 && action.Phase == ActionPhase.Recovery && action.Remaining <= action.RecoverySeconds
+                && action.RecoverySeconds <= maximumChargeRecovery && action.Target == 0 && action.TargetMember is null
+                && action.ItemToken is null && action.SourceOwner is null && action.AimCell is null, "saved charge recovery");
             return;
         }
         ActionDefinition profile = definitions.Combat.Action(action.Kind);

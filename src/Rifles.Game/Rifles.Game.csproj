@@ -43,6 +43,8 @@
     <RustyEngineProductInputMapping Include="rifles.attack.keyboard" Intent="rifles.attack" Trigger="key:space:pressed" />
     <RustyEngineProductInputIntent Include="rifles.melee" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.melee.keyboard" Intent="rifles.melee" Trigger="key:key-v:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.charge" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.charge.keyboard" Intent="rifles.charge" Trigger="key:key-c:pressed" />
     <RustyEngineProductInputIntent Include="rifles.fix-bayonets" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.fix-bayonets.keyboard" Intent="rifles.fix-bayonets" Trigger="key:key-b:pressed" />
     <RustyEngineProductInputIntent Include="rifles.unfix-bayonets" Value="digital" />

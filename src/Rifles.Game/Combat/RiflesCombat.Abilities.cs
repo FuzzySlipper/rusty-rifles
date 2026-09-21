@@ -92,6 +92,7 @@ internal sealed partial class RiflesCombat
         SpellDefinition spell;
         try { spell = definitions.Magic.Spell(spellId); }
         catch (InvalidOperationException) { return GameOutcome.Reject("Unknown ability."); }
+        if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
         if (paused || Defeated) return GameOutcome.Reject(paused ? "Resume before ordering an ability." : "The commander has fallen.");
 
         AbilityEvaluation evaluation = EvaluateAbility(spell, targetMember, start: true);

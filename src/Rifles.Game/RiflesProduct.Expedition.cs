@@ -29,6 +29,7 @@ public sealed partial class RiflesProduct
         if (progress.Completed) return "Expedition complete.";
         if (active.Combat.Defeated) return "A living party is required.";
         if (paused) return "Resume before travelling.";
+        if (active.Combat.ChargeExecuting) return "Finish the charge before travelling.";
         if (party.Formation.Executing) return "Finish repositioning before travelling.";
         if (active.Exploration.Position != departure) return "Stand on the marked stair to travel.";
         if (active.Exploration.Moving || active.Combat.ActionsBusy || active.Combat.HasFlights || party.RestRemaining > 0)
@@ -168,7 +169,8 @@ public sealed partial class RiflesProduct
         inactiveFloors.Clear();
         progress = new(difficulty, false, []);
         mapObservation = null;
-        feedback = "New expedition started.";
+        SetPaused(definitions.Run.StartPaused);
+        feedback = paused ? "New expedition ready. Press P to begin." : "New expedition started.";
     }
 
     private void NewRunCommand(string choice)

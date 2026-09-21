@@ -44,7 +44,7 @@ export function mountAbilityMenu(root: Element, triggerHost: Element, command: (
           buttons.set(id, button); list.append(button);
         }
         button.textContent = `${text(ability.name)} · ${text(ability.eligible)}/${text(ability.total)} ready${Number(ability.shared) === 1 ? '\nOne shared party effect' : ''}`;
-        button.disabled = Number(ability.eligible) === 0 || Number(state.paused) === 1 || Number(combat.defeated) === 1;
+        button.disabled = Number(record(combat.charge).executing) === 1 || Number(ability.eligible) === 0 || Number(state.paused) === 1 || Number(combat.defeated) === 1;
         button.title = Object.entries(record(ability.providers)).map(([memberId, rawProvider]) => {
           const provider = record(rawProvider); const action = record(record(combat.members)[memberId]);
           const cooldown = Number(action.remaining) > 0 ? ` · ${text(action.phase)} ${Number(action.remaining).toFixed(1)}s` : '';

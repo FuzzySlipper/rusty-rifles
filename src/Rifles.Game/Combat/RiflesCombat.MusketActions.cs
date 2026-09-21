@@ -19,10 +19,12 @@ internal static class MusketActionRules
 
 internal sealed partial class RiflesCombat
 {
-    internal IReadOnlyList<MemberOrderReadout> ReadBayonetOrder(bool fix) => EvaluateBayonetOrder(fix, false).Readout;
+    internal IReadOnlyList<MemberOrderReadout> ReadBayonetOrder(bool fix) => ChargeExecuting
+        ? ChargeLockedReadout() : EvaluateBayonetOrder(fix, false).Readout;
 
     internal GameOutcome BeginBayonetOrder(bool fix, bool paused)
     {
+        if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
         if (paused || Defeated) return GameOutcome.Reject(paused ? "Resume before ordering." : "The commander has fallen.");
         (MemberOrderReadout[] Readout, int Started) evaluation = EvaluateBayonetOrder(fix, true);
         if (evaluation.Started == 0) return GameOutcome.Reject((fix ? "Fix" : "Unfix") + " order found no ready compatible musket.");
@@ -72,6 +74,7 @@ internal sealed partial class RiflesCombat
 
     private void BeginAutomaticReload(RiflesCharacter member, ActionState state)
     {
+        if (ChargeExecuting) return;
         CarriedItem? carried = Weapon(member.Definition.Id);
         WeaponCapabilities? weapon = Capabilities(carried);
         if (!MusketActionRules.CanAutoReload(member.IsLiving, !state.Busy, carried is not null, party.Formation.Affects(member.InstanceId), weapon)) return;

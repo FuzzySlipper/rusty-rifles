@@ -7,7 +7,7 @@ internal sealed record DifficultyProfile(string Id, string Name, string Descript
     double IncomingDamageMultiplier);
 internal sealed record RunDefinition(string Goal, string FinaleLabel, string SuccessText, string DefeatText,
     long FinaleExperience, string DefaultDifficulty, DifficultyProfile[] Difficulties,
-    int MapRevealCells, ulong SeedIncrement)
+    int MapRevealCells, ulong SeedIncrement, bool StartPaused)
 {
     internal DifficultyProfile Difficulty(string id) => Difficulties.SingleOrDefault(d => d.Id == id)
         ?? throw new InvalidDataException("Unknown difficulty profile.");

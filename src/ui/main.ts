@@ -12,7 +12,7 @@ type UiContext = Readonly<{
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -880,7 +880,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · muskets reload automatically · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · C charge · muskets reload automatically · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
   readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; Change formation pauses into a larger planner. Execute resumes a timed repositioning order, locking movement and affected soldiers; Cancel discards the draft.');
   readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');

@@ -34,6 +34,7 @@ internal sealed partial class RiflesCombat
     private readonly List<FlightState> flights;
     private readonly Dictionary<string, GridPoint> drops;
     private WeaponState weapons;
+    private ChargeState charge = new();
     private readonly Queue<string> log = [];
     private ulong selectedTarget;
     private int pathCursor;
@@ -65,6 +66,7 @@ internal sealed partial class RiflesCombat
     internal ulong SelectedTarget => selectedTarget;
     internal IReadOnlyCollection<string> Log => log;
     internal bool Defeated => party.Defeated;
+    internal bool ChargeExecuting => charge.Executing;
 
     internal ActionState ActionOf(RiflesCharacter member) =>
         new Actor(entities.Store, member.Entity).Get<ActionState>();
@@ -81,6 +83,7 @@ internal sealed partial class RiflesCombat
 
     internal void CancelAll()
     {
+        if (ChargeExecuting) charge.Clear();
         foreach (RiflesCharacter member in party.Members) ActionOf(member).Cancel();
     }
 
@@ -116,6 +119,7 @@ internal sealed partial class RiflesCombat
         foreach (FlightSnapshot flight in saved.Flights) combat.flights.Add(FlightState.Restore(flight));
         foreach (DropSnapshot drop in saved.Drops) combat.drops.Add(drop.Owner, drop.Cell);
         combat.weapons = saved.Weapons;
+        combat.charge = ChargeState.Restore(saved.Charge);
         combat.selectedTarget = saved.SelectedTarget;
         combat.BuildAllies(saved.Allies);
         return combat;
@@ -125,7 +129,7 @@ internal sealed partial class RiflesCombat
         party.Members.Select(member => new MemberActionSnapshot(member.Definition.Id, ActionOf(member).Capture())).ToArray(),
         weapons.Capture(inventory), flights.Select(f => f.Capture()).ToArray(),
         drops.Select(d => new DropSnapshot(d.Key, d.Value)).ToArray(),
-        allies.Select(a => new AllySnapshot(a.Key, RiflesStats.SnapshotForPersistence(a.Value.Stats))).ToArray(), selectedTarget, magic.Capture());
+        allies.Select(a => new AllySnapshot(a.Key, RiflesStats.SnapshotForPersistence(a.Value.Stats))).ToArray(), selectedTarget, magic.Capture(), charge.Capture());
 
     private void CombatMessage(string message)
     {
@@ -229,6 +233,7 @@ internal sealed partial class RiflesCombat
 
     internal GameOutcome BeginCombat(SessionCommand command, string selectedMember, bool paused)
     {
+        if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
         if (command.Action is "attack" or "fire") return BeginOrder(CombatActionKind.Fire, paused);
         if (command.Action == "melee") return BeginOrder(CombatActionKind.Melee, paused);
         if (command.Action == "target")
@@ -569,6 +574,7 @@ internal sealed partial class RiflesCombat
 
     internal void RequireItemAccess(string owner)
     {
+        if (ChargeExecuting) throw new InvalidDataException("The party is charging.");
         if (InventoryOwner.Parse(owner) is not CombatOwner) { scope.ItemWorld.RequireAccess(owner, scope.Exploration, scope.Scene); return; }
         if (!DropReachable(owner)) throw new InvalidDataException("Those belongings are not within reach.");
     }

@@ -1,6 +1,6 @@
 type Values = Record<string, unknown>;
 
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
 function record(value: unknown): Values {

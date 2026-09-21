@@ -49,6 +49,8 @@ FormationRulesChecks.Run(definitions);
 CommanderChecks.Run(definitions);
 WeaponChecks.Run(definitions);
 MusketChecks.Run(definitions);
+ChargeChecks.Run(definitions);
+MartialDrillChecks.Run(definitions);
 OrderChecks.Run(definitions);
 AbilityOrderChecks.Run(definitions);
 FormationPlannerChecks.Run(definitions);

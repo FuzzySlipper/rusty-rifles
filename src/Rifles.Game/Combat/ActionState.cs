@@ -9,6 +9,7 @@ internal enum CombatActionKind
     Reload,
     FixBayonet,
     UnfixBayonet,
+    Charge,
     Throw,
     Consume,
     Cast,
@@ -49,6 +50,16 @@ internal sealed class ActionState
         if (Busy) throw new InvalidOperationException("An action is already in progress.");
         Validate(action);
         if (action.Phase != ActionPhase.Windup) throw new InvalidDataException("New actions must begin in windup.");
+        current = action;
+    }
+
+    /// <summary>Applies a committed maneuver's recovery without a second effect windup.</summary>
+    internal void StartRecovery(ActionSnapshot action)
+    {
+        if (Busy) throw new InvalidOperationException("An action is already in progress.");
+        Validate(action);
+        if (action.Phase != ActionPhase.Recovery || action.Remaining != action.RecoverySeconds)
+            throw new InvalidDataException("Recovery must begin at its authored duration.");
         current = action;
     }
 

@@ -112,6 +112,26 @@ internal sealed class MovementGrid
 
     internal bool TryReserve(ulong actor, GridPoint destination) => TryReserve(actor, destination, null);
 
+    /// <summary>
+    /// Read-only straight-line admission for the party's charge preview. It
+    /// deliberately uses the same edge, Engine admission, clearance, and fit
+    /// checks as a later reservation without creating a path or a reservation.
+    /// </summary>
+    internal GridPoint[] ProbeStraight(ulong actor, CardinalDirection direction, int maximumCells)
+    {
+        if (maximumCells <= 0 || !occupants.TryGetValue(actor, out GridPoint from) || reservations.ContainsKey(actor)) return [];
+        List<GridPoint> result = [];
+        GridPoint step = direction.Offset();
+        for (int index = 0; index < maximumCells; index++)
+        {
+            GridPoint destination = from + step;
+            if (!cells.Contains(destination) || !CanTraverse(actor, from, destination) || !CanFit(actor, destination)) break;
+            result.Add(destination);
+            from = destination;
+        }
+        return result.ToArray();
+    }
+
     internal bool TryReserve(ulong actor, GridPoint destination, string? destinationPlacementId)
     {
         if (!CanAttempt(actor, destination, out GridPoint from)) return false;

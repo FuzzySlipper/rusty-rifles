@@ -1,0 +1,122 @@
+{
+  "drills": [
+    {
+      "id": "three-lanes",
+      "name": "Three forward lanes",
+      "description": "Three exposed opponents occupy left, center and right forward lanes.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "left-guard" },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "front-center" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [
+        { "spawnId": "raider-patrol", "forward": 4, "left": 2, "placement": "north" },
+        { "spawnId": "runner-patrol", "forward": 4, "left": 0, "placement": "sw" },
+        { "spawnId": "musketeer-patrol", "forward": 4, "left": -2, "placement": "north" }
+      ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": false,
+      "expected": "Fire distributes across left, center and right exposed targets."
+    },
+    {
+      "id": "concentration",
+      "name": "One target fallback",
+      "description": "One exposed opponent remains in the center forward lane.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "front-center" },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "right-guard" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 4, "left": 0, "placement": "north" } ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": false,
+      "expected": "Eligible rifles concentrate on the one valid forward target."
+    },
+    {
+      "id": "melee-reach",
+      "name": "Fixed bayonet reach",
+      "description": "A close front target lets the authored melee reaches differ by formation position.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "front-center" },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "right-guard" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "north" } ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": false,
+      "expected": "Melee readout shows weapon and rank reach, including fixed bayonets."
+    },
+    {
+      "id": "commander-gap",
+      "name": "Commander gap",
+      "description": "The fallen front-center soldier leaves a visible front-center screening gap.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "front-center", "fallen": true },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "right-guard" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "north" } ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": false,
+      "expected": "A front-center hit reaches the commander through the fallen soldier's gap."
+    },
+    {
+      "id": "charge-clear",
+      "name": "Charge contact",
+      "description": "A straight three-cell approach ends at one reachable opponent.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "front-center" },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "right-guard" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 3, "left": 0, "placement": "north" } ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": false,
+      "expected": "Charge commits one admitted straight approach and settles contact once."
+    },
+    {
+      "id": "charge-blocked",
+      "name": "Charge obstruction",
+      "description": "The opponent occupies the first forward cell, so no charge step can reserve.",
+      "facing": "North",
+      "members": [
+        { "member": "warden", "position": "front-left" },
+        { "member": "blade", "position": "front-center" },
+        { "member": "musketeer-a", "position": "front-right" },
+        { "member": "seeker", "position": "rear-left" },
+        { "member": "mender", "position": "rear-center" },
+        { "member": "musketeer-b", "position": "right-guard" },
+        { "member": "commander", "position": "commander" }
+      ],
+      "enemies": [ { "spawnId": "raider-patrol", "forward": 1, "left": 0, "placement": "north" } ],
+      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "forwardBlocked": true,
+      "expected": "Charge readout reports no legal straight forward step."
+    }
+  ]
+}

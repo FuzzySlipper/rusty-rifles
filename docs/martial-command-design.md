@@ -141,3 +141,17 @@ is saved with each committed action. If the effect owner falls or is interrupted
 before impact, the shared effect fails rather than silently transferring to
 another contributor. Already incurred recovery remains. Individual hostile and
 ally effects still resolve once per eligible provider.
+
+## Charge commitment policy
+
+An inadmissible charge changes neither actions nor readiness. The first admitted
+forward reservation commits the maneuver. Only unfinished reloads may be
+interrupted to join it. Participating soldiers retain their weapon identities;
+changing equipment cannot substitute a fresh contributor. Contact or interruption
+after commitment incurs the authored charge recovery plus each contributor's
+weapon recovery. The party still receives attacks during travel. Contact uses
+current positions and reach, and ends the saved maneuver before resolving damage.
+
+Fresh expeditions start paused by the authored run setting, allowing the player
+to inspect the formation and orders before resuming. This also prevents combat
+from advancing while the standalone host is waiting for its first browser.

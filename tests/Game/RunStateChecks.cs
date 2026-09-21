@@ -16,6 +16,7 @@ internal static class RunStateChecks
     {
         VerifySingleFloorRoundTrip(definitions, fixture);
         VerifyFormationRoundTrip(definitions, fixture);
+        VerifyChargeRoundTrip(definitions, fixture);
         VerifyReloadRoundTrips(definitions, fixture);
         VerifyCastingEnemyAndProjectileRoundTrips(definitions, fixture);
         VerifyOpenContainerState(definitions, fixture);
@@ -104,6 +105,65 @@ internal static class RunStateChecks
         admitted.Party.Formation.Advance(definitions.Formation.RepositionSeconds / 2);
         Require(admitted.Party.Members.Single(member => member.InstanceId == first.InstanceId).Position == second.Position,
             "Restored formation execution commits once at the remaining deadline.");
+    }
+
+    private static void VerifyChargeRoundTrip(GameDefinitions definitions, ExpeditionSnapshot fixture)
+    {
+        var pack = fixture.Inventory.Packs.Single(pack => pack.Owner.Key == "member:warden");
+        ulong musket = pack.Items.Single(item => item.Definition == "rifle").Id;
+        double recovery = definitions.Items.Item("rifle").Weapon!.RecoverySeconds;
+        Exception? rejection = null;
+        foreach (CardinalDirection facing in CardinalDirections.Ordered)
+        {
+            GridPoint origin = fixture.Exploration.Position;
+            GridPoint destination = origin + facing.Offset();
+            if (!fixture.Floor.Cells.Contains(destination)) continue;
+            ChargeSnapshot charge = new(fixture.Combat.Enemies.First(enemy =>
+                RiflesStats.TrackCurrent(enemy.Stats, RiflesStatIds.Vitality) > 0).Id,
+                facing, destination, 1, 0, [new("warden", musket, recovery)]);
+            ExpeditionSnapshot charging = fixture with
+            {
+                Paused = true, Formation = null, RestRemaining = 0, RestOwner = "",
+                Exploration = new(origin, facing, fixture.Exploration.ElapsedSeconds,
+                    ExplorationAction.Forward, destination, facing, definitions.Exploration.StepSeconds / 2),
+                Combat = fixture.Combat with
+                {
+                    Charge = charge,
+                    Members = fixture.Combat.Members.Select(member => member with { Action = null }).ToArray(),
+                    Weapons = new([.. fixture.Combat.Weapons.Muskets.Where(weapon => weapon.Item != musket),
+                        new(musket, false, true)]),
+                },
+            };
+            try { RunCodec.Validate(CreateRun(definitions, charging), definitions); }
+            catch (InvalidDataException error) { rejection = error; continue; }
+            RunSnapshot restored = RoundTrip(definitions, CreateRun(definitions, charging));
+            Require(restored.Active.Combat.Charge is { CompletedSteps: 0, PlannedSteps: 1 }
+                && restored.Active.Combat.Charge.Contributors.Single().Weapon == musket
+                && restored.Active.Exploration.RemainingSeconds == definitions.Exploration.StepSeconds / 2,
+                "Whole-run saves preserve a committed charge and normalized mid-step time.");
+            RequireRejected(() => RunCodec.Validate(CreateRun(definitions, charging with
+                { Exploration = charging.Exploration with { Action = null, RemainingSeconds = 0 } }), definitions),
+                "An active saved charge must retain its forward movement reservation.");
+            double totalRecovery = definitions.Charge.RecoverySeconds + recovery;
+            ActionSnapshot cooling = new(CombatActionKind.Charge, musket, null, null, 0, null,
+                totalRecovery / 2, ActionPhase.Recovery, totalRecovery);
+            ExpeditionSnapshot contactSettled = charging with
+            {
+                Exploration = new(origin, facing, charging.Exploration.ElapsedSeconds, null, origin, facing, 0),
+                Combat = charging.Combat with
+                {
+                    Charge = null,
+                    Members = charging.Combat.Members.Select(member => member.Member == "warden"
+                        ? member with { Action = cooling } : member).ToArray(),
+                },
+            };
+            RunSnapshot recovered = RoundTrip(definitions, CreateRun(definitions, contactSettled));
+            Require(recovered.Active.Combat.Charge is null
+                && recovered.Active.Combat.Members.Single(member => member.Member == "warden").Action == cooling,
+                "Whole-run saves retain partial charge recovery without resurrecting its contact maneuver.");
+            return;
+        }
+        throw new InvalidOperationException("Charge save fixture has no admissible adjacent step.", rejection);
     }
 
     private static void VerifyReloadRoundTrips(GameDefinitions definitions, ExpeditionSnapshot fixture)

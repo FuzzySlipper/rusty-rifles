@@ -39,6 +39,7 @@ internal sealed partial class RiflesCombat
 
     internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
+        if (ChargeExecuting) throw new InvalidDataException("The party is charging.");
         if (BasicSpellAvailability(memberId, spell, targetMember, target, featureRevision, requireReady: false) is { } reason)
             throw new InvalidDataException(reason);
     }
@@ -46,6 +47,7 @@ internal sealed partial class RiflesCombat
     private string? BasicSpellAvailability(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision,
         bool requireReady = true)
     {
+        if (ChargeExecuting) return "The party is charging.";
         RiflesCharacter member;
         try { member = Member(memberId); }
         catch (InvalidDataException) { return "That character cannot cast this spell."; }

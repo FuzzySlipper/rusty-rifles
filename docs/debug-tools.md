@@ -125,3 +125,20 @@ If changed UI files are staged but a normal refresh still displays old controls,
 read `/product-ui/debug.js` from the demo URL. Restart the broker-owned session
 with `den-serve restart rusty-rifles -repo /absolute/path/to/rusty-rifles` when
 the host still serves old modules; do not launch a competing host.
+
+## Martial command drills
+
+`rifles.drill.list` lists the small authored setups in
+`content/definitions/martial-drills.json`; `rifles.drill.read three-lanes` shows
+one definition. `rifles.drill.start three-lanes` resets the run into that setup
+and leaves it paused. This is an explicit development command that replaces the
+current unsaved run. It uses the normal generated floor, validated save state,
+Engine scene and gameplay controls; it does not run a separate combat simulator.
+
+Available setups: `three-lanes`, `concentration`, `melee-reach`, `commander-gap`,
+`charge-clear`, and `charge-blocked`. After setup, close the console and press P
+to resume. The regular Fire, Melee, Fix/Unfix, Charge, Abilities and Change
+formation controls exercise the scenario. Save/load remains the ordinary run
+save path. An unavailable generated layout reports its reason rather than
+moving actors through obstacles. See [campaign acceptance](martial-command-acceptance.md)
+for what has actually been observed.

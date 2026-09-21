@@ -1,0 +1,6 @@
+{
+  "maximumCells": 3,
+  "stepSeconds": 0.14,
+  "bonusDamage": 4,
+  "recoverySeconds": 0.8
+}

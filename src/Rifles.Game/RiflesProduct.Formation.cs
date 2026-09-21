@@ -12,6 +12,7 @@ public sealed partial class RiflesProduct
         switch (command.Action)
         {
             case "formation-open":
+                if (active.Combat.ChargeExecuting) return GameOutcome.Reject("Finish the charge before changing formation.");
                 if (active.Exploration.Moving || progress.Completed || party.Defeated)
                     return GameOutcome.Reject("Finish moving before changing formation.");
                 planner.Begin(paused);

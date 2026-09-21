@@ -16,12 +16,16 @@ internal sealed record MemberActionSnapshot(string Member, ActionSnapshot? Actio
 internal sealed record FlightSnapshot(ulong Id, ulong Shooter, string? Member, CombatActionKind Kind, float X, float Y, float Z,
     float DirectionX, float DirectionY, float DirectionZ, float Remaining, GridPoint LastCell, string? Owner, string? Destination, string? Spell = null);
 internal sealed record DropSnapshot(string Owner, GridPoint Cell);
+internal sealed record ChargeContributorSnapshot(string Member, ulong Weapon, double WeaponRecoverySeconds);
+internal sealed record ChargeSnapshot(ulong Target, CardinalDirection Facing, GridPoint PlannedStop, int PlannedSteps,
+    int CompletedSteps, ChargeContributorSnapshot[] Contributors);
 internal sealed record AllySnapshot(ulong Id, StatsComponentSnapshot Stats)
 {
     internal long Vitality => (long)RiflesStats.TrackCurrent(Stats, RiflesStatIds.Vitality);
 }
 internal sealed record CombatSnapshot(EnemySnapshot[] Enemies, MemberActionSnapshot[] Members, WeaponStateSnapshot Weapons,
-    FlightSnapshot[] Flights, DropSnapshot[] Drops, AllySnapshot[] Allies, ulong SelectedTarget, MagicSnapshot? Magic = null);
+    FlightSnapshot[] Flights, DropSnapshot[] Drops, AllySnapshot[] Allies, ulong SelectedTarget, MagicSnapshot? Magic = null,
+    ChargeSnapshot? Charge = null);
 
 internal sealed class EnemyState
 {
