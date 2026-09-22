@@ -129,7 +129,7 @@ event bus, or scripting layer.
 
 ## Engine basis
 
-Matched pair `0.1.0-dev.1b208e9b33aa` (SDK + `.runtime/pair-1b208e9b33aa/`).
+Matched pair `0.1.0-dev.a525a33ff441` (SDK + `.runtime/pair-a525a33ff441/`).
 Verified in the packaged surface: `EntityStore` + `EntityTypeId`, optional
 `Actor` facade, class components, `StatsComponent`, `EffectsComponent`,
 `InventoryStore`/`InventoryEdit` + `InventoryComponent`/`EquipmentComponent`,

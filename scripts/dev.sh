@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-runtime=".runtime/pair-1b208e9b33aa/runtime-pack"
+runtime=".runtime/pair-a525a33ff441/runtime-pack"
 if [[ ! -x "$runtime/bin/rusty" ]]; then
   echo "Install the paired Engine runtime and SDK with scripts/install-engine.sh first." >&2
   exit 1

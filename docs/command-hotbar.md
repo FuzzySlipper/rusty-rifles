@@ -69,3 +69,12 @@ context, not asserted to cause the later failure. The installed pair already
 contains the earlier terminal-diagnostic correction. New evidence was attached
 to existing Engine **#8257**; a broker restart or short clean playtest does not
 prove that intermittent recovery bug fixed.
+
+## Adoption of the unlocked-cursor release
+
+The published matched SDK/runtime pair `0.1.0-dev.a525a33ff441` supersedes the
+cursor-policy limitation above. Rifles now pins that pair and explicitly sets
+`RustyEngineProductInputCursorMode` to `unlocked`. The archive checksum was
+verified before installation through `scripts/install-engine.sh`. No local
+input interception is needed. Engine #8408 is done; the broader intermittent
+input-recovery investigation #8257 remains open in Den.
