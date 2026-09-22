@@ -1,0 +1,16 @@
+await sleep(400);
+await input([{kind:'point',x:800,y:360,width:1280,height:720},{kind:'click',button:1,ms:60}]);
+await keyboard.hold(['P'],70);
+await sleep(350);
+await keyboard.hold(['Space'],70);
+await sleep(1800);
+checkpoint('reload-before-r',await observe());
+await keyboard.hold(['R'],60);
+await sleep(300);
+await keyboard.hold(['R'],60);
+checkpoint('reload-after-r',await observe());
+await sleep(4000);
+await keyboard.hold(['P'],70);
+await sleep(200);
+checkpoint('reload-complete',await observe());
+return await browser({op:'inspect',selector:'[data-party-order], [data-bar-log], [data-combat-members], [data-inventory-feedback]'});
