@@ -31,7 +31,9 @@
     <RustyEngineProductInputIntent Include="rifles.use" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.use.keyboard" Intent="rifles.use" Trigger="key:key-f:pressed" />
     <RustyEngineProductInputIntent Include="rifles.cycle" Value="digital" />
-    <RustyEngineProductInputMapping Include="rifles.cycle.keyboard" Intent="rifles.cycle" Trigger="key:key-r:pressed" />
+    <RustyEngineProductInputMapping Include="rifles.cycle.keyboard" Intent="rifles.cycle" Trigger="key:key-t:pressed" />
+    <RustyEngineProductInputIntent Include="rifles.reload" Value="digital" />
+    <RustyEngineProductInputMapping Include="rifles.reload.keyboard" Intent="rifles.reload" Trigger="key:key-r:pressed" />
     <RustyEngineProductInputIntent Include="rifles.command" Value="payload:rifles.command.v1" />
     <RustyEngineProductInputIntent Include="rifles.pause" Value="digital" />
     <RustyEngineProductInputMapping Include="rifles.pause.keyboard" Intent="rifles.pause" Trigger="key:key-p:pressed" />

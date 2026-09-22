@@ -1,7 +1,7 @@
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyT', 'KeyP', 'KeyK', 'KeyL']);
 const maxFeedbackLines = 60;
 const maxLogRenderChars = 4000;
 
@@ -71,7 +71,7 @@ function facingRotation(facing: string): number {
  * formation display with per-member facing. Display plus member selection
  * only; all rules and inventory authority stay in C#.
  */
-export function mountBottomBar(root: Element, command: (action: string, fields?: Record<string, unknown>) => void): Readonly<{
+export function mountBottomBar(root: Element, command: (action: string, fields?: Record<string, unknown>) => void, openInventory: () => void): Readonly<{
   update(raw: unknown): void;
   dispose(): void;
   element: HTMLElement;
@@ -80,7 +80,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(200px,220px) minmax(0,1fr) 180px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;overflow:hidden;max-height:min(180px,25.5vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr) 150px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;overflow:hidden;max-height:min(180px,25.5vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
@@ -109,19 +109,39 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   logView.style.cssText = 'display:block;flex:1 1 74px;min-height:24px;overflow:auto;white-space:pre-line;color:#e7dcc4;background:#10120f99;border:1px solid #574f3d;border-radius:3px;padding:6px 8px';
   const orderBar = document.createElement('div');
   orderBar.setAttribute('aria-label', 'Party orders');
-  orderBar.style.cssText = 'display:flex;flex:0 0 auto;flex-wrap:wrap;gap:4px;margin-bottom:4px';
+  orderBar.dataset.commandHotbar = 'true';
+  orderBar.style.cssText = 'display:flex;flex:0 0 auto;gap:5px;margin-bottom:5px;overflow-x:auto;padding:2px';
+  const hotbarStyle = document.createElement('style');
+  hotbarStyle.textContent = `
+    [data-command-hotbar] > button { box-sizing:border-box;position:relative;flex:0 0 64px;min-height:62px;padding:5px 3px;color:#f4e5bc;background:linear-gradient(#423d2f,#25291f);border:1px solid #a48a57;border-radius:4px;font:12px/1.2 system-ui;cursor:pointer; }
+    [data-command-hotbar] > button:hover:not(:disabled) { background:#536044; }
+    [data-command-hotbar] > button:focus-visible { outline:2px solid #f4d784;outline-offset:1px; }
+    [data-command-hotbar] > button:disabled { cursor:default;color:#b8b09b;border-color:#615b49; }
+    [data-command-hotbar] .order-key { display:block;font-size:10px;color:#d2bd84;margin-bottom:3px; }
+    [data-command-hotbar] .order-ready { display:block;font-size:10px;margin-top:4px;color:#c4d5a8; }
+    @media (max-width:700px) { [data-party-bar] { grid-template-columns:90px minmax(0,1fr)!important;padding:6px!important;gap:6px!important; } [data-party-bar] > [aria-label="Minimap"] { display:none; } }
+  `;
+  bar.append(hotbarStyle);
   const orderButtons = new Map<string, HTMLButtonElement>();
-  for (const [kind, label] of [['fire', 'Fire [Space]'], ['melee', 'Melee [V]'], ['fix-bayonets', 'Fix [B]'], ['unfix-bayonets', 'Unfix [N]'], ['charge', 'Charge [C]']]) {
+  for (const [kind, label, key] of [['fire', 'Fire', 'Space'], ['melee', 'Melee', 'V'], ['reload', 'Reload', 'R'], ['fix-bayonets', 'Fix bayonets', 'B'], ['unfix-bayonets', 'Unfix bayonets', 'N'], ['charge', 'Charge', 'C']]) {
     const control = document.createElement('button');
-    control.type = 'button'; control.textContent = label; control.dataset.partyOrder = kind;
-    control.style.cssText = 'color:#f4e5bc;background:#42392c;border:1px solid #a48a57;border-radius:3px;padding:3px 10px';
+    control.type = 'button'; control.dataset.partyOrder = kind;
+    control.dataset.orderLabel = label;
+    const shortcut = document.createElement('span'); shortcut.className = 'order-key'; shortcut.textContent = key;
+    const name = document.createElement('span'); name.textContent = label;
+    const ready = document.createElement('span'); ready.className = 'order-ready'; ready.textContent = '—';
+    control.append(shortcut, name, ready);
     control.addEventListener('click', () => { command(kind); control.blur(); });
     orderButtons.set(kind, control); orderBar.append(control);
   }
   const changeFormation = document.createElement('button');
   changeFormation.type = 'button'; changeFormation.textContent = 'Change formation'; changeFormation.dataset.changeFormation = 'true';
   changeFormation.addEventListener('click', () => { command('formation-open'); changeFormation.blur(); });
-  orderBar.append(changeFormation);
+  const inventory = document.createElement('button');
+  inventory.type = 'button'; inventory.textContent = 'Inventory'; inventory.dataset.openInventory = 'true';
+  inventory.setAttribute('aria-label', 'Open party inventory');
+  inventory.addEventListener('click', () => { openInventory(); inventory.blur(); });
+  orderBar.append(changeFormation, inventory);
   logSection.append(logStatus, orderBar, logView);
 
   const mapSection = document.createElement('section');
@@ -513,12 +533,27 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const combat = record(state.combat);
     for (const [kind, control] of orderButtons) {
       const order = record(record(combat.orders)[kind]);
-      control.textContent = `${({ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]', charge: 'Charge [C]' } as Record<string, string>)[kind]} · ${number(order.eligible)}/${number(order.total)}`;
+      const ready = control.querySelector<HTMLElement>('.order-ready')!;
+      ready.textContent = `${number(order.eligible)}/${number(order.total)} ready`;
+      if ((kind === 'fire' || kind === 'reload') && number(order.eligible) === 0) {
+        const rifleActions = entries(combat.members).map(([, action]) => action).filter(action => number(action.reloadSeconds) > 0);
+        const reloading = rifleActions.filter(action => text(action.phase).startsWith('Reload') && number(action.remaining) > 0);
+        if (reloading.length > 0) ready.textContent = `Loading ${Math.min(...reloading.map(action => number(action.remaining))).toFixed(1)}s`;
+        else if (kind === 'reload' && rifleActions.length > 0 && rifleActions.every(action => number(action.loaded) === 1)) ready.textContent = 'Loaded';
+      }
+      control.setAttribute('aria-label', `${control.dataset.orderLabel}: ${ready.textContent}`);
       const charge = record(combat.charge);
-      if (kind === 'charge' && number(charge.executing) === 1) control.textContent = `Charging ${number(charge.completedSteps)}/${number(charge.plannedSteps)} · ${number(charge.remaining).toFixed(1)}s`;
+      if (kind === 'charge' && number(charge.executing) === 1) ready.textContent = `Charging ${number(charge.completedSteps)}/${number(charge.plannedSteps)} · ${number(charge.remaining).toFixed(1)}s`;
       control.disabled = number(charge.executing) === 1 || number(combat.defeated) === 1 || number(state.paused) === 1 || number(order.eligible) === 0;
-      control.style.opacity = control.disabled ? '0.5' : '1';
-      control.title = (kind === 'charge' ? `${text(charge.reason)}\n` : '') + entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${number(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
+      control.style.opacity = control.disabled ? '0.75' : '1';
+      const reasons = entries(order.members).map(([id, member]) => {
+        const soldier = record(record(state.party)[id]);
+        const action = record(record(combat.members)[id]);
+        const remaining = number(action.remaining);
+        const timing = remaining > 0 ? ` · ${text(action.phase)} ${remaining.toFixed(1)}s` : '';
+        return `${text(soldier.name, id)}: ${text(member.reason, 'Ready')}${timing}`;
+      });
+      control.title = (kind === 'charge' ? `${text(charge.reason)}\n` : '') + reasons.join('\n');
     }
   };
 

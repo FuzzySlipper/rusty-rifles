@@ -12,7 +12,7 @@ type UiContext = Readonly<{
 }>;
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
+const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyT', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -141,6 +141,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const attack = button('Fire [Space]', () => command('fire'));
   const melee = button('Melee [V]', () => command('melee'));
+  const reload = button('Reload [R]', () => command('reload')); reload.dataset.order = 'reload';
   attack.dataset.order = 'fire'; melee.dataset.order = 'melee';
   const fixBayonets = button('Fix bayonets [B]', () => command('fix-bayonets'));
   const unfixBayonets = button('Unfix bayonets [N]', () => command('unfix-bayonets'));
@@ -148,7 +149,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const interrupt = button('Interrupt', () => command('interrupt'));
   const toss = button('Throw selected', () => throwSelectedItem());
   const plate = button('Toss onto plate', () => throwSelectedItem('plate'));
-  combatActions.append(attack, melee, fixBayonets, unfixBayonets, bolt, interrupt, toss, plate);
+  combatActions.append(attack, melee, reload, fixBayonets, unfixBayonets, bolt, interrupt, toss, plate);
   combat.append(combatTitle, combatStatus, combatTargets, combatMembers, combatActions, combatLog);
   const enemyRows = new Map<string, Readonly<{ row: HTMLElement; target: HTMLButtonElement; details: HTMLOutputElement }>>();
   const memberRows = new Map<string, HTMLOutputElement>();
@@ -450,9 +451,9 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const defeated = numeric(combatState.defeated) === 1;
     combatStatus.textContent = defeated ? 'The commander has fallen.' : 'Orders attack forward. Turn the party to change direction.';
     const targetVisible = numeric(selectedEnemy.visible) === 1;
-    for (const [kind, control] of [['fire', attack], ['melee', melee], ['fix-bayonets', fixBayonets], ['unfix-bayonets', unfixBayonets]] as const) {
+    for (const [kind, control] of [['fire', attack], ['melee', melee], ['reload', reload], ['fix-bayonets', fixBayonets], ['unfix-bayonets', unfixBayonets]] as const) {
       const order = record(record(combatState.orders)[kind]);
-      control.textContent = `${{ fire: 'Fire [Space]', melee: 'Melee [V]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' }[kind]} · ${numeric(order.eligible)}/${numeric(order.total)}`;
+      control.textContent = `${{ fire: 'Fire [Space]', melee: 'Melee [V]', reload: 'Reload [R]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' }[kind]} · ${numeric(order.eligible)}/${numeric(order.total)}`;
       control.disabled = defeated || numeric(state.paused) === 1 || numeric(order.eligible) === 0;
       control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${numeric(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
     }
@@ -738,7 +739,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   inventory.addEventListener('keydown', stopGameplayKeys, true); inventory.addEventListener('keyup', stopGameplayKeys, true); inventory.addEventListener('focusout', focusOutside);
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra));
+  panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra), () => { partyPanel.hidden = false; });
   const formationPlanner = mountFormationPlanner(root, command);
   const abilityMenu = mountAbilityMenu(root, bottomBar.element.querySelector('[aria-label="Party orders"]')!, command);
   // Party panel: the game-UI inventory. Right side, full height above the
@@ -880,9 +881,9 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · C charge · muskets reload automatically · F use · R cycle target · P pause · K save · L load · Esc or the Menu button for this menu.');
+  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · C charge · R reload (also automatic) · F use · T cycle interactable · P pause · K save · L load · Esc or the Menu button for this menu.');
   readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; Change formation pauses into a larger planner. Execute resumes a timed repositioning order, locking movement and affected soldiers; Cancel discards the draft.');
-  readmeSection('Inventory', 'Open the party panel from this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
+  readmeSection('Inventory', 'Open Inventory from the bottom hotbar or this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
   readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
   (readmeView.lastChild as HTMLElement).style.textAlign = 'center';

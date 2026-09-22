@@ -43,6 +43,7 @@ public sealed partial class RiflesProduct
         return value.Object(("selectedTarget", value.String(active.Combat.SelectedTarget.ToString())), ("enemies", foes), ("members", members),
             ("orders", value.Object(("fire", OrderProjection(value, CombatActionKind.Fire)),
                 ("melee", OrderProjection(value, CombatActionKind.Melee)),
+                ("reload", OrderReadoutProjection(value, active.Combat.ReadReloadOrder())),
                 ("fix-bayonets", OrderReadoutProjection(value, active.Combat.ReadBayonetOrder(true))),
                 ("unfix-bayonets", OrderReadoutProjection(value, active.Combat.ReadBayonetOrder(false))),
                 ("charge", OrderReadoutProjection(value, charge.Contributors, charge.Eligible)))),

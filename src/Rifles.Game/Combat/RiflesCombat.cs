@@ -237,6 +237,7 @@ internal sealed partial class RiflesCombat
         if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
         if (command.Action is "attack" or "fire") return BeginOrder(CombatActionKind.Fire, paused);
         if (command.Action == "melee") return BeginOrder(CombatActionKind.Melee, paused);
+        if (command.Action == "reload") return BeginReloadOrder(paused);
         if (command.Action == "target")
         {
             EnemyState? target = enemies.SingleOrDefault(e => e.Id == command.Target && Visible(e));
@@ -262,7 +263,7 @@ internal sealed partial class RiflesCombat
         string owner = "member:" + selectedMember;
         CombatActionKind kind = command.Action switch
         {
-            "reload" => CombatActionKind.Reload, "throw" => CombatActionKind.Throw,
+            "throw" => CombatActionKind.Throw,
             "consume" => CombatActionKind.Consume,
             _ => capabilities is { FireDamage: > 0 } ? CombatActionKind.Fire : CombatActionKind.Melee,
         };

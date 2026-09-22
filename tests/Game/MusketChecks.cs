@@ -11,7 +11,7 @@ internal static class MusketChecks
         Require(definitions.Items.StartingItems.Where(grant => grant.Owner == ItemInventory.PartyKey || ItemInventory.IsMember(grant.Owner))
             .All(grant => grant.Definition != definitions.Combat.AmmunitionItem),
             "Player starting kits do not carry ordinary ammunition stacks.");
-        Console.WriteLine("Musket checks passed: authored bayonet actions and automatic reload admission.");
+        Console.WriteLine("Musket checks passed: authored bayonet actions and manual/automatic reload admission.");
     }
 
     private static void VerifyAuthoredBayonetTiming(ItemDefinitions definitions)
@@ -47,14 +47,16 @@ internal static class MusketChecks
         ActionState reloading = ActionState.Restore(reloadWindup);
         Require(MusketActionRules.CanInterruptReload(reloading.Current) && reloading.Capture() == reloadWindup,
             "Readiness inspection leaves an interruptible reload windup intact until an order actually starts.");
-        Require(MusketActionRules.CanAutoReload(true, true, true, false, unloaded)
-            && !MusketActionRules.CanAutoReload(true, false, true, false, unloaded)
-            && !MusketActionRules.CanAutoReload(true, true, false, false, unloaded)
-            && !MusketActionRules.CanAutoReload(true, true, true, true, unloaded),
-            "Only an equipped idle unloaded musket reloads automatically, never while busy, dropped, or repositioning.");
+        Require(MusketActionRules.CanBeginReload(true, true, true, false, unloaded)
+            && !MusketActionRules.CanBeginReload(true, false, true, false, unloaded)
+            && !MusketActionRules.CanBeginReload(true, true, false, false, unloaded)
+            && !MusketActionRules.CanBeginReload(true, true, true, true, unloaded),
+            "The manual reload order starts only an equipped idle unloaded musket, never a busy, dropped, or repositioning soldier.");
+        Require(MusketActionRules.CanAutoReload(true, true, true, false, unloaded),
+            "Automatic reload uses the same safe admission as the manual party order.");
         weapons.SetLoaded(rifle.Entity, inventory, true);
-        Require(!MusketActionRules.CanAutoReload(true, true, true, false, weapons.Capabilities(rifle.Entity, inventory)),
-            "Loaded muskets never begin a duplicate automatic reload.");
+        Require(!MusketActionRules.CanBeginReload(true, true, true, false, weapons.Capabilities(rifle.Entity, inventory)),
+            "Loaded muskets never begin a duplicate manual or automatic reload.");
     }
 
     private static void RequireRejected(Action action, string message)

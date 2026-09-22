@@ -13,12 +13,35 @@ internal static class MusketActionRules
         Phase: ActionPhase.Windup,
     };
 
-    internal static bool CanAutoReload(bool living, bool idle, bool equipped, bool repositioning, WeaponCapabilities? weapon) => living && idle
+    /// <summary>Admission shared by an explicit party reload order and the automatic follow-up.
+    /// An existing reload is deliberately not interruptible: its windup retains its
+    /// progress and its recovery retains the already loaded round.</summary>
+    internal static bool CanBeginReload(bool living, bool idle, bool equipped, bool repositioning, WeaponCapabilities? weapon) => living && idle
         && equipped && !repositioning && weapon is { FireDamage: > 0, Loaded: false };
+
+    internal static bool CanAutoReload(bool living, bool idle, bool equipped, bool repositioning, WeaponCapabilities? weapon) =>
+        CanBeginReload(living, idle, equipped, repositioning, weapon);
 }
 
 internal sealed partial class RiflesCombat
 {
+    internal IReadOnlyList<MemberOrderReadout> ReadReloadOrder() => ChargeExecuting
+        ? ChargeLockedReadout() : EvaluateReloadOrder(false).Readout;
+
+    /// <summary>Starts every idle, unloaded musket without needing an enemy target.
+    /// Existing reload windup and recovery stay untouched so their timed progress
+    /// cannot be lost by repeatedly issuing this order.</summary>
+    internal GameOutcome BeginReloadOrder(bool paused)
+    {
+        if (ChargeExecuting) return GameOutcome.Reject("The party is charging.");
+        if (paused || Defeated) return GameOutcome.Reject(paused ? "Resume before ordering." : "The commander has fallen.");
+        (MemberOrderReadout[] Readout, int Started) evaluation = EvaluateReloadOrder(true);
+        if (evaluation.Started == 0) return GameOutcome.Reject("Reload order found no idle unloaded musket.");
+        scope.CancelRest("Rest interrupted by a reload order.");
+        CombatMessage("Reload order: " + evaluation.Started + "/" + party.Members.Count(member => !member.Definition.Commander) + " soldiers started.");
+        return GameOutcome.Accept();
+    }
+
     internal IReadOnlyList<MemberOrderReadout> ReadBayonetOrder(bool fix) => ChargeExecuting
         ? ChargeLockedReadout() : EvaluateBayonetOrder(fix, false).Readout;
 
@@ -63,6 +86,33 @@ internal sealed partial class RiflesCombat
         return (readout.ToArray(), started);
     }
 
+    private (MemberOrderReadout[] Readout, int Started) EvaluateReloadOrder(bool start)
+    {
+        List<MemberOrderReadout> readout = [];
+        int started = 0;
+        foreach (RiflesCharacter soldier in party.Members.Where(member => !member.Definition.Commander))
+        {
+            ActionState state = ActionOf(soldier);
+            CarriedItem? carried = Weapon(soldier.Definition.Id);
+            WeaponCapabilities? weapon = Capabilities(carried);
+            string? reason = ReloadReadiness(soldier, state, carried, weapon);
+            if (reason is not null)
+            {
+                readout.Add(new(soldier.Definition.Id, false, reason, "", ""));
+                continue;
+            }
+
+            if (start)
+            {
+                state.Start(NewAction(CombatActionKind.Reload, carried!.Entity, capabilities: weapon));
+                started++;
+                readout.Add(new(soldier.Definition.Id, true, "Started.", "", ""));
+            }
+            else readout.Add(new(soldier.Definition.Id, true, "Ready.", "", ""));
+        }
+        return (readout.ToArray(), started);
+    }
+
     internal bool InterruptReloadForManeuver(RiflesCharacter member)
     {
         ActionState state = ActionOf(member);
@@ -80,6 +130,17 @@ internal sealed partial class RiflesCombat
         if (!MusketActionRules.CanAutoReload(member.IsLiving, !state.Busy, carried is not null, party.Formation.Affects(member.InstanceId), weapon)) return;
         state.Start(NewAction(CombatActionKind.Reload, carried!.Entity, capabilities: weapon));
         CombatMessage(member.Definition.Name + " begins reloading.");
+    }
+
+    private string? ReloadReadiness(RiflesCharacter soldier, ActionState state, CarriedItem? carried, WeaponCapabilities? weapon)
+    {
+        if (!soldier.IsLiving) return "Fallen.";
+        if (party.Formation.Affects(soldier.InstanceId)) return "Repositioning.";
+        if (state.Busy) return "Busy.";
+        if (!MusketActionRules.CanBeginReload(soldier.IsLiving, !state.Busy, carried is not null,
+                party.Formation.Affects(soldier.InstanceId), weapon))
+            return weapon is { FireDamage: > 0, Loaded: true } ? "Musket already loaded." : "No unloaded musket.";
+        return null;
     }
 
     private BayonetDefinition? Bayonet(CarriedItem? carried, WeaponCapabilities? weapon) => carried is null || weapon?.FireReach is null

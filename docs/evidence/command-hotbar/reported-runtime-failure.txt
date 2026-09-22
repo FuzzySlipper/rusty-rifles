@@ -1,0 +1,33 @@
+warn 10 · error 2 · dropped 0
+#1 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=0 · transport=open · output=open · attachment-id=browser-fdba9e936a8d4741f02e58ea81ecf7d7 · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=57812396
+#2 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=29 · transport=open · output=open · attachment-id=browser-fdba9e936a8d4741f02e58ea81ecf7d7 · replaces-attachment-id=none · baseline-established=true · baseline-facts=runtime=2190967/1/1;next-input=1;revisions=10 · event-age-ms=57809346
+#3 supervisor/DEV_HOST_WORKER_SCHEDULER_TIMEOUT worker generation 1 did not finish its realtime callback before the operation deadline event-age-ms=57571096
+#4 runtime/DEV_HOST_WORKER_REPLACING worker replacement is in progress; request was not applied event-age-ms=57520362
+#5 runtime/CSHARP_CONTROL_BINDING lifecycle control does not name the current runtime binding event-age-ms=57520343
+#6 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=degraded · runtime-progress=15975 · transport=open · output=open · attachment-id=browser-fdba9e936a8d4741f02e58ea81ecf7d7 · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=57520338
+#7 worker-runtime/CSHARP_INPUT_INVALID_REBIND_CLEAR runtime input error: InvalidRebindClear event-age-ms=57520324
+#8 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=degraded · runtime-progress=15975 · transport=open · output=open · attachment-id=browser-f92e9e793665304a23c6ee165d434650 · replaces-attachment-id=browser-fdba9e936a8d4741f02e58ea81ecf7d7 · baseline-established=false · baseline-facts=none · event-age-ms=57517378
+#9 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=16152 · transport=open · output=open · attachment-id=browser-f92e9e793665304a23c6ee165d434650 · replaces-attachment-id=browser-fdba9e936a8d4741f02e58ea81ecf7d7 · baseline-established=true · baseline-facts=runtime=2190968/1/1;next-input=1;revisions=10 · event-age-ms=57517288
+#10 dev-host/DEV_HOST_RESPONSE_WRITE_RESYNC response delivery failed after a confirmed host admission; preserve its delivery certainty and do not replay the request error-kind=BrokenPipe · peer=192.168.1.22:57504 · attachment-id=browser-f92e9e793665304a23c6ee165d434650 · request-path=/__rusty/product/runtime/input · response-certainty=settled · event-age-ms=57414531
+#11 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=0 · transport=open · output=open · attachment-id=browser-58356ef286026760e8faf055e1c3cd30 · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=200753
+#12 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=29 · transport=open · output=open · attachment-id=browser-58356ef286026760e8faf055e1c3cd30 · replaces-attachment-id=none · baseline-established=true · baseline-facts=runtime=2190968/1/1;next-input=78284;revisions=10 · event-age-ms=197257
+#13 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=0 · transport=open · output=open · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=72588
+#14 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=27 · transport=open · output=open · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=true · baseline-facts=runtime=2190968/1/1;next-input=96183;revisions=4687 · event-age-ms=70433
+#15 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=degraded · runtime-progress=517 · transport=open · output=open · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=64247
+#16 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=degraded · runtime-progress=517 · transport=open · output=open · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=64244
+#17 browser-host/BROWSER_LOCAL_REQUEST_UNAVAILABLE Product Browser local runtime request failed for input: Failed to fetch event-age-ms=64244
+#18 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=ready · runtime-progress=517 · transport=open · output=open · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=true · baseline-facts=runtime=2190968/1/1;next-input=96183;revisions=4687 · event-age-ms=64234
+#19 browser-host/BROWSER_HOST_STATUS Product Browser Host transition snapshot host-state=failed · runtime-progress=517 · transport=closed · output=closed · attachment-id=browser-b6d5f7c8fdae5620ad1c1985f8ea746a · replaces-attachment-id=none · baseline-established=false · baseline-facts=none · event-age-ms=64224
+#20 browser-host/BROWSER_HOST_TRANSPORT_FAILED runtime control replacement did not provide a fresh input binding event-age-ms=64224
+Product/runtime lane
+In flight: none · age unavailable
+Admission: product 0 ms · input 0 ms
+Worker 2346024 · runtime 2190968/1/2 · realtime/running · simulation 3451169 · age 7 ms
+Worker phases: operation 1666 us (callback, post-callback, input, lifecycle) · output conversion 12 us · encode/write 20 us · input queue age unavailable
+Shell local: delivery interval 1823 us (overlaps worker work and serialization; not network latency) · output decode 44 us · output queue 12 us · publication 17 us
+C# update callback (2048 retained): p50 1254 us · p95 9110 us · rolling max 14669 us
+Latest update: runtime 2190968/1/2 · simulation step 3451168 · admitted 1 · callback 1263 us · post-callback 121 us. Callback includes native services; post-callback is separate Rust staging, reduction, conversion, and completion.
+Rolling slowest callback 14669 us · 26993 ms ago. Nested service totals: character 0 call(s), 0 us, 0 controller cast(s), 0 eligible collider(s), 0 Parry narrow-phase queries; residency 0 call(s), 0 us; scene presentation 0 call(s), 0 us.
+Incarnation slowest callback 406005 us · 185777 ms ago.
+Input queue: 0/256 batches · 0 events · oldest unavailable
+Runtime progress: 60.896/s · last 7 ms
