@@ -78,3 +78,12 @@ cursor-policy limitation above. Rifles now pins that pair and explicitly sets
 verified before installation through `scripts/install-engine.sh`. No local
 input interception is needed. Engine #8408 is done; the broader intermittent
 input-recovery investigation #8257 remains open in Den.
+
+Adoption verification: full `bash scripts/check.sh` passed
+(`/tmp/rifles-engine-a525-full-check.log`). The broker launched source `501c35e`
+on port 37300. In browser session `f99812a4-42ee-41e2-8cf7-22ba56882020`, an
+ordinary canvas click followed by P/E/P resumed, turned North to East, and
+paused; `pointer_lock` remained false. Clicking the bottom Inventory button
+[opened the panel with the cursor still free](evidence/command-hotbar/unlocked-cursor-inventory.png).
+The browser reported no page errors. The owned session was stopped/released.
+This is a bounded input/cursor check, not a recurrence test for #8257.
