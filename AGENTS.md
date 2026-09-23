@@ -111,9 +111,14 @@ Den project ID: `rusty-rifles`; repository root: `/home/dev/rusty-rifles`.
 Use that project for the implementation campaign and shared work; Den owns live
 task status and dependencies, while the repo index records the initial plan.
 
-Run `pnpm install --frozen-lockfile` once, then `bash scripts/check.sh` for the
-solution build, UI typecheck, procgen/game checks, offline tool self-check,
-and CoreCLR staging. Use focused checks during iteration.
+Install dependencies with `pnpm install --frozen-lockfile` when needed. Use
+focused checks during iteration. Run `bash scripts/check.sh` for changes that
+affect integrated game behavior, shared contracts, or staging, or when the task
+requires it; it covers the solution build, UI typecheck, procgen/game checks,
+offline tool self-check, and CoreCLR staging. Documentation-only and other
+isolated changes need checks relevant to their changed surface. Once relevant
+checks pass, rerun or broaden them only for material changes, failures, or
+unresolved concerns.
 
 `bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420` launches a standalone
 session. `.den-serve.json` describes the same lane for broker-owned serving.
