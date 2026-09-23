@@ -7,6 +7,7 @@ internal static class CrowdChecks
     {
         GeometryAndCapacityAreBothRequired();
         SharingRequiresAnOptedInFaction();
+        PartyCellStaysExclusiveDuringSteps();
         MixedFootprintCostsAreBounded();
         EdgeClearanceUsesTheMovingProfile();
         WaitingIntentIsFairAndCancellable();
@@ -29,6 +30,19 @@ internal static class CrowdChecks
         Require(!grid.CanFit(new GridPoint(0, 0), "small", "rats", share: false), "Both actors must opt into sharing.");
         Require(!grid.CanFit(new GridPoint(0, 0), "small", "guards", share: true), "Different factions remain exclusive.");
         Require(grid.CanFit(new GridPoint(0, 0), "small", "rats", share: true), "Same faction may use a disjoint authored placement.");
+    }
+
+    private static void PartyCellStaysExclusiveDuringSteps()
+    {
+        MovementGrid grid = Grid(capacity: 3);
+        grid.Add(1, new GridPoint(1, 0));
+        grid.Add(2, new GridPoint(0, 0), "small", "rats", share: true);
+        Require(!grid.CanFit(2, new GridPoint(1, 0)) && !grid.TryReserve(2, new GridPoint(1, 0)),
+            "A crowd enemy cannot enter the party's occupied cell.");
+        Require(grid.TryReserve(1, new GridPoint(2, 0)), "The party can reserve its next cell.");
+        Require(!grid.CanFit(2, new GridPoint(1, 0)) && !grid.TryReserve(2, new GridPoint(1, 0)),
+            "The party's source cell stays exclusive while it moves.");
+        Require(!grid.CanFit(2, new GridPoint(2, 0)), "The party's reserved destination stays exclusive.");
     }
 
     private static void MixedFootprintCostsAreBounded()

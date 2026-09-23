@@ -691,7 +691,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
       uiFeedback = ''; previousInventory = ''; previousInventoryControls = ''; previousPartyPanel = '';
       previousMagicTargets = ''; allyTarget.value = '';
     }
-    runPanel.update(state.run);
+    runPanel.update(state.run, state.combat);
     bottomBar.update(state);
     formationPlanner.update(state);
     abilityMenu.update(state);
@@ -945,7 +945,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   menuButton('Load', () => command('load'));
   menuButton('Restart', () => { command('restart'); closeMenu(false); });
   const menuEscape = (event: KeyboardEvent): void => {
-    if (event.code !== 'Escape') return;
+    if (event.code !== 'Escape' || event.defaultPrevented) return;
     if (numeric(record(state.formation).open) === 1) { event.preventDefault(); event.stopPropagation(); command('formation-cancel'); return; }
     // Never steal Escape from the Engine debug console (its bubble-phase
     // isolation runs after this window-capture listener) or from editable

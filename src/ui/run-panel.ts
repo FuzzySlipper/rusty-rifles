@@ -1,7 +1,7 @@
+import { drawDiscoveredMap, enemyMapSignature } from './discovered-map.js';
 type Values = Record<string, unknown>;
 
 const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
-const svgNamespace = 'http://www.w3.org/2000/svg';
 
 function record(value: unknown): Values {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Values : {};
@@ -33,20 +33,12 @@ function button(label: string, click: () => void): HTMLButtonElement {
   return control;
 }
 
-function svgElement(tag: string): SVGElement {
-  return document.createElementNS(svgNamespace, tag);
-}
-
-function svgAttributes(element: SVGElement, values: Record<string, string | number>): void {
-  for (const [name, value] of Object.entries(values)) element.setAttribute(name, String(value));
-}
-
 /**
  * Presents one expedition projection. Commands are intentionally passed through
  * the caller's product command bridge; this companion never owns map or run state.
  */
 export function mountRunPanel(root: Element, command: (action: string, fields?: Record<string, unknown>) => void): Readonly<{
-  update(raw: unknown): void;
+  update(raw: unknown, combat?: unknown): void;
   dispose(): void;
   element: HTMLElement;
 }> {
@@ -101,12 +93,12 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   floorSelect.setAttribute('aria-label', 'Known map floor');
   floorLabel.append(floorSelect);
   floorLabel.style.cssText = 'display:block;margin:6px 0';
-  const mapView = svgElement('svg');
+  const mapView = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   mapView.dataset.runMapSvg = 'true';
   mapView.setAttribute('role', 'img');
   mapView.setAttribute('aria-label', 'Discovered floor map');
   mapView.style.cssText = 'display:block;width:100%;max-height:250px;background:#10120f;border:1px solid #574f3d;border-radius:3px';
-  const mapLegend = element('p', 'Each square is one discovered cell · ◆ landmark · ▲ party');
+  const mapLegend = element('p', 'Each square is one discovered cell · ◆ landmark · ▲ party · red ring living enemies on discovered cells');
   mapLegend.dataset.runMapLegend = 'true';
   mapLegend.style.cssText = 'font-size:11px;margin:4px 0;color:#c9c0ae';
   map.append(mapSummary, floorLabel, mapView, mapLegend);
@@ -152,6 +144,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   root.append(panel);
 
   let state: Values = {};
+  let combat: Values = {};
   let selectedFloor = '';
   let activeFloor = '';
   let runIdentity = '';
@@ -171,56 +164,11 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   };
 
   const drawMap = (): void => {
-    const floor = currentMap();
-    const cells = entries(floor.cells).map(([, cell]) => ({
-      x: number(cell.x), y: number(cell.y), level: number(cell.level), discovered: cell.discovered !== false,
-    })).filter(cell => cell.discovered);
-    const markers = entries(floor.markers).map(([id, marker]) => ({ id, x: number(marker.x), y: number(marker.y), label: text(marker.label, id) }));
     const activeHere = selectedFloor === text(state.floorKey, '');
-    const pose = { x: number(state.x), y: number(state.y), facing: text(state.facing, 'North') };
-    const signature = JSON.stringify([selectedFloor, cells, markers, activeHere ? pose : null]);
+    const signature = JSON.stringify([selectedFloor, currentMap(), activeHere ? [state.x, state.y, state.facing, enemyMapSignature(combat)] : null]);
     if (signature === mapSignature) return;
     mapSignature = signature;
-    mapView.replaceChildren();
-    if (cells.length === 0) {
-      mapView.setAttribute('viewBox', '0 0 10 10');
-      const empty = svgElement('text');
-      svgAttributes(empty, { x: 5, y: 5, 'text-anchor': 'middle', fill: '#c9c0ae', 'font-size': 1.1 });
-      empty.textContent = 'No discovered cells';
-      mapView.append(empty);
-      return;
-    }
-    const minX = Math.min(...cells.map(cell => cell.x));
-    const maxX = Math.max(...cells.map(cell => cell.x));
-    const minY = Math.min(...cells.map(cell => cell.y));
-    const maxY = Math.max(...cells.map(cell => cell.y));
-    const width = maxX - minX + 1;
-    const height = maxY - minY + 1;
-    mapView.setAttribute('viewBox', `${minX - 0.4} ${minY - 0.4} ${width + 0.8} ${height + 0.8}`);
-    mapView.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    for (const cell of cells) {
-      const tile = svgElement('rect');
-      // Grid and SVG both increase Y toward the south.
-      const drawY = cell.y;
-      const shade = cell.level > 0 ? '#8ca65c' : cell.level < 0 ? '#5e86a5' : '#d1bc78';
-      svgAttributes(tile, { x: cell.x + 0.06, y: drawY + 0.06, width: 0.88, height: 0.88, rx: 0.08, fill: shade, stroke: '#10120f', 'stroke-width': 0.06 });
-      mapView.append(tile);
-    }
-    for (const marker of markers) {
-      const mark = svgElement('path');
-      mark.dataset.runMapMarker = marker.id;
-      const drawY = marker.y;
-      svgAttributes(mark, { d: `M ${marker.x + 0.5} ${drawY + 0.18} L ${marker.x + 0.82} ${drawY + 0.5} L ${marker.x + 0.5} ${drawY + 0.82} L ${marker.x + 0.18} ${drawY + 0.5} Z`, fill: '#f0cf6a', stroke: '#281d0f', 'stroke-width': 0.06 });
-      const label = svgElement('title'); label.textContent = marker.label; mark.append(label); mapView.append(mark);
-    }
-    if (activeHere) {
-      const arrow = svgElement('path');
-      arrow.dataset.runMapParty = 'true';
-      const drawY = pose.y;
-      const rotation = { north: 0, east: 90, south: 180, west: 270 }[pose.facing.toLowerCase()] ?? 0;
-      svgAttributes(arrow, { d: 'M 0.5 0.08 L 0.84 0.82 L 0.5 0.65 L 0.16 0.82 Z', fill: '#f5eee1', stroke: '#251914', 'stroke-width': 0.08, transform: `rotate(${rotation} ${pose.x + 0.5} ${drawY + 0.5}) translate(${pose.x} ${drawY})` });
-      const label = svgElement('title'); label.textContent = `Party facing ${pose.facing}`; arrow.append(label); mapView.append(arrow);
-    }
+    drawDiscoveredMap(mapView, state, combat, selectedFloor);
   };
 
   const renderFloorChoices = (): void => {
@@ -261,8 +209,9 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
     travelMessage.textContent = available ? 'Choose a route to travel.' : firstProblem;
   };
 
-  const update = (raw: unknown): void => {
+  const update = (raw: unknown, combatValue?: unknown): void => {
     state = record(raw);
+    combat = record(combatValue);
     const nextRun = text(state.id, '');
     if (runIdentity !== nextRun) {
       runIdentity = nextRun; selectedFloor = ''; activeFloor = '';
@@ -319,7 +268,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
       : 'No profile is reported.';
   };
 
-  const changeFloor = (): void => { selectedFloor = floorSelect.value; notesSignature = ''; drawMap(); update(state); };
+  const changeFloor = (): void => { selectedFloor = floorSelect.value; notesSignature = ''; drawMap(); update(state, combat); };
   floorSelect.addEventListener('change', changeFloor);
   const isolate = (event: Event): void => event.stopPropagation();
   const pointerEvents = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'mousedown', 'mousemove', 'mouseup', 'wheel', 'click'];

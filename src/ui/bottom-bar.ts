@@ -1,3 +1,4 @@
+import { drawDiscoveredMap, enemyMapSignature } from './discovered-map.js';
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
@@ -150,9 +151,13 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   mapLocation.dataset.barLocation = 'true';
   mapLocation.textContent = 'No map yet';
   mapLocation.style.cssText = 'display:block;margin-bottom:4px;color:#c9c0ae;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center';
-  const mapDial = document.createElement('div');
+  const mapDial = document.createElement('button');
+  mapDial.type = 'button';
+  mapDial.dataset.openMap = 'true';
+  mapDial.setAttribute('aria-label', 'Open floor map');
+  mapDial.title = 'Open floor map';
   mapDial.dataset.barDial = 'true';
-  mapDial.style.cssText = 'position:relative;width:min(100%,118px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
+  mapDial.style.cssText = 'display:block;padding:0;cursor:pointer;position:relative;width:min(100%,118px);aspect-ratio:1/1;margin:0 auto;border-radius:50%;border:2px solid #6b5f45;overflow:hidden;background:#10120f;box-shadow:inset 0 0 24px #000000aa,0 0 0 4px #141610,0 0 0 5px #2e2a22';
   const mapView = document.createElementNS(svgNamespace, 'svg');
   mapView.setAttribute('role', 'img');
   mapView.setAttribute('aria-label', 'Discovered floor map');
@@ -167,6 +172,41 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
 
   bar.append(formationSection, logSection, mapSection);
   root.append(bar);
+
+  const mapPanel = document.createElement('aside');
+  mapPanel.hidden = true;
+  mapPanel.dataset.rustyUiInteractive = 'true';
+  mapPanel.dataset.fullMapPanel = 'true';
+  mapPanel.setAttribute('aria-label', 'Floor map');
+  mapPanel.style.cssText = 'box-sizing:border-box;position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:12px;color:#eee6d5;background:#171914f5;border:1px solid #a48a57;border-radius:6px;box-shadow:0 12px 40px #000c;font:13px/1.35 system-ui;pointer-events:auto';
+  const mapPanelHeader = document.createElement('div');
+  mapPanelHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px';
+  const mapPanelTitle = document.createElement('strong');
+  mapPanelTitle.textContent = 'Floor map';
+  const closeMap = document.createElement('button');
+  closeMap.type = 'button';
+  closeMap.dataset.closeMap = 'true';
+  closeMap.textContent = 'Close';
+  closeMap.setAttribute('aria-label', 'Close floor map');
+  mapPanelHeader.append(mapPanelTitle, closeMap);
+  const fullMapView = document.createElementNS(svgNamespace, 'svg');
+  fullMapView.setAttribute('role', 'img');
+  fullMapView.setAttribute('aria-label', 'Full discovered floor map');
+  (fullMapView as unknown as HTMLElement).dataset.fullMap = 'true';
+  (fullMapView as unknown as HTMLElement).style.cssText = 'display:block;width:100%;height:min(66vh,620px);min-height:240px;background:#10120f;border:1px solid #574f3d;border-radius:3px';
+  const mapPanelLegend = document.createElement('p');
+  mapPanelLegend.textContent = 'Each square is one discovered cell · ◆ landmark · ▲ party · red ring living enemies on discovered cells';
+  mapPanelLegend.style.cssText = 'margin:7px 0 0;color:#c9c0ae;font-size:12px';
+  mapPanel.append(mapPanelHeader, fullMapView as unknown as Node, mapPanelLegend);
+  root.append(mapPanel);
+  const hideMap = (): void => { mapPanel.hidden = true; mapDial.focus(); };
+  mapDial.addEventListener('click', () => { mapPanel.hidden = false; closeMap.focus(); });
+  closeMap.addEventListener('click', hideMap);
+  const closeMapOnEscape = (event: KeyboardEvent): void => {
+    if (event.code !== 'Escape' || mapPanel.hidden) return;
+    event.preventDefault(); event.stopPropagation(); hideMap();
+  };
+  window.addEventListener('keydown', closeMapOnEscape, true);
 
   type Token = Readonly<{
     anchor: HTMLElement;
@@ -240,61 +280,18 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   let lastFeedback = '';
   const feedbackHistory: string[] = [];
 
-  const svgAttributes = (element: SVGElement, values: Record<string, string | number>): void => {
-    for (const [name, value] of Object.entries(values)) element.setAttribute(name, String(value));
-  };
-
-  const drawMap = (run: Values): void => {
-    const maps = record(run.maps);
+  const drawMap = (run: Values, combat: Values): void => {
     const floorKey = text(run.floorKey, '');
-    const floor = record(maps[floorKey]);
-    const cells = entries(floor.cells).map(([, cell]) => ({
-      x: number(cell.x), y: number(cell.y), level: number(cell.level),
-    }));
-    const markers = entries(floor.markers).map(([id, marker]) => ({ id, x: number(marker.x), y: number(marker.y), label: text(marker.label, id) }));
-    const pose = { x: number(run.x), y: number(run.y), facing: text(run.facing, 'North') };
-    const signature = JSON.stringify([floorKey, cells, markers, pose]);
+    const signature = JSON.stringify([floorKey, record(run.maps)[floorKey], run.x, run.y, run.facing, enemyMapSignature(combat)]);
     if (signature === mapSignature) return;
     mapSignature = signature;
-    while (mapView.firstChild) mapView.firstChild.remove();
+    const pose = { x: number(run.x), y: number(run.y), facing: text(run.facing, 'North') };
     mapLocation.textContent = floorKey
       ? `${text(run.floor, 'Unknown floor')} · facing ${pose.facing} · (${pose.x}, ${pose.y})`
       : 'No map yet';
-    if (cells.length === 0) {
-      mapView.setAttribute('viewBox', '0 0 10 10');
-      const empty = document.createElementNS(svgNamespace, 'text');
-      svgAttributes(empty, { x: 5, y: 5, 'text-anchor': 'middle', fill: '#c9c0ae', 'font-size': 1.1 });
-      empty.textContent = 'Undiscovered';
-      mapView.append(empty);
-      return;
-    }
-    const minX = Math.min(...cells.map(cell => cell.x));
-    const maxX = Math.max(...cells.map(cell => cell.x));
-    const minY = Math.min(...cells.map(cell => cell.y));
-    const maxY = Math.max(...cells.map(cell => cell.y));
-    mapView.setAttribute('viewBox', `${minX - 0.4} ${minY - 0.4} ${maxX - minX + 1.8} ${maxY - minY + 1.8}`);
-    mapView.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    for (const cell of cells) {
-      const tile = document.createElementNS(svgNamespace, 'rect');
-      const shade = cell.level > 0 ? '#8ca65c' : cell.level < 0 ? '#5e86a5' : '#d1bc78';
-      svgAttributes(tile, { x: cell.x + 0.06, y: cell.y + 0.06, width: 0.88, height: 0.88, rx: 0.08, fill: shade, stroke: '#10120f', 'stroke-width': 0.06 });
-      mapView.append(tile);
-    }
-    for (const marker of markers) {
-      const mark = document.createElementNS(svgNamespace, 'path');
-      svgAttributes(mark, { d: `M ${marker.x + 0.5} ${marker.y + 0.18} L ${marker.x + 0.82} ${marker.y + 0.5} L ${marker.x + 0.5} ${marker.y + 0.82} L ${marker.x + 0.18} ${marker.y + 0.5} Z`, fill: '#f0cf6a', stroke: '#281d0f', 'stroke-width': 0.06 });
-      const label = document.createElementNS(svgNamespace, 'title');
-      label.textContent = marker.label;
-      mark.append(label);
-      mapView.append(mark);
-    }
-    const arrow = document.createElementNS(svgNamespace, 'path');
-    const rotation = facingRotation(pose.facing);
-    svgAttributes(arrow, { d: 'M 0.5 0.08 L 0.84 0.82 L 0.5 0.65 L 0.16 0.82 Z', fill: '#f5eee1', stroke: '#251914', 'stroke-width': 0.08, transform: `rotate(${rotation} ${pose.x + 0.5} ${pose.y + 0.5}) translate(${pose.x} ${pose.y})` });
-    const partyLabel = document.createElementNS(svgNamespace, 'title');
-    partyLabel.textContent = `Party facing ${pose.facing}`;
-    arrow.append(partyLabel);
-    mapView.append(arrow);
+    mapPanelTitle.textContent = floorKey ? `Floor map · ${text(run.floor, floorKey)}` : 'Floor map';
+    drawDiscoveredMap(mapView, run, combat, floorKey);
+    drawDiscoveredMap(fullMapView, run, combat, floorKey);
   };
 
   const renderFormation = (state: Values): void => {
@@ -522,7 +519,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       // with no events. See F1.
       logNeedsPaint = true;
     }
-    drawMap(run);
+    drawMap(run, record(state.combat));
     renderFormation(state);
     renderVitals(state);
     renderLog(state);
@@ -564,6 +561,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   };
   bar.addEventListener('keydown', stopGameplayKeys, true);
   bar.addEventListener('keyup', stopGameplayKeys, true);
+  mapPanel.addEventListener('keydown', stopGameplayKeys, true);
+  mapPanel.addEventListener('keyup', stopGameplayKeys, true);
 
   return {
     update,
@@ -571,6 +570,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     dispose() {
       bar.removeEventListener('keydown', stopGameplayKeys, true);
       bar.removeEventListener('keyup', stopGameplayKeys, true);
+      mapPanel.removeEventListener('keydown', stopGameplayKeys, true);
+      mapPanel.removeEventListener('keyup', stopGameplayKeys, true);
+      window.removeEventListener('keydown', closeMapOnEscape, true);
+      mapPanel.remove();
       bar.remove();
     },
   };
