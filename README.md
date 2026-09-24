@@ -35,7 +35,8 @@ Its evidence distinguishes source checks, visible play and owner-browser tests.
 
 ![First-person view down a generated garrison corridor: lit brick walls and doorway depth, enemy and prop sprites, and the party HUD with formation, action hotbar, combat log and compass](docs/images/rusty-rifles-guard-hall.png)
 
-Played and captured at 1280x720 on the browser playtest lane against the same
+Played and captured at 1280x720 on the GPU-backed browser playtest lane (remote
+Firefox driven by the crew playtest controller) against the same
 development host described below. The party stands at its entry cell on the
 Supply Approach floor of the `dead-garrison` expedition. The capture transport is
 a video stream of the browser window, so the image is not correlated to a
