@@ -31,6 +31,16 @@ defeat/retry and file-authored difficulty profiles.
 party controls, target readability, bundled sound cues and resource reuse.
 Its evidence distinguishes source checks, visible play and owner-browser tests.
 
+## Demo
+
+![First-person view down a generated garrison corridor: lit brick walls and doorway depth, enemy and prop sprites, and the party HUD with formation, action hotbar, combat log and compass](docs/images/rusty-rifles-guard-hall.png)
+
+Played and captured at 1280x720 on the browser playtest lane against the same
+development host described below. The party stands at its entry cell on the
+Supply Approach floor of the `dead-garrison` expedition. The capture transport is
+a video stream of the browser window, so the image is not correlated to a
+specific Engine render submission.
+
 ## Run
 
 Requires .NET 10, Node/pnpm, and the matched Rusty Engine SDK/runtime artifacts.
