@@ -44,15 +44,18 @@ specific Engine render submission.
 
 ## Run
 
-Requires .NET 10, Node/pnpm, and the matched Rusty Engine SDK/runtime artifacts.
-The Engine pair is already installed locally in this checkout. On a fresh
-checkout, install version `0.1.0-dev.03ac310b95c2` explicitly:
+Requires .NET 10 and Node/pnpm. The Engine SDK/runtime pair is pinned in
+`Directory.Build.props`; the Engine's `rusty` command installs and runs it. Get
+`rusty` once with
+`curl -fsSL https://raw.githubusercontent.com/FuzzySlipper/rusty-engine/main/scripts/install-rusty.sh | bash`.
 
 ```bash
-bash scripts/install-engine.sh /absolute/path/to/runtime-pack /absolute/path/to/Rusty.Engine.0.1.0-dev.03ac310b95c2.nupkg
+rusty install
 pnpm install --frozen-lockfile
-bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420
+rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host 0.0.0.0 --port 4420
 ```
+
+`rusty update` moves the pin to a newer pair and lists the release notes to read.
 
 Open the URL printed by the host. Click the game view to focus it.
 W/S step forward/back; A/D sidestep; Q/E turn 90 degrees. Each key press

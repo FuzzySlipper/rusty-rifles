@@ -57,11 +57,10 @@ All source in this repository belongs to Rifles. Imported code is a one-time
 transfer: do not maintain donor links, source-provenance documents, sync
 scripts, parity obligations, or sibling project references.
 
-The installed development pair is recorded in `src/Rifles.Game/Rifles.Game.csproj`
-(`RustyEngineSdkPackageVersion`) and `scripts/dev.sh`, with the runtime under
-`.runtime/pair-<revision>/runtime-pack`. Keep the package and runtime matched.
-Use `scripts/install-engine.sh` to install external artifacts on another
-checkout. `.runtime`, generated SDK composition, and UI output are ignored.
+The Engine pair is pinned once, by `RustyEnginePackageVersion` in
+`Directory.Build.props`. The Engine `rusty` command installs (`rusty install`),
+runs (`rusty dev`), reports (`rusty status`) and moves (`rusty update`) it.
+`.runtime`, generated SDK output, and UI output are ignored.
 See `docs/gameplay-design.md` for the gameplay ownership map and Engine basis.
 `rusty dev` is the normal CoreCLR loader; NativeAOT is an explicit release
 check only when requested.
@@ -120,7 +119,7 @@ isolated changes need checks relevant to their changed surface. Once relevant
 checks pass, rerun or broaden them only for material changes, failures, or
 unresolved concerns.
 
-`bash scripts/dev.sh --bind-host 0.0.0.0 --port 4420` launches a standalone
+`rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host 0.0.0.0 --port 4420` launches a standalone
 session. `.den-serve.json` describes the same lane for broker-owned serving.
 Use an existing broker session instead of launching a competing host.
 
