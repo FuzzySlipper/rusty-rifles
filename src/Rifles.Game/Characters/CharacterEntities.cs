@@ -44,7 +44,7 @@ internal sealed class CharacterEntities
     internal void Detach(string instanceKey)
     {
         if (instances.Remove(instanceKey, out EntityId entity))
-            store.Destroy(entity, null);
+            store.Destroy(entity);
     }
 
     /// <summary>

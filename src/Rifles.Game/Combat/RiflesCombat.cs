@@ -347,7 +347,7 @@ internal sealed partial class RiflesCombat
         {
             RequireItemAccess(action.SourceOwner!); ValidateRemedy(action.SourceOwner!, action.ItemToken!, action.TargetMember!);
             GearDefinition use = definitions.Items.Item(inventory.Find(action.SourceOwner!, action.ItemToken!).Definition);
-            inventory.PrepareUse(ItemRef.Parse(action.SourceOwner!, action.ItemToken!), inventory.Revision).Publish();
+            inventory.Use(ItemRef.Parse(action.SourceOwner!, action.ItemToken!));
             RiflesCharacter target = Member(action.TargetMember!);
             long restored = use.Use == ItemUse.Vitality ? target.Heal(use.Effect) : target.RecoverResource(use.Effect);
             CombatMessage(target.Definition.Name + " restored " + restored + " " + use.Use); return;

@@ -124,7 +124,7 @@ internal sealed class DungeonMaterials : IDisposable
 
     private static Color Color(float[] values) => new(values[0], values[1], values[2], values[3]);
 
-    private static void ValidateCatalog(AuthoredCatalogReadoutLeaseReceipt readout, AppearanceStyleDefinition style)
+    private static void ValidateCatalog(AuthoredCatalogReadoutResult readout, AppearanceStyleDefinition style)
     {
         int materialCount = RoleSurfaces(style).Length;
         if (readout.Entries.Length != style.Textures.Length + materialCount || readout.Materials.Length != materialCount

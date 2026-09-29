@@ -21,7 +21,6 @@ internal sealed class DungeonScene : IDisposable
     private int CeilingY => tuning.CeilingCells;
     private const ulong GridId = 1;
     private const uint StoneSlot = 1, ExitSlot = 2, DoorSlot = 3, LimewashSlot = 4, FloorDetailSlot = 5;
-    private const int EngineVoxelEditLimit = 4096;
     private readonly IEngineContext engine;
     private readonly SpatialSession spatial;
     private readonly DungeonFloor floor;
@@ -85,11 +84,7 @@ internal sealed class DungeonScene : IDisposable
             }
             var resolvedEdits = edits.GroupBy(edit => edit.Address).Select(group => group.Last()).ToArray();
             baseSlots.UnionWith(resolvedEdits.Where(edit => edit.Kind == VoxelEditKind.Set).Select(edit => edit.MaterialSlot));
-            foreach (VoxelEdit[] batch in resolvedEdits.Chunk(EngineVoxelEditLimit))
-            {
-                VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
-                engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, batch));
-            }
+            engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, resolvedEdits));
             engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
                 new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
                 cells.Select(c => NavigationCell(c)).ToArray()));
@@ -110,8 +105,7 @@ internal sealed class DungeonScene : IDisposable
         List<VoxelEdit> edits = [];
         for (int y = FloorY + floor.Level(door) + 1; y < CeilingY + floor.Level(door); y++) AddLogicalVoxel(edits, door, y, doorMaterial is null ? StoneSlot : DoorSlot);
         if (open) edits = edits.Select(e => e with { Kind = VoxelEditKind.Clear }).ToList();
-        VoxelSceneReadout before = engine.Voxel.ReadScene(new VoxelSceneReadRequest(spatial));
-        engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, before.SourceRevision, edits.ToArray()));
+        engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, edits.ToArray()));
         if (open) closedDoors.Remove(door); else closedDoors.Add(door);
         engine.Spatial.ReplaceNavigation(new NavigationReplaceRequest(spatial,
             new PlanarNavConfig(GridId, CellSize, tuning.ChunkSize, 1),
@@ -123,7 +117,7 @@ internal sealed class DungeonScene : IDisposable
     internal bool AdmitStep(GridPoint from, GridPoint destination)
     {
         if (from.ManhattanDistance(destination) != 1) return false;
-        NavigationStepReceipt step = engine.Spatial.EvaluateNavigationStep(new NavigationStepRequest(
+        NavigationStepResult step = engine.Spatial.EvaluateNavigationStep(new NavigationStepRequest(
             spatial, NavigationCenter(from), NavigationCenter(destination), Vector3.Distance(NavigationCenter(from), NavigationCenter(destination)), tuning.NavigationBudget));
         return step.Outcome == NavigationPathOutcome.Reached && step.Reached != 0
             && step.NextPathCell == NavigationCell(destination);
@@ -159,12 +153,12 @@ internal sealed class DungeonScene : IDisposable
         uint shortest = uint.MaxValue;
         foreach (GridPoint goal in goals)
         {
-            NavigationWeightedPathReadout path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
+            NavigationWeightedPathResult path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
                 spatial, NavigationCell(from), NavigationCell(goal), tuning.NavigationBudget));
-            if (path.Outcome != NavigationPathOutcome.Reached || path.PathLen <= 1 || path.PathLen >= shortest) continue;
-            NavigationPathCellAtReceipt next = engine.Spatial.ReadNavigationPathCellAt(new NavigationPathCellAtRequest(spatial, 1));
-            if (!next.Present) continue;
-            best = new(checked((int)next.Cell.X), checked((int)next.Cell.Z)); shortest = path.PathLen;
+            uint length = checked((uint)path.Path.Length);
+            if (path.Outcome != NavigationPathOutcome.Reached || length <= 1 || length >= shortest) continue;
+            PlanarNavCell next = path.Path.Span[1];
+            best = new(checked((int)next.X), checked((int)next.Z)); shortest = length;
         }
         return best;
     }
@@ -176,7 +170,6 @@ internal sealed class DungeonScene : IDisposable
     internal float GroundHeight(GridPoint cell) => GroundHeight(new Vector2(cell.X, cell.Y));
     internal float GroundHeight(Vector2 cell) => FloorSurface.Height(floor, cell, CellSize, VoxelsPerCell);
     internal InteractionVisibility Visibility(Vector3 origin, Vector3 target) => InteractionVisibilityQuery.Cast(engine.Spatial, spatial, origin, target, new SpatialQueryFilter(0, 0), ReadOnlyMemory<SpatialEntityCollider>.Empty, ReadOnlyMemory<ulong>.Empty);
-    internal void Attach() => engine.VoxelScenePresentation.RefreshScene(scene!);
 
     /// <summary>Rebinds only the retained voxel presentation to another cached art treatment.</summary>
     internal void SetStyle(string style)

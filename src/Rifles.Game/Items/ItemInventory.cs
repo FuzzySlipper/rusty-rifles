@@ -182,7 +182,7 @@ internal sealed class ItemInventory
             EntityId owner = new(Owner(grant.Owner).Id);
             if (definition.Kind == ItemKind.Fungible)
             {
-                candidate.Grant(owner, definition.Mechanical, grant.Quantity);
+                candidate.Grant(owner, definition.Mechanical, Stack(definition), grant.Quantity);
                 if (grant.Owner == PartyKey) partyTokens.Add("s:" + definition.Id);
             }
             else
@@ -217,7 +217,7 @@ internal sealed class ItemInventory
         InventoryEdit candidate = world.Prepare();
         if (item.Kind == ItemKind.Fungible)
         {
-            candidate.Grant(destination, item.Mechanical, quantity);
+            candidate.Grant(destination, item.Mechanical, Stack(item), quantity);
             if (owner is PartyOwner) partyTokens.Add("s:" + item.Id);
         }
         else
@@ -238,7 +238,7 @@ internal sealed class ItemInventory
         GearDefinition item = definitions.Item(definition);
         if (item.Kind != ItemKind.Fungible || quantity == 0) throw new InvalidDataException("Choose available ammunition.");
         InventoryEdit candidate = world.Prepare();
-        candidate.Consume(new(Owner(owner.Key).Id), item.Mechanical, quantity);
+        candidate.Consume(new(Owner(owner.Key).Id), Stack(item), quantity);
         candidate.Publish();
         if (owner is PartyOwner) SyncSlots();
     }
@@ -258,9 +258,11 @@ internal sealed class ItemInventory
             if (existing.Any(i => i.Entity != 0 || found.Entity != 0 || i.Definition != found.Definition))
                 throw new InvalidDataException("That anchor is occupied.");
         }
-        InventoryEdit candidate = world.Prepare(expectedRevision);
+        RequireRevision(expectedRevision);
+        InventoryEdit candidate = world.Prepare();
         EntityId source = new(Owner(item.OwnerKey).Id), destination = new(Owner(to.Key).Id);
-        if (found.Entity == 0) candidate.TransferFungible(source, destination, definitions.Item(found.Definition).Mechanical, quantity);
+        InventoryStackId stack = Stack(definitions.Item(found.Definition));
+        if (found.Entity == 0) candidate.TransferFungible(source, destination, stack, stack, quantity);
         else
         {
             EntityId id = new(found.Entity);
@@ -281,7 +283,8 @@ internal sealed class ItemInventory
         if (!definition.Slots.Contains(slot)) throw new InvalidDataException("This item cannot use that slot.");
         if (wielderPower < definition.MinimumPower) throw new InvalidDataException("This character needs more power to use that gear.");
         EntityId id = new(Owner(destination.Key).Id);
-        InventoryEdit candidate = world.Prepare(expectedRevision);
+        RequireRevision(expectedRevision);
+        InventoryEdit candidate = world.Prepare();
         if (item.OwnerKey != destination.Key)
         {
             if (found.Slots.Length > 0) candidate.Unequip(new(Owner(item.OwnerKey).Id), new(found.Entity));
@@ -330,24 +333,22 @@ internal sealed class ItemInventory
     {
         CarriedItem found = Find(item.OwnerKey, item.Token);
         if (found.Slots.Length == 0) throw new InvalidDataException("That item is not equipped.");
-        InventoryEdit candidate = world.Prepare(expectedRevision);
+        RequireRevision(expectedRevision);
+        InventoryEdit candidate = world.Prepare();
         candidate.Unequip(new(Owner(item.OwnerKey).Id), new(found.Entity));
         candidate.Publish();
         if (BoundMember(item.OwnerKey, out var member)) member.UnequipContribution(item.Token);
     }
-    internal InventoryEdit PrepareUse(ItemRef item, ulong expectedRevision)
+    internal void Use(ItemRef item)
     {
         CarriedItem found = Find(item.OwnerKey, item.Token);
         GearDefinition definition = definitions.Item(found.Definition);
-        InventoryEdit candidate = world.Prepare(expectedRevision);
-        if (definition.Cost > 0)
-        {
-            if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), definition.Mechanical, definition.Cost);
-            else if (definition.Cost == 1) candidate.DestroyUnique(new(found.Entity));
-            else throw new InvalidDataException("Invalid unique item cost.");
-        }
-        candidate.Validate();
-        return candidate;
+        if (definition.Cost == 0) return;
+        InventoryEdit candidate = world.Prepare();
+        if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), Stack(definition), definition.Cost);
+        else if (definition.Cost == 1) candidate.DestroyUnique(new(found.Entity));
+        else throw new InvalidDataException("Invalid unique item cost.");
+        candidate.Publish();
     }
     // Rearrange the party grid: move a token to a slot, swapping with any
     // occupant. Slots are C#-side presentation state (the Engine ledger has
@@ -355,7 +356,7 @@ internal sealed class ItemInventory
     // still applies so stale grids cannot overwrite fresh ones.
     internal void Arrange(string token, int slot, ulong expectedRevision)
     {
-        if (expectedRevision != world.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
+        RequireRevision(expectedRevision);
         if (slot < 0 || slot >= definitions.PartySlots) throw new InvalidDataException("Choose a slot inside the party inventory.");
         if (!Items(PartyKey).Any(i => i.Token == token)) throw new InvalidDataException("That item is no longer in the party inventory.");
         if (SlotOf(token) < 0) TakeSlot(token); // Repair path; every entry assigns, so this should not happen.
@@ -367,11 +368,20 @@ internal sealed class ItemInventory
     {
         CarriedItem found = Find(item.OwnerKey, item.Token);
         InventoryEdit candidate = world.Prepare();
-        if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), definitions.Item(found.Definition).Mechanical, found.Quantity);
+        if (found.Entity == 0) candidate.Consume(new(Owner(item.OwnerKey).Id), Stack(definitions.Item(found.Definition)), found.Quantity);
         else candidate.DestroyUnique(new(found.Entity));
         candidate.Publish();
         if (item.Owner is PartyOwner) SyncSlots();
         if (found.Slots.Length > 0 && BoundMember(item.OwnerKey, out var member)) member.UnequipContribution(item.Token);
+    }
+    // One stack per definition per owner: the party grid and saves name a
+    // fungible stack by its definition.
+    private static InventoryStackId Stack(GearDefinition definition) => InventoryStackId.Parse(definition.Id);
+    // A command names the inventory revision its selection was made against;
+    // a stale selection is refused rather than applied to changed contents.
+    private void RequireRevision(ulong expectedRevision)
+    {
+        if (expectedRevision != world.Revision) throw new InvalidDataException("Inventory changed; select the item again.");
     }
     internal InventorySnapshot Capture() => new(Owners.Select(owner =>
     {
@@ -416,7 +426,7 @@ internal sealed class ItemInventory
             if (InventoryOwner.Parse(pack.Owner.Key) is MemberOwner && (pack.Stacks.Length > 0
                 || pack.Items.Any(item => !pack.Equipment.Any(equipment => equipment.Item == item.Id))))
                 throw new InvalidDataException("This save predates the shared party inventory; start a new expedition.");
-            foreach (SavedStack stack in pack.Stacks) candidate.Grant(owner, definitions.Item(stack.Definition).Mechanical, stack.Quantity);
+            foreach (SavedStack stack in pack.Stacks) candidate.Grant(owner, definitions.Item(stack.Definition).Mechanical, Stack(definitions.Item(stack.Definition)), stack.Quantity);
             foreach (SavedItem item in pack.Items) candidate.MaterializeUnique(new ItemState(new(item.Id), definitions.Item(item.Definition).Mechanical), owner);
             foreach (SavedEquipment equipment in pack.Equipment)
             {

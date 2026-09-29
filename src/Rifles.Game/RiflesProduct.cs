@@ -87,13 +87,16 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     }
 
     [DebugCommand("rifles.audio.read", Description = "Read Engine clip, signal and realization diagnostics without emitting audio.")]
-    public string ReadAudio() => System.Text.Json.JsonSerializer.Serialize(new
+    public string ReadAudio()
     {
-        State = engine.Audio.Read(),
-        Realization = engine.Audio.ReadRealization(),
-        Diagnostics = Enumerable.Range(0, checked((int)engine.Audio.Read().RetainedDiagnosticCount))
-            .Select(index => engine.Audio.ReadDiagnosticAt(new((uint)index))).ToArray(),
-    });
+        AudioResult state = engine.Audio.Read();
+        return System.Text.Json.JsonSerializer.Serialize(new
+        {
+            State = state,
+            Realization = engine.Audio.ReadRealization(),
+            Diagnostics = state.Diagnostics.ToArray(),
+        });
+    }
 
     [DebugCommand("rifles.expedition.read", Description = "Read the resolved expedition graph, floor roles and connectors stored with this run. Does not travel or regenerate.")]
     public string ReadExpedition() => System.Text.Json.JsonSerializer.Serialize(expedition,
@@ -167,14 +170,6 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 foreach (EngineDiagnostic diagnostic in engineError.Diagnostics.Span) Console.Error.WriteLine(diagnostic);
             Shutdown(); throw;
         }
-    }
-
-    public void Attach()
-    {
-        if (!started || shutdown) return;
-        active.Scene.Attach();
-        engine.CameraView.SetActiveCamera(camera!);
-        Publish();
     }
 
     public ProductUpdateResult Update(ProductUpdate update)
