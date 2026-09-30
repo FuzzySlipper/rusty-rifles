@@ -93,6 +93,19 @@ Save/load meaning, authored admission and one-pass construction are described in
 captures and remaining integration friction; do not copy version strings or
 historical measurements into this document.
 
+Engine's ordinary persistence container changed from the schema-bearing `RSP1`
+layout to `RSP2`. Engine deliberately supplies no automatic migration for these
+development files. Preserve an old file outside the active save key before
+starting fresh; converting its payload also requires the product's admission
+rules, rather than changing a header. Restoring an old container to the active
+key makes both loading and replacing it fail on the current runtime.
+
+The current native persistence boundary reduces an unreadable existing container
+to ABI status zero. The safe SDK throws and CoreCLR faults instead of returning
+an actionable storage rejection. Engine #8991 tracks that error contract; Rifles
+does not parse Engine storage files or catch every exception to hide the fault.
+Fresh-store save/load verification is separate from old-file compatibility.
+
 The current SDK-derived dev watch paths include the product project, UI source
 and content, but omit Rifles' ordinary `Rifles.Procgen` project reference. Changes
 to that library require an explicit rebuild and restart of the owned host until
