@@ -109,21 +109,15 @@ an actionable storage rejection. Engine #8991 tracks that error contract; Rifles
 does not parse Engine storage files or catch every exception to hide the fault.
 Fresh-store save/load verification is separate from old-file compatibility.
 
-The current SDK-derived dev watch paths include the product project, UI source
-and content, but omit Rifles' ordinary `Rifles.Procgen` project reference. Changes
-to that library require an explicit rebuild and restart of the owned host until
-the upstream watch-discovery gap is resolved. This campaign filed the narrow
-Engine #8984; there is no downstream watcher replacement.
+The SDK-derived dev watch paths include the product project, UI source and
+content, and every project it references, so `Rifles.Procgen` edits rebuild and
+replace the runtime (Engine #8984).
 
-## Pinned launcher compatibility
+## Native window output
 
-Use the help shipped inside the installed pair when the global CLI advertises
-newer arguments. This pair selects native window output through
-`RUSTY_RENDER_OUTPUT=window`. A newer global launcher can delegate an explicit
-ordinary runtime pack, preventing this pair from selecting its desktop pack.
-Engine #8989 tracks that compatibility failure. For a window inspection until
-it is resolved, use the published pair's `runtime-pack/bin/rusty dev` with the
-same project arguments and environment; it installs the matching desktop pack.
-Find that installed pair with `rusty status`; do not hard-code a cache version or
-build a replacement host from Engine source. Stream serving uses ordinary
-`rusty dev` from the manifest.
+Run `rusty dev --project src/Rifles.Game/Rifles.Game.csproj --output window`
+for one windowed launch, or set `RustyEngineProductRenderOutput` to `window` in
+the project; the first run installs the pair's desktop pack. The pair no longer
+reads `RUSTY_RENDER_OUTPUT`. `rusty dev --help` in this repository shows the
+pinned pair's options (Engine #8989). Stream serving uses ordinary `rusty dev`
+from the manifest.
