@@ -44,7 +44,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   const panel = element('aside');
   panel.setAttribute('aria-label', 'Expedition run');
   panel.dataset.rustyUiInteractive = 'true';
-  panel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:138px;z-index:1;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 150px);overflow:auto;padding:9px 10px;background:#171914e8;color:#eee6d5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
+  panel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:138px;z-index:2;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 150px);overflow:auto;padding:9px 10px;background:#171914e8;color:#eee6d5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
 
   const title = element('strong', 'Expedition');
   const close = button('×', () => { panel.hidden = true; });
