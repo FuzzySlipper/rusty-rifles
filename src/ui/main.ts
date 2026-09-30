@@ -109,15 +109,10 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   const spellCancel = button('Cancel spell', () => command('spell-cancel')); spellCancel.dataset.spellCancel = 'true';
   const spellCast = button('Cast', () => command('cast', { spell: text(record(record(state.combat).magic).selectedSpell, ''), member: allyTarget.value || text(state.selectedMember, '') })); spellCast.dataset.spellCast = 'true';
-  const spellAssign = ['0', '1', '2'].map(slot => {
-    const assign = button(`Assign ${Number(slot) + 1}`, () => command('spell-assign', { spell: text(record(record(state.combat).magic).selectedSpell, ''), slot }));
-    assign.dataset.spellAssign = 'true'; assign.dataset.slot = slot; return assign;
-  });
-  spellButtons.append(spellCancel, spellCast, ...spellAssign);
-  const hotbarButtons = ['0', '1', '2'].map(slot => {
-    const quick = button('', () => command('spell-hotbar', { slot })); quick.dataset.spellHotbarSlot = slot; return quick;
-  });
-  spellHotbar.append(...hotbarButtons);
+  let spellAssign: HTMLButtonElement[] = [];
+  let hotbarButtons: HTMLButtonElement[] = [];
+  let hotbarSlotSignature = '';
+  spellButtons.append(spellCancel, spellCast);
   const rest = button('Rest', () => command('rest')); rest.dataset.rest = 'true';
   const restCancel = button('Cancel rest', () => command('rest-cancel')); restCancel.dataset.restCancel = 'true';
   restControls.append(rest, restCancel);
@@ -384,9 +379,24 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     spellTarget.style.display = selectedKnown ? 'block' : 'none';
     spellCancel.disabled = !selectedKnown;
     spellCast.disabled = !selectedKnown || !selectedAvailable;
-    for (const assign of spellAssign) assign.disabled = !selectedKnown;
     const hotbar = record(magicState.hotbar);
-    for (const [index, slot] of ['0', '1', '2'].entries()) {
+    const slots = Object.keys(hotbar).sort((left, right) => Number(left) - Number(right));
+    const slotSignature = slots.join(',');
+    if (slotSignature !== hotbarSlotSignature) {
+      hotbarSlotSignature = slotSignature;
+      spellAssign = slots.map(slot => {
+        const assign = button(`Assign ${Number(slot) + 1}`, () => command('spell-assign', { spell: text(record(record(state.combat).magic).selectedSpell, ''), slot }));
+        assign.dataset.spellAssign = 'true'; assign.dataset.slot = slot; return assign;
+      });
+      hotbarButtons = slots.map(slot => {
+        const quick = button('', () => command('spell-hotbar', { slot }));
+        quick.dataset.spellHotbarSlot = slot; return quick;
+      });
+      spellButtons.replaceChildren(spellCancel, spellCast, ...spellAssign);
+      spellHotbar.replaceChildren(...hotbarButtons);
+    }
+    for (const assign of spellAssign) assign.disabled = !selectedKnown;
+    for (const [index, slot] of slots.entries()) {
       const spellId = text(hotbar[slot], '');
       const assigned = record(spells[spellId]);
       hotbarButtons[index].textContent = `${index + 1}: ${spellId && numeric(assigned.known) === 1 ? text(assigned.name, spellId) : 'Empty'}`;

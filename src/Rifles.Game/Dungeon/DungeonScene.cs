@@ -149,19 +149,30 @@ internal sealed class DungeonScene : IDisposable
         NavigationTraversalCell[] overlay = blocked.Where(c => c != from && !closedDoors.Contains(c)).Distinct()
             .Select(c => new NavigationTraversalCell(NavigationCell(c), false, 1)).ToArray();
         engine.Spatial.ReplaceNavigationTraversal(new NavigationTraversalReplaceRequest(spatial, overlay));
-        GridPoint? best = null;
-        uint shortest = uint.MaxValue;
-        foreach (GridPoint goal in goals)
+        try
         {
-            NavigationWeightedPathResult path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
-                spatial, NavigationCell(from), NavigationCell(goal), tuning.NavigationBudget));
-            uint length = checked((uint)path.Path.Length);
-            if (path.Outcome != NavigationPathOutcome.Reached || length <= 1 || length >= shortest) continue;
-            PlanarNavCell next = path.Path.Span[1];
-            best = new(checked((int)next.X), checked((int)next.Z)); shortest = length;
+            GridPoint? best = null;
+            uint shortest = uint.MaxValue;
+            foreach (GridPoint goal in goals)
+            {
+                NavigationWeightedPathResult path = engine.Spatial.RequestWeightedNavigationPath(new NavigationWeightedPathRequest(
+                    spatial, NavigationCell(from), NavigationCell(goal), tuning.NavigationBudget));
+                uint length = checked((uint)path.Path.Length);
+                if (path.Outcome != NavigationPathOutcome.Reached || length <= 1 || length >= shortest) continue;
+                PlanarNavCell next = path.Path.Span[1];
+                best = new(checked((int)next.X), checked((int)next.Z)); shortest = length;
+            }
+            return best;
         }
-        return best;
+        finally
+        {
+            // Occupancy exclusions belong to this mover's path query. Retaining
+            // them would also block another actor's ordinary step admission.
+            engine.Spatial.ReplaceNavigationTraversal(new NavigationTraversalReplaceRequest(spatial,
+                ReadOnlyMemory<NavigationTraversalCell>.Empty));
+        }
     }
+
     private PlanarNavCell NavigationCell(GridPoint cell) => new(cell.X, NavigationY + floor.Level(cell), cell.Y);
     private Vector3 NavigationCenter(GridPoint cell) => new((cell.X + .5f) * CellSize,
         (NavigationY + floor.Level(cell) + .5f) * CellSize, (cell.Y + .5f) * CellSize);

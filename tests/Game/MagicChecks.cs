@@ -11,6 +11,7 @@ internal static class MagicChecks
     internal static void Run(GameDefinitions definitions)
     {
         VerifySelectionAndKnownHotbar(definitions);
+        VerifyAuthoredHotbarCapacity(definitions);
         VerifyRewardsAndAdvancement(definitions);
         VerifySnapshotAndRestoreValidation(definitions);
         VerifyRefreshAndEngineSpeed(definitions);
@@ -30,11 +31,31 @@ internal static class MagicChecks
         Require(fixture.State.For("warden").Selected == "", "Cancelling a selection clears the selected spell.");
 
         fixture.State.Assign("warden", "spark", 0);
-        fixture.State.Assign("warden", "ward", 2);
-        Require(fixture.State.For("warden").Hotbar.SequenceEqual(["spark", "", "ward"]),
-            "Known spells occupy their requested hotbar slots.");
+        string[] slots = fixture.State.For("warden").Hotbar;
+        Require(slots.Length == definitions.Magic.HotbarSlots && slots[0] == "spark",
+            "Known spells occupy their requested authored hotbar slots.");
+        if (slots.Length > 1)
+        {
+            fixture.State.Assign("warden", "ward", slots.Length - 1);
+            Require(slots[^1] == "ward" && slots.Skip(1).SkipLast(1).All(string.IsNullOrEmpty),
+                "Assigning the last authored slot preserves empty intervening slots.");
+        }
         RequireRejected(() => fixture.State.Select("warden", "burst"), "A member cannot select a spell they do not know.");
-        RequireRejected(() => fixture.State.Assign("warden", "burst", 1), "A member cannot hotbar a spell they do not know.");
+        RequireRejected(() => fixture.State.Assign("warden", "burst", 0), "A member cannot hotbar a spell they do not know.");
+    }
+
+    private static void VerifyAuthoredHotbarCapacity(GameDefinitions definitions)
+    {
+        int retunedSlots = definitions.Magic.HotbarSlots == 1 ? 2 : 1;
+        GameDefinitions retuned = definitions with { Magic = definitions.Magic with { HotbarSlots = retunedSlots } };
+        retuned.Magic.Validate();
+        Fixture fixture = NewFixture(retuned);
+        Require(fixture.State.Capture().Books.All(book => book.Hotbar.Length == retunedSlots),
+            "Retuning authored capacity changes every caster's quick slots.");
+        fixture.State.Assign("warden", "spark", retunedSlots - 1);
+        Require(fixture.State.For("warden").Hotbar[^1] == "spark", "The last retuned slot accepts assignment.");
+        RequireRejected(() => fixture.State.Assign("warden", "spark", retunedSlots),
+            "Slots outside the authored capacity are rejected.");
     }
 
     private static void VerifyRewardsAndAdvancement(GameDefinitions definitions)

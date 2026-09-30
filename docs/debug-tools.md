@@ -12,7 +12,7 @@ modules. Command availability comes from the running host catalog.
 `interaction.use ID REVISION` uses the product's ordinary handler with explicit
 semantic target assistance. Inspect again after any mutation.
 
-Rifles contributes `rifles.audio.read`, `rifles.update.profile`, `rifles.ui.profile`,
+Rifles contributes `rifles.audio.read`, `rifles.profile.read`, `rifles.profile.start`, `rifles.profile.stop`, `rifles.profile.ui`,
 `rifles.floor.read`, `rifles.floor.navigation`, expedition inspection and martial
 drill commands. Read the catalog for argument signatures; do not substitute an
 old milestone transcript for current help. Floor inspection describes resolved

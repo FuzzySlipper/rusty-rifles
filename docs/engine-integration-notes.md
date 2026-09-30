@@ -14,6 +14,8 @@ presentation surfaces of the native renderer, not parallel product renderers.
 A root-page health check sees the generic `Rusty Product Host` shell; the product
 title arrives after mounting. The serve manifest therefore probes `/` using
 that shell identity, rather than polling an uncached product JavaScript module.
+The broker command includes the usual user pnpm/npm binary directories so a
+service launch can rebuild the UI, even when it does not inherit a login shell.
 
 Lit billboard sprites, directional voxel textures and dynamic room/spell lights
 are still owned by Engine. Renderer differences include sprite fog/shadow
@@ -57,7 +59,10 @@ rules. Engine owns navigation search and footprint step admission.
 `DungeonScene.SetDoor` publishes a navigation replacement without closed-door cells.
 `NextStep` supplies a temporary traversal overlay for current actor occupancy,
 excluding door cells because they are already absent from navigation. Replacing
-that overlay per decision reflects the current mover's exclusions; it is not a
+that overlay per decision reflects the current mover's exclusions. The query
+clears it in a `finally` block: Engine retains published overlays and applies
+them to ordinary step admission too. A mover-specific occupancy overlay must
+not leak into the party or the next actor's admission. This is not a
 second pathfinder or a missing dynamic-door mechanism. The review's proposed
 upstream door gap was not confirmed against the current source and SDK.
 
