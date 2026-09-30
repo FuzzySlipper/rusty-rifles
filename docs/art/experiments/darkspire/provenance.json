@@ -1,0 +1,78 @@
+{
+  "status": "Unapproved comparison experiment, excluded from runtime content",
+  "origin": "Owner-supplied repository files and working-tree additions. Creator, source service, licenses and generation parameters were not supplied; no origin is inferred.",
+  "files": [
+    {
+      "original": "content/art/style/darkspire-style.md",
+      "retained": "docs/art/experiments/darkspire/darkspire-style.md",
+      "sha256": "11956bae37694a77760f2f223f9e0cf4d4f6b6c7da61c4ed33b5bfcdff0056dc",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/skele-soldier.png",
+      "retained": "docs/art/experiments/darkspire/skele-soldier.png",
+      "sha256": "56f0f72a6bae08a1b133be3e12458162f037fbf60492b0938ee51d818ae522a0",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/darkspire-3a.png",
+      "retained": "docs/art/experiments/darkspire/darkspire-3a.png",
+      "sha256": "e6c06f5c6a6e5b550ba861dc865d434c0db179b33ff1c5fbd3481be454b1c81f",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/concept-elf.png",
+      "retained": "docs/art/references/concept-elf.png",
+      "sha256": "b0381fe2e57a948c8d5a3a49309679492ce14d3bc82bba55bc3d187afbe8762f",
+      "duplicate": true
+    },
+    {
+      "original": "content/art/style/skeleton-soldier.glb",
+      "retained": "docs/art/experiments/darkspire/skeleton-soldier.glb",
+      "sha256": "362053fb356bf3ea9e061cba59122a6579d3b29e9bfdfd92395d3e9996e7dd3c",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/soldier.png",
+      "retained": "docs/art/experiments/darkspire/soldier.png",
+      "sha256": "5e7a40752bf59df8c1b7d2eac403ba13df761dc8f16c3cb5ded88e5666aa319c",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/concept-worker-female.png",
+      "retained": "docs/art/references/concept-worker-female.png",
+      "sha256": "bd62421248b7a72efecf34dac31b07796ec7eb969452c033afee3063474f3720",
+      "duplicate": true
+    },
+    {
+      "original": "content/art/style/musket.glb",
+      "retained": "docs/art/experiments/darkspire/musket.glb",
+      "sha256": "e3627a614470aeff1c6c450e4be1a72fc7e18ecb71ecffbf054d5d3d701534e9",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/wizard.png",
+      "retained": "docs/art/experiments/darkspire/wizard.png",
+      "sha256": "8ee680f3a3b110478f6a2f5c1fb8ff743c31844d90f583880aefa541d545e1c1",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/knight-dark.png",
+      "retained": "docs/art/experiments/darkspire/knight-dark.png",
+      "sha256": "24716573207106890c3e3f26ab068679a7429c0c722b32b5e3239502f41c78db",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/darkspire-1.png",
+      "retained": "docs/art/experiments/darkspire/darkspire-1.png",
+      "sha256": "61c7178ac69d7a139fb832825869bd0bd5921225d2397d679b1384918bdd0450",
+      "duplicate": false
+    },
+    {
+      "original": "content/art/style/knight.png",
+      "retained": "docs/art/experiments/darkspire/knight.png",
+      "sha256": "878dabdafe43ea05eeef47763de114fb391ab2fd3430d75eec59d9c5733acd3a",
+      "duplicate": false
+    }
+  ]
+}

@@ -13,8 +13,6 @@ internal static class EnemyBrainChecks
         VerifySavedSearchDoesNotReplayNoise(definition);
         VerifyRetreatIsBounded(definition);
         VerifySnapshotValidation(definition);
-
-        Console.WriteLine("Enemy brain checks passed: sight loss, bounded search, save resume, retreat budget.");
     }
 
     private static void VerifyPursuitMemoryExpiresWithoutADecision(EnemyBrainDefinition definition)
@@ -109,13 +107,8 @@ internal static class EnemyBrainChecks
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 }

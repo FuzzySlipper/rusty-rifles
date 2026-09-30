@@ -5,5 +5,22 @@
   "reach": 3.2,
   "weightItem": "weight",
   "plateWeight": 50,
-  "plateClue": "Leave an iron weight on this plate, then use the matching key at the gate. The latch stays open so the weight can be recovered."
+  "plateClue": "Leave an iron weight on this plate, then use the matching key at the gate. The latch stays open so the weight can be recovered.",
+  "presentation": {
+    "gateImage": "lever",
+    "hazardImage": "lever",
+    "plateLabel": "Counterweight plate",
+    "drainOffLabel": "Drain shut off",
+    "openGateLabel": "Garrison passage \u2014 open",
+    "drainChanged": "Drain shutoff changed or is out of reach.",
+    "handleChanged": "The passage handle changed or is out of reach.",
+    "passageOpen": "The passage is open.",
+    "foundHandle": "You found the concealed handle. Use it to open the panel.",
+    "passageOpened": "Garrison passage opened. The key is retained.",
+    "alreadyOff": "The drain is already shut off.",
+    "unavailable": "That generated mechanism is unavailable.",
+    "findKey": "Find the matching stamped key. {0}",
+    "plateMass": "The counterweight plate needs {0} mass. {1}",
+    "drainDamage": "Scalding drain: the party takes {0} damage."
+  }
 }

@@ -47,56 +47,20 @@ internal sealed record RetainedFloor(ulong Id, DungeonFloor Floor, ExplorationSn
         ArgumentNullException.ThrowIfNull(intent);
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(roster);
-        floor.Floor.Validate();
-        floor.EncounterPlacement.Validate(floor.Floor, definitions.Combat, definitions.Crowd);
-        GameDefinitions.Require(floor.EncounterPlacement.Accepted
-            && floor.Enemies.Select(e => e.Spawn).ToHashSet(StringComparer.Ordinal)
-                .SetEquals(floor.EncounterPlacement.Instances.Select(e => e.SpawnId)), "retained encounter roster");
-        Generation.GeneratedFeatures.Validate(floor.GeneratedFeatures, floor.Floor);
-        GameDefinitions.Require(floor.GeneratedFeatures.Hazards.All(h => h.Phase < definitions.Hazards.PeriodSeconds), "retained hazard phase");
-        ResolvedFloorIntent? floorIntent = intent.Floors.SingleOrDefault(f => f.Id == floor.Floor.IntentFloorId);
-        GameDefinitions.Require(floorIntent is not null && floor.Floor.Seed == floorIntent.Candidate.Seed
-            && floor.Floor.IntentGraphIdentity == CanonicalIdentity.Hash(floorIntent.Candidate), "retained floor intent identity");
-        GameDefinitions.Require(floor.Floor.Rooms.Select(r => r.NodeId).ToHashSet(StringComparer.Ordinal)
-            .SetEquals(floorIntent!.Candidate.Graph.Nodes.Select(n => n.Id)), "retained room graph coverage");
-        var hazardNodes = floorIntent.Candidate.Graph.Nodes.Where(n => n.Kind == NodeKind.Hazard).Select(n => n.Id).ToHashSet();
-        GameDefinitions.Require(floor.GeneratedFeatures.Hazards.Length == hazardNodes.Count
-            && floor.GeneratedFeatures.Hazards.Select(h => h.NodeId).ToHashSet().SetEquals(hazardNodes)
-            && floor.GeneratedFeatures.Hazards.All(h => floor.Floor.Rooms.Any(r => r.NodeId == h.NodeId && r.Cells.Contains(h.Cell))),
-            "retained hazard graph coverage");
+        FloorFacts.Validate(floor.Floor, floor.GeneratedFeatures, floor.EncounterPlacement,
+            floor.Enemies, intent, definitions);
         GameDefinitions.Require(floor.Features.LanternRevision > 0 && floor.Features.LanternRevision <= uint.MaxValue, "retained lantern revision");
         ExplorationItems itemWorld = new(definitions.ItemExploration, floor.ItemWorld);
         itemWorld.Validate(floor.Floor);
         ItemInventory inventory = ItemInventory.Restore(definitions.Items, floor.Inventory);
-        foreach (var plate in floor.GeneratedFeatures.Plates)
-            GameDefinitions.Require(floor.Drops.Any(d => d.Owner == plate.Owner && d.Cell == plate.Cell)
-                && inventory.Owner(plate.Owner).Label == "Counterweight plate", "retained counterweight anchor");
-        foreach (var key in floor.GeneratedFeatures.Keys)
-        {
-            GameDefinitions.Require(floor.Drops.Any(d => d.Owner == key.Owner && d.Cell == key.Cell), "retained key source anchor");
-            var carried = inventory.Owners.SelectMany(o => inventory.Items(o.Key)).Where(i => i.Entity == key.Entity).ToArray();
-            GameDefinitions.Require(items.GetValueOrDefault(key.Entity) == definitions.GeneratedFeatures.KeyItem
-                && carried.Length == 1 && carried[0].Definition == definitions.GeneratedFeatures.KeyItem,
-                "retained generated key identity");
-        }
+        FloorFacts.ValidateAnchors(floor.GeneratedFeatures, floor.Drops, inventory, definitions, items);
         HashSet<string> expectedOwners = definitions.ItemExploration.Anchors.Select(anchor => anchor.Key)
             .Concat(floor.Enemies.Select(enemy => enemy.Owner))
             .Concat(floor.Flights.Where(flight => flight.Owner is not null).Select(flight => flight.Owner!))
             .Concat(floor.Drops.Select(drop => drop.Owner))
             .ToHashSet(StringComparer.Ordinal);
         GameDefinitions.Require(inventory.Owners.Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "retained inventory owners");
-        foreach (PackOwner owner in inventory.Owners)
-        {
-            PackDefinition capacity = InventoryOwner.Parse(owner.Key) switch
-            {
-                CombatOwner => definitions.Combat.DropCapacity,
-                AnchorOwner anchorOwner => anchorOwner.Anchor == "crate" ? definitions.Items.Container : definitions.Items.Anchor,
-                _ => throw new InvalidDataException("Unknown retained inventory owner."),
-            };
-            GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "retained pack capacity");
-            if (InventoryOwner.Parse(owner.Key) is AnchorOwner anchor)
-                GameDefinitions.Require(owner.Id == itemWorld.Anchor(anchor.Anchor).Id, "retained anchor owner");
-        }
+        FloorFacts.ValidatePackCapacities(inventory, itemWorld, definitions);
         ExpeditionCodec.ValidateWorldObstructions(floor.Floor, floor.Actor, floor.Features.Dressing, floor.ItemWorld, floor.GeneratedFeatures);
         _ = ExplorationState.Restore(floor.Departure, floor.Floor, definitions.Exploration);
         _ = PatrolActor.Restore(floor.Actor, floor.Floor, definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds });

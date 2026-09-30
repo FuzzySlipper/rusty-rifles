@@ -29,6 +29,7 @@ internal sealed partial class RiflesCombat
     private readonly MagicState magic;
     private readonly ItemInventory inventory;
     private readonly CombatScope scope;
+    internal double IncomingDamageMultiplier => scope.IncomingDamageMultiplier;
     private readonly Dictionary<ulong, RiflesCharacter> allies;
     private readonly List<EnemyState> enemies;
     private readonly List<FlightState> flights;
@@ -158,8 +159,7 @@ internal sealed partial class RiflesCombat
     internal static MemberDefinition AllyDefinition(ulong id, GameDefinitions definitions)
     {
         FormationPositionDefinition front = definitions.Party.Positions.OrderBy(position => position.Rank).First();
-        return new(id.ToString(), "garrison-ally", "Garrison ally",
-            front.Id, definitions.Combat.AllyVitality, StartingVitality: definitions.Combat.AllyVitality);
+        return definitions.Combat.Ally.Resolve(id.ToString(), definitions.Combat.Ally.Name, front.Id);
     }
 
     private RiflesCharacter CreateAlly(ulong id, StatsComponentSnapshot saved)
@@ -203,8 +203,8 @@ internal sealed partial class RiflesCombat
         if (!enemy.Alive) return false;
         Vector3 direction = EnemyAim(enemy) - Aim(scope.Exploration.Position);
         var facing = scope.Exploration.Facing.Offset();
-        if (direction.Length() > Combat.Action(CombatActionKind.Fire).Range
-            || Vector3.Dot(Vector3.Normalize(direction), new Vector3(facing.X, 0, facing.Y)) < Math.Cos(Combat.TargetAngle * Math.PI / 180)) return false;
+        if (direction.Length() > Combat.VisibilityRange
+            || Vector3.Dot(Vector3.Normalize(direction), new Vector3(facing.X, 0, facing.Y)) < Math.Cos(Combat.TargetHalfAngleDegrees * Math.PI / 180)) return false;
         SpatialHit hit = scope.Scene.Trace(Aim(scope.Exploration.Position), EnemyAim(enemy), CombatBodies(), scope.PartyId);
         return hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
     }
@@ -293,7 +293,7 @@ internal sealed partial class RiflesCombat
             else if (command.Destination == "plate")
             {
                 var focused = scope.Features().Readout?.Selected;
-                aim = scope.GeneratedFeatures.Plates.SingleOrDefault(p => focused is { } target && p.Id == target.Id)?.Cell
+                aim = scope.GeneratedFeatures.Snapshot.Plates.SingleOrDefault(p => focused is { } target && p.Id == target.Id)?.Cell
                     ?? scope.ItemWorld.Anchor("plate").Cell;
             }
         }
@@ -459,7 +459,7 @@ internal sealed partial class RiflesCombat
         if (allies.TryGetValue(hit.Entity, out RiflesCharacter? ally) && Combat.FriendlyFire)
         {
             ally.ApplyDamage(damage);
-            if (!ally.IsLiving) { if (hit.Entity == scope.Actor.Id) { scope.Actor.Motion.Stop(); scope.Actor.Motion.Detach(); } scope.Movement.Remove(hit.Entity); }
+            if (!ally.IsLiving) { scope.Movement.RemoveBody(hit.Entity, hit.Entity == scope.Actor.Id ? scope.Actor.Motion : null); }
             CombatMessage("Garrison ally " + (ally.IsLiving ? "wounded." : "fell."));
         }
         else CombatMessage("Attack stopped by a world body; friendly damage disabled.");
@@ -472,7 +472,7 @@ internal sealed partial class RiflesCombat
         if (!enemy.Alive)
         {
             magic.Clear(new EnemyTarget(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))); magic.Reward(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            enemy.Action.Cancel(); enemy.Motion.Stop(); scope.Movement.Remove(enemy.Id); enemy.Motion.Detach();
+            enemy.Action.Cancel(); scope.Movement.RemoveBody(enemy.Id, enemy.Motion);
             drops[enemy.Owner] = enemy.Motion.Position;
             // An enemy's loaded round stays with its unique rifle on death.
             if (enemy.Loaded)
@@ -526,7 +526,7 @@ internal sealed partial class RiflesCombat
                     new Vector3(flight.DirectionX, flight.DirectionY, flight.DirectionZ));
             }
             if (!scope.Floor.Cells.Contains(landed) || landed == scope.ItemWorld.Door && !scope.ItemWorld.DoorOpen
-                || scope.GeneratedFeatures.Gates.Any(g => g.Cell == landed && !g.Open)) landed = flight.LastCell;
+                || scope.GeneratedFeatures.Snapshot.Gates.Any(g => g.Cell == landed && !g.Open)) landed = flight.LastCell;
             flights.Remove(flight);
             if (hit.Present || travel >= flight.Remaining)
             {

@@ -37,6 +37,12 @@ internal sealed partial class RiflesCombat
         catch (InvalidDataException error) { return error.Message; }
     }
 
+    internal string? SpellAvailability(string memberId, SpellDefinition spell, string targetMember)
+    {
+        var (target, revision) = AbilityTargetFor(spell);
+        return SpellAvailability(memberId, spell, targetMember, target, revision);
+    }
+
     internal void ValidateSpell(string memberId, SpellDefinition spell, string targetMember, ulong target, ulong featureRevision, bool committing)
     {
         if (ChargeExecuting) throw new InvalidDataException("The party is charging.");
@@ -71,10 +77,10 @@ internal sealed partial class RiflesCombat
         }
         if (spell.Target == SpellTarget.Feature)
         {
-            bool generated = scope.GeneratedFeatures.Gates.Any(g => g.Id == target) || scope.GeneratedFeatures.Hazards.Any(h => h.Id == target);
-            if (generated && scope.FeatureUseProblem(target) is { } problem) return problem;
-            Vector3 point = generated ? scope.FeaturePoint(target) : scope.ItemWorld.LeverPoint(scope.Scene);
-            ulong revision = generated ? scope.GeneratedFeatures.Revision : scope.ItemWorld.Revision;
+            bool generated = scope.GeneratedFeatures.Snapshot.Gates.Any(g => g.Id == target) || scope.GeneratedFeatures.Snapshot.Hazards.Any(h => h.Id == target);
+            if (generated && scope.GeneratedFeatures.UseProblem(target) is { } problem) return problem;
+            Vector3 point = generated ? scope.GeneratedFeatures.Point(target) : scope.ItemWorld.LeverPoint(scope.Scene);
+            ulong revision = generated ? scope.GeneratedFeatures.Snapshot.Revision : scope.ItemWorld.Revision;
             if (!definitions.Magic.AllowLeverMagic || featureRevision != revision
                 || !scope.ItemWorld.Reachable(point, scope.Exploration, scope.Scene) || Vector3.Distance(Aim(scope.Exploration.Position), point) > spell.Range)
                 return "No permitted mechanism within reach, or the feature changed.";
@@ -82,10 +88,7 @@ internal sealed partial class RiflesCombat
         return null;
     }
 
-    internal GameOutcome BeginSpell(string member, SpellDefinition spell, string targetMember)
-    {
-        return BeginAbilityOrder(spell.Id, targetMember, paused: false);
-    }
+
 
     private bool TryEnemySpell(EnemyState enemy, float distance)
     {
@@ -139,7 +142,7 @@ internal sealed partial class RiflesCombat
         else if (spell.Effect == SpellEffect.Lever)
         {
             if (action.Target == scope.ItemWorld.LeverId) scope.ItemWorld.ToggleLever(scope.Exploration, scope.Scene, action.FeatureRevision);
-            else CombatMessage(scope.UseFeature(action.Target, action.FeatureRevision));
+            else CombatMessage(scope.GeneratedFeatures.Use(new(action.Target, action.FeatureRevision)));
         }
         else if (spell.Target == SpellTarget.Party)
         {

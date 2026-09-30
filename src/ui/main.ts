@@ -1,3 +1,4 @@
+import { gameplayKeys, controlHelp, controlShortcut } from './controls.js';
 import { UiProfile } from './ui-profile.js';
 import { mountRunPanel } from './run-panel.js';
 import { mountAbilityMenu } from './ability-menu.js';
@@ -5,14 +6,10 @@ import { mountFormationPlanner } from './formation-planner.js';
 import { mountBottomBar } from './bottom-bar.js';
 import { mountDebugTools } from './debug.js';
 
-type Envelope = Readonly<{ value: unknown }>;
-type UiContext = Readonly<{
-  projection?: { current(): Envelope | null; subscribe(render: (value: Envelope | null) => void): () => void };
-  intents?: { claim(intent: string, value: { kind: 'product-payload'; contract: string; data: Record<string, unknown> }): void };
-}>;
+import type { RustyApplicationUiContext as UiContext, RuntimeUiProjectionEnvelope as Envelope } from '@rusty-engine/product-ui';
 type ItemSelection = Readonly<{ owner: string; token: string }>;
 type DragIntent = Readonly<{ owner: string; token: string; destination: string; quantity: number }>;
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyT', 'KeyP', 'KeyK', 'KeyL']);
+
 
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function entries(value: unknown): Array<[string, Record<string, unknown>]> { return Object.entries(record(value)).map(([key, entry]) => [key, record(entry)]); }
@@ -139,12 +136,12 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     }
     command('throw', payload);
   };
-  const attack = button('Fire [Space]', () => command('fire'));
-  const melee = button('Melee [V]', () => command('melee'));
-  const reload = button('Reload [R]', () => command('reload')); reload.dataset.order = 'reload';
+  const attack = button(`Fire [${controlShortcut('fire')}]`, () => command('fire'));
+  const melee = button(`Melee [${controlShortcut('melee')}]`, () => command('melee'));
+  const reload = button(`Reload [${controlShortcut('reload')}]`, () => command('reload')); reload.dataset.order = 'reload';
   attack.dataset.order = 'fire'; melee.dataset.order = 'melee';
-  const fixBayonets = button('Fix bayonets [B]', () => command('fix-bayonets'));
-  const unfixBayonets = button('Unfix bayonets [N]', () => command('unfix-bayonets'));
+  const fixBayonets = button(`Fix bayonets [${controlShortcut('fix-bayonets')}]`, () => command('fix-bayonets'));
+  const unfixBayonets = button(`Unfix bayonets [${controlShortcut('unfix-bayonets')}]`, () => command('unfix-bayonets'));
   const bolt = button('Spark', () => { magicPanel.open = true; command('spell-select', { spell: 'spark' }); }); bolt.dataset.spellShortcut = 'spark';
   const interrupt = button('Interrupt', () => command('interrupt'));
   const toss = button('Throw selected', () => throwSelectedItem());
@@ -453,7 +450,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     const targetVisible = numeric(selectedEnemy.visible) === 1;
     for (const [kind, control] of [['fire', attack], ['melee', melee], ['reload', reload], ['fix-bayonets', fixBayonets], ['unfix-bayonets', unfixBayonets]] as const) {
       const order = record(record(combatState.orders)[kind]);
-      control.textContent = `${{ fire: 'Fire [Space]', melee: 'Melee [V]', reload: 'Reload [R]', 'fix-bayonets': 'Fix [B]', 'unfix-bayonets': 'Unfix [N]' }[kind]} · ${numeric(order.eligible)}/${numeric(order.total)}`;
+      control.textContent = `${{ fire: 'Fire', melee: 'Melee', reload: 'Reload', 'fix-bayonets': 'Fix', 'unfix-bayonets': 'Unfix' }[kind]} [${controlShortcut(kind)}] · ${numeric(order.eligible)}/${numeric(order.total)}`;
       control.disabled = defeated || numeric(state.paused) === 1 || numeric(order.eligible) === 0;
       control.title = entries(order.members).map(([id, member]) => `${text(record(record(state.party)[id]).name, id)}: ${numeric(member.eligible) === 1 ? (text(member.target) ? `target ${text(member.target)} · ${text(member.lane)}` : text(member.reason, 'Ready')) : text(member.reason)}`).join('\n');
     }
@@ -734,17 +731,17 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   const render = (envelope: Envelope | null): void => uiProfile.measure(() => renderState(envelope));
   const stopGameplayKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.preventDefault(); event.stopPropagation(); };
   const escape = (event: KeyboardEvent): void => { if (event.code === 'Escape') cancelDrag(); };
-  const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !panel.contains(event.target) && !inventory.contains(event.target)) cancelDrag(); };
-  const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !panel.contains(event.relatedTarget) && !inventory.contains(event.relatedTarget)) cancelDrag(); };
+  const outside = (event: PointerEvent): void => { if (event.target instanceof Node && !partyPanel.contains(event.target) && !inventory.contains(event.target)) cancelDrag(); };
+  const focusOutside = (event: FocusEvent): void => { if (!(event.relatedTarget instanceof Node) || !partyPanel.contains(event.relatedTarget) && !inventory.contains(event.relatedTarget)) cancelDrag(); };
   inventory.addEventListener('keydown', stopGameplayKeys, true); inventory.addEventListener('keyup', stopGameplayKeys, true); inventory.addEventListener('focusout', focusOutside);
   panel.addEventListener('keydown', stopGameplayKeys, true); panel.addEventListener('keyup', stopGameplayKeys, true); panel.addEventListener('focusout', focusOutside); window.addEventListener('blur', cancelDrag); window.addEventListener('keydown', escape, true); document.addEventListener('pointerdown', outside, true);
   const art = document.createElement('details'); const artTitle = document.createElement('summary'); artTitle.textContent = 'Art comparison'; const artStatus = document.createElement('p'); art.append(artTitle, artStatus, button('Switch treatment', () => command('art-style')), button('Move light', () => command('art-light')), button('Toggle room lights', () => command('art-fill')));
-  panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art); root.append(panel, inventory); const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra), () => { partyPanel.hidden = false; });
+  panel.append(title, status, roster, actions, focus, feedback, combat, magicPanel, partyTools, puzzle, art);  const runPanel = mountRunPanel(root, command); const bottomBar = mountBottomBar(root, (action, extra = {}) => command(action, extra), () => { partyPanel.hidden = false; });
   const formationPlanner = mountFormationPlanner(root, command);
   const abilityMenu = mountAbilityMenu(root, bottomBar.element.querySelector('[aria-label="Party orders"]')!, command);
   // Party panel: the game-UI inventory. Right side, full height above the
   // bottom bar. Current-member equipment plus a party cycler on top, the
-  // fixed party grid below. All mutations reuse the legacy flows (transfer,
+  // fixed party grid below. All mutations use the shared commands (transfer,
   // equip, arrange) and server-side validation; this panel only lays out the
   // new model (shared party grid, equipment-only members).
   const partyPanel = document.createElement('aside');
@@ -789,8 +786,12 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   partyGrid.setAttribute('role', 'group');
   partyGrid.setAttribute('aria-label', 'Party inventory grid. Drag items between cells, or onto equipment above.');
   partyGrid.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:4px';
-  partyPanel.append(partyHead, partyStatus, memberRow, memberStats, equipmentList, gridStatus, partyGrid);
+  inventory.style.cssText = "margin-top:12px;pointer-events:auto";
+  inventory.querySelector("summary")!.textContent = "Nearby items & containers";
+  partyPanel.append(partyHead, partyStatus, memberRow, memberStats, equipmentList, gridStatus, partyGrid, inventory, magicPanel);
   root.append(partyPanel);
+  runPanel.element.append(partyTools);
+  partyPanel.addEventListener('focusout', focusOutside);
   const rosterOrder = (): string[] => entries(state.party)
     .map(([id, member]) => ({ id, rank: numeric(record(member).rank) }))
     .sort((left, right) => left.rank - right.rank || left.id.localeCompare(right.id))
@@ -820,8 +821,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   // Escape menu: the game-UI front door. Centered button list; opening it
   // pauses a live expedition, closing via Resume restores only a
-  // menu-caused pause. Legacy agent panels stay in the DOM behind the menu
-  // toggle so existing dataset hooks and exercised commands keep working.
+  // menu-caused pause. Expedition settings remain
+  // available from the same menu.
   const menu = document.createElement('div');
   menu.dataset.gameMenu = 'true';
   menu.hidden = true;
@@ -831,32 +832,22 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   menu.style.cssText = 'box-sizing:border-box;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;width:min(360px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;padding:14px 16px;color:#eee6d5;background:#171914f5;border:1px solid #74694e;border-radius:6px;font:13px/1.4 system-ui;pointer-events:auto;box-shadow:0 12px 48px #000000cc';
   const menuHead = document.createElement('div');
   menuHead.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px';
-  const legacyToggle = document.createElement('button'); legacyToggle.type = 'button'; legacyToggle.textContent = 'Show legacy panels'; legacyToggle.dataset.legacyToggle = 'true'; legacyToggle.dataset.rustyUiInteractive = 'true'; legacyToggle.setAttribute('aria-expanded', 'false');
-  legacyToggle.style.cssText = 'background:none;color:#c9c0ae;border:1px solid #574f3d;border-radius:3px;padding:3px 6px;cursor:pointer;font:11px/1.35 system-ui';
   const menuTitle = document.createElement('strong'); menuTitle.textContent = 'Menu'; menuTitle.style.cssText = 'color:#e4bd63;letter-spacing:0.12em;text-transform:uppercase;font-size:12px';
   const menuHeadSpacer = document.createElement('span'); menuHeadSpacer.style.cssText = 'width:40px';
-  menuHead.append(legacyToggle, menuTitle, menuHeadSpacer);
+  menuHead.append(menuTitle, menuHeadSpacer);
   // Host-input guard (see F4): stop gameplay keys here so the Engine host
   // never sees them, but do NOT preventDefault — Space/Enter must still
   // activate the button through the default action.
   const stopToggleKeys = (event: KeyboardEvent): void => { if (!gameplayKeys.has(event.code)) return; event.stopPropagation(); };
-  legacyToggle.addEventListener('keydown', stopToggleKeys, true);
-  legacyToggle.addEventListener('keyup', stopToggleKeys, true);
   partyPanel.addEventListener('keydown', stopToggleKeys, true);
   partyPanel.addEventListener('keyup', stopToggleKeys, true);
-  const setLegacyVisible = (visible: boolean): void => {
-    panel.hidden = !visible; inventory.hidden = !visible; runPanel.element.hidden = !visible;
-    inventory.style.bottom = visible ? '190px' : '12px';
-    legacyToggle.textContent = visible ? 'Hide legacy panels' : 'Show legacy panels';
-    legacyToggle.setAttribute('aria-expanded', String(visible));
-  };
-  legacyToggle.addEventListener('click', () => setLegacyVisible(panel.hidden));
   const menuStatus = document.createElement('output');
   menuStatus.dataset.menuFeedback = 'true';
   menuStatus.setAttribute('role', 'status');
   menuStatus.style.cssText = 'display:block;min-height:1.4em;margin:0 0 8px;color:#ead27e;text-align:center';
   const menuList = document.createElement('div');
   menuList.style.cssText = 'display:grid;gap:6px';
+  menuList.append(art);
   const menuButton = (label: string, action: () => void): HTMLButtonElement => {
     const element = button(label, action);
     element.style.textAlign = 'center';
@@ -881,10 +872,10 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
     section.append(title, text);
     readmeBody.append(section);
   };
-  readmeSection('Controls', 'W/S step · A/D sidestep · Q/E turn · Space fire · V melee · B fix bayonets · N unfix bayonets · C charge · R reload (also automatic) · F use · T cycle interactable · P pause · K save · L load · Esc or the Menu button for this menu.');
+  readmeSection('Controls', controlHelp + ' · Esc or Menu opens the game menu.');
   readmeSection('Formation', 'The left panel shows a 3×3 formation with the commander fixed in the center. The chevron marks each member\u2019s facing. Select any member for inventory or ally targeting; Change formation pauses into a larger planner. Execute resumes a timed repositioning order, locking movement and affected soldiers; Cancel discards the draft.');
-  readmeSection('Inventory', 'Open Inventory from the bottom hotbar or this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Loot the world through the legacy panels for now.');
-  readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Legacy panels are the older debug views, kept for troubleshooting.');
+  readmeSection('Inventory', 'Open Inventory from the bottom hotbar or this menu: the current member\u2019s equipment on top (cycle members with the arrows), the shared grid below. Drag items between grid cells, onto equipment to equip (swapping what is worn), or drag worn gear back to unequip. Clicking works too: select, then click the destination. Open Nearby items & containers below the grid to collect reachable world items.');
+  readmeSection('Menu', 'Esc or the Menu button pauses and opens this menu. Resume returns to the expedition. Rest needs a safe spot; save, load and restart run here. Expedition & map opens floor travel and run settings.');
   readmeView.append(readmeTitle, readmeBody, button('Back', () => { readmeView.hidden = true; readmeView.style.display = 'none'; menuList.hidden = false; menuList.style.display = 'grid'; }));
   (readmeView.lastChild as HTMLElement).style.textAlign = 'center';
   menu.append(menuHead, menuStatus, menuList, readmeView);
@@ -902,7 +893,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   // must be honored at close, so close compares live state to entry state
   // instead of trusting a flag set at open. See F1/F2.
   let menuEntryPaused = false;
-  // Detour carry: Inventory/Formation close the menu to reveal legacy panels
+  // Inventory and expedition views can retain the menu-caused pause
   // while the menu-caused pause is still outstanding. The next open would
   // re-snapshot "paused" and disarm Resume, so the detour carries the
   // entered-live bit across one reopen. Consumed on open; close still
@@ -938,7 +929,8 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   menuButton('Readme', () => { menuList.hidden = true; menuList.style.display = 'none'; readmeView.hidden = false; readmeView.style.display = 'grid'; });
   menuButton('Inventory & equipment', () => { menuDetourLive = !menuEntryPaused; partyPanel.hidden = false; closeMenu(false); });
-  menuButton('Formation & party', () => { menuDetourLive = !menuEntryPaused; setLegacyVisible(true); partyTools.open = true; closeMenu(false); });
+  menuButton('Formation & party', () => { command('formation-open'); closeMenu(false); });
+  menuButton('Expedition & map', () => { menuDetourLive = !menuEntryPaused; runPanel.element.hidden = false; closeMenu(false); });
   const menuPause = menuButton('Pause', () => command('pause'));
   menuButton('Rest', () => command('rest'));
   menuButton('Save', () => command('save'));
@@ -960,7 +952,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   };
   window.addEventListener('keydown', menuEscape, true);
   // Non-Escape opener (pointer-lock and remapped keyboards may never deliver
-  // Esc): small fixed Menu button where the legacy toggle used to live. See F6.
+  // Esc): keep a small fixed Menu button available.
   const menuButtonTop = document.createElement('button');
   menuButtonTop.type = 'button';
   menuButtonTop.textContent = 'Menu';
@@ -972,7 +964,7 @@ export function mountProductUi(root: Element, context: UiContext): Readonly<{ di
   menuButtonTop.addEventListener('keyup', stopToggleKeys, true);
   menuButtonTop.addEventListener('click', openMenu);
   root.append(menuButtonTop);
-  setLegacyVisible(false);
+  runPanel.element.hidden = true;
   render(context.projection?.current() ?? null); const unsubscribe = context.projection?.subscribe(render) ?? (() => {});
-  return { dispose() { runPanel.dispose(); bottomBar.dispose(); formationPlanner.dispose(); abilityMenu.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); legacyToggle.removeEventListener('keydown', stopToggleKeys, true); legacyToggle.removeEventListener('keyup', stopToggleKeys, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
+  return { dispose() { runPanel.dispose(); bottomBar.dispose(); formationPlanner.dispose(); abilityMenu.dispose(); debugTools.dispose(); uiProfile.dispose(); unsubscribe(); inventory.removeEventListener('toggle', syncPanelWidth); partyTools.removeEventListener('toggle', syncPanelWidth); magicPanel.removeEventListener('toggle', syncPanelWidth); panel.removeEventListener('focusout', focusOutside); partyPanel.removeEventListener('focusout', focusOutside); window.removeEventListener('blur', cancelDrag); window.removeEventListener('keydown', escape, true); window.removeEventListener('keydown', menuEscape, true); document.removeEventListener('pointerdown', outside, true); menu.removeEventListener('keydown', stopToggleKeys, true); menu.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.removeEventListener('keydown', stopToggleKeys, true); menuButtonTop.removeEventListener('keyup', stopToggleKeys, true); menuButtonTop.remove(); partyPanel.removeEventListener('keydown', stopToggleKeys, true); partyPanel.removeEventListener('keyup', stopToggleKeys, true); menu.remove(); partyPanel.remove(); inventory.remove(); panel.remove(); } };
 }

@@ -85,18 +85,12 @@ internal static class ArchitectureDetailChecks
                 checked((definitions.Exploration.CeilingCells + 1) * definitions.Appearance.VoxelsPerCell)),
             "Boundary detail cannot consume the only voxel in a wall cell.");
 
-        Console.WriteLine($"Architecture detail checks passed: {first.Facts.Length} deterministic budgeted facts across {first.Facts.Select(f => f.RegionId).Distinct().Count()} rooms.");
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool value, string message)
     {
-        if (!value) throw new InvalidOperationException(message);
+        Check.Require(value, message);
     }
 }

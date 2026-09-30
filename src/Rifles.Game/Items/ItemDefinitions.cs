@@ -44,7 +44,7 @@ internal sealed record MartialWeaponDefinition(string Reach, long MeleeDamage, l
 
 internal sealed record GearDefinition(string Id, string Name, ItemKind Kind, ulong MaximumQuantity,
     ulong Mass, ulong Space, string[] Slots, long MinimumPower, long Power, long Defense,
-    string Ammunition, ItemUse Use, long Effect, ulong Cost, string Image, MartialWeaponDefinition? Weapon = null)
+    string Ammunition, ItemUse Use, long Effect, ulong Cost, string Image, [property: System.Text.Json.Serialization.JsonRequired] MartialWeaponDefinition? Weapon = null)
 {
     internal ItemDefinition Mechanical => new(ItemDefinitionId.Parse(Id), Kind, MaximumQuantity,
         Slots.Length == 0 ? [] : [ItemClassificationId.Parse("gear")],
@@ -52,7 +52,7 @@ internal sealed record GearDefinition(string Id, string Name, ItemKind Kind, ulo
         Slots.Length == 0 ? null : new ItemEquipmentPolicy(checked((ushort)Slots.Length)));
 }
 internal sealed record PackDefinition(ulong Mass, ulong Space);
-internal sealed record StartingItem(string Owner, string Definition, ulong Quantity, bool Equipped, string? Preset = null);
+internal sealed record StartingItem(string Owner, string Definition, ulong Quantity, bool Equipped, [property: System.Text.Json.Serialization.JsonRequired] string? Preset = null);
 internal sealed record ItemDefinitions(PackDefinition Backpack, PackDefinition Container, PackDefinition Anchor,
     string[] EquipmentSlots, GearDefinition[] Items, StartingItem[] StartingItems, PackDefinition Party, int PartySlots)
 {

@@ -8,10 +8,11 @@ using Rifles.Procgen.Generation;
 namespace Rifles.Game.Debugging;
 
 /// <summary>Small, authored starting states used to demonstrate the martial controls in a live floor.</summary>
-internal sealed record MartialDrillDefinitionSet(MartialDrillDefinition[] Drills)
+internal sealed record MartialDrillDefinitionSet(MartialDrillDefinition[] Drills, int MaximumAttackPositions, string SelectedMember, string RifleDefinition)
 {
     internal void Validate()
     {
+        GameDefinitions.Require(MaximumAttackPositions is > 0 and <= 256 && !string.IsNullOrWhiteSpace(SelectedMember) && !string.IsNullOrWhiteSpace(RifleDefinition), "martial drill construction");
         GameDefinitions.Require(Drills is { Length: > 0 and <= 8 }
             && Drills.All(drill => drill is not null)
             && Drills.Select(drill => drill.Id).Distinct(StringComparer.Ordinal).Count() == Drills.Length,

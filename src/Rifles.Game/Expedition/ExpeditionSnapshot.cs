@@ -25,70 +25,31 @@ internal sealed record ExpeditionSnapshot(Guid Id, ulong FloorId, ulong PartyId,
 /// owns validation, returning one reconstruction consumed once by the floor
 /// aggregate.
 /// </summary>
+internal sealed record AdmittedFloor(ExplorationState Exploration, PartyState Party, PatrolActor Actor,
+    ItemInventory Inventory, ExplorationItems ItemWorld, RestoredCombat Combat);
+
 internal static class ExpeditionCodec
 {
 
-    internal static (ExplorationState Exploration, PartyState Party, PatrolActor Actor) Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IReadOnlyDictionary<ulong, string>? expeditionItems = null,
+    internal static AdmittedFloor Validate(ExpeditionSnapshot saved, GameDefinitions definitions, IReadOnlyDictionary<ulong, string>? expeditionItems = null,
         PartyState? travellingParty = null, IReadOnlyDictionary<string, MagicState.MagicBook>? travellingBooks = null)
     {
         GameDefinitions.Require(saved.Id != Guid.Empty && saved.FloorId > 0 && saved.PartyId > 0
             && saved.PartyId != saved.FloorId && saved.NextObjectId > Math.Max(saved.FloorId, saved.PartyId) && saved.NextObjectId <= (ulong)uint.MaxValue + 1, "Save identities");
-        saved.Floor.Validate();
-        GameDefinitions.Require(saved.Floor.Architecture is not null, "saved architecture artifact");
-        saved.EncounterPlacement.Validate(saved.Floor, definitions.Combat, definitions.Crowd);
-        GameDefinitions.Require(saved.EncounterPlacement.Accepted && saved.Combat.Enemies.Select(e => e.Spawn).ToHashSet()
-            .SetEquals(saved.EncounterPlacement.Instances.Select(e => e.SpawnId)), "saved accepted encounter roster");
-        GeneratedFeatures.Validate(saved.GeneratedFeatures, saved.Floor);
-        GameDefinitions.Require(saved.GeneratedFeatures.Hazards.All(h => h.Phase < definitions.Hazards.PeriodSeconds), "saved hazard phase");
-        Diagnostic[] intentDiagnostics = ExpeditionGenerator.Validate(saved.Intent);
-        GameDefinitions.Require(!intentDiagnostics.Any(d => d.Severity == DiagnosticSeverity.Fatal),
-            "Save expedition intent: " + string.Join(", ", intentDiagnostics.Select(d => d.Code)));
-        ResolvedFloorIntent? floorIntent = saved.Intent.Floors.SingleOrDefault(f => f.Id == saved.Floor.IntentFloorId);
-        GameDefinitions.Require(floorIntent is not null && saved.Floor.Seed == floorIntent.Candidate.Seed
-            && saved.Floor.IntentGraphIdentity == CanonicalIdentity.Hash(floorIntent.Candidate), "Save floor intent identity");
-        GameDefinitions.Require(saved.Floor.Rooms.Select(r => r.NodeId).ToHashSet(StringComparer.Ordinal)
-            .SetEquals(floorIntent!.Candidate.Graph.Nodes.Select(n => n.Id)), "Save room graph coverage");
-        var hazardNodes = floorIntent.Candidate.Graph.Nodes.Where(n => n.Kind == NodeKind.Hazard).Select(n => n.Id).ToHashSet();
-        GameDefinitions.Require(saved.GeneratedFeatures.Hazards.Length == hazardNodes.Count
-            && saved.GeneratedFeatures.Hazards.Select(h => h.NodeId).ToHashSet().SetEquals(hazardNodes)
-            && saved.GeneratedFeatures.Hazards.All(h => saved.Floor.Rooms.Any(r => r.NodeId == h.NodeId && r.Cells.Contains(h.Cell))),
-            "saved hazard graph coverage");
+        FloorFacts.Validate(saved.Floor, saved.GeneratedFeatures, saved.EncounterPlacement,
+            saved.Combat.Enemies, saved.Intent, definitions);
         _ = definitions.Characters.GetPreset(saved.Preset);
         ExplorationItems itemWorld = new(definitions.ItemExploration, saved.ItemWorld);
         itemWorld.Validate(saved.Floor);
         ItemInventory inventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
-        foreach (var plate in saved.GeneratedFeatures.Plates)
-            GameDefinitions.Require(saved.Combat.Drops.Any(d => d.Owner == plate.Owner && d.Cell == plate.Cell)
-                && inventory.Owner(plate.Owner).Label == "Counterweight plate", "saved counterweight anchor");
-        foreach (var key in saved.GeneratedFeatures.Keys)
-        {
-            GameDefinitions.Require(saved.Combat.Drops.Any(d => d.Owner == key.Owner && d.Cell == key.Cell), "saved key source anchor");
-            var retained = inventory.Owners.SelectMany(o => inventory.Items(o.Key)).Where(i => i.Entity == key.Entity).ToArray();
-            GameDefinitions.Require(expeditionItems is not null
-                ? expeditionItems.GetValueOrDefault(key.Entity) == definitions.GeneratedFeatures.KeyItem
-                : retained.Length == 1 && retained[0].Definition == definitions.GeneratedFeatures.KeyItem,
-                "saved generated key identity");
-        }
+        FloorFacts.ValidateAnchors(saved.GeneratedFeatures, saved.Combat.Drops, inventory, definitions, expeditionItems);
         string[] expectedOwners = saved.Roster.Select(m => "member:" + m.Id).Append(Rifles.Game.Items.ItemInventory.PartyKey).Concat(definitions.ItemExploration.Anchors.Select(a => a.Key)).ToArray();
         GameDefinitions.Require(inventory.Owners.Where(o => InventoryOwner.Parse(o.Key) is not CombatOwner).Select(o => o.Key).ToHashSet().SetEquals(expectedOwners), "saved inventory owners");
-        foreach (PackOwner owner in inventory.Owners)
-        {
-            PackDefinition capacity = InventoryOwner.Parse(owner.Key) switch
-            {
-                CombatOwner => definitions.Combat.DropCapacity,
-                MemberOwner => definitions.Items.Backpack,
-                PartyOwner => definitions.Items.Party,
-                AnchorOwner anchor => anchor.Anchor == "crate" ? definitions.Items.Container : definitions.Items.Anchor,
-                _ => throw new InvalidDataException("Unknown inventory owner."),
-            };
-            GameDefinitions.Require(owner.MassCapacity == capacity.Mass && owner.SpaceCapacity == capacity.Space, "saved pack capacity");
-            if (InventoryOwner.Parse(owner.Key) is AnchorOwner savedAnchor) GameDefinitions.Require(owner.Id == itemWorld.Anchor(savedAnchor.Anchor).Id, "saved anchor owner");
-        }
+        FloorFacts.ValidatePackCapacities(inventory, itemWorld, definitions);
         ValidateWorldObstructions(saved.Floor, saved.Actor, saved.Features.Dressing, saved.ItemWorld, saved.GeneratedFeatures);
         // A travelling party moves untouched: its vitals, entities, books,
         // and markers are live-continuous. Only fresh boots rebuild.
-        PartyState party = travellingParty ?? new(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster);
-        if (travellingParty is null) party.Restore(saved.Members);
+        PartyState party = travellingParty ?? PartyState.FromSnapshot(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster, saved.Members);
         GameDefinitions.Require(party.Members.Count == definitions.Party.MaxPartySize && party.Commander is not null, "saved commander and squad roster");
         inventory.BindMembers(party.Entities, party.Members);
         foreach (RiflesCharacter member in party.Members)
@@ -104,7 +65,7 @@ internal static class ExpeditionCodec
             && saved.RestRemaining <= definitions.Magic.RestSeconds, "Save.RestRemaining");
         GameDefinitions.Require(saved.RestRemaining > 0
             ? party.Members.Any(m => m.Definition.Id == saved.RestOwner && m.IsLiving) : saved.RestOwner.Length == 0, "Save.RestOwner");
-        party.RestRemaining = saved.RestRemaining; party.RestOwner = saved.RestOwner;
+        party.RestoreRest(saved.RestRemaining, saved.RestOwner);
         RestoredCombat combat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, inventory, party, saved.PartyId,
             new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId }, travellingBooks);
         ChargeState.ValidateSaved(saved.Combat.Charge, saved.Exploration, definitions, saved.Floor, party, inventory);
@@ -120,10 +81,7 @@ internal static class ExpeditionCodec
         PatrolActor actor = PatrolActor.Restore(saved.Actor, saved.Floor, definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds });
         // Validate occupancy and both in-flight reservations before realizing any replacement scene.
         MovementGrid grid = new(saved.Floor.Cells.ToHashSet(), (_, _) => true, definitions.Crowd);
-        foreach (var connector in saved.Floor.Connectors) grid.SetClearance(connector.From, connector.To, connector.Clearance);
-        foreach (var direction in Rifles.Procgen.Generation.CardinalDirections.Ordered)
-            if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
-                grid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), definitions.Combat.DoorClearance);
+        FloorFactory.ConfigureDoorClearance(grid, saved.Floor, saved.ItemWorld.Door, definitions.Combat.DoorClearance);
         if (!party.Defeated) exploration.Bind(grid, saved.PartyId);
         if (combat.Allies.Single(a => a.Id == actor.Id).Vitality > 0) actor.Bind(grid);
         saved.Features.Dressing.Validate(saved.Floor);
@@ -132,7 +90,7 @@ internal static class ExpeditionCodec
         foreach (EnemyState enemy in combat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(grid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
         GameDefinitions.Require(saved.ItemWorld.DoorOpen || !grid.Occupied(saved.ItemWorld.Door), "closed gate occupancy");
         GameDefinitions.Require(saved.GeneratedFeatures.Gates.All(g => g.Open || !grid.Occupied(g.Cell)), "closed generated gate occupancy");
-        return (exploration, party, actor);
+        return new(exploration, party, actor, inventory, itemWorld, combat);
     }
 
     internal static void ValidateWorldObstructions(DungeonFloor floor, PatrolSnapshot actor, RoomDressing dressing,

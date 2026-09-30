@@ -91,5 +91,6 @@
     0.05,
     1
   ],
-  "plateHeight": 0.04
+  "plateHeight": 0.04,
+  "doorNeedsStraightPassage": true
 }

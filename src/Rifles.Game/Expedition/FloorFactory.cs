@@ -20,6 +20,7 @@ internal static class FloorFactory
 {
     internal static void ConfigureDoorClearance(MovementGrid movement, DungeonFloor floor, GridPoint door, float clearance)
     {
+        foreach (var connector in floor.Connectors) movement.SetClearance(connector.From, connector.To, connector.Clearance);
         foreach (CardinalDirection direction in CardinalDirections.Ordered)
         {
             GridPoint neighbor = door + direction.Offset();
@@ -28,7 +29,7 @@ internal static class FloorFactory
     }
 
     internal static GeneratedFeatureSnapshot CreateGeneratedFeatures(ResolvedExpedition intent, DungeonFloor floor,
-        GameDefinitions definitions, ItemInventory inventory, Dictionary<string, GridPoint> drops, DungeonScene scene, Func<ulong> allocate)
+        GameDefinitions definitions, ItemInventory inventory, Dictionary<string, GridPoint> drops, Func<ulong> allocate)
     {
         GeneratedGate[] gates = GeneratedFeatures.Resolve(floor, allocate);
         List<GeneratedKey> keys = [];
@@ -52,7 +53,7 @@ internal static class FloorFactory
             string owner = "combat:flight:" + packId;
             ulong plateId = allocate();
             inventory.RegisterOwner(new PackOwner(packId, owner, definitions.Combat.DropCapacity.Mass,
-                definitions.Combat.DropCapacity.Space, "Counterweight plate"));
+                definitions.Combat.DropCapacity.Space, definitions.GeneratedFeatures.Presentation.PlateLabel));
             drops.Add(owner, route.Cells[0]);
             inventory.Grant(InventoryOwner.Parse(key.Owner), definitions.GeneratedFeatures.WeightItem, 1, allocate);
             plates.Add(new GeneratedPlate(plateId, gate.Id, owner, route.Cells[0], key.Cell, definitions.GeneratedFeatures.PlateWeight));
@@ -67,7 +68,6 @@ internal static class FloorFactory
         var progression = FloorProgression.Inspect(floor, gates, result.Plates);
         if (!progression.Accepted)
             throw new InvalidDataException("Generated progression rejected: " + string.Join(", ", progression.Diagnostics));
-        foreach (GeneratedGate gate in gates) scene.SetDoor(gate.Cell, false);
         return result;
     }
 

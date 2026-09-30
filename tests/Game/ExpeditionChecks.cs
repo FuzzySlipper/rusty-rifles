@@ -8,7 +8,7 @@ internal static class ExpeditionChecks
     {
         static void Require(bool value, string message)
         {
-            if (!value) throw new InvalidOperationException(message);
+            Check.Require(value, message);
         }
         ExpeditionDefinition request = definitions.Generation.Expedition;
         ExpeditionGenerator generator = new();
@@ -53,6 +53,5 @@ internal static class ExpeditionChecks
             .Any(d => d.Code == "goal_unreachable"), "Save validation rechecks floor objective reachability.");
         Require(ExpeditionGenerator.Validate(saved with { Identity = "tampered" })
             .Any(d => d.Code == "expedition_identity_mismatch"), "Save identity detects graph changes.");
-        Console.WriteLine("Expedition graph checks passed: distinct roles, keyed progression, stable identities and bounded rejection.");
     }
 }

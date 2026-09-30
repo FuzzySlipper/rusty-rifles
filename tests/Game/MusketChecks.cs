@@ -11,7 +11,6 @@ internal static class MusketChecks
         Require(definitions.Items.StartingItems.Where(grant => grant.Owner == ItemInventory.PartyKey || ItemInventory.IsMember(grant.Owner))
             .All(grant => grant.Definition != definitions.Combat.AmmunitionItem),
             "Player starting kits do not carry ordinary ammunition stacks.");
-        Console.WriteLine("Musket checks passed: authored bayonet actions and manual/automatic reload admission.");
     }
 
     private static void VerifyAuthoredBayonetTiming(ItemDefinitions definitions)
@@ -59,14 +58,10 @@ internal static class MusketChecks
             "Loaded muskets never begin a duplicate manual or automatic reload.");
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); } catch (InvalidDataException) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

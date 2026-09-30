@@ -28,12 +28,11 @@ internal static class MartialDrillChecks
         Require(chargeClear.Enemies.Single() is { Forward: 2, Placement: "south" }
             && chargeClear.InitialEnemyDecisionDelaySeconds == definitions.Combat.Enemy("raider").DecisionSeconds,
             "The live charge fixture keeps its one-step contact target in bayonet reach until its normal first decision.");
-        RequireRejected(() => new MartialDrillDefinitionSet([lanes, lanes]).Validate(), "Duplicate drill identities fail at content admission.");
+        RequireRejected(() => (drills with { Drills = [lanes, lanes] }).Validate(), "Duplicate drill identities fail at content admission.");
         RequireRejected(() => (lanes with { Enemies = [lanes.Enemies[0] with { Forward = 0 }] }).Validate(),
             "Enemy offsets behind the party fail at content admission.");
         RequireRejected(() => (chargeClear with { InitialEnemyDecisionDelaySeconds = double.NaN }).Validate(),
             "Invalid drill decision delay fails at content admission.");
-        Console.WriteLine("Martial drill checks passed: authored formation, lanes, casualty and charge fixtures.");
     }
 
     /// <summary>Exercises the same saved-floor admission path used by a live debug command, without an Engine host.</summary>
@@ -42,7 +41,7 @@ internal static class MartialDrillChecks
         ExpeditionSnapshot? concentration = null;
         foreach (MartialDrillDefinition drill in definitions.MartialDrills.Drills)
         {
-            ExpeditionSnapshot prepared = Rifles.Game.RiflesProduct.PrepareMartialDrill(definitions, snapshot, drill);
+            ExpeditionSnapshot prepared = Rifles.Game.Debugging.MartialDrillBuilder.PrepareMartialDrill(definitions, snapshot, drill);
             _ = ExpeditionCodec.Validate(prepared, definitions);
             if (drill.Id == "concentration") concentration = prepared;
         }
@@ -61,17 +60,12 @@ internal static class MartialDrillChecks
             .ToHashSet(StringComparer.Ordinal);
         Require(inventoryCombatOwners.SetEquals(expectedCombatOwners),
             "The drill culls enemy packs and preserves every remaining combat owner in the saved ledger.");
-        Console.WriteLine("Martial drill snapshot checks passed: prepared fixture restores through normal save admission.");
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); } catch (InvalidDataException) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -123,6 +123,6 @@ internal static class CrowdChecks
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -11,11 +11,8 @@ internal static class CommanderChecks
         PartyState party = Fresh();
         RiflesCharacter commander = party.Commander ?? throw new Exception("Commander missing.");
         Require(party.Members.Count == 7 && party.Soldiers.Count == 6 && commander.Position == "commander", "Six soldiers surround one commander.");
-        Require(!party.MoveFormation(commander.InstanceId, "left-guard")
-            && !party.MoveFormation("warden", commander.Position)
-            && !party.SwapFormation("warden", commander.InstanceId), "Commander center is fixed at authoritative mutation boundary.");
-        foreach (PartyReach reach in Enum.GetValues<PartyReach>())
-            Require(!party.CanUseReach(commander.InstanceId, reach), "Commander has no direct attack or cast reach.");
+        Require(definitions.Formation.Cell(commander.Position).Commander && !party.Soldiers.Contains(commander),
+            "The commander has the fixed central formation role, separate from action providers.");
         FormationApproach front = new(FormationAttackSector.Front, FormationScreeningLane.Center);
         Require(party.ScreenedRecipient(definitions.Formation, front)?.InstanceId == "blade", "Front-center soldier screens commander.");
         party.Members.Single(member => member.InstanceId == "blade").ApplyDamage(long.MaxValue);
@@ -33,11 +30,10 @@ internal static class CommanderChecks
         var displaced = saved.Select(member => member.Id == commander.InstanceId ? member with { Position = "left-guard" } : member).ToArray();
         try { Fresh().Restore(displaced); throw new Exception("Moved saved commander accepted."); }
         catch (InvalidOperationException) { }
-        Console.WriteLine("Commander checks passed: reserved center, screening, casualty gaps, defeat and restore.");
     }
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

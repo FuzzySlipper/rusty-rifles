@@ -104,7 +104,7 @@ anchors against multiple background colors before runtime admission.
 
 ## Prompt workflow and a small first comparison
 
-Use the [prompt recipes](../content/art/prompts/README.md). Compose the shared
+Use the [prompt recipes](art/prompts/README.md). Compose the shared
 style, **one** variant, an asset contract, and a concrete subject. For edits or
 new directional views, supply the selected image as the identity reference
 using the image-generation tool's supported reference mechanism. Do not rely
@@ -136,3 +136,25 @@ Keep the working prompt text and selected images in Git. A short note of the
 variant and what changed is enough for comparisons. No web-source hunt,
 license/provenance ledger, seed bureaucracy, normal-map factory, or bespoke
 prompt framework is needed for these generated experiments.
+
+## Darkspire comparison experiment
+
+`docs/art/experiments/darkspire/` preserves the supplied etched/woodcut images
+and musket/skeleton GLBs as an unapproved comparison experiment. They are accepted
+as research references, not selected runtime assets or a change to the billboard
+rendering direction. The GLBs stay outside the product content root until an
+explicit in-game comparison supports adoption. `provenance.json` records original
+paths and byte hashes; creator/tool/license information was not supplied and is
+not inferred. Exact duplicate concept references retain one copy under
+`docs/art/references/`.
+
+## Runtime texture budget
+
+Ordinary runtime textures should stay at or below 2048 pixels per dimension and
+4 MiB encoded per image. Prefer RGB for fully opaque painted material textures;
+use RGBA where sprite cutouts or the atlas need transparency. Existing generated
+paintings are retained unchanged as the approved prototype set, including opaque
+RGBA exports; normalize format when replacing them, without reducing illustration
+quality merely to meet a hypothetical budget. Atlases need a separately reviewed
+budget if packing exceeds these limits. Authoring images and model experiments do
+not count as runtime textures because they are not staged.

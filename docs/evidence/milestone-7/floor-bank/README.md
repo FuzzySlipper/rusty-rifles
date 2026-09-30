@@ -1,18 +1,18 @@
-# M7 resolved floor bank
+# Generated floor data snapshot
 
-Four expedition seeds (0, 1, 29, 83), three floor roles each. Non-entrance floors retain their derived floor seeds. These are offline resolved artifacts, not screenshots. Inspection JSON retains repair attempts, progression, population and supplies.
+Four seeds (0, 1, 29, 83), three authored floors each. Regenerated during campaign #8937 with the product Game checks and `scripts/render-floor-plan.py`.
+This bank is an inspection snapshot, not a byte-comparison fixture or visible acceptance evidence. Runtime content is authoritative.
 
-| Floor / resolved seed | Cells | Rooms | Height edges | Enemies | Layout attempts |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| [arrival · 0](0-arrival.svg) | 178 | 4 | 10 | 4 | 1 |
-| [arrival · 1](1-arrival.svg) | 195 | 4 | 10 | 6 | 1 |
-| [stores · 12802804630283377272](12802804630283377272-stores.svg) | 399 | 6 | 18 | 6 | 12 |
-| [redoubt · 14077373140031593001](14077373140031593001-redoubt.svg) | 351 | 5 | 20 | 6 | 1 |
-| [stores · 15196818695554931729](15196818695554931729-stores.svg) | 407 | 6 | 24 | 6 | 9 |
-| [redoubt · 17582054533070946647](17582054533070946647-redoubt.svg) | 333 | 5 | 20 | 6 | 2 |
-| [arrival · 29](29-arrival.svg) | 173 | 4 | 10 | 6 | 1 |
-| [redoubt · 5681767263628933845](5681767263628933845-redoubt.svg) | 341 | 5 | 20 | 6 | 4 |
-| [stores · 6871969167356124647](6871969167356124647-stores.svg) | 386 | 6 | 24 | 6 | 2 |
-| [redoubt · 7753393380166456983](7753393380166456983-redoubt.svg) | 242 | 5 | 16 | 6 | 3 |
-| [arrival · 83](83-arrival.svg) | 168 | 4 | 6 | 4 | 1 |
-| [stores · 9280498216980189725](9280498216980189725-stores.svg) | 321 | 6 | 22 | 6 | 6 |
+Authored definitions/tuning SHA256 (ordered paths, NUL, file bytes): `3279a283515c97512f9ce38a4bffea163193f9fdb990fbc3fe5f88ac7bdd492b`.
+
+Rebuild:
+
+```sh
+dotnet run --project tests/Game -c Release -- --export-floors docs/evidence/milestone-7/floor-bank
+for floor in docs/evidence/milestone-7/floor-bank/*.json; do
+  case "$floor" in *-inspection.json) continue ;; esac
+  python3 scripts/render-floor-plan.py "$floor" "${floor%.json}.svg"
+done
+```
+
+Graph goals are mostly authored and fixed. Seeds vary physical realization, room templates, routes, encounters and supplies. Dated validation results live in Den.

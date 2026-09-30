@@ -36,7 +36,7 @@ Name all four:
    hold — and the relevant callers by name.
 
 Search before concluding: read `AGENTS.md` for the ownership split and
-`docs/gameplay-design.md` (once #8357 lands) for the landed-owner map rather
+`docs/gameplay-design.md` for the landed-owner map rather
 than assuming from a directory name.
 
 ## Placement and mechanism shape

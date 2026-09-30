@@ -29,8 +29,7 @@ public sealed partial class RiflesProduct
     private void UpdateSpellLight() => engine.Graphics.UpdateLight(new LightUpdateRequest(spellLight!, SpellLightRequest()));
     private void CancelRest(string reason)
     {
-        if (party.RestRemaining <= 0) return;
-        party.RestRemaining = 0; party.RestOwner = ""; CombatMessage(reason);
+        if (party.CancelRest()) CombatMessage(reason);
     }
     private GameOutcome MagicCommand(SessionCommand command)
     {
@@ -91,7 +90,7 @@ public sealed partial class RiflesProduct
         if (active.Combat.ChargeExecuting || party.Formation.Executing || active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) return GameOutcome.Reject("Rest requires a still, idle party without threats.");
         if (!Member(id).IsLiving) return GameOutcome.Reject("A living member must supply the rest remedy.");
         if (!HasItem(id, definitions.Magic.RestItem)) return GameOutcome.Reject("Selected member needs " + definitions.Magic.RestItem + " for rest.");
-        party.RestOwner = id; party.RestRemaining = definitions.Magic.RestSeconds;
+        party.BeginRest(id, definitions.Magic.RestSeconds);
         CombatMessage("Rest begun; remedy and recovery settle only on completion.");
         return GameOutcome.Accept();
     }
@@ -100,7 +99,7 @@ public sealed partial class RiflesProduct
         string reason = "";
         foreach (RiflesCharacter candidate in party.Members)
         {
-            string? availability = active.Combat.SpellAvailability(selectedMember, spell, candidate.Definition.Id, active.Combat.SelectedTarget, active.ItemWorld.Revision);
+            string? availability = active.Combat.SpellAvailability(selectedMember, spell, candidate.Definition.Id);
             if (availability is null) return "";
             reason = availability;
         }
@@ -128,10 +127,8 @@ public sealed partial class RiflesProduct
             if (active.Combat.ChargeExecuting || party.Formation.Executing || active.Combat.Threatened || active.Exploration.Moving || active.Combat.ActionsBusy) CancelRest("Rest interrupted; no recovery granted.");
             else
             {
-                party.RestRemaining = Math.Max(0, party.RestRemaining - seconds);
-                if (party.RestRemaining == 0)
+                if (party.AdvanceRest(seconds) is { } owner)
                 {
-                    string owner = party.RestOwner; party.RestOwner = "";
                     if (!Member(owner).IsLiving || !HasItem(owner, definitions.Magic.RestItem)) CombatMessage("Rest failed: remedy unavailable.");
                     else
                     {
@@ -154,7 +151,7 @@ public sealed partial class RiflesProduct
         {
             // Rendered availability is the execution check, not a copy of it.
             string reason = spell.Target != SpellTarget.Ally
-                ? active.Combat.SpellAvailability(selectedMember, spell, selectedMember, active.Combat.SelectedTarget, active.ItemWorld.Revision) ?? ""
+                ? active.Combat.SpellAvailability(selectedMember, spell, selectedMember) ?? ""
                 : AllySpellReason(spell);
             if (paused) reason = "Resume to cast.";
             return (spell.Id, value.Object(("name", value.String(spell.Name)), ("description", value.String(spell.Description)),

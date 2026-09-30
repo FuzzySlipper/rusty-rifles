@@ -88,14 +88,6 @@ internal sealed record EncounterPlacementDefinition(
     EncounterPlacementTuning Tuning,
     EncounterGroupDefinition[] Groups)
 {
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        RespectRequiredConstructorParameters = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     internal void Validate()
     {
         GameDefinitions.Require(!string.IsNullOrWhiteSpace(Id) && Id.Length <= 96
@@ -105,24 +97,6 @@ internal sealed record EncounterPlacementDefinition(
             && Groups.Select(group => group.Id).Distinct(StringComparer.Ordinal).Count() == Groups.Length, "encounter placement groups");
         foreach (EncounterGroupDefinition group in Groups) group.Validate();
         GameDefinitions.Require(Groups.Sum(group => group.Members.Length) <= Tuning.MaxMembers, "encounter placement member budget");
-    }
-
-    /// <summary>Loads the product-owned definition. Cross-domain references are checked separately.</summary>
-    internal static EncounterPlacementDefinition Load(Func<string, ReadOnlyMemory<byte>> read)
-    {
-        ArgumentNullException.ThrowIfNull(read);
-        try
-        {
-            EncounterPlacementDefinition definition = JsonSerializer.Deserialize<EncounterPlacementDefinition>(
-                read("definitions/encounter-placement.json").Span, Json)
-                ?? throw new InvalidDataException("Document must not be null.");
-            definition.Validate();
-            return definition;
-        }
-        catch (Exception error) when (error is not OutOfMemoryException)
-        {
-            throw new InvalidDataException("Content 'definitions/encounter-placement.json': " + error.Message, error);
-        }
     }
 
     /// <summary>Validates spawn identity, role, and crowd references at the domain boundary.</summary>

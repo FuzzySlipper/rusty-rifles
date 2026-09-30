@@ -4,8 +4,6 @@ using Rifles.Game.Characters;
 
 namespace Rifles.Game.Party;
 
-internal enum PartyReach { Melee, Ranged, Casting }
-
 /// <summary>
 /// One authored formation position. Rank 0 is the front rank; higher ranks
 /// sit behind it. Reach and damage order derive from rank, never from roster
@@ -36,11 +34,11 @@ internal sealed record CharacterArchetypeDefinition(
     string Id,
     string Name,
     long MaximumVitality,
-    long BasePower = 0,
-    long BaseDefense = 0,
-    long MaximumResource = 0,
-    long? StartingVitality = null,
-    long? StartingResource = null, bool Commander = false)
+    [property: System.Text.Json.Serialization.JsonRequired] long BasePower = 0,
+    [property: System.Text.Json.Serialization.JsonRequired] long BaseDefense = 0,
+    [property: System.Text.Json.Serialization.JsonRequired] long MaximumResource = 0,
+    [property: System.Text.Json.Serialization.JsonRequired] long? StartingVitality = null,
+    [property: System.Text.Json.Serialization.JsonRequired] long? StartingResource = null, [property: System.Text.Json.Serialization.JsonRequired] bool Commander = false)
 {
     internal const long MaximumTrackValue = 1_000_000_000_000;
 
@@ -237,7 +235,6 @@ internal sealed record MemberSnapshot(string Id, string Position, StatsComponent
 
 internal sealed class PartyState
 {
-    private const int FrontRank = 0;
     private readonly CharacterEntities entities = new();
     private readonly MemberDefinition[] roster;
     private readonly Dictionary<string, FormationPositionDefinition> positions;
@@ -254,7 +251,7 @@ internal sealed class PartyState
     {
     }
 
-    private PartyState(string? presetId, IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions)
+    private PartyState(string? presetId, IReadOnlyList<FormationPositionDefinition> positions, int maxSize, IReadOnlyList<MemberDefinition> definitions, IReadOnlyList<MemberSnapshot>? saved = null)
     {
         ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -264,9 +261,13 @@ internal sealed class PartyState
         roster = definitions.ToArray();
         ValidateRoster(roster);
         PresetId = presetId;
-        members = roster.Select(definition => CreateMember(definition, RankOf(definition.Position))).ToArray();
+        members = saved is null ? roster.Select(definition => CreateMember(definition, RankOf(definition.Position))).ToArray() : [];
         Formation = new(this);
+        if (saved is not null) Restore(saved);
     }
+
+    internal static PartyState FromSnapshot(IReadOnlyList<FormationPositionDefinition> positions, int maxSize,
+        IReadOnlyList<MemberDefinition> roster, IReadOnlyList<MemberSnapshot> saved) => new(null, positions, maxSize, roster, saved);
 
     /// <summary>
     /// The entity owner behind this party's characters. Enemy creation for the
@@ -297,9 +298,41 @@ internal sealed class PartyState
     /// Party-wide rest state. Rest belongs to the party/session owner, not the
     /// magic books: it travels with the party and resets when floors join idle.
     /// </summary>
-    internal double RestRemaining { get; set; }
+    internal double RestRemaining { get; private set; }
 
-    internal string RestOwner { get; set; } = "";
+    internal string RestOwner { get; private set; } = "";
+    internal void BeginRest(string owner, double seconds)
+    {
+        if (RestRemaining > 0 || !members.Any(member => member.InstanceId == owner && member.IsLiving)
+            || !double.IsFinite(seconds) || seconds <= 0) throw new InvalidDataException("Invalid rest request.");
+        RestOwner = owner;
+        RestRemaining = seconds;
+    }
+    internal void RestoreRest(double remaining, string owner)
+    {
+        if (!double.IsFinite(remaining) || remaining < 0
+            || (remaining > 0 ? !members.Any(member => member.InstanceId == owner && member.IsLiving) : owner.Length != 0))
+            throw new InvalidDataException("Invalid saved rest owner or time.");
+        RestRemaining = remaining;
+        RestOwner = owner;
+    }
+    internal bool CancelRest()
+    {
+        bool wasResting = RestRemaining > 0;
+        RestRemaining = 0;
+        RestOwner = "";
+        return wasResting;
+    }
+    internal string? AdvanceRest(double seconds)
+    {
+        if (!double.IsFinite(seconds) || seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+        if (RestRemaining <= 0) return null;
+        RestRemaining = Math.Max(0, RestRemaining - seconds);
+        if (RestRemaining > 0) return null;
+        string owner = RestOwner;
+        RestOwner = "";
+        return owner;
+    }
 
     internal RiflesCharacter? Commander => members.SingleOrDefault(member => member.Definition.Commander);
     internal bool Defeated => Commander is { } commander ? !commander.IsLiving : members.All(member => !member.IsLiving);
@@ -316,56 +349,6 @@ internal sealed class PartyState
     internal IReadOnlyList<FormationPositionDefinition> Positions => positions.Values.OrderBy(p => p.Rank).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
     internal IReadOnlyList<MemberSnapshot> Capture() => members
         .Select(member => new MemberSnapshot(member.Definition.Id, member.Position, RiflesStats.SnapshotForPersistence(member.Stats))).ToArray();
-
-    internal bool SwapFormation(string memberId, string otherMemberId)
-    {
-        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        RiflesCharacter? other = members.SingleOrDefault(candidate => candidate.Definition.Id == otherMemberId);
-        if (member is null || other is null || ReferenceEquals(member, other) || member.Definition.Commander || other.Definition.Commander || !member.IsLiving || !other.IsLiving)
-        {
-            return false;
-        }
-
-        (string position, int rank) = (member.Position, member.Rank);
-        member.SetPosition(other.Position, other.Rank);
-        other.SetPosition(position, rank);
-        return true;
-    }
-
-    internal bool MoveFormation(string memberId, string position)
-    {
-        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        if (member is null || member.Definition.Commander || !member.IsLiving || string.IsNullOrEmpty(position)
-            || !positions.TryGetValue(position, out FormationPositionDefinition? target) || target.Commander)
-        {
-            return false;
-        }
-
-        if (members.Any(candidate => !ReferenceEquals(candidate, member) && candidate.Position == position))
-        {
-            return false;
-        }
-
-        member.SetPosition(target.Id, target.Rank);
-        return true;
-    }
-
-    internal bool CanUseReach(string memberId, PartyReach reach)
-    {
-        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        return member is not null && !member.Definition.Commander && member.IsLiving && IsReachAllowed(member.Rank, reach);
-    }
-
-    internal FormationPositionDefinition PositionOf(string memberId)
-    {
-        RiflesCharacter? member = members.SingleOrDefault(candidate => candidate.Definition.Id == memberId);
-        return member is not null && positions.TryGetValue(member.Position, out FormationPositionDefinition? position)
-            ? position
-            : throw new InvalidDataException($"Unknown party member '{memberId}'.");
-    }
-
-    internal IReadOnlyList<RiflesCharacter> EligibleMembers(PartyReach reach) => members
-        .Where(member => !member.Definition.Commander && member.IsLiving && IsReachAllowed(member.Rank, reach)).ToArray();
 
     internal void Restore(IReadOnlyList<MemberSnapshot> saved)
     {
@@ -410,13 +393,6 @@ internal sealed class PartyState
         ? target.Rank
         : throw new InvalidDataException($"Unknown formation position '{position}'.");
 
-    private static bool IsReachAllowed(int rank, PartyReach reach) => reach switch
-    {
-        PartyReach.Melee => rank == FrontRank,
-        PartyReach.Ranged or PartyReach.Casting => true,
-        _ => throw new ArgumentOutOfRangeException(nameof(reach)),
-    };
-
     private static Dictionary<string, FormationPositionDefinition> ValidatePositions(IReadOnlyList<FormationPositionDefinition> positions)
     {
         Dictionary<string, FormationPositionDefinition> map = new(StringComparer.Ordinal);
@@ -427,7 +403,7 @@ internal sealed class PartyState
             if (!map.TryAdd(position.Id, position)) throw new InvalidDataException($"Duplicate formation position '{position.Id}'.");
         }
 
-        if (!map.Values.Any(position => position.Rank == FrontRank))
+        if (!map.Values.Any(position => position.Rank == 0))
         {
             throw new InvalidDataException("Formation positions need a front rank.");
         }

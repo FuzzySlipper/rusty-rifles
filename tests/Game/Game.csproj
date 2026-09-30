@@ -8,6 +8,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Check.cs" Link="Check.cs" />
+    <Using Include="Rifles.Checks" />
     <ProjectReference Include="../../src/Rifles.Game/Rifles.Game.csproj" />
   </ItemGroup>
 </Project>

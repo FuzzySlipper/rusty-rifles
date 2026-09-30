@@ -16,7 +16,8 @@ internal sealed class WorldFeatures : IDisposable
     private readonly WorldArtDefinition artDefinition;
     private readonly Light lanternLight;
     private readonly ulong lightId;
-    private readonly InteractionFocus focus = new();
+    private WorldInteraction interaction = null!;
+    internal void BindInteraction(WorldInteraction value) => interaction = value;
     private FeatureSnapshot state;
     private InteractionCandidate[] extraCandidates = [];
     internal void SetExtraCandidates(IEnumerable<InteractionCandidate> candidates) => extraCandidates = candidates.ToArray();
@@ -70,12 +71,10 @@ internal sealed class WorldFeatures : IDisposable
     private InteractionCandidate Candidate(InteractionTarget target, string label, Vector3 point, ExplorationState party, bool available) =>
         new(target, label, point, tuning.Reach, scene.Visibility(scene.Eye(party.Position), point),
             available && !party.Moving ? InteractionAvailability.Available : InteractionAvailability.Unavailable);
-    internal void Observe(ExplorationState party, int cycle = 0) => Readout = focus.Update(Candidates(party), Query(party), cycle);
+    internal void Observe(ExplorationState party, int cycle = 0) => Readout = interaction.Update(cycle);
     internal string Use(ExplorationState party, InteractionTarget? target, Func<InteractionTarget, string>? extraUse = null)
     {
         if (target is null) return "No reachable feature selected";
-        InteractionReason reason = InteractionFocus.Revalidate(target.Value, Candidates(party), Query(party));
-        if (reason != InteractionReason.Ready) return "Cannot use: " + reason;
         if (target.Value.Id == state.LanternId)
         {
             if (state.LanternRevision == uint.MaxValue) return "Lantern revision exhausted; restart the expedition";
@@ -86,7 +85,7 @@ internal sealed class WorldFeatures : IDisposable
             return state.LanternOn ? "Lantern lit" : "Lantern extinguished";
         }
         if (target.Value.Id == state.Dressing.BenchId) return "A workbench with a hand plane and folded cloth.";
-        if (target.Value.Id == state.Dressing.CrateId) return "A strapped storage crate. Item containers come later.";
+        if (target.Value.Id == state.Dressing.CrateId) return "A strapped storage crate.";
         if (target.Value.Id == state.Dressing.ObserverId) return "A garrison ally stands watch. Friendly bodies block shots.";
         if (target.Value.Id != state.ExitId) return extraUse?.Invoke(target.Value) ?? "Feature unavailable";
         state = state with { ExitUsed = true };
@@ -94,12 +93,11 @@ internal sealed class WorldFeatures : IDisposable
     }
     internal void MarkExitUsed() => state = state with { ExitUsed = true };
 
-    internal void Reset()
+    internal InteractionSceneSnapshot ReadScene(ExplorationState party, bool paused)
     {
-        state = state with { LanternOn = true, ExitUsed = false, LanternRevision = 1 };
-        lightPosition = 0;
-        engine.Graphics.UpdateLight(new LightUpdateRequest(lanternLight, LightRequest()));
-        focus.Clear();
+        var candidates = Candidates(party);
+        if (paused) candidates = candidates.Select(candidate => candidate with { Availability = InteractionAvailability.Unavailable }).ToArray();
+        return new(Query(party), candidates, $"{floor.IntentFloorId}:{party.Position}:{state.LanternRevision}");
     }
     internal void Present(PatrolActor actor, ExplorationState party, IEnumerable<AppearanceFact>? additional = null, float actorScale = 1, float observerScale = 1)
     {

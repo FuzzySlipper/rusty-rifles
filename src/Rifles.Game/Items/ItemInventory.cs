@@ -436,7 +436,8 @@ internal sealed class ItemInventory
             }
             if (pack.Owner.Key == PartyKey)
             {
-                SavedSlot[] savedSlots = pack.Slots ?? [];
+                GameDefinitions.Require(pack.Slots is not null, "saved party slots");
+                SavedSlot[] savedSlots = pack.Slots;
                 GameDefinitions.Require(savedSlots.All(s => s.Slot >= 0 && s.Slot < definitions.PartySlots)
                     && savedSlots.Select(s => s.Slot).Distinct().Count() == savedSlots.Length
                     && savedSlots.Select(s => s.Token).Distinct(StringComparer.Ordinal).Count() == savedSlots.Length, "saved party slots");

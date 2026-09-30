@@ -7,7 +7,7 @@ namespace Rifles.Procgen.Generation;
 /// <summary>Pure, bounded, deterministic Candidate-to-dungeon generation facade.</summary>
 public sealed class DungeonGenerator
 {
-    public DungeonGenerationResult Generate(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog? catalog = null)
+    public DungeonGenerationResult Generate(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(policy);
         var attempts = new List<GenerationAttempt>();
@@ -21,11 +21,11 @@ public sealed class DungeonGenerator
         }
     }
 
-    private DungeonGenerationResult GenerateAttempt(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog? catalog, int layoutAttempt)
+    private DungeonGenerationResult GenerateAttempt(Candidate candidate, GenerationPolicy policy, ulong seed, ShapeCatalog catalog, int layoutAttempt)
     {
         ArgumentNullException.ThrowIfNull(candidate);
         ArgumentNullException.ThrowIfNull(policy);
-        catalog ??= ShapeCatalog.Default;
+        ArgumentNullException.ThrowIfNull(catalog);
         var attempts = new List<GenerationAttempt>();
         var stages = new List<StageObservation>();
         var counters = new MutableCounters();

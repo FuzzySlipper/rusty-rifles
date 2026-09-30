@@ -21,8 +21,6 @@ internal static class InventoryChecks
         VerifyOldSavesRejected(definitions);
         VerifyPartyFormationAndAuthoredResources(definitions);
         VerifyExplorationCreation(definitions);
-
-        Console.WriteLine("Inventory checks passed: Engine item ledger, equipment, saves, party state, and world anchors.");
     }
 
     private static ItemInventory CreateInventory(GameDefinitions definitions)
@@ -228,28 +226,6 @@ internal static class InventoryChecks
             && party.Members.Any(member => member.Resource < member.MaximumResource), "The selected preset contains authored injury and resource state.");
 
         RiflesCharacter warden = Member(party, "warden");
-        RiflesCharacter blade = Member(party, "blade");
-        RiflesCharacter seeker = Member(party, "seeker");
-        string seekerPosition = seeker.Position;
-        Require(party.SwapFormation("warden", "seeker") && warden.Position == seekerPosition,
-            "Living members can change the authored formation.");
-        string wardenPosition = warden.Position;
-        blade.ApplyDamage(long.MaxValue);
-        Require(!party.SwapFormation("warden", "blade") && warden.Position == wardenPosition && !party.CanUseReach("blade", PartyReach.Melee),
-            "Dead members cannot change formation or become eligible for actions.");
-        Require(!party.EligibleMembers(PartyReach.Melee).Any(member => member.Definition.Id == "blade"),
-            "Dead members are excluded from reach eligibility.");
-
-        PartyState openParty = new(definitions.Party.Positions, definitions.Party.MaxPartySize, definitions.Characters.ResolvePreset(preset.Id));
-        Require(openParty.MoveFormation("warden", "left-guard") && Member(openParty, "warden").Position == "left-guard",
-            "Living members can move into an unoccupied formation position.");
-        Require(!openParty.MoveFormation("warden", "front-center") && !openParty.MoveFormation("no-such-member", "left-guard")
-            && !openParty.MoveFormation("warden", "no-such-position") && !openParty.MoveFormation("warden", "commander"),
-            "Occupied, unknown-member, unknown-position, and reserved-center formation moves are rejected.");
-        Member(openParty, "blade").ApplyDamage(long.MaxValue);
-        Require(!openParty.MoveFormation("blade", "rear-right"),
-            "Dead members cannot change formation positions.");
-
         IReadOnlyList<MemberSnapshot> saved = party.Capture();
         warden.ApplyDamage(long.MaxValue);
         party.Restore(saved);
@@ -325,18 +301,10 @@ internal static class InventoryChecks
         .Select(owner => owner.Key + ":" + string.Join(",", inventory.Items(owner.Key).OrderBy(item => item.Token, StringComparer.Ordinal)
             .Select(item => $"{item.Token}:{item.Definition}:{item.Quantity}:{string.Join('+', item.Slots.OrderBy(slot => slot, StringComparer.Ordinal))}@{inventory.SlotOf(item.Token)}"))));
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

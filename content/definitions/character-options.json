@@ -8,7 +8,9 @@
       "basePower": 7,
       "baseDefense": 5,
       "maximumResource": 12,
-      "startingVitality": 28
+      "startingVitality": 28,
+      "startingResource": null,
+      "commander": false
     },
     {
       "id": "blade",
@@ -16,7 +18,10 @@
       "maximumVitality": 32,
       "basePower": 8,
       "baseDefense": 3,
-      "maximumResource": 8
+      "maximumResource": 8,
+      "startingVitality": null,
+      "startingResource": null,
+      "commander": false
     },
     {
       "id": "seeker",
@@ -25,7 +30,9 @@
       "basePower": 5,
       "baseDefense": 2,
       "maximumResource": 16,
-      "startingResource": 7
+      "startingResource": 7,
+      "startingVitality": null,
+      "commander": false
     },
     {
       "id": "mender",
@@ -33,7 +40,10 @@
       "maximumVitality": 28,
       "basePower": 4,
       "baseDefense": 3,
-      "maximumResource": 20
+      "maximumResource": 20,
+      "startingVitality": null,
+      "startingResource": null,
+      "commander": false
     },
     {
       "id": "commander",
@@ -42,7 +52,9 @@
       "basePower": 0,
       "baseDefense": 2,
       "maximumResource": 0,
-      "commander": true
+      "commander": true,
+      "startingVitality": null,
+      "startingResource": null
     }
   ],
   "presets": [

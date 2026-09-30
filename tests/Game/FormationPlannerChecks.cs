@@ -41,7 +41,6 @@ internal static class FormationPlannerChecks
             "Final swap is simultaneous and preserves casualties incurred during execution.");
         Reject(() => new FormationPlanner(Fresh()).Restore(saved with { Moves = [saved.Moves[0]] }, duration),
             "A saved one-sided swap cannot duplicate an occupied destination.");
-        Console.WriteLine("Formation planner checks passed: draft, swap, cancellation, timed commit, casualties and restoration.");
     }
 
     private static void Reject(Action action, string message)
@@ -51,6 +50,6 @@ internal static class FormationPlannerChecks
     }
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -102,19 +102,7 @@ public static class GenerationPolicyValidation
 public sealed record CatalogExit(string Id, GridPoint Cell, CardinalDirection Direction, IReadOnlyList<string>? Tags = null);
 public sealed record CatalogSocket(string Id, GridPoint Cell, string Kind, IReadOnlyList<string>? Tags = null);
 public sealed record CatalogShape(string Id, IReadOnlyList<GridPoint> WalkableCells, IReadOnlyList<CatalogExit> Exits, IReadOnlyList<CatalogSocket>? Sockets = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<NodeKind>? NodeKinds = null);
-public sealed record ShapeCatalog(string Id, IReadOnlyList<CatalogShape> Shapes, bool ConstrainShapesToLayout = false)
-{
-    public static ShapeCatalog Default { get; } = new("builtin.rooms.v1", new[]
-    {
-        new CatalogShape("room.cross.5", Square(5), new[]
-        {
-            new CatalogExit("north", new GridPoint(2, 0), CardinalDirection.North), new CatalogExit("east", new GridPoint(4, 2), CardinalDirection.East),
-            new CatalogExit("south", new GridPoint(2, 4), CardinalDirection.South), new CatalogExit("west", new GridPoint(0, 2), CardinalDirection.West),
-        }, new[] { new CatalogSocket("center", new GridPoint(2, 2), "content") }, new[] { "room", "default" }),
-    });
-
-    private static IReadOnlyList<GridPoint> Square(int size) => Enumerable.Range(0, size).SelectMany(y => Enumerable.Range(0, size).Select(x => new GridPoint(x, y))).ToArray();
-}
+public sealed record ShapeCatalog(string Id, IReadOnlyList<CatalogShape> Shapes, bool ConstrainShapesToLayout = false);
 
 public sealed record IntermediateRegion(string Id, string SourceNodeId, NodeKind Kind, string Role, string? GrantsItem, IReadOnlyList<string> Tags);
 public sealed record IntermediateConnection(string Id, string SourceEdgeId, string FromRegionId, string ToRegionId, EdgeKind Kind, TraversalKind Traversal, string? RequiredItem, IReadOnlyList<string> Tags);

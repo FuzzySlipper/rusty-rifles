@@ -8,6 +8,8 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Check.cs" Link="Check.cs" />
+    <Using Include="Rifles.Checks" />
     <ProjectReference Include="../../src/Rifles.Procgen/Rifles.Procgen.csproj" />
   </ItemGroup>
 </Project>

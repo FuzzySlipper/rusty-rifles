@@ -1,7 +1,6 @@
+import { gameplayKeys } from './controls.js';
 import { drawDiscoveredMap, enemyMapSignature } from './discovered-map.js';
 type Values = Record<string, unknown>;
-
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyP', 'KeyK', 'KeyL']);
 
 function record(value: unknown): Values {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Values : {};
@@ -48,6 +47,9 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   panel.style.cssText = 'box-sizing:border-box;position:fixed;right:12px;top:138px;z-index:1;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 150px);overflow:auto;padding:9px 10px;background:#171914e8;color:#eee6d5;border:1px solid #74694e;border-radius:5px;font:13px/1.35 system-ui;pointer-events:auto';
 
   const title = element('strong', 'Expedition');
+  const close = button('×', () => { panel.hidden = true; });
+  close.setAttribute('aria-label', 'Close expedition');
+  close.style.cssText = 'float:right';
   const location = element('output');
   location.dataset.runLocation = 'true';
   location.style.cssText = 'display:block;margin:3px 0;color:#c9c0ae';
@@ -140,7 +142,7 @@ export function mountRunPanel(root: Element, command: (action: string, fields?: 
   profileReadout.style.cssText = 'display:block;margin-top:5px;color:#c9c0ae';
   newRun.append(newSummary, seedLabel, difficultyLabel, newButton, profileReadout);
 
-  panel.append(title, location, status, objective, result, travel, travelMessage, runActions, completionMessage, map, journal, newRun);
+  panel.append(close, title, location, status, objective, result, travel, travelMessage, runActions, completionMessage, map, journal, newRun);
   root.append(panel);
 
   let state: Values = {};

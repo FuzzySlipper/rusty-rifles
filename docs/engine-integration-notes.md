@@ -1,76 +1,108 @@
-# Engine integration notes
+# Engine integration
 
-## Current content and lighting integration
+The SDK/runtime pair is pinned only by `RustyEnginePackageVersion` in
+`Directory.Build.props`. Use `rusty install`, `rusty status`, `rusty update` and
+`rusty dev`; products do not depend on an adjacent Engine source checkout.
+CoreCLR is the ordinary loader. NativeAOT is an explicit release check.
 
-Rifles now consumes paired SDK/runtime `0.1.0-dev.03ac310b95c2`.
-`ProductCreateContext.Content.ReadBytes` loads typed definitions directly,
-replacing the manual OpenReference/ReadReferenceInfo/ReadBytes sequence.
-Packaged world default lights are disabled; viewmodel defaults remain neutral.
+## Renderer and host changes
 
-This pair supports independently loaded `RustyEngineContentBundle` collections.
-Generated images are declared in the `generated-art` bundle and admitted once
-through `ProductContentBundle.OpenReference` and
-`Graphics.OpenResourceFromContent`; `GeneratedArt` owns those resource handles
-and shares them with voxel materials, world sprites, and item sprites. The UI
-still receives the small atlas copy because content bundles do not publish
-browser DOM image URLs. Do not build a local resource loader or bundle-mount
-shim.
+Engine removed the former Three.js browser renderer. The native wgpu renderer
+now draws the world and streams frames to the browser; the browser hosts the
+DOM companion. Engine also has a native window surface. Stream and window are
+presentation surfaces of the native renderer, not parallel product renderers.
+A root-page health check sees the generic `Rusty Product Host` shell; the product
+title arrives after mounting. The serve manifest therefore probes `/` using
+that shell identity, rather than polling an uncached product JavaScript module.
 
-## Original campaign survey
+Lit billboard sprites, directional voxel textures and dynamic room/spell lights
+are still owned by Engine. Renderer differences include sprite fog/shadow
+limitations, MSAA/encoding edges and CSS-pixel viewport scaling. Evaluate the
+actual scenes when moving the pair; compiling alone does not prove visual parity.
+Native device audio is the default and uses Kira's linear attenuation, replacing
+the earlier Web Audio inverse falloff. A browser connection alone does not prove
+that the host device is audible to the remote observer.
 
-Checked 2026-09-13 against the **installed** `Rusty.Engine`
-`0.1.0-dev.2e4255bd3ad5` assembly, not just the newer sibling Engine checkout.
-These are discovery results, not completed integration tests. The game's
-existing build checks cover its current narrow voxel/navigation/party usage.
+The SDK supplies `RustyEngineProductUiTypes`, the required UI port and packaged
+live-debug declarations. `scripts/build-ui.sh` typechecks against these files.
+The product declares UI source/build/input dependencies in its project; Engine's
+single build graph compiles the UI and stages it. Atlas copies run before
+`BuildRustyEngineProductUi`. Generated UI and SDK output are ignored.
 
-| Campaign need | Surface present in the installed SDK | What still needs a real caller/check |
-| --- | --- | --- |
-| Shared-grid travel and enemy routing | `ISpatialService.ReplaceNavigation`, `EvaluateNavigationStep`, `RequestNavigationPath`, `RequestWeightedNavigationPath`, `ReplaceNavigationTraversal` | Size-dependent passability, per-query occupancy policy, doors, path-result ownership, and bounded replanning under congestion |
-| Firing lanes and awareness | `ISpatialService.CastRay`, `IPerceptionService` | Consistent actor/feature occlusion, partial-cell enemy footprints, ally blocking and perception policy |
-| Item conservation and equipment | `Mechanics.InventoryStore`, `InventoryEdit`, `ItemState` | Adapt inventory owners to characters, containers and world placements; confirm grouped transfer/equip/use settlement and save representation |
-| Timed behavior | Engine update facts; `Application.SimulationScheduler` | Product action phases, cancellation/interruption and save/resume; do not introduce a competing timer loop |
-| Textured voxel rooms | `VoxelScenePresentation.ProjectSceneDirectional`, material bindings, `Graphics.CreateMaterial` | Image admission, texture repetition/scale, material-face selection and retained resource lifecycle in the chosen art treatment |
-| Directional still enemies and prop billboards | `Graphics.CreateSprite`, atlas APIs, `ReplaceSprite`, `ReadSprite` | Ground anchor, facing/identity consistency, world sizing, alpha/depth/occlusion, individual selection and crowded-cell rendering |
-| Item/world targeting | `Interaction.InteractionFocus.Update`, `Observe`, `Revalidate` | Reach/visibility and permitted use/drop/throw semantics; UI commands must revalidate changing targets |
-| Authored tuning and saves | `Content.ReadBytes`, `Persistence.ProductStateStore<T>.Save/Load` | Typed schemas and validation; a complete product snapshot including live actions and resolved floors |
+## Input and inspection
 
-Sprite lighting is a campaign requirement to verify in the actual host. Begin
-with a simple Engine-supported dynamic response to level lights over color/alpha
-art; generated normal maps are not required. Selective illustrated form shading
-can remain, but strong painted lights must not fight the runtime light direction.
-If the paired SDK lacks the necessary control, scope the owning Engine addition
-rather than introducing a downstream renderer. No lighting implementation or
-visual acceptance is claimed by these planning notes.
+Engine delivers pressed and held mappings and owns focus, input claims and
+lifecycle suspension. Queued input is processed before live-debug requests;
+focus loss clears holds, and lifecycle-paused input is dropped. Rifles still
+rejects movement during action recovery, charge or player pause. A delivered key
+must be distinguished from mapped intent, admission and committed cell movement.
+Use Engine's current `control/claim` and playtest assist controls for unattended
+input, and retain before/after product observations. The old Engine input issue
+#8257 was cancelled; it is not a pending dependency. Rifles #8452 is the historical
+one-action symptom and its live retest belongs in campaign #8939.
 
-`InventoryStore.Prepare` produces a candidate with `Validate` and `Publish`;
-inspect that contract before writing product-owned rollback or duplicate
-inventory bookkeeping. Game policy still owns which operations belong together.
-An Engine service call is not automatically a transaction with every other
-service or product mutation in the callback.
+Rifles registers packaged `PlaytestDebugModule`, `EntityStoreDebugModule` and
+`InteractionDebugModule`. Ordinary world use and assisted `interaction.use` go
+through the same `WorldInteraction` owner. Target-ID assistance removes reticle
+precision only; it does not grant reach, availability or stale-revision bypass.
+Observe actions and their live durations through `playtest.*`, not a browser loop.
 
-Navigation traversal overlays are session-owned APIs. Do not assume one global
-overlay can simultaneously represent every enemy size and reservation state,
-or that rejected movement leaves all retained path output unchanged. Settle
-the supported query/admission approach before implementing crowded tactical AI.
-If query-specific filtering or another reusable spatial mechanism is missing,
-propose the narrow upstream capability; do not put A* or a shadow navigation
-world in Rifles. Product occupancy reservations remain game policy.
+## Boundary decisions
 
-The current procgen pipeline's `DungeonGenerator.ValidateBuiltFlow` validates
-route continuity, declared item-aware connectivity, artifact binding, and portal
-facts. `DungeonScene` currently realizes open walkable cells with perimeter
-walls; it does not implement those portal state machines. Campaign validation
-must cover actual blocked edges and incidental geometric bypasses after gates,
-world interactions, and decoration are realized.
+`MovementGrid` supplies Rifles' cell/slot/faction reservation policy over Engine
+step admission. It does not duplicate Engine paths or spatial queries: a blobber
+party's logical source, shared crowd slots and destination commitment are game
+rules. Engine owns navigation search and footprint step admission.
 
-The sibling Engine discovery documents are useful for locating services but
-may describe a newer release than Rifles uses:
+`DungeonScene.SetDoor` publishes a navigation replacement without closed-door cells.
+`NextStep` supplies a temporary traversal overlay for current actor occupancy,
+excluding door cells because they are already absent from navigation. Replacing
+that overlay per decision reflects the current mover's exclusions; it is not a
+second pathfinder or a missing dynamic-door mechanism. The review's proposed
+upstream door gap was not confirmed against the current source and SDK.
 
-- `/home/dev/rusty-engine/docs/csharp-capabilities.md`
-- `/home/dev/rusty-engine/docs/csharp-sdk.md`
-- `/home/dev/rusty-engine/csharp/Rusty.Engine/Mechanics/Inventory.cs`
-- `/home/dev/rusty-engine/csharp/Rusty.Engine/Mechanics/Equipment.cs`
+Collider arrays supplied to `Spatial.CastSegment` are the safe packaged SDK's
+supported dynamic-body contract. They describe authored combat hit bodies, not a
+second spatial implementation. Engine performs the cast against these bodies
+and retained static world geometry. Caching them would require invalidation for
+motion, deaths and sizes; do that only when measurement supports it. No missing
+safe collider-registration contract was established by this campaign.
 
-Verify the installed SDK and paired runtime when implementing each boundary.
-Upgrade them together when an agreed capability requires it. This planning
-pass changes neither the Engine nor game runtime.
+Rifles deliberately uses explicit `EnemyBrain` transitions for patrol, memory,
+search, retreat and rifle positioning. Engine StateMachine would supply a generic
+mechanism but would not remove this game policy; no extra wrapper is justified.
+Likewise direct `Spatial.CastSegment` uses the same authoritative world/body facts
+for shot and sight rules. Adopting Perception is a future policy integration choice,
+not evidence that the present spatial call is a local Engine replacement.
+
+Engine inventory/equipment assignments are authoritative. Character equipment
+contributions are derived committed modifiers; `WeaponState` carries only musket
+state keyed by the unique item. Transfer/equip/consume paths reconcile these
+owners rather than maintaining another inventory ledger. Presentation revisions
+protect stale UI commands at the product boundary.
+
+Engine owns resources and persistence primitives; `ActiveFloor` owns product
+resource lifetime. Clear published appearance references before disposing a floor.
+Save/load meaning, authored admission and one-pass construction are described in
+`gameplay-design.md`. Den campaign #8937 records pair adoption checks, visible
+captures and remaining integration friction; do not copy version strings or
+historical measurements into this document.
+
+The current SDK-derived dev watch paths include the product project, UI source
+and content, but omit Rifles' ordinary `Rifles.Procgen` project reference. Changes
+to that library require an explicit rebuild and restart of the owned host until
+the upstream watch-discovery gap is resolved. This campaign filed the narrow
+Engine #8984; there is no downstream watcher replacement.
+
+## Pinned launcher compatibility
+
+Use the help shipped inside the installed pair when the global CLI advertises
+newer arguments. This pair selects native window output through
+`RUSTY_RENDER_OUTPUT=window`. A newer global launcher can delegate an explicit
+ordinary runtime pack, preventing this pair from selecting its desktop pack.
+Engine #8989 tracks that compatibility failure. For a window inspection until
+it is resolved, use the published pair's `runtime-pack/bin/rusty dev` with the
+same project arguments and environment; it installs the matching desktop pack.
+Find that installed pair with `rusty status`; do not hard-code a cache version or
+build a replacement host from Engine source. Stream serving uses ordinary
+`rusty dev` from the manifest.

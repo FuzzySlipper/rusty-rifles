@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text.Json;
 using Rifles.Game.Generation;
 using Rifles.Procgen.Expeditions;
 using Rifles.Procgen;
@@ -50,20 +48,15 @@ internal sealed record DungeonFloor(ulong Seed, string GenerationIdentity, GridP
             var heights = FloorElevation.Resolve(resolved, elevation);
             resolved = resolved with { Elevations = heights.Cells, Connectors = heights.Connectors };
         }
-        return resolved with { GenerationIdentity = ManifestIdentity(resolved) };
+        return resolved with { GenerationIdentity = generated.Identity };
     }
 
     internal DungeonFloor WithArchitecture(ArchitectureDetailDefinition definition)
     {
-        var detailed = this with { Architecture = ArchitectureDetail.Resolve(this, definition) };
-        return detailed with { GenerationIdentity = ManifestIdentity(detailed) };
+        return this with { Architecture = ArchitectureDetail.Resolve(this, definition) };
     }
 
     internal int Level(GridPoint cell) => Elevations.FirstOrDefault(e => e.Cell == cell)?.Level ?? 0;
-
-    // Save-schema serialization is deterministic and includes the complete retained room manifest.
-    private static string ManifestIdentity(DungeonFloor floor) => Convert.ToHexString(SHA256.HashData(
-        JsonSerializer.SerializeToUtf8Bytes(floor with { GenerationIdentity = "" }))).ToLowerInvariant();
 
     internal void Validate()
     {
@@ -104,7 +97,7 @@ internal sealed record DungeonFloor(ulong Seed, string GenerationIdentity, GridP
             && Rooms.Any(r => r.RegionId == g.RegionId && r.Cells.Contains(g.Cell)))
             && Grants.Select(g => g.Item).Distinct().Count() == Grants.Length, "Floor grants");
         if (Architecture is not null) ArchitectureDetail.Validate(Architecture, this);
-        GameDefinitions.Require(!string.IsNullOrWhiteSpace(LayoutIdentity) && GenerationIdentity == ManifestIdentity(this), "Floor manifest identity");
+        GameDefinitions.Require(!string.IsNullOrWhiteSpace(LayoutIdentity), "Floor manifest identity");
     }
 }
 

@@ -36,7 +36,7 @@ internal sealed class ActiveFloor : IDisposable
 {
     internal ActiveFloor(DungeonFloor floor, DungeonScene scene, MovementGrid grid, WorldFeatures features,
         PatrolActor actor, ExplorationState exploration, ExplorationItems itemWorld, ItemInventory inventory,
-        MagicState magic, RiflesCombat combat, GeneratedFeatureSnapshot generatedFeatures,
+        MagicState magic, RiflesCombat combat, GeneratedFeatureState generatedFeatures,
         EncounterPlacementResult encounterPlacement, ulong floorId, PartyState party)
     {
         Floor = floor;
@@ -49,7 +49,8 @@ internal sealed class ActiveFloor : IDisposable
         Inventory = inventory;
         Magic = magic;
         Combat = combat;
-        GeneratedFeatures = generatedFeatures;
+        Generated = generatedFeatures;
+        Generated.BindCombat(combat);
         EncounterPlacement = encounterPlacement;
         FloorId = floorId;
         Party = party;
@@ -65,22 +66,12 @@ internal sealed class ActiveFloor : IDisposable
     internal ItemInventory Inventory { get; }
     internal MagicState Magic { get; }
     internal RiflesCombat Combat { get; }
-    internal GeneratedFeatureSnapshot GeneratedFeatures { get; private set; }
+    internal GeneratedFeatureState Generated { get; }
+    internal GeneratedFeatureSnapshot GeneratedFeatures => Generated.Snapshot;
     internal EncounterPlacementResult EncounterPlacement { get; }
     internal ulong FloorId { get; }
     /// <summary>Reference to the travelling party, not floor ownership.</summary>
     internal PartyState Party { get; }
-
-    /// <summary>
-    /// Replaces the floor's generated-feature facts (lever/gate/hazard
-    /// transitions). The only mutation slot on the aggregate; everything else
-    /// mounts once.
-    /// </summary>
-    internal void UpdateGeneratedFeatures(GeneratedFeatureSnapshot value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        GeneratedFeatures = value;
-    }
 
     public void Dispose()
     {
@@ -95,35 +86,25 @@ internal sealed class ActiveFloor : IDisposable
     /// validation still checks the thawed merge; only fresh factory mounts
     /// skip it, trusting construction.
     /// </summary>
-    internal static ActiveFloor Restore(ExpeditionSnapshot saved, GameDefinitions definitions,
+    internal static ActiveFloor Restore(ExpeditionSnapshot saved, FloorServices services,
         PartyState? travellingParty, IReadOnlyDictionary<string, MagicState.MagicBook>? travellingBooks,
-        IReadOnlyDictionary<ulong, string>? allItems,
-        IEngineContext engine, DungeonMaterialCache materials, GeneratedArt artResources, ItemArt itemArt,
-        Func<ulong> allocateLightId, string? style, bool roomLights, double incomingDamageMultiplier,
-        ulong partyId, Action<string> message, Action<Audio.SoundCue, System.Numerics.Vector3> sound,
-        Action<string> cancelRest, Func<ulong, string?> featureUseProblem,
-        Func<ulong, System.Numerics.Vector3> featurePoint, Func<ulong, ulong, string> useFeature, Func<ulong> allocateId,
-        Func<DungeonScene, GridPoint, Vector3> aim)
+        IReadOnlyDictionary<ulong, string>? allItems, string? style, bool roomLights,
+        double incomingDamageMultiplier, ulong partyId, Func<ulong> allocateId, AdmittedFloor? admitted = null)
     {
-        var restored = ExpeditionCodec.Validate(saved, definitions,
+        var restored = admitted ?? ExpeditionCodec.Validate(saved, services.Definitions,
             allItems ?? saved.Inventory.Packs.SelectMany(p => p.Items).ToDictionary(i => i.Id, i => i.Definition),
             travellingParty, travellingBooks);
-        ItemInventory restoredInventory = ItemInventory.Restore(definitions.Items, saved.Inventory);
-        RestoredCombat restoredCombat = CombatRestore.Validate(saved.Combat, definitions, saved.Floor, restoredInventory,
-            restored.Party, saved.PartyId, new[] { saved.Actor.Id, saved.Features.Dressing.ObserverId },
-            travellingBooks);
-        ExplorationItems restoredItems = new(definitions.ItemExploration, saved.ItemWorld);
-        DungeonScene replacement = new(engine, materials, saved.Floor, definitions.Exploration, definitions.Appearance,
-            allocateLightId, definitions.ItemExploration);
-        MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, definitions.Crowd);
+        ItemInventory restoredInventory = restored.Inventory;
+        RestoredCombat restoredCombat = restored.Combat;
+        ExplorationItems restoredItems = restored.ItemWorld;
+        DungeonScene replacement = new(services.Engine, services.Materials, saved.Floor, services.Definitions.Exploration, services.Definitions.Appearance,
+            services.AllocateLightId, services.Definitions.ItemExploration);
+        MovementGrid replacementGrid = new(saved.Floor.Cells.ToHashSet(), replacement.AdmitStep, services.Definitions.Crowd);
         try
         {
             replacement.SetDoor(saved.ItemWorld.Door, saved.ItemWorld.DoorOpen);
             foreach (var gate in saved.GeneratedFeatures.Gates) replacement.SetDoor(gate.Cell, gate.Open);
-            foreach (var connector in saved.Floor.Connectors) replacementGrid.SetClearance(connector.From, connector.To, connector.Clearance);
-            foreach (var direction in Rifles.Procgen.Generation.CardinalDirections.Ordered)
-                if (saved.Floor.Cells.Contains(saved.ItemWorld.Door + direction.Offset()))
-                    replacementGrid.SetClearance(saved.ItemWorld.Door, saved.ItemWorld.Door + direction.Offset(), definitions.Combat.DoorClearance);
+            FloorFactory.ConfigureDoorClearance(replacementGrid, saved.Floor, saved.ItemWorld.Door, services.Definitions.Combat.DoorClearance);
             if (!restored.Party.Defeated) restored.Exploration.Bind(replacementGrid, saved.PartyId);
             if (restoredCombat.Allies.Single(a => a.Id == saved.Actor.Id).Vitality > 0) restored.Actor.Bind(replacementGrid);
         }
@@ -131,8 +112,8 @@ internal sealed class ActiveFloor : IDisposable
         WorldFeatures replacementFeatures;
         try
         {
-            replacementFeatures = new WorldFeatures(engine, artResources, replacement, saved.Floor, definitions.Features,
-                definitions.Art, saved.Features, allocateLightId(), style);
+            replacementFeatures = new WorldFeatures(services.Engine, services.Art, replacement, saved.Floor, services.Definitions.Features,
+                services.Definitions.Art, saved.Features, services.AllocateLightId(), style);
         }
         catch { replacement.Dispose(); throw; }
         try
@@ -142,22 +123,23 @@ internal sealed class ActiveFloor : IDisposable
             replacementFeatures.Bind(replacementGrid, restoredCombat.Allies.Single(a => a.Id == saved.Features.Dressing.ObserverId).Vitality > 0);
             foreach (var ally in restoredCombat.Allies.Where(a => a.Vitality == 0)) replacementGrid.Remove(ally.Id);
             foreach (EnemyState enemy in restoredCombat.Enemies.Where(e => e.Alive)) enemy.Motion.Bind(replacementGrid, enemy.Id, enemy.Definition.Footprint, enemy.Definition.Faction, enemy.Definition.Share);
-            replacementFeatures.Present(restored.Actor, restored.Exploration, itemArt.Facts(restoredInventory, restoredItems, replacement));
+            replacementFeatures.Present(restored.Actor, restored.Exploration, services.ItemArt.Facts(restoredInventory, restoredItems, replacement));
         }
         catch
         {
             replacementFeatures.Dispose(); replacement.Dispose(); throw;
         }
-        restoredInventory.BindMembers(restored.Party.Entities, restored.Party.Members);
-        restoredInventory.BindRemaining(restored.Party.Entities);
+        GeneratedFeatureState generated = new(saved.GeneratedFeatures, services.Definitions, replacement,
+            restored.Exploration, restoredItems, restored.Actor, restoredInventory, restored.Party,
+            restoredCombat.Magic, services.ItemArt, services.Message, cell => services.Aim(replacement, cell));
         CombatScope scope = new(replacement, replacementGrid, restored.Exploration, restoredItems, restored.Actor,
-            () => replacementFeatures, saved.GeneratedFeatures, saved.Floor, partyId, incomingDamageMultiplier, allocateId,
-            cell => aim(replacement, cell), message, sound, cancelRest, featureUseProblem, featurePoint, useFeature);
-        RiflesCombat combat = RiflesCombat.Restore(restoredCombat, definitions, restored.Party.Entities, restored.Party,
+            () => replacementFeatures, generated, saved.Floor, partyId, incomingDamageMultiplier, allocateId,
+            cell => services.Aim(replacement, cell), services.Message, services.Sound, services.CancelRest);
+        RiflesCombat combat = RiflesCombat.Restore(restoredCombat, services.Definitions, restored.Party.Entities, restored.Party,
             restoredCombat.Magic, restoredInventory, scope);
         return new ActiveFloor(saved.Floor, replacement, replacementGrid, replacementFeatures, restored.Actor,
             restored.Exploration, restoredItems, restoredInventory, restoredCombat.Magic, combat,
-            saved.GeneratedFeatures, saved.EncounterPlacement, saved.FloorId, restored.Party);
+            generated, saved.EncounterPlacement, saved.FloorId, restored.Party);
     }
 
     /// <summary>
@@ -166,17 +148,13 @@ internal sealed class ActiveFloor : IDisposable
     /// member packs receive starter grants only on a fresh run; travelling
     /// packs restore into them without duplicating the kit.
     /// </summary>
-    internal static ActiveFloor CreateFresh(GameDefinitions definitions, ResolvedExpedition intent, string floorKey,
+    internal static ActiveFloor CreateFresh(FloorServices services, ResolvedExpedition intent, string floorKey,
         ulong floorId, ulong partyId, PartyState party, TravellingState? travelling, ExplorationSnapshot pose,
-        IEngineContext engine, DungeonMaterialCache materials, GeneratedArt artResources, Func<ulong> allocateLightId,
-        Func<ulong> allocate, string? preset, string? style, double incomingDamageMultiplier,
-        Action<string> message, Action<Audio.SoundCue, System.Numerics.Vector3> sound, Action<string> cancelRest,
-        Func<ulong, string?> featureUseProblem, Func<ulong, System.Numerics.Vector3> featurePoint,
-        Func<ulong, ulong, string> useFeature, Func<DungeonScene, GridPoint, Vector3> aim, DungeonFloor? resolvedFloor = null)
+        Func<ulong> allocate, string? preset, string? style, double incomingDamageMultiplier, DungeonFloor? resolvedFloor = null)
     {
         DungeonFloor floor = resolvedFloor ?? DungeonFloor.Generate(intent.Floors.Single(f => f.Id == floorKey),
-            definitions.Generation.Policy, definitions.Rooms, definitions.Generation.Elevation)
-            .WithArchitecture(definitions.Architecture);
+            services.Definitions.Generation.Policy, services.Definitions.Rooms, services.Definitions.Generation.Elevation)
+            .WithArchitecture(services.Definitions.Architecture);
         ResolvedFloorIntent resolved = intent.Floors.Single(f => f.Id == floorKey);
         // Caller-mismatch guard only: the intent graph re-hash that the old
         // snapshot factory ran here re-proved generation output against its
@@ -184,13 +162,13 @@ internal sealed class ActiveFloor : IDisposable
         GameDefinitions.Require(floor.IntentFloorId == resolved.Id && floor.Seed == resolved.Candidate.Seed,
             "Resolved floor does not belong to the requested expedition floor.");
 
-        DungeonScene scene = new(engine, materials, floor, definitions.Exploration, definitions.Appearance,
-            allocateLightId, definitions.ItemExploration);
+        DungeonScene scene = new(services.Engine, services.Materials, floor, services.Definitions.Exploration, services.Definitions.Appearance,
+            services.AllocateLightId, services.Definitions.ItemExploration);
         try
         {
-            return CreateFreshInner(definitions, intent, floorKey, floorId, partyId, party, travelling, pose, engine,
-                materials, artResources, allocateLightId, allocate, preset, style, incomingDamageMultiplier,
-                message, sound, cancelRest, featureUseProblem, featurePoint, useFeature, aim, floor, scene, resolvedFloor);
+            return CreateFreshInner(services, intent, floorId, partyId, party, travelling, pose,
+                allocate, preset, style, incomingDamageMultiplier, floor, scene);
+
         }
         catch
         {
@@ -199,37 +177,33 @@ internal sealed class ActiveFloor : IDisposable
         }
     }
 
-    private static ActiveFloor CreateFreshInner(GameDefinitions definitions, ResolvedExpedition intent, string floorKey,
+    private static ActiveFloor CreateFreshInner(FloorServices services, ResolvedExpedition intent,
         ulong floorId, ulong partyId, PartyState party, TravellingState? travelling, ExplorationSnapshot pose,
-        IEngineContext engine, DungeonMaterialCache materials, GeneratedArt artResources, Func<ulong> allocateLightId,
         Func<ulong> allocate, string? preset, string? style, double incomingDamageMultiplier,
-        Action<string> message, Action<Audio.SoundCue, Vector3> sound, Action<string> cancelRest,
-        Func<ulong, string?> featureUseProblem, Func<ulong, Vector3> featurePoint,
-        Func<ulong, ulong, string> useFeature, Func<DungeonScene, GridPoint, Vector3> aim,
-        DungeonFloor floor, DungeonScene scene, DungeonFloor? resolvedFloor)
+        DungeonFloor floor, DungeonScene scene)
     {
-        ExplorationState exploration = ExplorationState.Restore(pose, floor, definitions.Exploration);
+        ExplorationState exploration = ExplorationState.Restore(pose, floor, services.Definitions.Exploration);
         PatrolActor actor = PatrolActor.Create(allocate(), floor,
-            definitions.Exploration with { StepSeconds = definitions.Features.ActorStepSeconds }, definitions.Features);
+            services.Definitions.Exploration with { StepSeconds = services.Definitions.Features.ActorStepSeconds }, services.Definitions.Features);
         FeatureSnapshot features = new(allocate(), allocate(), 1, true, false,
-            RoomDressing.Create(floor, actor, definitions.Art, allocate));
+            RoomDressing.Create(floor, actor, services.Definitions.Art, allocate));
 
-        ExplorationItems itemWorld = ExplorationItems.Create(definitions.ItemExploration, floor, features.Dressing, actor, allocate);
+        ExplorationItems itemWorld = ExplorationItems.Create(services.Definitions.ItemExploration, floor, features.Dressing, actor, allocate);
         // Travelling packs keep their ledger identity: the floor registers
         // the travelled owners instead of allocating fresh ones, so restored
         // contents land on the registered record. Fresh runs allocate.
         PackOwner TravellingOrFresh(string key, Func<PackOwner> fresh) =>
             travelling?.Packs.SingleOrDefault(p => p.Owner.Key == key)?.Owner ?? fresh();
         IEnumerable<PackOwner> memberPacks = party.Members.Select(member => TravellingOrFresh("member:" + member.Definition.Id,
-            () => new PackOwner(allocate(), "member:" + member.Definition.Id, definitions.Items.Backpack.Mass, definitions.Items.Backpack.Space)));
+            () => new PackOwner(allocate(), "member:" + member.Definition.Id, services.Definitions.Items.Backpack.Mass, services.Definitions.Items.Backpack.Space)));
         PackOwner partyPack = TravellingOrFresh(ItemInventory.PartyKey,
-            () => new(allocate(), ItemInventory.PartyKey, definitions.Items.Party.Mass, definitions.Items.Party.Space));
+            () => new(allocate(), ItemInventory.PartyKey, services.Definitions.Items.Party.Mass, services.Definitions.Items.Party.Space));
         IEnumerable<PackOwner> anchorPacks = itemWorld.Anchors.Select(anchor =>
         {
-            PackDefinition capacity = anchor.Key == "crate" ? definitions.Items.Container : definitions.Items.Anchor;
+            PackDefinition capacity = anchor.Key == "crate" ? services.Definitions.Items.Container : services.Definitions.Items.Anchor;
             return new PackOwner(anchor.Id, anchor.Key, capacity.Mass, capacity.Space);
         });
-        ItemInventory inventory = new(definitions.Items, memberPacks.Append(partyPack).Concat(anchorPacks));
+        ItemInventory inventory = new(services.Definitions.Items, memberPacks.Append(partyPack).Concat(anchorPacks));
         inventory.BindMembers(party.Entities, party.Members);
         // Starter grants land in floor-local owners on every fresh floor;
         // member and party kits travel instead of granting again.
@@ -239,29 +213,30 @@ internal sealed class ActiveFloor : IDisposable
             foreach (SavedPack pack in travelling.Packs) inventory.RestorePack(pack);
         scene.SetDoor(itemWorld.Door, false);
 
-        MovementGrid movement = new(floor.Cells.ToHashSet(), scene.AdmitStep, definitions.Crowd);
+        MovementGrid movement = new(floor.Cells.ToHashSet(), scene.AdmitStep, services.Definitions.Crowd);
         foreach (FloorConnector connector in floor.Connectors)
             movement.SetClearance(connector.From, connector.To, connector.Clearance);
         exploration.Bind(movement, partyId);
         actor.Bind(movement);
         features.Dressing.Bind(movement);
-        FloorFactory.ConfigureDoorClearance(movement, floor, itemWorld.Door, definitions.Combat.DoorClearance);
+        FloorFactory.ConfigureDoorClearance(movement, floor, itemWorld.Door, services.Definitions.Combat.DoorClearance);
 
         Dictionary<string, GridPoint> drops = [];
-        GeneratedFeatureSnapshot generatedFeatures = FloorFactory.CreateGeneratedFeatures(intent, floor, definitions, inventory, drops, scene, allocate);
-        EncounterPlacementResult encounterPlacement = FloorFactory.CreateEnemies(floor, definitions, inventory, itemWorld, movement,
+        GeneratedFeatureSnapshot generatedFeatures = FloorFactory.CreateGeneratedFeatures(intent, floor, services.Definitions, inventory, drops, allocate);
+        foreach (GeneratedGate gate in generatedFeatures.Gates) scene.SetDoor(gate.Cell, false);
+        EncounterPlacementResult encounterPlacement = FloorFactory.CreateEnemies(floor, services.Definitions, inventory, itemWorld, movement,
             generatedFeatures, drops, allocate, party.Entities, out EnemyState[] enemies);
-        generatedFeatures = FloorFactory.AddRouteSupplies(floor, definitions, inventory, drops, generatedFeatures, allocate);
+        generatedFeatures = FloorFactory.AddRouteSupplies(floor, services.Definitions, inventory, drops, generatedFeatures, allocate);
         inventory.BindRemaining(party.Entities);
 
-        MagicState magic = new(definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)),
+        MagicState magic = new(services.Definitions.Magic, party.Members.Select(member => (member.Definition.Id, member.Definition.Archetype)),
             party.Entities, travelling?.Books);
         if (travelling is not null) magic.RejoinTravelling(travelling.Conditions);
         WorldFeatures world;
         try
         {
-            world = new WorldFeatures(engine, artResources, scene, floor, definitions.Features, definitions.Art,
-                features, allocateLightId(), style);
+            world = new WorldFeatures(services.Engine, services.Art, scene, floor, services.Definitions.Features, services.Definitions.Art,
+                features, services.AllocateLightId(), style);
         }
         catch
         {
@@ -270,17 +245,19 @@ internal sealed class ActiveFloor : IDisposable
         }
         try
         {
-            CombatScope scope = new(scene, movement, exploration, itemWorld, actor, () => world, generatedFeatures,
+            GeneratedFeatureState generated = new(generatedFeatures, services.Definitions, scene,
+                exploration, itemWorld, actor, inventory, party, magic, services.ItemArt, services.Message, cell => services.Aim(scene, cell));
+            CombatScope scope = new(scene, movement, exploration, itemWorld, actor, () => world, generated,
                 floor, partyId, incomingDamageMultiplier, allocate,
-                cell => aim(scene, cell),
-                message, sound, cancelRest, featureUseProblem, featurePoint, useFeature);
+                cell => services.Aim(scene, cell),
+                services.Message, services.Sound, services.CancelRest);
             // Member action states ride the travelling entities (travel only runs
             // idle); the multiplier never applies here since no damage runs.
-            RiflesCombat combat = RiflesCombat.CreateFresh(definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
-                [RiflesCombat.FreshAlly(actor.Id, definitions), RiflesCombat.FreshAlly(features.Dressing.ObserverId, definitions)],
+            RiflesCombat combat = RiflesCombat.CreateFresh(services.Definitions, party.Entities, party, magic, inventory, scope, [.. enemies],
+                [RiflesCombat.FreshAlly(actor.Id, services.Definitions), RiflesCombat.FreshAlly(features.Dressing.ObserverId, services.Definitions)],
                 drops, travelling?.Weapons);
             return new ActiveFloor(floor, scene, movement, world, actor, exploration, itemWorld, inventory, magic, combat,
-                generatedFeatures, encounterPlacement, floorId, party);
+                generated, encounterPlacement, floorId, party);
         }
         catch
         {

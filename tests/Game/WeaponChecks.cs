@@ -7,7 +7,6 @@ internal static class WeaponChecks
     {
         VerifySlotAdmission(definitions.Items);
         VerifyMusketIdentityAndCapabilities(definitions.Items);
-        Console.WriteLine("Weapon checks passed: martial slots, capability tuning, and unique musket state.");
     }
 
     private static void VerifySlotAdmission(ItemDefinitions definitions)
@@ -69,13 +68,9 @@ internal static class WeaponChecks
         new PackOwner(3, "crate", definitions.Container.Mass, definitions.Container.Space),
     ]);
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); } catch (InvalidDataException) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

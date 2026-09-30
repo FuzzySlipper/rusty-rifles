@@ -2,7 +2,7 @@
 
 Built-in GPT image generation produced the selected PNGs under
 `content/art/generated/`. Compose future calls from the shared style, one
-named treatment and the sprite/material recipe in `content/art/prompts/`.
+named treatment and the sprite/material recipe in `docs/art/prompts/`.
 These are provisional experiments, not a final style decision.
 
 ## Selected prompt set

@@ -9,7 +9,7 @@ Created 2026-09-13: **63 implementation tasks, nine milestones, 136 dependency l
 
 Start with **#8188 (A01), typed file-authored gameplay and presentation definitions**. It is the only initially dependency-ready implementation task. The priority-5 parent is an aggregate, not an implementation lane. After A01, content/art work can proceed alongside the expedition skeleton; the milestone groups are not sequential gates.
 
-Use Den for current status, assignments, dependencies and task-linked progress. This index and the [task plan](task-plan.json)/[ID map](den-tasks.json) record the initial campaign, not a second task tracker or synchronization system. [Strategy](../campaign-strategy.md) owns the overall scope; [art direction](../art-direction.md) and [prompt recipes](../../content/art/prompts/README.md) guide visual experiments.
+Use Den for current status, assignments, dependencies and task-linked progress. This index and the [task plan](task-plan.json)/[ID map](den-tasks.json) record the initial campaign, not a second task tracker or synchronization system. [Strategy](../campaign-strategy.md) owns the overall scope; [art direction](../art-direction.md) and [prompt recipes](../art/prompts/README.md) guide visual experiments.
 
 Tasks include concrete behavior, file tuning, real callers and appropriate validation. If an Engine capability is absent, identify the narrow upstream dependency rather than implement a downstream substitute or mark the behavior complete. No gameplay implementation was performed while creating this campaign.
 

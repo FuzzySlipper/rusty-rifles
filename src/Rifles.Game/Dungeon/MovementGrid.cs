@@ -57,7 +57,6 @@ internal sealed class MovementGrid
     }
 
     internal GridPoint Position(ulong actor) => occupants[actor];
-    internal IEnumerable<GridPoint> BlockedCells => occupants.Values.Concat(reservations.Values.Select(reservation => reservation.To)).Distinct();
     internal bool Occupied(GridPoint cell) => occupants.Values.Contains(cell) || reservations.Values.Any(reservation => reservation.To == cell);
 
     internal PlacementDefinition Placement(ulong actor)
@@ -187,6 +186,13 @@ internal sealed class MovementGrid
         if (reservation.DestinationPlacementId is not null && crowdActors.TryGetValue(actor, out CrowdActor? profile))
             crowdActors[actor] = profile with { PlacementId = reservation.DestinationPlacementId };
         return true;
+    }
+
+    internal void RemoveBody(ulong id, ExplorationState? motion = null)
+    {
+        motion?.Stop();
+        Remove(id);
+        motion?.Detach();
     }
 
     internal void Remove(ulong actor)

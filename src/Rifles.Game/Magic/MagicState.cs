@@ -34,7 +34,6 @@ internal sealed record MagicSnapshot(
 /// </summary>
 internal sealed class MagicState
 {
-    private const int HotbarSlots = 3;
     private readonly MagicDefinition definition;
     private readonly CharacterEntities entities;
     private readonly Dictionary<string, MagicBook> books;
@@ -66,7 +65,7 @@ internal sealed class MagicState
                 continue;
             }
             if (!definition.StartingSpells.TryGetValue(archetype, out string[]? spells)) continue;
-            MagicBook book = new(archetype, spells, definition.ExperiencePerPoint);
+            MagicBook book = new(archetype, spells, definition.ExperiencePerPoint, definition.HotbarSlots);
             books.Add(instance, book);
             entities.AttachComponent(instance, () => book);
         }
@@ -101,7 +100,7 @@ internal sealed class MagicState
 
     internal void Assign(string member, string spell, int slot)
     {
-        if (slot < 0 || slot >= HotbarSlots) throw new InvalidDataException("Unknown hotbar slot.");
+        if (slot < 0 || slot >= definition.HotbarSlots) throw new InvalidDataException("Unknown hotbar slot.");
         MagicBook book = For(member);
         if (string.IsNullOrWhiteSpace(spell) || !book.Known.Contains(spell))
             throw new InvalidDataException("Only a known spell can be assigned.");
@@ -278,7 +277,7 @@ internal sealed class MagicState
             book.Selected = saved.Selected;
             book.Known.Clear();
             foreach (string spell in saved.Known) book.Known.Add(spell);
-            Array.Copy(saved.Hotbar, book.Hotbar, HotbarSlots);
+            Array.Copy(saved.Hotbar, book.Hotbar, definition.HotbarSlots);
             book.Experience = saved.Experience;
             book.Choices.Clear();
             book.Choices.AddRange(saved.Choices);
@@ -512,7 +511,7 @@ internal sealed class MagicState
         foreach (MagicBookSnapshot book in snapshot.Books)
         {
             if (book.Selected is null || book.Known is null || book.Hotbar is null || book.Choices is null
-                || book.Hotbar.Length != HotbarSlots || book.Experience < 0
+                || book.Hotbar.Length != definition.HotbarSlots || book.Experience < 0
                 || book.Revivals < 0 || book.Revivals > definition.MaximumRevivals
                 || book.Known.Any(string.IsNullOrWhiteSpace) || book.Known.Distinct(StringComparer.Ordinal).Count() != book.Known.Length
                 || book.Choices.Any(string.IsNullOrWhiteSpace) || book.Choices.Distinct(StringComparer.Ordinal).Count() != book.Choices.Length
@@ -566,17 +565,18 @@ internal sealed class MagicState
 
     internal sealed class MagicBook
     {
-        internal MagicBook(string archetype, IEnumerable<string> known, long experiencePerPoint)
+        internal MagicBook(string archetype, IEnumerable<string> known, long experiencePerPoint, int hotbarSlots)
         {
             Archetype = archetype;
             Known = known.ToHashSet(StringComparer.Ordinal);
             ExperiencePerPoint = experiencePerPoint;
+            Hotbar = Enumerable.Repeat("", hotbarSlots).ToArray();
         }
 
         internal string Archetype { get; }
         internal string Selected { get; set; } = "";
         internal HashSet<string> Known { get; }
-        internal string[] Hotbar { get; } = ["", "", ""];
+        internal string[] Hotbar { get; }
         internal long Experience { get; set; }
         internal List<string> Choices { get; } = [];
         internal int Revivals { get; set; }

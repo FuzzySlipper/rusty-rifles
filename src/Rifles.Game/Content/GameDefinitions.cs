@@ -18,8 +18,21 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party, FormationDefinition Formation,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MartialDrillDefinitionSet MartialDrills)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, Func<string, ReadOnlyMemory<byte>> ReadContent)
 {
+    private MartialDrillDefinitionSet? martialDrills;
+    internal MartialDrillDefinitionSet MartialDrills
+    {
+        get
+        {
+            if (martialDrills is not null) return martialDrills;
+            var loaded = Read<MartialDrillDefinitionSet>(ReadContent, "definitions/martial-drills.json", x => x.Validate());
+            loaded.ValidateAgainst(Characters, Formation, Combat, Crowd);
+            martialDrills = loaded;
+            return loaded;
+        }
+    }
+
     private static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -28,49 +41,49 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         Converters = { new JsonStringEnumConverter() },
     };
 
+    internal static T Read<T>(Func<string, ReadOnlyMemory<byte>> read, string path, Action<T> validate)
+    {
+        try
+        {
+            T result = JsonSerializer.Deserialize<T>(read(path).Span, Json)
+                ?? throw new InvalidDataException("Document must not be null.");
+            validate(result);
+            return result;
+        }
+        catch (Exception error) when (error is JsonException or InvalidDataException or IOException)
+        {
+            throw new InvalidDataException($"Content '{path}': {error.Message}", error);
+        }
+    }
+
     internal static GameDefinitions Load(ProductContent content) => Load(content.ReadBytes);
     internal static GameDefinitions Load(Func<string, ReadOnlyMemory<byte>> read)
     {
-        T Read<T>(string path, Action<T> validate)
-        {
-            try
-            {
-                T result = JsonSerializer.Deserialize<T>(read(path).Span, Json)
-                    ?? throw new InvalidDataException("Document must not be null.");
-                validate(result);
-                return result;
-            }
-            catch (Exception error) when (error is not OutOfMemoryException)
-            {
-                throw new InvalidDataException($"Content '{path}': {error.Message}", error);
-            }
-        }
-        GameDefinitions result = new(Read<ExplorationTuning>("tuning/exploration.json", x => x.Validate()),
-            Read<PartyDefinition>("definitions/party.json", x => x.Validate()),
-            Read<FormationDefinition>("definitions/formation.json", x => x.Validate()),
-            Read<GenerationDefinition>("tuning/generation.json", x => x.Validate()),
-            Read<AppearanceDefinition>("tuning/appearance.json", x => x.Validate()),
-            Read<FeatureDefinition>("definitions/exploration-features.json", x => x.Validate()),
-            Read<WorldArtDefinition>("definitions/world-art.json", x => x.Validate()),
-            Read<CharacterOptionsDefinition>("definitions/character-options.json", x => x.Validate()),
-            Read<ItemDefinitions>("definitions/items.json", x => x.Validate()),
-            Read<ItemExplorationDefinition>("definitions/item-exploration.json", x => x.Validate()),
-            Read<ItemArtDefinition>("definitions/item-art.json", x => x.Validate()),
-            Read<CombatDefinition>("definitions/combat.json", x => x.Validate()),
-            Read<CrowdDefinition>("definitions/crowds.json", x => x.Validate()),
-            Read<MagicDefinition>("definitions/spells.json", x => x.Validate()),
-            Read<HudTuning>("tuning/hud.json", x => x.Validate()),
-            Read<RoomCatalogue>("definitions/rooms.json", x => x.Validate()),
-            Read<GeneratedFeatureDefinition>("definitions/generated-features.json", x => x.Validate()),
-            Read<RouteSupplyDefinition>("definitions/route-supplies.json", x => x.Validate()),
-            Read<HazardDefinition>("definitions/generated-hazards.json", x => x.Validate()),
-            Read<EncounterPlacementDefinition>("definitions/encounter-placement.json", x => x.Validate()),
-            Read<ArchitectureDetailDefinition>("definitions/architecture-detail.json", x => x.Validate()),
-            Read<RunDefinition>("definitions/expedition.json", x => x.Validate()),
-            Read<AudioDefinition>("definitions/audio.json", x => x.Validate()),
-            Read<ChargeDefinition>("definitions/charge.json", x => x.Validate()),
-            Read<MartialDrillDefinitionSet>("definitions/martial-drills.json", x => x.Validate()));
-        result.MartialDrills.ValidateAgainst(result.Characters, result.Formation, result.Combat, result.Crowd);
+        GameDefinitions result = new(Read<ExplorationTuning>(read, "tuning/exploration.json", x => x.Validate()),
+            Read<PartyDefinition>(read, "definitions/party.json", x => x.Validate()),
+            Read<FormationDefinition>(read, "definitions/formation.json", x => x.Validate()),
+            Read<GenerationDefinition>(read, "tuning/generation.json", x => x.Validate()),
+            Read<AppearanceDefinition>(read, "tuning/appearance.json", x => x.Validate()),
+            Read<FeatureDefinition>(read, "definitions/exploration-features.json", x => x.Validate()),
+            Read<WorldArtDefinition>(read, "definitions/world-art.json", x => x.Validate()),
+            Read<CharacterOptionsDefinition>(read, "definitions/character-options.json", x => x.Validate()),
+            Read<ItemDefinitions>(read, "definitions/items.json", x => x.Validate()),
+            Read<ItemExplorationDefinition>(read, "definitions/item-exploration.json", x => x.Validate()),
+            Read<ItemArtDefinition>(read, "definitions/item-art.json", x => x.Validate()),
+            Read<CombatDefinition>(read, "definitions/combat.json", x => x.Validate()),
+            Read<CrowdDefinition>(read, "definitions/crowds.json", x => x.Validate()),
+            Read<MagicDefinition>(read, "definitions/spells.json", x => x.Validate()),
+            Read<HudTuning>(read, "tuning/hud.json", x => x.Validate()),
+            Read<RoomCatalogue>(read, "definitions/rooms.json", x => x.Validate()),
+            Read<GeneratedFeatureDefinition>(read, "definitions/generated-features.json", x => x.Validate()),
+            Read<RouteSupplyDefinition>(read, "definitions/route-supplies.json", x => x.Validate()),
+            Read<HazardDefinition>(read, "definitions/generated-hazards.json", x => x.Validate()),
+            Read<EncounterPlacementDefinition>(read, "definitions/encounter-placement.json", x => x.Validate()),
+            Read<ArchitectureDetailDefinition>(read, "definitions/architecture-detail.json", x => x.Validate()),
+            Read<RunDefinition>(read, "definitions/expedition.json", x => x.Validate()),
+            Read<AudioDefinition>(read, "definitions/audio.json", x => x.Validate()),
+            Read<ChargeDefinition>(read, "definitions/charge.json", x => x.Validate()),
+            read);
         // The formation file is the one authored layout. Adapt its integral
         // 3x3 coordinates to the existing half-cell projection once at admission.
         result = result with { Party = result.Party with { Positions = result.Formation.Cells.Select(cell =>

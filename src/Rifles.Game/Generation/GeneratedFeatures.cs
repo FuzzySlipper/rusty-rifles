@@ -2,15 +2,36 @@ using Rifles.Game.Content;
 using Rifles.Game.Dungeon;
 using Rifles.Procgen;
 using Rifles.Procgen.Generation;
+using Rusty.Engine.Interaction;
 
 namespace Rifles.Game.Generation;
 
-internal sealed record GeneratedFeatureDefinition(string KeyItem, string GateClue, string SecretClue, float Reach, string WeightItem, ulong PlateWeight, string PlateClue)
+internal sealed record GeneratedFeatureDefinition(string KeyItem, string GateClue, string SecretClue, float Reach, string WeightItem, ulong PlateWeight, string PlateClue, GeneratedFeaturePresentation Presentation)
 {
-    internal void Validate() => GameDefinitions.Require(!string.IsNullOrWhiteSpace(KeyItem)
+    internal void Validate()
+    {
+        Presentation.Validate();
+        GameDefinitions.Require(!string.IsNullOrWhiteSpace(KeyItem)
         && !string.IsNullOrWhiteSpace(GateClue) && !string.IsNullOrWhiteSpace(SecretClue)
         && float.IsFinite(Reach) && Reach > 0 && !string.IsNullOrWhiteSpace(WeightItem) && PlateWeight > 0
         && !string.IsNullOrWhiteSpace(PlateClue), "generated features");
+    }
+}
+internal sealed record GeneratedFeaturePresentation(string GateImage, string HazardImage, string PlateLabel,
+    string DrainOffLabel, string OpenGateLabel, string DrainChanged, string HandleChanged, string PassageOpen,
+    string FoundHandle, string PassageOpened, string AlreadyOff, string Unavailable, string FindKey,
+    string PlateMass, string DrainDamage)
+{
+    internal void Validate()
+    {
+        GameDefinitions.Require(new[] { GateImage, HazardImage, PlateLabel, DrainOffLabel, OpenGateLabel,
+            DrainChanged, HandleChanged, PassageOpen, FoundHandle, PassageOpened, AlreadyOff, Unavailable,
+            FindKey, PlateMass, DrainDamage }.All(value => !string.IsNullOrWhiteSpace(value)), "generated feature presentation");
+        try { _ = string.Format(System.Globalization.CultureInfo.InvariantCulture, PlateMass, 1, "clue");
+            _ = string.Format(System.Globalization.CultureInfo.InvariantCulture, FindKey, "clue");
+            _ = string.Format(System.Globalization.CultureInfo.InvariantCulture, DrainDamage, 1); }
+        catch (FormatException error) { throw new InvalidDataException("Invalid generated feature text format.", error); }
+    }
 }
 internal sealed record GeneratedGate(ulong Id, string RouteId, GridPoint Cell, GridPoint Approach,
     TraversalKind Traversal, string? RequiredItem, bool Discovered, bool Open);
@@ -20,6 +41,14 @@ internal sealed record GeneratedFeatureSnapshot(ulong Revision, GeneratedGate[] 
 
 internal static class GeneratedFeatures
 {
+    internal static (ulong Target, ulong Revision) AbilityTarget(GeneratedFeatureSnapshot current,
+        InteractionTarget? focused, ulong fallbackLever, ulong itemRevision)
+    {
+        bool generated = focused is { } target && (current.Gates.Any(gate => gate.Id == target.Id)
+            || current.Hazards.Any(hazard => hazard.Id == target.Id));
+        return generated ? (focused!.Value.Id, current.Revision) : (fallbackLever, itemRevision);
+    }
+
     internal static FloorGrant[] RequiredKeys(DungeonFloor floor) => floor.Grants
         .Where(g => floor.Routes.Any(r => r.RequiredItem == g.Item)).ToArray();
 

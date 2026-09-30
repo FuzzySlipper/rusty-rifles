@@ -1,9 +1,9 @@
+import { controlShortcut, gameplayKeys } from './controls.js';
 import { drawDiscoveredMap, enemyMapSignature } from './discovered-map.js';
 type Values = Record<string, unknown>;
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const gameplayKeys = new Set(['Space', 'KeyV', 'KeyB', 'KeyN', 'KeyC', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'KeyR', 'KeyT', 'KeyP', 'KeyK', 'KeyL']);
-const maxFeedbackLines = 60;
+
 const maxLogRenderChars = 4000;
 
 function record(value: unknown): Values {
@@ -124,7 +124,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   `;
   bar.append(hotbarStyle);
   const orderButtons = new Map<string, HTMLButtonElement>();
-  for (const [kind, label, key] of [['fire', 'Fire', 'Space'], ['melee', 'Melee', 'V'], ['reload', 'Reload', 'R'], ['fix-bayonets', 'Fix bayonets', 'B'], ['unfix-bayonets', 'Unfix bayonets', 'N'], ['charge', 'Charge', 'C']]) {
+  for (const [kind, label] of [['fire', 'Fire'], ['melee', 'Melee'], ['reload', 'Reload'], ['fix-bayonets', 'Fix bayonets'], ['unfix-bayonets', 'Unfix bayonets'], ['charge', 'Charge']]) {
+    const key = controlShortcut(kind);
     const control = document.createElement('button');
     control.type = 'button'; control.dataset.partyOrder = kind;
     control.dataset.orderLabel = label;
@@ -277,8 +278,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   // equals the old signature. See F1.
   let logNeedsPaint = true;
   let seenRun = '';
-  let lastFeedback = '';
-  const feedbackHistory: string[] = [];
 
   const drawMap = (run: Values, combat: Values): void => {
     const floorKey = text(run.floorKey, '');
@@ -482,21 +481,10 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   const renderLog = (state: Values): void => {
     const combat = record(state.combat);
     const feedback = text(state.feedback, '');
-    // Contract (see F5): feedback is a snapshot level, not an event stream —
-    // the projection only carries the latest string, so a repeat is
-    // indistinguishable from steady state and intentionally stored once.
-    // Genuine repeats of distinct events live in combat.log, kept verbatim.
-    if (feedback && feedback !== lastFeedback) {
-      lastFeedback = feedback;
-      if (feedbackHistory[feedbackHistory.length - 1] !== feedback) {
-        feedbackHistory.push(feedback);
-        while (feedbackHistory.length > maxFeedbackLines) feedbackHistory.shift();
-      }
-    }
     const combatLog = text(combat.log, '');
     const statusLine = `${text(state.status, 'Exploring')} · ${text(state.room, 'Passage')}`;
     if (logStatus.textContent !== statusLine) logStatus.textContent = statusLine;
-    const combined = [...feedbackHistory, combatLog].filter(line => line.length > 0).join('\n').slice(-maxLogRenderChars);
+    const combined = [feedback, combatLog].filter(line => line.length > 0).join('\n').slice(-maxLogRenderChars);
     if (logNeedsPaint || combined !== logSignature) {
       logSignature = combined;
       logNeedsPaint = false;
@@ -511,8 +499,6 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     const runId = text(run.id, '');
     if (seenRun !== runId) {
       seenRun = runId;
-      lastFeedback = '';
-      feedbackHistory.length = 0;
       mapSignature = '';
       formationSignature = '';
       // Forces the log DOM back to the placeholder when the new run starts

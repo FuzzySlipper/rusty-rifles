@@ -166,11 +166,7 @@ internal sealed class EnemyBrain
     /// <summary>Records a failed path attempt so the caller can defer another Engine query.</summary>
     internal void ReportPathUnavailable() => pathRetryRemaining = definition.PathRetrySeconds;
 
-    internal bool InPreferredRange(float distance)
-    {
-        ValidateDistance(distance);
-        return distance >= definition.PreferredMinimumRange && distance <= definition.PreferredMaximumRange;
-    }
+
 
     internal bool NeedsRetreat(float distance)
     {
@@ -178,11 +174,7 @@ internal sealed class EnemyBrain
         return mode == EnemyBrainMode.Pursue && RetreatReady && distance < definition.PreferredMinimumRange;
     }
 
-    internal bool NeedsAdvance(float distance)
-    {
-        ValidateDistance(distance);
-        return mode == EnemyBrainMode.Pursue && distance > definition.PreferredMaximumRange;
-    }
+
 
     /// <summary>Consumes one retreat step. Repeated visible observations cannot replenish this engagement budget.</summary>
     internal bool TrySpendRetreatStep()

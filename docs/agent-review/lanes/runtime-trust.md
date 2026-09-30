@@ -56,7 +56,7 @@ the machinery.
   services at the owning domain's boundary; `content/definitions/`,
   `content/tuning/`): reject meaningful missing/duplicate authored references
   once, with actionable errors. Not this lane's target.
-- Offline import/tooling (`Rifles.Procgen.Tool`, artifact I/O, pure-procgen
+- Offline import/tooling (the Game-check floor exporter, offline I/O, pure-procgen
   correctness/decoder checks, build-time artifact hashes): validation is
   expected. Not this lane's target.
 - Runtime (attached stats/effects/inventory, admitted content, Engine services,

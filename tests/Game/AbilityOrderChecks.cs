@@ -1,6 +1,10 @@
 using Rifles.Game.Combat;
 using Rifles.Game.Content;
 using Rifles.Game.Magic;
+using Rifles.Game.Generation;
+using Rifles.Procgen;
+using Rifles.Procgen.Generation;
+using Rusty.Engine.Interaction;
 
 internal static class AbilityOrderChecks
 {
@@ -8,7 +12,7 @@ internal static class AbilityOrderChecks
     {
         VerifyForwardTargeting(definitions);
         VerifySharedProviderChoice();
-        Console.WriteLine("Ability order checks passed: forward targeting and shared provider coordination.");
+        VerifySecondGeneratedLeverCast(definitions);
     }
 
     private static void VerifyForwardTargeting(GameDefinitions definitions)
@@ -46,8 +50,36 @@ internal static class AbilityOrderChecks
             "Busy and fallen providers cannot be designated for a shared party effect.");
     }
 
+    private static void VerifySecondGeneratedLeverCast(GameDefinitions definitions)
+    {
+        GeneratedGate first = new(1, "first", new(0, 0), new(0, -1), TraversalKind.Hidden, null, false, false);
+        GeneratedGate second = new(2, "second", new(2, 0), new(2, -1), TraversalKind.Hidden, null, true, false);
+        GeneratedFeatureSnapshot live = new(1, [first, second], [], [], [], []);
+        List<GridPoint> opened = [];
+        void Use(InteractionTarget target) => live = GeneratedFeatureState.UseGate(live, target,
+            definitions.GeneratedFeatures.Presentation, _ => true, _ => null, opened.Add).Snapshot;
+        Use(new(first.Id, live.Revision));
+        Use(new(first.Id, live.Revision));
+        Require(live.Gates[0].Open && opened.Contains(first.Cell), "Opening the first generated gate updates its live state and door.");
+        var choice = GeneratedFeatures.AbilityTarget(live, new(second.Id, 1), 90, 25);
+        Require(choice.Target == second.Id && choice.Revision == live.Revision,
+            "A second Lever cast selects the current generated revision instead of the first floor or item revision.");
+        SpellDefinition lever = definitions.Magic.Spells.Single(spell => spell.Effect == SpellEffect.Lever);
+        ActionState action = new();
+        action.Start(new(CombatActionKind.Cast, 0, null, null, choice.Target, null, lever.Windup,
+            ActionPhase.Windup, lever.Recovery, Spell: lever.Id, Cost: lever.Cost, FeatureRevision: choice.Revision));
+        action.Advance(lever.Windup + lever.Recovery,
+            commit => Use(new(commit.Target, commit.FeatureRevision)));
+        Require(live.Gates[1].Open && opened.Contains(second.Cell) && !action.Busy,
+            "Lever on the second generated gate commits after the first mutation and completes its authored phases.");
+        Check.Rejected(() => Use(new(second.Id, choice.Revision)), "A genuinely stale generated target is refused.",
+            definitions.GeneratedFeatures.Presentation.HandleChanged);
+        var fallback = GeneratedFeatures.AbilityTarget(live, null, 90, 25);
+        Require(fallback == (90UL, 25UL), "The ordinary lever retains its independent item-world revision.");
+    }
+
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

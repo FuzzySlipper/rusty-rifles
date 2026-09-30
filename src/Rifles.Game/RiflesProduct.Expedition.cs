@@ -85,13 +85,11 @@ public sealed partial class RiflesProduct
                 var candidate = frozen.Join(current with { NextObjectId = next }, pose);
                 retained = inactiveFloors.Values.Where(f => f.Floor.IntentFloorId != route.Destination).Append(departed).ToArray();
                 var run = new RunSnapshot(candidate, retained, progress);
-                destination = ActiveFloor.Restore(candidate, definitions, party, active.Magic.Books,
+                destination = ActiveFloor.Restore(candidate, floorServices!, party, active.Magic.Books,
                     RunCodec.Items(run),
-                    engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
+            artStyle, roomLights,
                     definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
-                    CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
-                    GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
-                    AllocateId, (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight));
+                AllocateId);
                 next = candidate.NextObjectId;
             }
         else
@@ -106,25 +104,21 @@ public sealed partial class RiflesProduct
             GridPoint arrival = route.Forward ? fresh.Entrance : fresh.Exit;
             var pose = new ExplorationSnapshot(arrival, active.Exploration.Facing, 0, null,
                 arrival, active.Exploration.Facing, 0);
-            destination = ActiveFloor.CreateFresh(definitions, expedition, route.Destination, floorId, partyId, party, travelling, pose,
-                engine, dungeonMaterials!, generatedArt!, AllocateLightId, Allocate, preset, artStyle,
+            destination = ActiveFloor.CreateFresh(floorServices!, expedition, route.Destination, floorId, partyId, party, travelling, pose,
+                Allocate, preset, artStyle,
                 definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier,
-                CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
-                GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
-                (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight), fresh);
+                fresh);
             retained = inactiveFloors.Values.Append(departed).ToArray();
         }
         }
         catch
         {
             var run = new RunSnapshot(current, inactiveFloors.Values.Append(departed).ToArray(), progress);
-            Mount(ActiveFloor.Restore(current, definitions, party, active.Magic.Books,
+            Mount(ActiveFloor.Restore(current, floorServices!, party, active.Magic.Books,
                 RunCodec.Items(run),
-                engine, dungeonMaterials!, generatedArt!, itemArt!, AllocateLightId, artStyle, roomLights,
+            artStyle, roomLights,
                 definitions.Run.Difficulty(progress.Difficulty).IncomingDamageMultiplier, partyId,
-                CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
-                GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
-                AllocateId, (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight)));
+                AllocateId));
             throw;
         }
         // The replacement is fully built before the departed floor retires.
@@ -158,12 +152,11 @@ public sealed partial class RiflesProduct
         partyId = runPartyId;
         party = runParty;
         selectedMember = party.Members[0].Definition.Id;
-        Mount(ActiveFloor.CreateFresh(definitions, generated.Expedition!, generated.Expedition!.EntranceFloor, firstFloorId, partyId,
-            party, null, pose, engine, dungeonMaterials!, generatedArt!, AllocateLightId, Allocate, preset, artStyle,
+        Mount(ActiveFloor.CreateFresh(floorServices!, generated.Expedition!, generated.Expedition!.EntranceFloor, firstFloorId, partyId,
+            party, null, pose,
+                Allocate, preset, artStyle,
             definitions.Run.Difficulty(difficulty).IncomingDamageMultiplier,
-            CombatMessage, (cue, point) => audio!.Play(cue, point), CancelRest,
-            GeneratedUseProblem, GeneratedFeaturePoint, (target, revision) => UseGeneratedFeature(new(target, revision)),
-            (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight), firstFloor));
+                firstFloor));
         nextObjectId = next;
         expedition = generated.Expedition!;
         inactiveFloors.Clear();

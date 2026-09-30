@@ -22,8 +22,6 @@ internal static class CommandChecks
         SessionCommand feature = Parse(new { action = "use", target = 7, targetRevision = 3 });
         Require(feature.Target == 7 && feature.TargetRevision == 3,
             "Feature commands retain their impact revision for delayed rechecks.");
-
-        Console.WriteLine("Command checks passed: independent queued commands, shared parsing, and feature impact revisions.");
     }
 
     private static SessionCommand Parse(object payload) =>
@@ -31,6 +29,6 @@ internal static class CommandChecks
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

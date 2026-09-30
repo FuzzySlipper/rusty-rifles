@@ -9,8 +9,6 @@ internal static class ActionChecks
         VerifyCommitExceptionCannotReplay();
         VerifySaveRestore();
         VerifyInvalidSnapshotsAreRejected();
-
-        Console.WriteLine("Action checks passed: windup, commit, recovery, save state, and interruption safety.");
     }
 
     private static void VerifyWindupAndAdmittedTime()
@@ -97,18 +95,10 @@ internal static class ActionChecks
 
     private static bool Same(double actual, double expected) => Math.Abs(actual - expected) < 0.000001;
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

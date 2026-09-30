@@ -93,7 +93,7 @@ public sealed partial class RiflesProduct
                 active.Scene.Eye(active.Floor.Entrance), definitions.Features.Reach,
                 active.Scene.Visibility(active.Scene.Eye(active.Exploration.Position), active.Scene.Eye(active.Floor.Entrance)),
                 active.Exploration.Moving ? InteractionAvailability.Unavailable : InteractionAvailability.Available);
-        foreach (var generated in GeneratedCandidates()) yield return generated;
+        foreach (var generated in active.Generated.Candidates()) yield return generated;
         foreach (WorldAnchor anchor in active.ItemWorld.Anchors)
         {
             bool container = anchor.Key == "crate";
@@ -112,7 +112,7 @@ public sealed partial class RiflesProduct
             active.Scene.Visibility(active.Scene.Eye(active.Exploration.Position), point), active.Exploration.Moving ? InteractionAvailability.Unavailable : InteractionAvailability.Available);
     private string UseItemFeature(InteractionTarget target)
     {
-        if (active.GeneratedFeatures.Gates.Any(g => g.Id == target.Id) || active.GeneratedFeatures.Hazards.Any(h => h.Id == target.Id) || active.GeneratedFeatures.Plates.Any(p => p.Id == target.Id)) return UseGeneratedFeature(target);
+        if (active.GeneratedFeatures.Gates.Any(g => g.Id == target.Id) || active.GeneratedFeatures.Hazards.Any(h => h.Id == target.Id) || active.GeneratedFeatures.Plates.Any(p => p.Id == target.Id)) return active.Generated.Use(target);
         ItemExplorationSnapshot state = active.ItemWorld.Capture();
         if (target.Id == state.LeverId) { active.ItemWorld.ToggleLever(active.Exploration, active.Scene, target.Revision); audio!.Play(SoundCue.Interaction, Aim(active.Exploration.Position)); return "Lever " + (active.ItemWorld.LeverOn ? "on" : "off"); }
         if (target.Id == state.DoorId) return state.Unlocked ? "Gate needs the lever and sufficient plate weight." : "Select the brass key and use it on the gate.";

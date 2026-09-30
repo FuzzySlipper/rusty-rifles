@@ -29,9 +29,7 @@ always on for the opposite failure: agents add checking the runtime does not
 need. Content-admission gravity (typed records, SHA digests, schema versions)
 leaks into trusted single-player runtime paths as proposal/revision/replay
 steps, repeated hash admission, revision guards, snapshots, and save-shaped
-reads. Campaign #8356 removes that machinery; this lane holds the removal until
-trusted-path gravity is established (see task #8356 and, once landed,
-`docs/gameplay-design.md`).
+reads. Campaign #8356 established the current owners; preserve their trusted runtime paths as described in `docs/gameplay-design.md`.
 
 Optional lanes. Pick to a total of three to four reviewers, and pick lanes whose
 questions can disagree with each other:

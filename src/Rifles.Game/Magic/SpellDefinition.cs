@@ -42,8 +42,8 @@ internal sealed record SpellDefinition(
     double Period,
     float SpeedFactor,
     bool Harmful,
-    float ForwardHalfAngleDegrees = 0,
-    EffectStackingPolicy Stacking = EffectStackingPolicy.Refresh)
+    [property: System.Text.Json.Serialization.JsonRequired] float ForwardHalfAngleDegrees = 0,
+    [property: System.Text.Json.Serialization.JsonRequired] EffectStackingPolicy Stacking = EffectStackingPolicy.Refresh)
 {
     internal void Validate()
     {
@@ -145,6 +145,7 @@ internal sealed record AdvancementDefinition(
 }
 
 internal sealed record MagicDefinition(
+    int HotbarSlots,
     SpellDefinition[] Spells,
     Dictionary<string, string[]> StartingSpells,
     AdvancementDefinition[] Choices,
@@ -168,6 +169,7 @@ internal sealed record MagicDefinition(
 {
     internal void Validate()
     {
+        GameDefinitions.Require(HotbarSlots is > 0 and <= 16, "spell hotbar capacity");
         GameDefinitions.Require(Spells is { Length: > 0 }
             && Spells.All(spell => spell is not null)
             && Spells.Select(spell => spell.Id).Distinct(StringComparer.Ordinal).Count() == Spells.Length,

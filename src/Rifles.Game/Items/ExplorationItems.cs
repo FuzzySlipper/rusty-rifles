@@ -9,7 +9,7 @@ namespace Rifles.Game.Items;
 internal enum AnchorPlacement { Floor, Bench, Crate, Plate }
 internal sealed record AnchorDefinition(string Key, string Name, AnchorPlacement Placement, float[] Offset);
 internal sealed record ItemExplorationDefinition(AnchorDefinition[] Anchors, int[] PlateOffset, ulong PlateWeight,
-    ulong PartyWeight, ulong ActorWeight, float Reach, float[] DoorColor, float[] PlateColor, float PlateHeight)
+    ulong PartyWeight, ulong ActorWeight, float Reach, float[] DoorColor, float[] PlateColor, float PlateHeight, bool DoorNeedsStraightPassage)
 {
     internal void Validate()
     {
@@ -62,9 +62,9 @@ internal sealed class ExplorationItems
         unavailable.Add(plate);
         // A straight one-cell passage blocks this corridor; generated loops may offer other routes.
         GridPoint door = floor.Cells.Where(c => !unavailable.Contains(c)
-            && CardinalDirections.Ordered.Count(d => floorCells.Contains(c + d.Offset())) == 2
+            && (!definition.DoorNeedsStraightPassage || CardinalDirections.Ordered.Count(d => floorCells.Contains(c + d.Offset())) == 2
             && ((floorCells.Contains(c + CardinalDirection.North.Offset()) && floorCells.Contains(c + CardinalDirection.South.Offset()))
-                || (floorCells.Contains(c + CardinalDirection.East.Offset()) && floorCells.Contains(c + CardinalDirection.West.Offset()))))
+                || (floorCells.Contains(c + CardinalDirection.East.Offset()) && floorCells.Contains(c + CardinalDirection.West.Offset())))))
             .OrderBy(c => c.ManhattanDistance(floor.Entrance)).ThenBy(c => c.Y).ThenBy(c => c.X).First();
         GridPoint lever = CardinalDirections.Ordered.Select(d => door + d.Offset()).Where(floorCells.Contains)
             .OrderBy(c => c.ManhattanDistance(floor.Entrance)).First();
@@ -87,7 +87,6 @@ internal sealed class ExplorationItems
         return (scene.Eye(anchor.Cell) with { Y = scene.GroundHeight(anchor.Cell) }) + new Vector3(offset[0], offset[1], offset[2]);
     }
     internal Vector3 LeverPoint(DungeonScene scene) => scene.Eye(state.Lever);
-    internal Vector3 DoorPoint(DungeonScene scene) => scene.Eye(state.Door);
     internal bool Reachable(Vector3 target, ExplorationState party, DungeonScene scene) => !party.Moving
         && Vector3.Distance(scene.Eye(party.Position), target) <= definition.Reach
         && scene.Visibility(scene.Eye(party.Position), target) == InteractionVisibility.Visible;

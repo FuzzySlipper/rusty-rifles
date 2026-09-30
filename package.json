@@ -4,8 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@10.15.0",
   "scripts": {
-    "check:ui": "tsc --project src/ui/tsconfig.json --noEmit",
-    "dev": "bash scripts/dev.sh",
+    "check:ui": "bash scripts/build-ui.sh '' --noEmit",
+    "dev": "rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host 0.0.0.0 --port 4420",
     "check": "bash scripts/check.sh"
   },
   "devDependencies": { "typescript": "5.9.2" }

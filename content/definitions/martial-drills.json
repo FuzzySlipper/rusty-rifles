@@ -6,20 +6,60 @@
       "description": "Three exposed opponents occupy left, center and right forward lanes.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "left-guard" },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "front-center" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "left-guard"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "front-center"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
       "enemies": [
-        { "spawnId": "raider-patrol", "forward": 4, "left": 2, "placement": "north" },
-        { "spawnId": "runner-patrol", "forward": 4, "left": 0, "placement": "sw" },
-        { "spawnId": "musketeer-patrol", "forward": 4, "left": -2, "placement": "north" }
+        {
+          "spawnId": "raider-patrol",
+          "forward": 4,
+          "left": 2,
+          "placement": "north"
+        },
+        {
+          "spawnId": "runner-patrol",
+          "forward": 4,
+          "left": 0,
+          "placement": "sw"
+        },
+        {
+          "spawnId": "musketeer-patrol",
+          "forward": 4,
+          "left": -2,
+          "placement": "north"
+        }
       ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": false,
       "expected": "Fire distributes across left, center and right exposed targets."
     },
@@ -29,16 +69,48 @@
       "description": "One exposed opponent remains in the center forward lane.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "front-center" },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "right-guard" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "front-center"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "right-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 4, "left": 0, "placement": "north" } ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "enemies": [
+        {
+          "spawnId": "raider-patrol",
+          "forward": 4,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": false,
       "expected": "Eligible rifles concentrate on the one valid forward target."
     },
@@ -48,16 +120,48 @@
       "description": "A close front target lets the authored melee reaches differ by formation position.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "front-center" },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "right-guard" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "front-center"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "right-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "north" } ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "enemies": [
+        {
+          "spawnId": "raider-patrol",
+          "forward": 2,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": false,
       "expected": "Melee readout shows weapon and rank reach, including fixed bayonets."
     },
@@ -67,16 +171,49 @@
       "description": "The fallen front-center soldier leaves a visible front-center screening gap.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "front-center", "fallen": true },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "right-guard" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "front-center",
+          "fallen": true
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "right-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "north" } ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "enemies": [
+        {
+          "spawnId": "raider-patrol",
+          "forward": 2,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": false,
       "expected": "A front-center hit reaches the commander through the fallen soldier's gap."
     },
@@ -86,16 +223,48 @@
       "description": "One straight approach step ends at a near-side reachable opponent.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "front-center" },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "right-guard" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "front-center"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "right-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 2, "left": 0, "placement": "south" } ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "enemies": [
+        {
+          "spawnId": "raider-patrol",
+          "forward": 2,
+          "left": 0,
+          "placement": "south"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": false,
       "initialEnemyDecisionDelaySeconds": 0.4,
       "expected": "Charge commits one admitted straight approach and settles contact once."
@@ -106,18 +275,53 @@
       "description": "The opponent occupies the first forward cell, so no charge step can reserve.",
       "facing": "North",
       "members": [
-        { "member": "warden", "position": "front-left" },
-        { "member": "blade", "position": "front-center" },
-        { "member": "musketeer-a", "position": "front-right" },
-        { "member": "seeker", "position": "rear-left" },
-        { "member": "mender", "position": "rear-center" },
-        { "member": "musketeer-b", "position": "right-guard" },
-        { "member": "commander", "position": "commander" }
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "front-center"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "right-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
       ],
-      "enemies": [ { "spawnId": "raider-patrol", "forward": 1, "left": 0, "placement": "north" } ],
-      "bayonetMembers": [ "warden", "musketeer-a", "musketeer-b" ],
+      "enemies": [
+        {
+          "spawnId": "raider-patrol",
+          "forward": 1,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
       "forwardBlocked": true,
       "expected": "Charge readout reports no legal straight forward step."
     }
-  ]
+  ],
+  "maximumAttackPositions": 12,
+  "selectedMember": "warden",
+  "rifleDefinition": "rifle"
 }

@@ -171,10 +171,8 @@ internal sealed partial class RiflesCombat
     private (ulong Target, ulong Revision) AbilityTargetFor(SpellDefinition spell)
     {
         if (spell.Target != SpellTarget.Feature) return (0, 0);
-        var focused = scope.Features().Readout?.Selected;
-        ulong target = focused is { } selected && (scope.GeneratedFeatures.Gates.Any(gate => gate.Id == selected.Id)
-            || scope.GeneratedFeatures.Hazards.Any(hazard => hazard.Id == selected.Id)) ? focused.Value.Id : scope.ItemWorld.LeverId;
-        return (target, target == scope.ItemWorld.LeverId ? scope.ItemWorld.Revision : scope.GeneratedFeatures.Revision);
+        return Rifles.Game.Generation.GeneratedFeatures.AbilityTarget(scope.GeneratedFeatures.Snapshot,
+            scope.Features().Readout?.Selected, scope.ItemWorld.LeverId, scope.ItemWorld.Revision);
     }
 
     private AbilityTarget? ResolveAbilityTarget(RiflesCharacter member, SpellDefinition spell, ActionSnapshot action, ulong? only = null)

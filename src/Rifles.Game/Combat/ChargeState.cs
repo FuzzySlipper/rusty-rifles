@@ -83,7 +83,7 @@ internal sealed class ChargeState
         PartyState party, ItemInventory inventory)
     {
         GameDefinitions.Require(snapshot.Target != 0 && Enum.IsDefined(snapshot.Facing) && floor.Cells.Contains(snapshot.PlannedStop)
-            && snapshot.PlannedSteps is > 0 and <= 8 && snapshot.PlannedSteps <= tuning.MaximumCells
+            && snapshot.PlannedSteps > 0 && snapshot.PlannedSteps <= tuning.MaximumCells
             && snapshot.CompletedSteps is >= 0 && snapshot.CompletedSteps < snapshot.PlannedSteps
             && snapshot.Contributors is { Length: > 0 }
             && snapshot.Contributors.Select(contributor => contributor.Member).Distinct(StringComparer.Ordinal).Count() == snapshot.Contributors.Length,

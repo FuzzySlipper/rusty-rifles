@@ -37,8 +37,6 @@ internal static class CombatSaveChecks
         RestoredCombat repeatedResult = CombatRestore.Validate(copies.Saved, repeated, copies.Floor, copies.Inventory, copies.Party, copies.PartyId, copies.AllyIds);
         Require(repeatedResult.Enemies.Length == 2 && repeatedResult.Enemies[0].Id != repeatedResult.Enemies[1].Id,
             "Multiple instances of one archetype keep separate identities and inventories across restore.");
-
-        Console.WriteLine("Combat save checks passed: combat owners, action phases, flights, drops, and allies.");
     }
 
     private static void VerifyOrderAim(GameDefinitions definitions, CombatFixture fixture)
@@ -170,19 +168,11 @@ internal static class CombatSaveChecks
     private static void Validate(CombatSnapshot saved, GameDefinitions definitions, CombatFixture fixture) => CombatRestore.Validate(saved,
         definitions, fixture.Floor, fixture.Inventory, fixture.Party, fixture.PartyId, fixture.AllyIds);
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 
     private sealed record CombatFixture(DungeonFloor Floor, ItemInventory Inventory, PartyState Party, CombatSnapshot Saved,

@@ -36,8 +36,8 @@ public sealed partial class RiflesProduct
         if (active.Combat.Defeated)
         {
             active.Magic.Clear(new PartyTarget()); CancelRest("Party defeated.");
-            paused = true; controls.Clear(); feedback = definitions.Run.DefeatText;
-            active.Exploration.Stop(); active.Grid.Remove(partyId); active.Exploration.Detach();
+            SetPaused(true); feedback = definitions.Run.DefeatText;
+            active.Grid.RemoveBody(partyId, active.Exploration);
             active.Combat.CancelAll();
         }
     }

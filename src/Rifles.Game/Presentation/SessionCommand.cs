@@ -8,7 +8,7 @@ namespace Rifles.Game.Presentation;
 /// </summary>
 internal sealed record SessionCommand(string Action, string? Member, ulong? Target, ulong? TargetRevision,
     string? Source = null, string? Destination = null, string? Item = null, ulong? Quantity = null,
-    string? Slot = null, string? Preset = null, string? OtherMember = null, string? Spell = null, string? Choice = null,
+    string? Slot = null, string? Preset = null, string? Spell = null, string? Choice = null,
     string? Position = null, int? PartySlot = null)
 {
     private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };

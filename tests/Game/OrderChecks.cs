@@ -9,7 +9,6 @@ internal static class OrderChecks
         VerifyForwardLaneChoice(definitions.Formation);
         VerifyBlockedAndOutOfReachCandidates(definitions.Formation);
         VerifyCommittedOriginSnapshot();
-        Console.WriteLine("Order checks passed: forward lanes, blocked/empty orders, and committed origin state.");
     }
 
     private static void VerifyForwardLaneChoice(Rifles.Game.Party.FormationDefinition formation)
@@ -57,13 +56,9 @@ internal static class OrderChecks
         RequireRejected(() => ActionState.Restore(committed with { OrderFacing = null }), "A partial order origin is rejected.");
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); } catch (InvalidDataException) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

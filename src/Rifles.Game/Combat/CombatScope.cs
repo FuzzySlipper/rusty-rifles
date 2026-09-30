@@ -20,7 +20,7 @@ internal sealed record CombatScope(
     PatrolActor Actor,
     // Live features arrive after scene construction; snapshot builds pass a throwing provider.
     Func<WorldFeatures> Features,
-    GeneratedFeatureSnapshot GeneratedFeatures,
+    GeneratedFeatureState GeneratedFeatures,
     DungeonFloor Floor,
     ulong PartyId,
     double IncomingDamageMultiplier,
@@ -28,9 +28,4 @@ internal sealed record CombatScope(
     Func<GridPoint, System.Numerics.Vector3> Aim,
     Action<string> Message,
     Action<SoundCue, System.Numerics.Vector3> Sound,
-    Action<string> CancelRest,
-    // Feature-domain callbacks: generated mechanisms live in product feature
-    // state; combat reads them at planning and rechecks them at impact.
-    Func<ulong, string?> FeatureUseProblem,
-    Func<ulong, System.Numerics.Vector3> FeaturePoint,
-    Func<ulong, ulong, string> UseFeature);
+    Action<string> CancelRest);

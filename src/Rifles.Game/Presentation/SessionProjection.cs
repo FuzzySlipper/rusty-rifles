@@ -1,3 +1,4 @@
+using Rifles.Procgen.Generation;
 using Rusty.Engine;
 using Rusty.Engine.Interaction;
 using Rifles.Game.Dungeon;
@@ -21,32 +22,7 @@ internal sealed class SessionProjection : IDisposable
     internal void Publish(DungeonFloor floor, ExplorationState exploration, PartyState party, bool paused, string feedback, string selectedMember, InteractionReadout? focus, string artStyle, bool roomLights, int lightPosition, ItemInventory inventory, ExplorationItems world, DungeonScene scene, CharacterOptionsDefinition characters, string preset, PatrolActor actor, ItemArtDefinition art, Func<SessionValueBuilder, uint> combat, Func<string, bool> dropReachable, Func<SessionValueBuilder, uint> run, FormationDefinition formation)
     {
         SessionValueBuilder value = new();
-        Dictionary<string, string> positionNames = party.Positions.ToDictionary(p => p.Id, p => p.Name);
-        string Protection(Rifles.Game.Characters.RiflesCharacter member)
-        {
-            if (!member.Definition.Commander)
-                return !member.IsLiving ? "Fallen: no screening" : string.Join(", ", formation.Cell(member.Position).Screening.Select(screen => $"{screen.Sector} {screen.Lane}"));
-            var exposed = formation.Cells.SelectMany(cell => cell.Screening).Distinct()
-                .Where(screen => party.ScreenedRecipient(formation, new(screen.Sector, screen.Lane)) == member)
-                .Select(screen => $"{screen.Sector} {screen.Lane}");
-            return "Exposed: " + string.Join(", ", exposed);
-        }
-        uint roster = value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
-            ("name", value.String(member.Definition.Name)),
-            ("position", value.String(member.Position)),
-            ("positionName", value.String(positionNames.GetValueOrDefault(member.Position, member.Position))),
-            ("rank", value.Number(member.Rank)),
-            // All formation positions rotate with the party.
-            ("facing", value.String(exploration.Facing.ToString())),
-            ("vitality", value.Number(member.Vitality)),
-            ("maximumVitality", value.Number(member.MaximumVitality)),
-            ("power", value.Number(member.Power)), ("defense", value.Number(member.Defense)),
-            ("resource", value.Number(member.Resource)), ("maxResource", value.Number(member.MaximumResource)),
-            ("commander", value.Number(member.Definition.Commander ? 1 : 0)),
-            ("protection", value.String(Protection(member))),
-            ("melee", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Melee) ? 1 : 0)),
-            ("ranged", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Ranged) ? 1 : 0)),
-            ("casting", value.Number(party.CanUseReach(member.Definition.Id, PartyReach.Casting) ? 1 : 0))))).ToArray());
+        uint roster = Roster(value, party, exploration.Facing, formation);
         InteractionObservation? selected = focus?.Candidates.FirstOrDefault(c => c.Selected);
         uint root = value.Object(
             ("seed", value.String(floor.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture))),
@@ -99,5 +75,32 @@ internal sealed class SessionProjection : IDisposable
         ui.PublishProjection(new UiProjection(stream, checked(++sequence), snapshot));
         previous = snapshot;
     }
+    internal static uint Roster(SessionValueBuilder value, PartyState party, CardinalDirection facing, FormationDefinition formation)
+    {
+        Dictionary<string, string> positionNames = party.Positions.ToDictionary(p => p.Id, p => p.Name);
+        string Protection(Rifles.Game.Characters.RiflesCharacter member)
+        {
+            if (!member.Definition.Commander)
+                return !member.IsLiving ? "Fallen: no screening" : string.Join(", ", formation.Cell(member.Position).Screening.Select(screen => $"{screen.Sector} {screen.Lane}"));
+            var exposed = formation.Cells.SelectMany(cell => cell.Screening).Distinct()
+                .Where(screen => party.ScreenedRecipient(formation, new(screen.Sector, screen.Lane)) == member)
+                .Select(screen => $"{screen.Sector} {screen.Lane}");
+            return "Exposed: " + string.Join(", ", exposed);
+        }
+        return value.Object(party.Members.Select(member => (member.Definition.Id, value.Object(
+            ("name", value.String(member.Definition.Name)),
+            ("position", value.String(member.Position)),
+            ("positionName", value.String(positionNames.GetValueOrDefault(member.Position, member.Position))),
+            ("rank", value.Number(member.Rank)),
+            // All formation positions rotate with the party.
+            ("facing", value.String(facing.ToString())),
+            ("vitality", value.Number(member.Vitality)),
+            ("maximumVitality", value.Number(member.MaximumVitality)),
+            ("power", value.Number(member.Power)), ("defense", value.Number(member.Defense)),
+            ("resource", value.Number(member.Resource)), ("maxResource", value.Number(member.MaximumResource)),
+            ("commander", value.Number(member.Definition.Commander ? 1 : 0)),
+            ("protection", value.String(Protection(member)))))).ToArray());
+    }
+
     public void Dispose() => stream.Dispose();
 }

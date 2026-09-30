@@ -14,7 +14,7 @@ specific gameplay. The owner-approved scope is in `docs/campaign-strategy.md`;
 The next accepted layer is `docs/martial-command-design.md`, with Den campaign
 #8388 mapped in `docs/campaign/martial-command-index.md`. It supersedes the
 foundation plan for party size, combat targeting, equipment, ammunition and
-formation controls; it is planned work, not a claim of implemented behavior.
+formation controls; both foundation #8187 and martial-command #8388 are implemented. Current behavior and owning code are described in `docs/gameplay-design.md`; Den owns live acceptance and follow-up status.
 
 Build this game directly. Do not introduce a reusable blobber kit, ruleset
 framework, or abstraction layer for hypothetical games. Do not attempt a
@@ -25,7 +25,7 @@ replaced without rewriting unrelated systems.
 ## Art experiments
 
 Start generated asset work from `docs/art-direction.md` and the editable
-recipes in `content/art/prompts/`. Use the shared style plus one named
+recipes in `docs/art/prompts/`. Use the shared style plus one named
 treatment and an asset-specific contract; make deviations explicit experiments
 instead of inventing an unrelated style for each image call. The provisional
 default is ink and wash, with painted cover as a comparison, not a final style
@@ -93,7 +93,7 @@ check only when requested.
 ## Work
 
 Preserve existing edits. Keep pure procgen independent of Engine, UI, files,
-and clocks; offline artifact I/O belongs in Artifacts/Tool. Generation traces
+and clocks; offline floor-export I/O belongs in the Game checks. Generation traces
 describe generated content, not source-code ancestry.
 
 Commit and push completed work by default so changes are backed up and the Git
@@ -106,7 +106,7 @@ do not add a PR workflow or ask for commit/push permission again. If pushing
 fails, retain the local commit and report the exact blocker. Never force-push
 or discard work to resolve a push failure.
 
-Den project ID: `rusty-rifles`; repository root: `/home/dev/rusty-rifles`.
+Den project ID: `rusty-rifles`; repository root: the current checkout.
 Use that project for the implementation campaign and shared work; Den owns live
 task status and dependencies, while the repo index records the initial plan.
 
@@ -114,7 +114,7 @@ Install dependencies with `pnpm install --frozen-lockfile` when needed. Use
 focused checks during iteration. Run `bash scripts/check.sh` for changes that
 affect integrated game behavior, shared contracts, or staging, or when the task
 requires it; it covers the solution build, UI typecheck, procgen/game checks,
-offline tool self-check, and CoreCLR staging. Documentation-only and other
+and CoreCLR staging. Documentation-only and other
 isolated changes need checks relevant to their changed surface. Once relevant
 checks pass, rerun or broaden them only for material changes, failures, or
 unresolved concerns.
@@ -124,35 +124,21 @@ session. `.den-serve.json` describes the same lane for broker-owned serving.
 Use an existing broker session instead of launching a competing host.
 
 Report build/test, runtime launch, and visible interaction evidence separately.
-Milestone 1 provides exploration, typed tuning, shared movement, feature focus,
-party controls and Engine-backed saves; see `docs/milestone-1.md`. Milestone 2
-adds generated art, lit sprites, texture mapping and comparison controls; see
-`docs/milestone-2.md`. Milestone 3 adds party presets, equipment, inventory, world items and a gate puzzle;
-see `docs/milestone-3.md`. Milestone 4 adds action phases, rifles, throws/bolts, mixed enemies and combat saves;
-see `docs/milestone-4.md`. Milestone 5 adds mixed-size crowd slots, bounded Engine paths,
-perception/search/patrol and rifle positioning; see `docs/milestone-5.md`. Procgen and multi-floor progression are described below.
-Milestone 6 adds spellbooks, shared casts, conditions, utility magic, rest/revival,
-and advancement; see `docs/milestone-6.md`. Spell tuning lives in
-`content/definitions/spells.json`; retain Engine effect/stat/track ownership.
+`docs/gameplay-design.md` is the current behavior and ownership map.
+`docs/debug-tools.md` describes the packaged inspection controls.
 
-The top-right Debug toolbar hosts Engine's packaged live-debug console and
-renderer metrics. See `docs/debug-tools.md` for commands and runtime/input
-telemetry. Keep diagnostics and command transport owned by Engine.
+## Documents and evidence
 
-Milestone 7 now implements composed procedural floors: bounded routing repairs,
-protected item puzzles and hazards, planar height connectors, saved architecture,
-size-aware encounters and route supplies. See `docs/milestone-7.md` for the
-12-floor SVG/JSON bank, live inspection commands and bounded visible acceptance.
-Generation tuning and definitions remain file-authored.
+Keep repository documentation about current behavior, contracts and repeatable
+commands. Keep live task status, reviews, measurements, screenshots and campaign
+history in Den. Record original capture and sidecar paths there; do not add new
+acceptance screenshots or raw test transcripts under `docs/evidence/`.
+The floor bank is an explicitly labelled generated data snapshot, not acceptance
+proof. Existing evidence is archived in Den and Git history without rewriting
+history. Avoid volatile Engine versions in prose: the only pair pin belongs in
+`Directory.Build.props`. Do not describe cancelled tasks as pending or duplicate
+historical milestone logs in current-state documents.
 
-Milestone 8 implements named-floor travel with frozen retained worlds, whole-run
-saves, discovered maps, objectives, defeat/retry and normal/hard profiles. See
-`docs/milestone-8.md` for current acceptance evidence. Party state travels once;
-floor state retains its identity. Preserve the distinction between source checks
-and a visibly completed expedition.
-
-Milestone 9 closes the playable foundation with inventory/usability refinement,
-bundled action sounds, stable material ownership and bounded HUD projection.
-See `docs/milestone-9.md` for source, expedition and visual evidence and retained
-limitations. Future gameplay customization should extend these real owners;
-the provisional UI/art treatment is not a mandatory final design.
+`content/` holds admitted runtime content. Editable art recipes, references and
+unapproved mesh/style experiments belong under `docs/art/`. Preserve experiment
+bytes and provenance when relocating them; in-game evaluation decides adoption.

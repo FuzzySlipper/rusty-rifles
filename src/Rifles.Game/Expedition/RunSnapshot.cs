@@ -23,7 +23,7 @@ internal static class RunCodec
         .Concat(run.Inactive.SelectMany(f => f.Inventory.Packs)).SelectMany(p => p.Items)
         .ToDictionary(i => i.Id, i => i.Definition);
 
-    internal static void Validate(RunSnapshot run, GameDefinitions definitions)
+    internal static AdmittedFloor Validate(RunSnapshot run, GameDefinitions definitions)
     {
         GameDefinitions.Require(run.Inactive is not null, "retained floors");
         var active = run.Active;
@@ -48,11 +48,12 @@ internal static class RunCodec
             && floorKeys.All(k => active.Intent.Floors.Any(f => f.Id == k)), "visited floor identities");
         GameDefinitions.Require(run.Inactive.All(f => f.Inventory.Packs.All(p => InventoryOwner.Parse(p.Owner.Key) is not (MemberOwner or PartyOwner))), "retained floor inventory ownership");
         var items = Items(run);
-        ExpeditionCodec.Validate(active, definitions, items);
+        AdmittedFloor admitted = ExpeditionCodec.Validate(active, definitions, items);
         // Retained floors validate as floors: floor-local consistency only,
         // no entities, no party, no synthetic expedition merge.
         IReadOnlyDictionary<string, string> roster = active.Roster.ToDictionary(m => m.Id, m => m.Archetype, StringComparer.Ordinal);
         foreach (var floor in run.Inactive) RetainedFloor.Validate(floor, definitions, active.Intent, items, roster, active.PartyId);
         SaveIdentities.RequireCrossFloorUnique(run);
+        return admitted;
     }
 }

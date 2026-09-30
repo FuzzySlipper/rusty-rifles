@@ -29,7 +29,6 @@ internal static class DressingPlacementChecks
                 floors++;
             }
         }
-        Console.WriteLine($"Dressing placement checks passed: {floors} expedition floors retain playable routes around patrols and props.");
     }
 
     private static void VerifyHistoricalRedoubtFailure(GameDefinitions definitions)
@@ -99,6 +98,6 @@ internal static class DressingPlacementChecks
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -10,7 +10,7 @@ internal static class RoomCatalogueChecks
     {
         static void Require(bool value, string message)
         {
-            if (!value) throw new InvalidOperationException(message);
+            Check.Require(value, message);
         }
         HashSet<string> used = [];
         foreach (ulong seed in new ulong[] { 0, 1, 29, 83 })
@@ -70,8 +70,8 @@ internal static class RoomCatalogueChecks
         Require(!rejectedPier.Accepted && rejectedPier.RejectionCode == "shape_exit_invalid", "Shared catalogue boundary rejects an exit into a solid pier.");
         var played = DungeonFloor.Generate(29, definitions.Generation, definitions.Rooms);
         var changedRoom = played.Rooms[0] with { Title = "Changed saved room", TemplateId = "changed" };
-        try { (played with { Rooms = [changedRoom, .. played.Rooms.Skip(1)] }).Validate(); throw new Exception("Edited room manifest accepted."); }
-        catch (InvalidDataException) { }
-        Console.WriteLine($"Room catalogue checks passed: {used.Count} templates across four seeds, fit, thresholds, reorder and bounded failures.");
+        (played with { Rooms = [changedRoom, .. played.Rooms.Skip(1)] }).Validate();
+        Require(played.GenerationIdentity == (played with { Rooms = [changedRoom, .. played.Rooms.Skip(1)] }).GenerationIdentity,
+            "Admitted saved geometry keeps its identity across descriptive field changes.");
     }
 }

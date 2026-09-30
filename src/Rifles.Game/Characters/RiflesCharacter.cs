@@ -38,7 +38,6 @@ internal sealed class RiflesCharacter
     internal EntityId Entity => actor.Entity;
     internal MemberDefinition Definition { get; }
     internal string InstanceId => Definition.Id;
-    internal string ArchetypeId => Definition.Archetype;
     internal StatsComponent Stats => stats;
     internal string Position { get; private set; }
     internal int Rank { get; private set; }

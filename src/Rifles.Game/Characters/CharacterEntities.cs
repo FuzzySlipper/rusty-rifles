@@ -16,6 +16,8 @@ internal sealed class CharacterEntities
     private readonly Dictionary<string, EntityId> instances = new(StringComparer.Ordinal);
 
     internal EntityStore Store => store;
+    internal int StatsConstructionCount { get; private set; }
+    internal int StatsReplacementCount { get; private set; }
 
     /// <summary>
     /// Attaches a freshly built <see cref="StatsComponent"/> to a new entity
@@ -31,6 +33,7 @@ internal sealed class CharacterEntities
             throw new InvalidDataException($"Duplicate character instance '{instanceKey}'.");
         EntityId entity = store.Create(new EntityTypeId(typeValue), EntityLifecycle.Active);
         StatsComponent stats = build();
+        StatsConstructionCount++;
         store.Add(entity, stats);
         instances.Add(instanceKey, entity);
         return (entity, stats);
@@ -55,6 +58,7 @@ internal sealed class CharacterEntities
     /// </summary>
     internal (EntityId Entity, StatsComponent Stats) ReplaceStats(string instanceKey, string typeValue, Func<StatsComponent> build)
     {
+        StatsReplacementCount++;
         Detach(instanceKey);
         return AttachStats(instanceKey, typeValue, build);
     }

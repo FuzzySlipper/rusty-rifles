@@ -62,13 +62,15 @@
           "owner": "",
           "definition": "knife",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "tonic",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "medium",
@@ -103,13 +105,15 @@
           "owner": "",
           "definition": "rifle",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "shot",
           "quantity": 8,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "medium",
@@ -144,13 +148,15 @@
           "owner": "",
           "definition": "knife",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "tonic",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "small",
@@ -185,13 +191,15 @@
           "owner": "",
           "definition": "knife",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "tonic",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "small",
@@ -226,13 +234,15 @@
           "owner": "",
           "definition": "knife",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "tonic",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "large",
@@ -267,13 +277,15 @@
           "owner": "",
           "definition": "rifle",
           "quantity": 1,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         },
         {
           "owner": "",
           "definition": "shot",
           "quantity": 8,
-          "equipped": false
+          "equipped": false,
+          "preset": null
         }
       ],
       "footprint": "medium",
@@ -297,10 +309,8 @@
   "bodyWidth": 0.85,
   "bodyHeight": 1.8,
   "aimHeight": 1.1,
-  "targetAngle": 70,
   "minimumDamage": 1,
   "friendlyFire": false,
-  "allyVitality": 40,
   "corpseScale": 0.25,
   "windupScale": 1.08,
   "boltScale": 0.3,
@@ -409,5 +419,18 @@
       ]
     }
   ],
-  "actorsBlockSight": false
+  "actorsBlockSight": false,
+  "targetHalfAngleDegrees": 70,
+  "visibilityRange": 16,
+  "ally": {
+    "id": "garrison-ally",
+    "name": "Garrison ally",
+    "maximumVitality": 40,
+    "basePower": 0,
+    "baseDefense": 0,
+    "maximumResource": 0,
+    "startingVitality": 40,
+    "startingResource": null,
+    "commander": false
+  }
 }

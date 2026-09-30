@@ -4,21 +4,20 @@ using Rifles.Procgen.Generation;
 var core = new GraphCore();
 var intent = new SeedIntent("first-slice", "First slice", new[] { "lock", "loop", "hub" });
 
-Repeatability(core, intent);
-RuleVocabulary(core, intent);
-RejectedRulesAreAtomic(core, intent);
-InvalidGraphsAreRejected(core, intent);
-ProgressionRejectsKeyAfterGate(core, intent);
-RenamedTerminalsRemainValidated(core, intent);
-BoundedRepairsAreAtomic(core, intent);
-AmbiguousRepairTargetsAreAtomic(core, intent);
-RepairAndRuleBudgetsAreIndependent(core, intent);
-QuotaOverflowIsRejected(core, intent);
-GenerationPolicyAdmissionIsComplete();
-Rifles.Procgen.Generation.GenerationProbe.Verify();
-Rifles.Procgen.Workloads.WorkloadProbe.Verify();
+Check.Run("Repeatability", () => Repeatability(core, intent));
+Check.Run("RuleVocabulary", () => RuleVocabulary(core, intent));
+Check.Run("RejectedRulesAreAtomic", () => RejectedRulesAreAtomic(core, intent));
+Check.Run("InvalidGraphsAreRejected", () => InvalidGraphsAreRejected(core, intent));
+Check.Run("ProgressionRejectsKeyAfterGate", () => ProgressionRejectsKeyAfterGate(core, intent));
+Check.Run("RenamedTerminalsRemainValidated", () => RenamedTerminalsRemainValidated(core, intent));
+Check.Run("BoundedRepairsAreAtomic", () => BoundedRepairsAreAtomic(core, intent));
+Check.Run("AmbiguousRepairTargetsAreAtomic", () => AmbiguousRepairTargetsAreAtomic(core, intent));
+Check.Run("RepairAndRuleBudgetsAreIndependent", () => RepairAndRuleBudgetsAreIndependent(core, intent));
+Check.Run("QuotaOverflowIsRejected", () => QuotaOverflowIsRejected(core, intent));
+Check.Run("GenerationPolicyAdmission", GenerationPolicyAdmissionIsComplete);
+Check.Run("GenerationProbe", Rifles.Procgen.Generation.GenerationProbe.Verify);
 
-Console.WriteLine("Rifles.Procgen checks passed.");
+return Check.Finish();
 
 static void Repeatability(GraphCore core, SeedIntent intent)
 {
@@ -266,6 +265,6 @@ static Candidate Apply(GraphCore core, Candidate candidate, GraphRule rule, ulon
 
 static void Has(ValidationReport report, string code) => HasDiagnostic(report.Diagnostics, code);
 static void HasDiagnostic(IReadOnlyList<Diagnostic> diagnostics, string code) => True(diagnostics.Any(diagnostic => diagnostic.Code == code), $"expected diagnostic {code}");
-static void True(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
-static void Equal(string left, string right, string message) { if (!StringComparer.Ordinal.Equals(left, right)) throw new InvalidOperationException(message); }
-static void NotEqual(string left, string right, string message) { if (StringComparer.Ordinal.Equals(left, right)) throw new InvalidOperationException(message); }
+static void True(bool condition, string message) { Check.Require(condition, message); }
+static void Equal(string left, string right, string message) { Check.Require(StringComparer.Ordinal.Equals(left, right), message); }
+static void NotEqual(string left, string right, string message) { Check.Require(!StringComparer.Ordinal.Equals(left, right), message); }

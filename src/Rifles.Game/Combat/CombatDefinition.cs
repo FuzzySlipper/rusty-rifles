@@ -1,5 +1,6 @@
 using Rifles.Game.Content;
 using Rifles.Game.Items;
+using Rifles.Game.Party;
 
 namespace Rifles.Game.Combat;
 
@@ -8,10 +9,11 @@ internal sealed record EnemyDefinition(string Id, string Name, CombatActionKind 
     double StepSeconds, double DecisionSeconds, float AwarenessRange, float Scale, StartingItem[] Loot, string Footprint, string Faction, bool Share, EnemyBrainDefinition Brain);
 internal sealed record EnemySpawnDefinition(string Id, string Enemy, int Distance, int[][] PatrolOffsets);
 internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinition[] Enemies, EnemySpawnDefinition[] Encounter, float BodyWidth,
-    float BodyHeight, float AimHeight, float TargetAngle, long MinimumDamage, bool FriendlyFire, long AllyVitality,
+    float BodyHeight, float AimHeight, float TargetHalfAngleDegrees, float VisibilityRange, long MinimumDamage, bool FriendlyFire, CharacterArchetypeDefinition Ally,
     float CorpseScale, float WindupScale, float BoltScale, int LogLength, string AmmunitionItem,
     PackDefinition DropCapacity, bool RecoverThrownItems, float[] BoltColor, int PathQueriesPerStep, int PathGoalsPerDecision, float DoorClearance, int CandidateCellsPerDecision, bool ActorsBlockSight)
 {
+    internal long AllyVitality => Ally.MaximumVitality;
     internal static bool UsesCombatTuning(CombatActionKind kind) => kind is CombatActionKind.Melee or CombatActionKind.Fire
         or CombatActionKind.Reload or CombatActionKind.Throw or CombatActionKind.Consume;
 
@@ -20,6 +22,8 @@ internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinit
     internal EnemyDefinition Enemy(string id) => Enemies.Single(e => e.Id == id);
     internal void Validate()
     {
+        Ally.Validate();
+        GameDefinitions.Require(float.IsFinite(VisibilityRange) && VisibilityRange > 0, nameof(VisibilityRange));
         GameDefinitions.Require(Actions.Length == Enum.GetValues<CombatActionKind>().Count(UsesCombatTuning)
             && Actions.Select(a => a.Kind).Distinct().Count() == Actions.Length, "combat actions");
         foreach (ActionDefinition action in Actions)
@@ -48,7 +52,7 @@ internal sealed record CombatDefinition(ActionDefinition[] Actions, EnemyDefinit
             && float.IsFinite(DoorClearance) && DoorClearance > 0 && DoorClearance <= 1, "enemy navigation work and clearance");
         GameDefinitions.Require(BoltColor.Length == 4 && BoltColor.All(v => float.IsFinite(v) && v >= 0 && v <= 1), "bolt color");
         GameDefinitions.Require(new[] { BodyWidth, BodyHeight, AimHeight, CorpseScale, WindupScale, BoltScale }.All(v => float.IsFinite(v) && v > 0)
-            && AimHeight < BodyHeight && float.IsFinite(TargetAngle) && TargetAngle is > 0 and <= 180
+            && AimHeight < BodyHeight && float.IsFinite(TargetHalfAngleDegrees) && TargetHalfAngleDegrees is > 0 and <= 180
             && MinimumDamage is >= 0 and <= 1000 && AllyVitality is > 0 and <= 1000 && LogLength is > 0 and <= 100
             && DropCapacity.Mass > 0 && DropCapacity.Space > 0, "combat tuning");
     }

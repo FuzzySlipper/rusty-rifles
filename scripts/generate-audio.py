@@ -8,7 +8,7 @@ import struct
 import wave
 
 root = Path(__file__).resolve().parent.parent / "content/audio"
-recipe = json.loads((root / "recipe.json").read_text())
+recipe = json.loads((Path(__file__).resolve().parent.parent / "docs/audio/recipe.json").read_text())
 rate = recipe["sampleRate"]
 for name, cue in recipe["cues"].items():
     randomizer = random.Random(recipe["seed"])

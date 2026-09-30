@@ -13,7 +13,6 @@ internal static class ChargeChecks
         VerifyContactRequiresUnobstructedFirstHit(definitions.Formation);
         VerifyCommittedChargeStateAndRecovery();
         VerifyAuthoredChargeDefinition(definitions.Charge);
-        Console.WriteLine("Charge checks passed: straight probes, dynamic stops, committed state, and authored recovery.");
     }
 
     private static void VerifyStraightProbeHonorsWallsAndCrowds()
@@ -115,6 +114,6 @@ internal static class ChargeChecks
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -68,6 +68,5 @@ internal static class GeneratedFeatureChecks
             throw new Exception("Saved hazard phase must replay without a separate clock.");
         var disabled = hazard with { Disabled = true, HitThisPulse = false };
         GeneratedHazards.Advance(disabled, definitions.Hazards, .1, floor.Entrance, _ => throw new Exception("Disabled trap hurt the party."));
-        Console.WriteLine("Generated feature checks passed: protected routes, key bindings and missing-barrier rejection.");
     }
 }

@@ -7,8 +7,7 @@ internal static class EncounterPlacementChecks
 {
     internal static void Run(GameDefinitions definitions)
     {
-        EncounterPlacementDefinition authored = EncounterPlacementDefinition.Load(path =>
-            File.ReadAllBytes(Path.Combine(Path.GetFullPath("content"), path)));
+        EncounterPlacementDefinition authored = definitions.EncounterPlacement;
         authored.ValidateAgainst(definitions.Combat, definitions.Crowd);
 
         DungeonFloor floor = DungeonFloor.Generate(definitions.Generation.Seed, definitions.Generation, definitions.Rooms);
@@ -52,11 +51,10 @@ internal static class EncounterPlacementChecks
             .Resolve(floor.Seed, floor, definitions.Combat, definitions.Crowd, excluded);
         Require(!bounded.Accepted && bounded.Rejections.Any(rejection => rejection.Code == "reachability_budget_exhausted"),
             "Reachability inspection rejects at its authored bound.");
-        Console.WriteLine("Encounter placement checks passed: deterministic roles, safe arrivals, reachable attack positions, crowd footprints, and bounded rejection reasons.");
     }
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

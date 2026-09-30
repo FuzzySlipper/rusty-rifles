@@ -19,8 +19,6 @@ internal static class MagicChecks
         VerifyPausedTimeAndCastRecovery(definitions);
         VerifyPerSourceExpiryAndRestoreIdentity(definitions);
         VerifyBooklessMemberWorks(definitions);
-
-        Console.WriteLine("Magic checks passed: spellbooks, advancement, conditions, saves, and action recovery.");
     }
 
     private static void VerifySelectionAndKnownHotbar(GameDefinitions definitions)
@@ -79,8 +77,7 @@ internal static class MagicChecks
         SpellDefinition blight = definitions.Magic.Spell("blight");
         fixture.State.Apply(new EnemyTarget("42"), blight);
         fixture.State.Advance(0.4, (_, _) => throw new InvalidOperationException("Blight must not tick before its period."));
-        fixture.Party.RestRemaining = definitions.Magic.RestSeconds - 0.5;
-        fixture.Party.RestOwner = "warden";
+        fixture.Party.BeginRest("warden", definitions.Magic.RestSeconds - 0.5);
         MagicSnapshot saved = fixture.State.Capture();
         MagicConditionSnapshot condition = saved.Conditions.Single();
         Require(Same(condition.Remaining, blight.Duration - 0.4) && Same(condition.TickRemaining, blight.Period - 0.4),
@@ -323,21 +320,10 @@ internal static class MagicChecks
 
     private static bool Same(double actual, double expected) => Math.Abs(actual - expected) < 0.000001;
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception)
-        {
-            return;
-        }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

@@ -12,7 +12,6 @@ internal static class FormationRulesChecks
         VerifyScreeningGapsAndCommanderFallback(formation);
         VerifyWeaponReachAndPreferences(formation);
         VerifyInvalidDefinitions(formation);
-        Console.WriteLine("Formation checks passed: rotated approach lanes, explicit gaps, reach, and stable preference.");
     }
 
     private static void VerifyApproachRotationAndCrowdOffsets(FormationDefinition formation)
@@ -103,13 +102,9 @@ internal static class FormationRulesChecks
         RequireRejected(() => (formation with { Weapons = [.. formation.Weapons, formation.Weapons[0]] }).Validate(), "Duplicate weapon ids are rejected.");
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); } catch (InvalidDataException) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

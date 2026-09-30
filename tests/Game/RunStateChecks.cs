@@ -26,7 +26,6 @@ internal static class RunStateChecks
         VerifyRetainedFloorKeepsOnlyFloorState(definitions, fixture);
         VerifyRetainedCombatOwnersRoundTrip(definitions, fixture);
         VerifyInvalidRunsAreRejected(definitions, fixture);
-        Console.WriteLine("Run state checks passed: retained floors, travelling party state, and run validation.");
     }
 
     private static void VerifySingleFloorRoundTrip(GameDefinitions definitions, ExpeditionSnapshot fixture)
@@ -574,15 +573,10 @@ internal static class RunStateChecks
         return decoded;
     }
 
-    private static void RequireRejected(Action action, string message)
-    {
-        try { action(); }
-        catch (Exception) { return; }
-        throw new InvalidOperationException(message);
-    }
+    private static void RequireRejected(Action action, string message) => Check.Rejected(action, message);
 
     private static void Require(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        Check.Require(condition, message);
     }
 }

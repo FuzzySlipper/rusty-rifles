@@ -113,7 +113,8 @@
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "coat"
+      "image": "coat",
+      "weapon": null
     },
     {
       "id": "sword",
@@ -122,7 +123,9 @@
       "maximumQuantity": 1,
       "mass": 22,
       "space": 3,
-      "slots": [ "weapon" ],
+      "slots": [
+        "weapon"
+      ],
       "minimumPower": 4,
       "power": 5,
       "defense": 0,
@@ -150,7 +153,9 @@
       "maximumQuantity": 1,
       "mass": 30,
       "space": 5,
-      "slots": [ "weapon" ],
+      "slots": [
+        "weapon"
+      ],
       "minimumPower": 3,
       "power": 4,
       "defense": 0,
@@ -178,7 +183,9 @@
       "maximumQuantity": 1,
       "mass": 1,
       "space": 1,
-      "slots": [ "accessory" ],
+      "slots": [
+        "accessory"
+      ],
       "minimumPower": 0,
       "power": 0,
       "defense": 1,
@@ -186,7 +193,8 @@
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "key"
+      "image": "key",
+      "weapon": null
     },
     {
       "id": "key",
@@ -203,7 +211,8 @@
       "use": "Key",
       "effect": 0,
       "cost": 0,
-      "image": "key"
+      "image": "key",
+      "weapon": null
     },
     {
       "id": "tonic",
@@ -220,7 +229,8 @@
       "use": "Vitality",
       "effect": 12,
       "cost": 1,
-      "image": "tonic"
+      "image": "tonic",
+      "weapon": null
     },
     {
       "id": "shot",
@@ -237,7 +247,8 @@
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "shot"
+      "image": "shot",
+      "weapon": null
     },
     {
       "id": "weight",
@@ -254,7 +265,8 @@
       "use": "None",
       "effect": 0,
       "cost": 0,
-      "image": "weight"
+      "image": "weight",
+      "weapon": null
     },
     {
       "id": "cordial",
@@ -271,7 +283,8 @@
       "use": "Resource",
       "effect": 8,
       "cost": 1,
-      "image": "tonic"
+      "image": "tonic",
+      "weapon": null
     }
   ],
   "startingItems": [
@@ -279,91 +292,106 @@
       "owner": "member:warden",
       "definition": "rifle",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:warden",
       "definition": "coat",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:blade",
       "definition": "knife",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:warden",
       "definition": "signet",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:seeker",
       "definition": "sword",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:mender",
       "definition": "pike",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:musketeer-a",
       "definition": "rifle",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "member:musketeer-b",
       "definition": "rifle",
       "quantity": 1,
-      "equipped": true
+      "equipped": true,
+      "preset": null
     },
     {
       "owner": "party",
       "definition": "tonic",
       "quantity": 2,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "party",
       "definition": "rifle",
       "quantity": 1,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "party",
       "definition": "tonic",
       "quantity": 3,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "floor:nw",
       "definition": "key",
       "quantity": 1,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "crate",
       "definition": "weight",
       "quantity": 1,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "crate",
       "definition": "tonic",
       "quantity": 2,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "party",
       "definition": "cordial",
       "quantity": 2,
-      "equipped": false
+      "equipped": false,
+      "preset": null
     },
     {
       "owner": "party",

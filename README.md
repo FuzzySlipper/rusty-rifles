@@ -1,109 +1,68 @@
 # Rusty Rifles
 
-A Rusty Engine game taking shape as a procedural, grid-based, first-person,
-real-time party dungeon crawler: one party, one cell, four facing directions.
+Rusty Rifles is a procedural, first-person, real-time party dungeon crawler.
+The party occupies one grid cell and faces one cardinal direction. Six soldiers
+screen a commander; formation, weapon reach, reloads, bayonets, charges and shared
+abilities make the party's positioning matter.
 
-The [campaign strategy](docs/campaign-strategy.md) defines the classic
-blobber foundation, with ranged combat as a first-class system and early visual
-experiments. The [task campaign](docs/campaign/task-index.md) maps all 63 Den
-implementation tasks and their dependencies. [Reference-code maps](docs/references/README.md) provide focused
-navigation of the local research games.
-The [working art direction](docs/art-direction.md) and
-[image prompt recipes](content/art/prompts/README.md) keep generated assets
-coherent while exploring ink/wash and painted-cover treatments.
-
-The playable foundation includes a generated walkable dungeon, quarter-turn
-exploration, four-member party controls, reachable world interactions and
-Engine-backed saves. [Milestone 2](docs/milestone-2.md) adds generated textured
-voxels, grounded prop sprites, directional sentries and dynamic-light art
-comparisons. [Milestone 3](docs/milestone-3.md) adds starter-party presets,
-equipment and inventory, restorative items, world storage and a key/lever/plate
-gate puzzle. [Milestone 4](docs/milestone-4.md) adds real-time rifle/melee combat,
-throws, bolts and enemy loot. [Milestone 5](docs/milestone-5.md) adds mixed-size
-crowds, sight/noise awareness, patrol/search and tactical rifle enemies. Engine owns rendering, navigation, camera, input, inventory and
-the simulation clock. Game policy lives in ordinary C#.
-[Milestone 6](docs/milestone-6.md) adds spells, conditions, rest and advancement;
-[Milestone 7](docs/milestone-7.md) composes height-aware floors, encounters,
-item puzzles and route supplies. [Milestone 8](docs/milestone-8.md) connects
-three retained floors with whole-run saves, discovered maps, objectives,
-defeat/retry and file-authored difficulty profiles.
-[Milestone 9](docs/milestone-9.md) refines the separate inventory panel, stable
-party controls, target readability, bundled sound cues and resource reuse.
-Its evidence distinguishes source checks, visible play and owner-browser tests.
-
-## Demo
-
-![First-person view down a generated garrison corridor: lit brick walls and doorway depth, enemy and prop sprites, and the party HUD with formation, action hotbar, combat log and compass](docs/images/rusty-rifles-guard-hall.png)
-
-Played and captured at 1280x720 on the GPU-backed browser playtest lane (remote
-Firefox driven by the crew playtest controller) against the same
-development host described below. The party stands at its entry cell on the
-Supply Approach floor of the `dead-garrison` expedition. The capture transport is
-a video stream of the browser window, so the image is not correlated to a
-specific Engine render submission.
+Explore a generated multi-floor expedition, manage shared supplies and equipment,
+solve item and weight puzzles, fight mixed-size enemies, and save the whole run.
+The current art treatment is a prototype: illustrated billboard stills over
+textured voxel architecture with dynamic lights.
 
 ## Run
 
-Requires .NET 10 and Node/pnpm. The Engine SDK/runtime pair is pinned in
-`Directory.Build.props`; the Engine's `rusty` command installs and runs it. Get
-`rusty` once with
-`curl -fsSL https://raw.githubusercontent.com/FuzzySlipper/rusty-engine/main/scripts/install-rusty.sh | bash`.
+Install .NET 10, Node and pnpm, then install the Engine CLI using its published
+installer:
 
-```bash
-rusty install
+```sh
+curl -fsSL https://raw.githubusercontent.com/FuzzySlipper/rusty-engine/main/scripts/install-rusty.sh | bash
 pnpm install --frozen-lockfile
+rusty install
 rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host 0.0.0.0 --port 4420
 ```
 
-`rusty update` moves the pin to a newer pair and lists the release notes to read.
+Use an existing broker-owned session when one is running. The SDK/runtime pair
+is pinned only in `Directory.Build.props`; `rusty status` reports it and
+`rusty update` moves it. No adjacent Engine checkout is required.
+The normal loader is CoreCLR. NativeAOT is an explicit release check.
 
-Open the URL printed by the host. Click the game view to focus it.
-W/S step forward/back; A/D sidestep; Q/E turn 90 degrees. Each key press
-requests one action with a short recovery interval. Select a member and a visible
-enemy, reload with T, and attack with Space; rifles start empty. Use the separate
-inventory panel to transfer or equip items by drag or by select/quantity/click.
-Escape cancels a pending drag. P pauses explicitly; opening inventory does not.
-K saves and L loads. The expedition panel holds travel, the discovered map,
-retry and new-run controls. The green floor tile
-marks the exit. The initial seed is configured in `content/tuning/generation.json`.
+Press P to begin. W/S step, A/D sidestep, Q/E turn, F uses the focused feature,
+and T cycles it. Space fires, V orders melee, R reloads, B/N fix/unfix bayonets,
+and C charges. K/L save/load. Menu opens inventory, formation, expedition settings,
+rest and a field guide. The commander falling ends the run even if soldiers live.
 
-For broker-owned serving, `.den-serve.json` uses the same development command:
+## Source and checks
 
-```bash
-den-serve up rusty-rifles -repo /absolute/path/to/rusty-rifles
-```
+- `src/Rifles.Game`: C# product rules, domains and Engine integration.
+- `src/Rifles.Procgen`: pure graph intent and bounded physical floor generation.
+- `src/ui`: a DOM projection and input companion using the packaged SDK types.
+- `tests/Game` and `tests/Procgen`: grouped product checks.
+- `content/`: runtime definitions, tuning, art and audio.
 
-No sibling source checkout is needed to build or run. Engine binaries, NuGet
-artifacts, node modules, generated UI, and SDK composition stay untracked.
-
-## Layout
-
-| Location | Responsibility |
-| --- | --- |
-| `src/Rifles.Game` | Product entry, grid exploration, party state, Engine scene and UI projection |
-| `src/Rifles.Procgen` | Pure graph construction, room/catalog placement, routing, validation, scoring and repair |
-| `src/Rifles.Procgen/Workbench` | Stateful dungeon motifs, route/separation reasoning, repair and candidate experiments |
-| `src/Rifles.Procgen.Artifacts` | Strict artifact codecs and atomic offline output |
-| `src/Rifles.Procgen.Tool` | Offline generation, candidate inspection, trial banks and repair commands |
-| `src/ui` | Thin TypeScript DOM companion |
-| `content` | Authored game assets |
-| `tests` | Procgen and game behavior checks |
-
-All imported source is local Rifles code, ready to customize independently.
-
-## Check and experiment
-
-```bash
+```sh
 bash scripts/check.sh
-
-dotnet run --project src/Rifles.Procgen.Tool -c Release -- generate-workbench \
-  --seed 29 --motif branching-complex \
-  --out artifacts/complex-29.json --receipt artifacts/complex-29.receipt.json
 ```
 
-The checks cover deterministic generation and repair, artifact rejection,
-movement and occupancy, combat and spell settlement, inventory ownership,
-complete expedition saves and generated route preservation. They also build
-and stage the normal Engine CoreCLR product. The offline toolkit can export
-floor inspection artifacts; the game composes the authored expedition's floor
-roles, routes, mechanisms, encounters and supplies from the same definitions.
+This builds both source and both check projects, typechecks the UI, runs the
+checks and stages CoreCLR. Independent failures are collected by group and lane.
+A failed build skips stale check executables. CI also deletes generated UI and
+verifies that `rusty build` reconstructs it.
+
+Export the current floor bank with the real product definitions:
+
+```sh
+dotnet run --project tests/Game -c Release -- --export-floors /tmp/rifles-floors
+python3 scripts/render-floor-plan.py /tmp/rifles-floors/29-arrival.json /tmp/arrival.svg
+python3 scripts/generate-audio.py
+```
+
+The first command exports the four-seed, three-floor bank while running checks.
+The last regenerates the deterministic audio assets from `docs/audio/recipe.json`.
+The committed floor bank is a labelled data snapshot, not current visible proof.
+
+See [gameplay and ownership](docs/gameplay-design.md), [Engine integration](docs/engine-integration-notes.md),
+[debug tools](docs/debug-tools.md) and [art direction](docs/art-direction.md).
+Den project `rusty-rifles` owns task status, reviews and acceptance evidence;
+repository documents describe current behavior. Historical milestone records are
+available as `historical-milestone-N` Den documents and in Git history.
