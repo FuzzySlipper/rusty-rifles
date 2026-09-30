@@ -22,7 +22,7 @@ are still owned by Engine. Renderer differences include sprite fog/shadow
 limitations, MSAA/encoding edges and CSS-pixel viewport scaling. Evaluate the
 actual scenes when moving the pair; compiling alone does not prove visual parity.
 Some corridor and prop side faces appear completely black in native captures.
-Rifles #8992 tracks the bounded material/lighting assessment; the cause has not
+Rifles #8994 tracks the bounded material/lighting assessment; the cause has not
 been established as an Engine regression, and full visual parity is not claimed.
 Native device audio is the default and uses Kira's linear attenuation, replacing
 the earlier Web Audio inverse falloff. A browser connection alone does not prove
