@@ -14,6 +14,7 @@
     <RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>
     <RustyEngineProductUiProjectionStream>rifles.session</RustyEngineProductUiProjectionStream>
     <RustyEngineProductUiProjectionContract>rifles.session.v1</RustyEngineProductUiProjectionContract>
+    <RustyEngineProductSceneShadows>enabled</RustyEngineProductSceneShadows>
     <RustyEngineProductDefaultWorldLights>disabled</RustyEngineProductDefaultWorldLights>
     <RustyEngineProductDefaultViewmodelLights>neutral</RustyEngineProductDefaultViewmodelLights>
     <RustyEngineProductInputCursorMode>unlocked</RustyEngineProductInputCursorMode>

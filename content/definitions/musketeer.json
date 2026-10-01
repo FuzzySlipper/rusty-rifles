@@ -1,0 +1,102 @@
+{
+  "enemy": "skeleton-musketeer",
+  "body": "art/mesh/skeleton-soldier.glb",
+  "weapon": "art/mesh/musket.glb",
+  "joint": "mixamorig:RightHand",
+  "heightScale": 1.8,
+  "facingOffsetDegrees": 180,
+  "gripPosition": [
+    0.101492,
+    0.110842,
+    0.001583
+  ],
+  "gripRotation": [
+    0.08557406,
+    0.00958205,
+    0.60878772,
+    0.78864617
+  ],
+  "gripScale": [
+    0.7,
+    0.7,
+    0.7
+  ],
+  "idleClip": "idle.001",
+  "walkClip": "walk.001",
+  "fireClip": "fire.001",
+  "defeatClip": "rifles-collapse",
+  "firePose": 0.2,
+  "muzzleOffset": [
+    0.118,
+    1.412,
+    -0.944
+  ],
+  "flash": {
+    "count": 8,
+    "lifetimeMin": 0.06,
+    "lifetimeMax": 0.12,
+    "velocityMin": [
+      -0.3,
+      -0.2,
+      -0.3
+    ],
+    "velocityMax": [
+      0.3,
+      0.2,
+      0.3
+    ],
+    "acceleration": [
+      0,
+      0.2,
+      0
+    ],
+    "startSize": 0.13,
+    "endSize": 0,
+    "startColor": [
+      1,
+      0.75,
+      0.2,
+      1
+    ],
+    "endColor": [
+      1,
+      0.3,
+      0,
+      0
+    ]
+  },
+  "smoke": {
+    "count": 18,
+    "lifetimeMin": 0.65,
+    "lifetimeMax": 1.5,
+    "velocityMin": [
+      -0.2,
+      0.1,
+      -0.2
+    ],
+    "velocityMax": [
+      0.2,
+      0.5,
+      0.2
+    ],
+    "acceleration": [
+      0,
+      0.2,
+      0
+    ],
+    "startSize": 0.09,
+    "endSize": 0.32,
+    "startColor": [
+      0.7,
+      0.68,
+      0.6,
+      0.6
+    ],
+    "endColor": [
+      0.5,
+      0.5,
+      0.5,
+      0
+    ]
+  }
+}

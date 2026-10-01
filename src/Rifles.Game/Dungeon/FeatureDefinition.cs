@@ -1,7 +1,7 @@
 using Rifles.Game.Content;
 namespace Rifles.Game.Dungeon;
 internal sealed record FeatureDefinition(string ActorLabel, int ActorOffsetCells, string LanternLabel, float[] LanternColor,
-    float Reach, float QueryDistance, float AcquireAngle, float ReleaseAngle, float LightIntensity, float LightRange, double ActorStepSeconds)
+    float Reach, float QueryDistance, float AcquireAngle, float ReleaseAngle, float LightIntensity, float LightRange, double ActorStepSeconds, bool LanternShadows)
 {
     internal void Validate()
     {

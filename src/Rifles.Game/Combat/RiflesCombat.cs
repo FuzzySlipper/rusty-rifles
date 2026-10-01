@@ -60,6 +60,7 @@ internal sealed partial class RiflesCombat
     private CombatDefinition Combat => definitions.Combat;
 
     internal IReadOnlyList<EnemyState> Enemies => enemies;
+    internal event Action<EnemyState>? EnemyFired;
     internal IReadOnlyDictionary<string, GridPoint> Drops => drops;
     internal WeaponState Weapons => weapons;
     internal IReadOnlyList<FlightState> Flights => flights;
@@ -423,6 +424,7 @@ internal sealed partial class RiflesCombat
             if (!enemy.Loaded) return;
             enemy.Loaded = false;
             EmitNoise(enemy.Motion.Position, NoiseKind.Gunfire, enemy.Id);
+            EnemyFired?.Invoke(enemy);
         }
         Vector3 start = EnemyAim(enemy), end = Aim(action.AimCell!.Value);
         if (Vector3.Distance(start, end) > Combat.Action(action.Kind).Range) { CombatMessage(enemy.Definition.Name + " missed."); return; }

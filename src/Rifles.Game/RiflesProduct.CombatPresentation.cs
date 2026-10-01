@@ -86,6 +86,11 @@ public sealed partial class RiflesProduct
     {
         foreach (EnemyState enemy in active.Combat.Enemies)
         {
+            if (musketeerArt!.Supports(enemy))
+            {
+                foreach (AppearanceFact fact in musketeerArt.Facts(enemy, active.Scene, AllocateId)) yield return fact;
+                continue;
+            }
             string image = SentryView.Select((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset), enemy.Motion.Facing, active.Exploration.VisualCell);
             float scale = enemy.Definition.Scale * (!enemy.Alive ? Combat.CorpseScale : enemy.Action.Current?.Phase == ActionPhase.Windup ? Combat.WindupScale : 1);
             Vector3 position = active.Scene.Eye((enemy.Motion.VisualCell + enemy.Motion.VisualCrowdOffset)) with { Y = active.Scene.GroundHeight(enemy.Motion.VisualCell) };

@@ -304,6 +304,49 @@
         "footstepHearingRange": 3,
         "alarmHearingRange": 18
       }
+    },
+    {
+      "id": "skeleton-musketeer",
+      "name": "Skeleton musketeer",
+      "attack": "Fire",
+      "vitality": 28,
+      "defense": 1,
+      "stepSeconds": 0.85,
+      "decisionSeconds": 0.4,
+      "awarenessRange": 14,
+      "scale": 0.8,
+      "loot": [
+        {
+          "owner": "",
+          "definition": "rifle",
+          "quantity": 1,
+          "equipped": false,
+          "preset": null
+        },
+        {
+          "owner": "",
+          "definition": "shot",
+          "quantity": 8,
+          "equipped": false,
+          "preset": null
+        }
+      ],
+      "footprint": "medium",
+      "faction": "garrison",
+      "share": true,
+      "brain": {
+        "memorySeconds": 12,
+        "searchSeconds": 4,
+        "maxRetreatSteps": 2,
+        "retreatCooldownSeconds": 8,
+        "preferredMinimumRange": 4,
+        "preferredMaximumRange": 10,
+        "pathRetrySeconds": 0.8,
+        "sightConeDegrees": 100,
+        "gunfireHearingRange": 24,
+        "footstepHearingRange": 3,
+        "alarmHearingRange": 18
+      }
     }
   ],
   "bodyWidth": 0.85,
@@ -349,7 +392,7 @@
     },
     {
       "id": "musketeer-patrol",
-      "enemy": "musketeer",
+      "enemy": "skeleton-musketeer",
       "distance": 8,
       "patrolOffsets": [
         [

@@ -71,7 +71,8 @@ internal sealed record AppearanceStyleDefinition(string Id, TextureDefinition[] 
 }
 
 internal sealed record AppearanceDefinition(string InitialStyle, int VoxelsPerCell, AppearanceStyleDefinition[] Styles,
-    float[] LightColor, float LightIntensity, float LightRange)
+    float[] LightColor, float LightIntensity, float LightRange, bool RoomLightShadows,
+    float[] AmbientColor, float AmbientIntensity)
 {
     internal void Validate()
     {
@@ -85,6 +86,9 @@ internal sealed record AppearanceDefinition(string InitialStyle, int VoxelsPerCe
         GameDefinitions.Require(LightColor is { Length: 3 } && LightColor.All(value => float.IsFinite(value) && value >= 0), nameof(LightColor));
         GameDefinitions.Require(float.IsFinite(LightIntensity) && LightIntensity >= 0, nameof(LightIntensity));
         GameDefinitions.Require(float.IsFinite(LightRange) && LightRange > 0, nameof(LightRange));
+        GameDefinitions.Require(AmbientColor is { Length: 3 }
+            && AmbientColor.All(value => float.IsFinite(value) && value >= 0), nameof(AmbientColor));
+        GameDefinitions.Require(float.IsFinite(AmbientIntensity) && AmbientIntensity >= 0, nameof(AmbientIntensity));
     }
 
     internal AppearanceStyleDefinition Style(string id) => Styles.Single(style => style.Id == id);

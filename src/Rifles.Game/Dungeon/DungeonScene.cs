@@ -90,6 +90,12 @@ internal sealed class DungeonScene : IDisposable
                 cells.Select(c => NavigationCell(c)).ToArray()));
             scene = engine.VoxelScenePresentation.ProjectSceneDirectional(new ProjectVoxelSceneDirectionalRequest(
                 spatial, MaterialBindings(materials), FaceMaterialBindings(materials)));
+            LightRequest ambient = new(allocateLightId(), false, 0,
+                new LightDescriptor(LightKind.Ambient,
+                    new Vector3(appearance.AmbientColor[0], appearance.AmbientColor[1], appearance.AmbientColor[2]),
+                    appearance.AmbientIntensity, true, Vector3.Zero, Vector3.UnitY, true, 0,
+                    1, 0, 0, LightShadowIntent.Disabled));
+            roomLights.Add((engine.Graphics.CreateLight(ambient), ambient));
             foreach (GridPoint room in floor.RoomCenters)
             {
                 Vector3 position = Eye(room);
@@ -192,7 +198,7 @@ internal sealed class DungeonScene : IDisposable
         Style = style;
     }
 
-    /// <summary>Enables or disables the fixed room-fill lights without changing the lantern or simulation state.</summary>
+    /// <summary>Enables or disables authored ambient and room lights without changing the lantern or simulation state.</summary>
     internal void SetRoomLights(bool enabled)
     {
         for (int index = 0; index < roomLights.Count; index++)
@@ -208,7 +214,7 @@ internal sealed class DungeonScene : IDisposable
         new LightDescriptor(LightKind.Point,
             new Vector3(appearance.LightColor[0], appearance.LightColor[1], appearance.LightColor[2]),
             appearance.LightIntensity, enabled, position, Vector3.UnitY, true, appearance.LightRange,
-            1f, 0, 0, LightShadowIntent.Disabled));
+            1f, 0, 0, appearance.RoomLightShadows ? LightShadowIntent.Requested : LightShadowIntent.Disabled));
 
     private void AddLogicalVoxel(List<VoxelEdit> edits, GridPoint cell, int y, uint material)
     {

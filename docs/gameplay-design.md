@@ -117,3 +117,41 @@ Keep captures, review results and dated campaign reports in Den. The historical
 archive is indexed in Den document `historical-evidence-index`; Git history is
 preserved. See `engine-integration-notes.md` for current Engine behavior and
 `debug-tools.md` for repeatable inspection commands.
+
+### Skeleton musket watch
+
+The `skeleton-musketeer` definition uses the existing ranged enemy brain,
+loaded-round and reload rules, windup/commit/recovery timing, sight checks and
+hitscan damage. Its regular `musketeer-patrol` spawn uses the rigged mesh rather
+than a directional sprite. Other enemy definitions keep their existing art.
+
+`Presentation/MusketeerArt` admits the body and rigid musket through Engine's
+animation content service. Engine resolves the exact named
+`mixamorig:RightHand` skin joint and retains the child relationship; Rifles
+never polls bone transforms. Idle and walking clips loop through Engine
+playback; fire poses follow the combat action's phase, and defeat plays once.
+Restored corpses sample the final pose. Fresh floor/load teardown clears the
+published appearances before releasing animation instances and resources.
+
+`definitions/musketeer.json` owns clip names, body scale, facing correction,
+joint-local grip TRS, firing pose and muzzle burst tuning. Shot commits emit
+Engine flash/smoke particles at the authored muzzle offset; held Engine time
+also holds their age. Effects are transient and are not replayed from saves.
+The skeleton and musket retain their GLB textured materials and receive scene
+lights. The product opts into Engine scene shadows; authored lantern and room
+light settings select the requesting lights. Shadow rendering remains entirely
+Engine-owned and applies to the posed body and its attached weapon.
+
+`tuning/appearance.json` also owns a low ambient fill. The direct point lights
+can contribute no light to faces pointing away from them; fill keeps those
+textures readable without raising every light or emitting from the materials.
+The room-light comparison toggle switches both ambient and fixed room lights;
+the movable entrance lantern remains independent.
+
+The musket's generated source contains zero-area faces. Its original is kept
+under `docs/art/mesh-originals/`; the offline `docs/art/tools/clean-musket.py`
+removes those faces from the admitted copy without changing textures or usable
+geometry. The skeleton keeps the supplied rig and clips, plus a root fall over
+the original standing stagger for `rifles-collapse`. The original body is kept
+alongside the musket; `docs/art/tools/author-skeleton-collapse.py` rebuilds the
+admitted copy from the editable `docs/art/prompts/skeleton-collapse.json` recipe.

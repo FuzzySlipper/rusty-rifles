@@ -296,7 +296,8 @@
     "sapper": 10,
     "bulwark": 20,
     "marksman": 15,
-    "commander": 0
+    "commander": 0,
+    "skeleton-musketeer": 5
   },
   "enemySpells": {
     "marksman": "blight"

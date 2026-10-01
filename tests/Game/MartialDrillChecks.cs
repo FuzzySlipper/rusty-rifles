@@ -11,9 +11,13 @@ internal static class MartialDrillChecks
         MartialDrillDefinitionSet drills = definitions.MartialDrills;
         drills.ValidateAgainst(definitions.Characters, definitions.Formation, definitions.Combat, definitions.Crowd);
         Require(drills.Drills.Select(drill => drill.Id).ToHashSet(StringComparer.Ordinal)
-            .SetEquals(["three-lanes", "concentration", "melee-reach", "commander-gap", "charge-clear", "charge-blocked"]),
+            .SetEquals(["three-lanes", "concentration", "melee-reach", "commander-gap", "charge-clear", "charge-blocked", "skeleton-musketeer"]),
             "The authored drills cover the visible martial-command matrix.");
         MartialDrillDefinition lanes = drills.Drill("three-lanes");
+        MartialDrillDefinition musketeer = drills.Drill("skeleton-musketeer");
+        Require(musketeer.Enemies.Single() is { Forward: 3, Left: 0, SpawnId: "musketeer-patrol" }
+            && definitions.Combat.Encounter.Single(spawn => spawn.Id == "musketeer-patrol").Enemy == definitions.Musketeer.Enemy,
+            "The mesh drill uses the ordinary generated ranged-watch encounter and its authored presentation.");
         Require(lanes.Enemies.Length == 3 && lanes.Enemies.Select(enemy => enemy.Left).Order().SequenceEqual([-2, 0, 2]),
             "Three lanes use three authored, distinct forward offsets.");
         Require(lanes.Members.Single(member => member.Member == "musketeer-b").Position == "front-center"

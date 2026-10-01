@@ -36,6 +36,12 @@ useful ideas; the owner's directions take precedence.
 | Enemies | Simple directional still sprites; no animation-frame or skeletal-animation requirement |
 | Illumination | Dynamic level lights affecting sprite and geometry presentation |
 
+The owner-requested skeleton musket watch is an admitted mesh experiment using
+the supplied rigged skeleton and rigid musket. It uses Engine skeletal playback,
+joint parenting, scene lighting and shadows. The other enemies retain the
+directional sprite treatment; compare the mesh in the playable dungeon before
+extending it to other art.
+
 Billboarding does not make a sprite a flat UI overlay. Depth, occlusion,
 interaction reach and hit geometry remain part of the Engine-rendered world.
 Blocking doors/barriers and weight-bearing structures keep explicit game and

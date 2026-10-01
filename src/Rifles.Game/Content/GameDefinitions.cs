@@ -1,4 +1,5 @@
 using Rifles.Game.Generation;
+using Rifles.Game.Presentation;
 using Rifles.Game.Debugging;
 using Rifles.Game.Audio;
 using Rifles.Game.Expedition;
@@ -18,7 +19,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party, FormationDefinition Formation,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, Func<string, ReadOnlyMemory<byte>> ReadContent)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MusketeerDefinition Musketeer, Func<string, ReadOnlyMemory<byte>> ReadContent)
 {
     private MartialDrillDefinitionSet? martialDrills;
     internal MartialDrillDefinitionSet MartialDrills
@@ -83,6 +84,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<RunDefinition>(read, "definitions/expedition.json", x => x.Validate()),
             Read<AudioDefinition>(read, "definitions/audio.json", x => x.Validate()),
             Read<ChargeDefinition>(read, "definitions/charge.json", x => x.Validate()),
+            Read<MusketeerDefinition>(read, "definitions/musketeer.json", x => x.Validate()),
             read);
         // The formation file is the one authored layout. Adapt its integral
         // 3x3 coordinates to the existing half-cell projection once at admission.
@@ -148,6 +150,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             "recoverable generated key and weight puzzles");
         Require(result.Items.Item(result.GeneratedFeatures.WeightItem).Mass >= result.GeneratedFeatures.PlateWeight,
             "generated counterweight supply");
+        Require(result.Combat.Enemies.Any(e => e.Id == result.Musketeer.Enemy && e.Attack == CombatActionKind.Fire), "musketeer ranged enemy reference");
         result.EncounterPlacement.ValidateAgainst(result.Combat, result.Crowd);
         Require(result.RouteSupplies.Supplies.All(s => s.Quantity <= result.Items.Item(s.Item).MaximumQuantity), "generated supply items");
         return result;

@@ -43,7 +43,7 @@ internal sealed class WorldFeatures : IDisposable
     }
     private LightRequest LightRequest() => new(lightId, false, 0,
         new LightDescriptor(LightKind.Point, Vector(tuning.LanternColor), state.LanternOn ? tuning.LightIntensity : 0,
-            true, LightPoint, Vector3.UnitY, true, tuning.LightRange, 1, 0, 0, LightShadowIntent.Disabled));
+            true, LightPoint, Vector3.UnitY, true, tuning.LightRange, 1, 0, 0, tuning.LanternShadows ? LightShadowIntent.Requested : LightShadowIntent.Disabled));
     internal void SetStyle(string style)
     {
         if (!artDefinition.Styles.Any(s => s.Id == style)) throw new InvalidDataException("Unknown art treatment.");

@@ -43,3 +43,10 @@ python3 scripts/render-floor-plan.py /tmp/rifles-floors/29-arrival.json /tmp/arr
 the audio recipe. Compare their hashes when editing the recipe or generator.
 Store dated timings, raw profiles, logs and screenshots on the Den task, rather
 than adding an evidence directory to the repository.
+
+Use `rifles.drill.start skeleton-musketeer true` in an owned test session to
+prepare one skeleton musket watch in a normal ranged lane. It starts paused;
+ordinary Resume, Fire and movement controls exercise the real combat owners.
+Menu → Art comparison → Move light / Toggle room lights provides repeatable
+lighting comparisons. Drill setup replaces the run and is inspection assistance; it is
+not ordinary traversal evidence.

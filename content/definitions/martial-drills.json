@@ -319,6 +319,57 @@
       ],
       "forwardBlocked": true,
       "expected": "Charge readout reports no legal straight forward step."
+    },
+    {
+      "id": "skeleton-musketeer",
+      "name": "Skeleton musket watch",
+      "description": "One skeleton musketeer faces the party in a ranged lane. Inspect its held musket, fire/reload timing and scene shadows.",
+      "facing": "North",
+      "members": [
+        {
+          "member": "warden",
+          "position": "front-left"
+        },
+        {
+          "member": "blade",
+          "position": "left-guard"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "front-center"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        }
+      ],
+      "enemies": [
+        {
+          "spawnId": "musketeer-patrol",
+          "forward": 3,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
+      "forwardBlocked": false,
+      "expected": "Resume to see the skeleton load and fire. Fire back to defeat it; use the room-light and lantern comparison controls to inspect its mesh."
     }
   ],
   "maximumAttackPositions": 12,

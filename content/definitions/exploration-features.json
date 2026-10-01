@@ -14,5 +14,6 @@
   "releaseAngle": 1.1,
   "lightIntensity": 8,
   "lightRange": 12,
-  "actorStepSeconds": 1.2
+  "actorStepSeconds": 1.2,
+  "lanternShadows": true
 }
