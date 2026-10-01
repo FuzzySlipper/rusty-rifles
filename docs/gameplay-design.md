@@ -152,6 +152,8 @@ The musket's generated source contains zero-area faces. Its original is kept
 under `docs/art/mesh-originals/`; the offline `docs/art/tools/clean-musket.py`
 removes those faces from the admitted copy without changing textures or usable
 geometry. The skeleton keeps the supplied rig and clips, plus a root fall over
-the original standing stagger for `rifles-collapse`. The original body is kept
+the original standing stagger for `rifles-collapse`. The fall shifts the root
+to keep the prone body within its occupied cell, including beside a wall.
+The original body is kept
 alongside the musket; `docs/art/tools/author-skeleton-collapse.py` rebuilds the
 admitted copy from the editable `docs/art/prompts/skeleton-collapse.json` recipe.

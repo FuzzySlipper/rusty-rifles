@@ -3,9 +3,9 @@
   "baseClip": "defeat_02.001",
   "clip": "rifles-collapse",
   "keys": [
-    { "seconds": 0, "pitchDegrees": 0, "height": 0 },
-    { "seconds": 0.15, "pitchDegrees": -25, "height": 0.03 },
-    { "seconds": 0.9, "pitchDegrees": -90, "height": 0.12 },
-    { "seconds": 8.5, "pitchDegrees": -90, "height": 0.12 }
+    { "seconds": 0, "pitchDegrees": 0, "height": 0, "forwardOffset": 0 },
+    { "seconds": 0.15, "pitchDegrees": 25, "height": 0.03, "forwardOffset": -0.08 },
+    { "seconds": 0.9, "pitchDegrees": 90, "height": 0.12, "forwardOffset": -0.5 },
+    { "seconds": 8.5, "pitchDegrees": 90, "height": 0.12, "forwardOffset": -0.5 }
   ]
 }

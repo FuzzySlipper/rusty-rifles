@@ -41,7 +41,7 @@ times = append_accessor([[k['seconds']] for k in keys], 'SCALAR', [keys[0]['seco
 rotations = [[math.sin(math.radians(k['pitchDegrees']) / 2), 0, 0,
               math.cos(math.radians(k['pitchDegrees']) / 2)] for k in keys]
 for path, values, kind in [('rotation', rotations, 'VEC4'),
-                           ('translation', [[0, k['height'], 0] for k in keys], 'VEC3')]:
+                           ('translation', [[0, k['height'], k['forwardOffset']] for k in keys], 'VEC3')]:
     output = append_accessor(values, kind)
     sampler = len(clip['samplers'])
     clip['samplers'].append(dict(input=times, output=output, interpolation='LINEAR'))
