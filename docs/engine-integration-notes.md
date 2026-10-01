@@ -21,9 +21,12 @@ Lit billboard sprites, directional voxel textures and dynamic room/spell lights
 are still owned by Engine. Renderer differences include sprite fog/shadow
 limitations, MSAA/encoding edges and CSS-pixel viewport scaling. Evaluate the
 actual scenes when moving the pair; compiling alone does not prove visual parity.
-Some corridor and prop side faces appear completely black in native captures.
-Rifles #8994 tracks the bounded material/lighting assessment; the cause has not
-been established as an Engine regression, and full visual parity is not claimed.
+Direct point lighting can leave away-facing corridor and prop surfaces black.
+The authored ambient fill in `tuning/appearance.json` keeps their textures
+readable; the room-light comparison toggle switches that fill and fixed lights
+together. Rifles opts into Engine scene shadows for the animated skeleton and
+its hand-parented musket. Mesh import, textured materials, animation, named joint
+attachments, shadow maps and muzzle particles remain Engine-owned.
 Native device audio is the default and uses Kira's linear attenuation, replacing
 the earlier Web Audio inverse falloff. A browser connection alone does not prove
 that the host device is audible to the remote observer.
@@ -112,6 +115,13 @@ Fresh-store save/load verification is separate from old-file compatibility.
 The SDK-derived dev watch paths include the product project, UI source and
 content, and every project it references, so `Rifles.Procgen` edits rebuild and
 replace the runtime (Engine #8984).
+
+A full dev restage resets Engine time to realtime, releases input claims and
+clears observer-camera/drawing overrides. The attached page follows the new
+runtime's frame sequence automatically. An unattended playtest must discover
+the fresh binding and reselect action-driven time before advancing it. A brief
+HTTP 503 during the swap means no runtime is serving; a refused debug command
+returns HTTP 422. Keep final visual checks on a stable source revision.
 
 ## Native window output
 
