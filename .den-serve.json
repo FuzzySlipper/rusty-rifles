@@ -1,7 +1,7 @@
 {
   "project": "rusty-rifles",
   "serve": {
-    "command": "PATH=\"$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.dotnet:$PATH\" exec rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host {host} --port {port}",
+    "command": "PATH=\"$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.dotnet:$PATH\" exec rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host {host} --port {port} --diagnostics-log {session_dir}/rusty-engine-diagnostics.ndjson",
     "healthUrl": "/",
     "readyText": "<title>Rusty Product Host</title>",
     "reusePolicy": "broker_owned",
