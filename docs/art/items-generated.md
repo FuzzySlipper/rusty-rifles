@@ -1,7 +1,7 @@
 # Ink-and-wash items atlas
 
-`content/art/generated/items/ink-wash-items-atlas.png` is the selected first
-inventory and world-billboard experiment. It uses the provisional ink-and-wash
+`content/art/generated/items/ink-wash-items-atlas.png` serves inventory icons
+and world billboards. It uses the provisional ink-and-wash
 treatment: restrained wash colour, selective dark contour, and neutral diffuse
 form shading. It is deliberately a compact, coherent equipment set rather
 than a final inventory taxonomy.
@@ -30,16 +30,8 @@ the cells can therefore be sampled independently without adjacent-object
 bleed. Use a one-pixel transparent inset when building mipmaps or texture
 padding.
 
-For UI, sample a full cell and display it at 72 to 128 pixels square; retain
-the transparent margin rather than tightly trimming every icon. For world
-billboards, begin with these authored physical sizes and tune them with pickup
-reach and player-eye-height evidence: rifle `0.95 m` tall; knife `0.24 m`;
-coat `0.55 m` wide; key `0.16 m` tall; bottle `0.20 m` tall; shot bag `0.28 m`
-wide; balance weight `0.18 m` tall; lever `0.72 m` tall including its base.
-Treat those as initial presentation values and move any adopted values into the
-owning typed content definition rather than treating this note as runtime
-tuning authority.
-
-The set omits a door and pressure plate. The lever is a visible mechanism; a
-door and pressure plate need their own world-readable art experiment after the
-first interaction layout is seen in game.
+For UI, sample a full cell and retain the transparent margin rather than tightly
+trimming each icon. `content/definitions/item-art.json` owns admitted UI/world
+sizes, pivots and atlas bindings; tune presentation there rather than treating
+this document as runtime configuration. Doors and pressure plates have separate
+world-feature representation and collision meaning.

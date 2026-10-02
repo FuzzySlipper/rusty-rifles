@@ -1,19 +1,18 @@
-# First playable art comparison
+# Generated world art
 
-Built-in GPT image generation produced the selected PNGs under
-`content/art/generated/`. Compose future calls from the shared style, one
-named treatment and the sprite/material recipe in `docs/art/prompts/`.
-These are provisional experiments, not a final style decision.
+Runtime PNGs live under `content/art/generated/`. Compose generation requests
+from the shared style, one named treatment and the sprite/material recipe in
+`docs/art/prompts/`. This document describes the asset set and import contracts;
+generation history and comparison results belong in Den.
 
-## Selected prompt set
+## Asset briefs
 
-All calls used `stylized-concept`; companion views used `identity-preserve`
-and treatment edits used `style-transfer`. Shared constraints: original
-1970s/1980s fantasy paperback illustration, early-modern useful construction,
-clear silhouettes, quiet local color, no pixel art, photographic microtexture,
-text, frames, cinematic light or glossy rendering. Texture calls requested
+Shared authoring constraints: original 1970s/1980s fantasy paperback
+illustration, early-modern useful construction, clear silhouettes,
+quiet local color, no pixel art, photographic microtexture,
+text, frames, cinematic light or glossy rendering. For textures, request
 opaque edge-to-edge seamless repeats, orthographic view and uniform neutral
-illumination. Sprite calls requested full silhouettes, genuine alpha, neutral
+illumination. For sprites, request full silhouettes, genuine alpha, neutral
 form shading, no floor, cast shadow, halo or vignette.
 
 | Asset ID | Concrete subject and scale intent |
@@ -26,29 +25,28 @@ form shading, no floor, cast shadow, halo or vignette.
 | lantern | Unlit dark iron rectangular lantern, ivory horn panes, loop and stout base; 0.5m tall |
 | sentry-front | Brown-skinned woman, short dark hair, olive soft cap, rust knee coat, ivory shirt, teal breeches, cuff boots; rifle upright in anatomical right hand, left hand at belt; 1.8m tall |
 
-Ink-and-wash requests used selective expressive contours, sparse hatching and
-broad matte painted color. Painted-cover edits preserved the matched subject,
+Ink-and-wash uses selective expressive contours, sparse hatching and broad
+matte painted color. For painted-cover edits, preserve the matched subject,
 layout, silhouette and equipment while requesting painted boundaries, minimal
-outline/hatching and controlled volume. The painted sentry is noticeably more
-highlighted; judge this under changing runtime lights before promoting it.
+outline/hatching and controlled volume. Evaluate highlights under changing
+runtime lights.
 
-The selected ink front supplied identity for three separate companion calls:
+The ink sentry's companion views preserve the front image's identity:
 rear (rifle on viewer right), right profile (nose right, rifle on near side),
-and left profile (nose left, rifle on far side, left hand at belt). They are
-separate images, not mirrored copies. The import file carries each image's
+and left profile (nose left, rifle on far side, left hand at belt). Use separate
+images rather than mirrored copies. The import file carries each image's
 own measured size and foot anchor, compensating for small framing differences.
 
-## Controlled comparison scope
+## Treatment bindings and import
 
-Ink-and-wash is the provisional complete directional set. Painted-cover
+Ink-and-wash supplies the complete directional set. Painted-cover
 replaces all three surfaces, the crate and the sentry **front**. Bench, lantern
-and other sentry views deliberately share the accepted ink images. This is a
-matched front-view treatment study, not a claim of a complete painted cast.
-Some painted bench/lantern/rear outputs had RGB checkerboard backgrounds;
-a targeted transparency retry also failed. Those outputs were rejected and
-are not runtime assets. Do not mistake a drawn checkerboard for alpha.
+and other sentry views deliberately share the accepted ink images. The painted
+comparison therefore covers the matched front view rather than a complete
+directional cast. A drawn checkerboard is not transparency; validate
+actual alpha before runtime admission.
 
-The six opaque textures were losslessly re-encoded as RGBA8 for Engine admission.
+The six opaque textures use RGBA8 for Engine admission.
 Accepted sprites are RGBA with zero-alpha background and high-alpha interiors.
 Authored 0.5 cutout avoids translucent interiors and gives Engine depth writing
 for overlap. Generated RGB beneath zero alpha can look like a vignette in a

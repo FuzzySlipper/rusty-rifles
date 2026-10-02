@@ -6,15 +6,13 @@ faces one cardinal direction. Preserve that direction when extending the game.
 
 ## Gameplay development direction
 
-First establish a coherent, conventional real-time blobber foundation using
-games such as Dungeon Master, Eye of the Beholder, and Grimrock as behavioral
-references. Once those basics are established, customize them toward Rifles'
-specific gameplay. The owner-approved scope is in `docs/campaign-strategy.md`;
-`docs/campaign/task-index.md` maps Den campaign #8187 and its implementation tasks.
-The next accepted layer is `docs/martial-command-design.md`, with Den campaign
-#8388 mapped in `docs/campaign/martial-command-index.md`. It supersedes the
-foundation plan for party size, combat targeting, equipment, ammunition and
-formation controls; both foundation #8187 and martial-command #8388 are implemented. Current behavior and owning code are described in `docs/gameplay-design.md`; Den owns live acceptance and follow-up status.
+Preserve a coherent, conventional real-time blobber foundation, using games
+such as Dungeon Master, Eye of the Beholder, and Grimrock as behavioral
+references, and build Rifles' specific gameplay on it.
+`docs/martial-command-design.md` owns the party, combat targeting, equipment,
+ammunition and formation contracts. `docs/gameplay-design.md` describes current
+behavior and owning code. Den owns implementation plans, task ordering, acceptance
+and follow-up status.
 
 Build this game directly. Do not introduce a reusable blobber kit, ruleset
 framework, or abstraction layer for hypothetical games. Do not attempt a
@@ -86,9 +84,8 @@ check only when requested.
 - Keep each domain's configuration local to its purpose. Add abstraction only
   when a concrete game need justifies it; file-driven tuning does not require
   a generic rules engine, scripting language, or plugin system.
-- The initial bootstrap still contains hard-coded starter values. As those
-  domains are developed in the campaign, move their significant values into
-  authored files instead of extending those hard-coded definitions.
+- When extending a domain that still has hard-coded starter values, move its
+  significant choices into authored files rather than extending those literals.
 
 ## Work
 
@@ -107,8 +104,8 @@ fails, retain the local commit and report the exact blocker. Never force-push
 or discard work to resolve a push failure.
 
 Den project ID: `rusty-rifles`; repository root: the current checkout.
-Use that project for the implementation campaign and shared work; Den owns live
-task status and dependencies, while the repo index records the initial plan.
+Use that project for implementation plans and shared work. Den owns task status,
+dependencies, campaign indexes and progress records.
 
 Install dependencies with `pnpm install --frozen-lockfile` when needed. Use
 focused checks during iteration. Run `bash scripts/check.sh` for changes that
@@ -129,15 +126,19 @@ Report build/test, runtime launch, and visible interaction evidence separately.
 
 ## Documents and evidence
 
-Keep repository documentation about current behavior, contracts and repeatable
-commands. Keep live task status, reviews, measurements, screenshots and campaign
-history in Den. Record original capture and sidecar paths there; do not add new
-acceptance screenshots or raw test transcripts under `docs/evidence/`.
-The floor bank is an explicitly labelled generated data snapshot, not acceptance
-proof. Existing evidence is archived in Den and Git history without rewriting
+Local Markdown documents in this repository are for settled, durably useful
+information: current behavior, ownership, contracts, authoring recipes and
+repeatable commands. Put mostly historical context, milestones, implementation
+plans, progress tracking, dated decisions, investigations, reviews, measurements
+and other temporal or ephemeral records in Den documents or Board posts. Do not
+keep local tracking copies or placeholder pages for records moved to Den.
+
+Preserve historical material in Den before removing it locally. Record original
+capture and sidecar paths there; keep acceptance screenshots and raw test
+transcripts out of the repository. The floor bank under `docs/generated/` is an
+explicitly labelled generated data snapshot, not acceptance proof. Preserve Git
 history. Avoid volatile Engine versions in prose: the only pair pin belongs in
-`Directory.Build.props`. Do not describe cancelled tasks as pending or duplicate
-historical milestone logs in current-state documents.
+`Directory.Build.props`.
 
 `content/` holds admitted runtime content. Editable art recipes, references and
 unapproved mesh/style experiments belong under `docs/art/`. Preserve experiment

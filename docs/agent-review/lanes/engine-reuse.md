@@ -1,6 +1,6 @@
 # Lane: Engine reuse
 
-**Always on.** Run this lane on every task.
+Use this packet for review of Engine mechanisms and downstream ownership.
 
 ## One question
 
@@ -15,12 +15,12 @@ drifts, and it hides the real signal: either the Engine API should be used, or i
 is genuinely missing and deserves one narrow upstream request. Product policy
 belongs downstream; guarantees do not.
 
-Campaign #8356 exists in large part to move Rifles onto canonical upstream
-mechanics (`EntityStore`, `EntityTypeId`, `Actor` facade where it fits,
+Rifles uses canonical upstream mechanics (`EntityStore`, `EntityTypeId`,
+`Actor` facade where it fits,
 `StatsComponent`, `EffectsComponent`, inventory/equipment,
 `StatsComponentCapture`, `JsonProductStateCodec`, content services, persistence
 primitives). A change that hand-rolls any of those instead of adopting them
-works against the campaign.
+creates a competing owner.
 
 ## Basis required for an actionable finding
 

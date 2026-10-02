@@ -59,10 +59,12 @@ python3 scripts/generate-audio.py
 
 The first command exports the four-seed, three-floor bank while running checks.
 The last regenerates the deterministic audio assets from `docs/audio/recipe.json`.
-The committed floor bank is a labelled data snapshot, not current visible proof.
+The committed [floor bank](docs/generated/floor-bank/README.md) is a labelled
+data snapshot, not current visible proof.
 
 See [gameplay and ownership](docs/gameplay-design.md), [Engine integration](docs/engine-integration-notes.md),
 [debug tools](docs/debug-tools.md) and [art direction](docs/art-direction.md).
-Den project `rusty-rifles` owns task status, reviews and acceptance evidence;
-repository documents describe current behavior. Historical milestone records are
-available as `historical-milestone-N` Den documents and in Git history.
+Repository Markdown describes settled behavior, contracts, authoring recipes
+and repeatable commands. Den project `rusty-rifles` owns plans, milestones,
+historical context, progress, reviews and acceptance evidence. Search its
+documents with `den-tool den search_documents --project-id rusty-rifles --query WORDS`.

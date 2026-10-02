@@ -1,6 +1,6 @@
 # Lane: Existing product reuse
 
-**Always on.** Run this lane on every task.
+Use this packet for review of competing product owners and mechanism placement.
 
 ## One question
 
@@ -15,13 +15,12 @@ noticing that this repository already owns that concept. The result is two owner
 for one concept, which is worse than an absent feature because both look correct
 in isolation.
 
-Campaign #8356 is migrating scattered authorities toward canonical owners
-(authored archetypes, composed character facade over canonical entities,
-`StatsComponent`-owned stats, equipment/effect contributions, concrete
-combat/action owners, active-floor aggregate, one current-state save codec).
-During the migration there will legitimately be two paths for a short time;
-the task must name the temporary adaptation explicitly. A second path with no
-migration note and no removal plan is a finding.
+Canonical owners include authored archetypes, the composed character facade
+over canonical entities, `StatsComponent`-owned stats, equipment/effect
+contributions, concrete combat/action owners, the active-floor aggregate and
+one current-state save codec. A task that introduces a temporary adaptation
+must identify its consumer and removal plan in Den; otherwise a competing path
+is a finding.
 
 ## Basis required for an actionable finding
 

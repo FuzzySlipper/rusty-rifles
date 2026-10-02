@@ -1,10 +1,12 @@
-# Martial command campaign
+# Martial command contracts
 
-Accepted planning direction — 2026-09-20. This document records the conversation's next implementation layer, not implemented behavior. Den owns live status and dependencies; [campaign index](campaign/martial-command-index.md) records the initial plan.
+These contracts describe the party, equipment and combat rules.
+[Gameplay and ownership](gameplay-design.md) maps them to their code owners.
+Authored definitions under `content/` own tunable values.
 
 ## Product contract
 
-One party occupies one dungeon cell and steps/rotates as a group. Charge is a special maneuver, never a replacement movement mode. A 3×3 internal formation has a fixed central commander and six soldiers in eight surrounding positions. The commander cannot attack or be repositioned. Commander death ends the run even with surviving soldiers. Loss of all soldiers alone does not yet end the run; retreat remains possible. No drummer or new sound work belongs to this campaign.
+One party occupies one dungeon cell and steps/rotates as a group. Charge is a special maneuver, never a replacement movement mode. A 3×3 internal formation has a fixed central commander and six soldiers in eight surrounding positions. The commander cannot attack or be repositioned. Commander death ends the run even with surviving soldiers. Loss of all soldiers alone does not end the run; retreat remains possible.
 
 Controls are blunt forward-facing orders: Fire, Melee, Fix bayonets, Unfix bayonets, and a unique ability list. There is no player-selected enemy for combat. Rotation changes forward. Feature focus and inventory/ally selection remain separate concerns.
 
@@ -12,11 +14,11 @@ Controls are blunt forward-facing orders: Fire, Melee, Fix bayonets, Unfix bayon
 
 Formation positions influence protection and melee reach; they are not navigable world subcells. Offensive lanes are targeting preferences, not compulsory parallel firing tracks. Eligible soldiers prefer exposed targets in their own forward lane, then the nearest permitted adjacent lane, then nearest exposed enemy within the lane. Stable identity breaks remaining ties. Three musketeers facing three lanes should distribute naturally; facing one valid enemy they can concentrate fire.
 
-Use actual world positions/crowd offsets and Engine spatial queries for obstruction. Shots stop at the first hostile body or world obstruction; friendly soldiers do not block outgoing fire and there is no friendly damage in this combat slice. Do not alter unrelated world-feature targeting to remove combat selection.
+Use actual world positions/crowd offsets and Engine spatial queries for obstruction. Shots stop at the first hostile body or world obstruction; friendly soldiers do not block outgoing fire and there is no friendly damage. World-feature targeting remains separate from combat orders.
 
-Choose a target at action start and recheck at effect time. A lost/invalid target may be replaced within the original forward attack area; later rotation must not swing a committed attack into a new direction. Weapon reach still limits replacement. No valid participant means no action or cooldown expenditure and a useful reason. Advanced damage prediction, reservation of kills, and automatic overkill avoidance are deferred.
+Choose a target at action start and recheck at effect time. A lost/invalid target may be replaced within the original forward attack area; later rotation must not swing a committed attack into a new direction. Weapon reach still limits replacement. No valid participant means no action or cooldown expenditure and a useful reason.
 
-Defensive screening is distinct from offensive target selection. Prototype front/right/rear/left approach sectors with explicit protection by occupied positions. Near-side soldiers screen before the commander; soldiers beyond the commander do not screen; corners may cover both adjoining sectors. Ordinary hits damage one recipient with no excess-damage spill-through. The exact edge attack distribution and gap rule are intentionally provisional: task M01 must illustrate front-center loss with both corners alive, a single surviving flank guard, a rear attack, and rotations. Choose one deterministic rule that makes gaps and coverage understandable, then implement and tune it. Do not silently treat any surviving soldier as universal protection or demand exact per-soldier collision.
+Defensive screening is distinct from offensive target selection. Incoming attacks use front/right/rear/left sectors and authored lane coverage. Near-side soldiers screen before the commander; soldiers beyond the commander do not screen; corner positions cover their adjoining sectors. One living matching soldier receives an ordinary hit, with stable member identity resolving ties and no excess-damage spill-through. An uncovered approach exposes the commander. `content/definitions/formation.json` owns coverage and lane thresholds; the examples below illustrate the rule without introducing physical soldier collision.
 
 ## Orders and timing
 
@@ -26,19 +28,19 @@ A short useful report explains who acted and why others did not. C# provides ava
 
 ## Equipment and muskets
 
-Use weapon, outfit and accessory slots. Sword-and-shield is one weapon loadout. Support the required martial set: musket, short sword/shield, sword and pike; do not expand into bows, crossbows or a generic ranged arsenal.
+Use weapon, outfit and accessory slots. Sword-and-shield is one weapon loadout. The martial loadouts are musket, short sword/shield, sword and pike.
 
 Typed weapon definitions author attacks, range/coverage, melee reach, charge eligibility, timings and bayonet modifiers. Short swords attack directly ahead; swords also cover adjacent frontage; pikes/fixed bayonets support authored longer reach past friendly positions. Fixed bayonets enable musket melee/charge, reduce accuracy and lengthen reload. Accuracy must have a real, tunable combat effect and legible outcomes; do not add an inert percentage field.
 
-Ordinary ammunition is unlimited. Preserve loaded/unloaded state and automatic timed reload on individual muskets; remove ordinary player-ammo quantities, supply clutter and reload prerequisites from the active gameplay path. Special party ammo types are deferred. Compatible muskets include their bayonet for this slice; no separate bayonet inventory or generic attachment system.
+Ordinary ammunition is unlimited. Each musket retains loaded/unloaded state and automatic timed reload without an ammunition inventory prerequisite. Compatible muskets include their bayonet; it is not a separate inventory item or generic attachment system.
 
-After firing recovery, automatic reload starts when the soldier is able. Melee, bayonet orders and charge can interrupt unfinished reload; initially discard unfinished reload progress. Fix/unfix takes authored time; changed state takes effect on completion. Fixing after an interrupted reload leaves the gun unloaded. Weapon identity carries load and bayonet state through transfer, drop, save and travel; inactive/dropped weapons do not reload themselves. Equipment changes must not erase soldier recovery/cooldowns or duplicate a round.
+After firing recovery, automatic reload starts when the soldier is able. Melee, bayonet orders and charge can interrupt unfinished reload; discard unfinished reload progress. Fix/unfix takes authored time; changed state takes effect on completion. Fixing after an interrupted reload leaves the gun unloaded. Weapon identity carries load and bayonet state through transfer, drop, save and travel; inactive/dropped weapons do not reload themselves. Equipment changes must not erase soldier recovery/cooldowns or duplicate a round.
 
 ## Formation planning and execution
 
 The persistent formation UI is status, not a small live drag surface. Change formation opens a large paused planner containing a draft. The commander stays fixed; valid soldier positions are unique. Cancel discards the draft and restores the prior pause/play state. Execute with a changed valid draft resumes simulation and begins one timed transition. A no-op execute must not impose a cost.
 
-During execution the party cannot step or rotate and affected soldiers cannot act; unchanged soldiers can fight. Use one authored transition duration initially, with old defensive positions until all planned positions commit together. Casualties remain casualties; no automatic gap fill. Show progress and destination clearly. After completion movement resumes. No extra post-transition cooldown or defense debuff initially: the time, movement lock and action loss are the cost. Do not allow reopening the planner to replace or bypass an executing transition.
+During execution the party cannot step or rotate and affected soldiers cannot act; unchanged soldiers can fight. Use one authored transition duration, with old defensive positions until all planned positions commit together. Casualties remain casualties; no automatic gap fill. Show progress and destination clearly. After completion movement resumes. There is no extra post-transition cooldown or defense debuff: the time, movement lock and action loss are the cost. Do not allow reopening the planner to replace or bypass an executing transition.
 
 Resolve interruption of affected soldiers' pending actions explicitly using existing commit/recovery rules; never erase already incurred recovery. Persist execution, while an unexecuted UI draft is not authoritative saved formation state. Existing save/pause behavior should have an explicit, coherent planner interaction.
 
@@ -54,21 +56,11 @@ Extend PartyState/character entities for commander and formation state; RiflesCo
 
 Tunable choices live under content/ as typed validated local definitions: layout/coverage, weapon reach/aim, targeting preferences, action/reload/formation/charge timings, accuracy/bayonet modifiers, cooldowns and starter encounters. Invalid definitions give actionable errors. No silent defaults, general rules DSL, event bus or reusable blobber framework. Readability and later adjustment matter more than extensibility for hypothetical games.
 
-Each task includes its real content, UI/projection, and current-schema persistence changes where relevant. Development saves may break; historical migration is not required. Do not postpone all save integration to the final task. Cooldowns advance on admitted simulation time, not wall time; pause, travel and reload must not grant free readiness.
+Current-schema persistence includes committed gameplay state; development saves have no historical migration guarantee. Cooldowns advance on admitted simulation time, not wall time; pause, travel and reload must not grant free readiness.
 
-## Bounded scope and acceptance
+## Screening and reach examples
 
-Retain exploration, generated floors, feature interactions, inventories, progression and whole-run travel/saves. Adapt existing spell/ability callers to the command model as needed; do not redesign the entire magic catalogue or force targeted support effects into enemy-selection UI. Explicit ally selection can remain where meaningful. Enemy behavior should exercise frontal pressure, flanks and commander exposure without becoming a new AI campaign.
-
-Deferred: drummer/sounds, morale/suppression, multi-cell formations, independently navigating soldiers, physical formation-transition paths, layered penetration, finite basic ammo/special ammo types, separate bayonet items, ranged-weapon variety, last-soldier automatic defeat, advanced target prediction, new art campaign.
-
-Validate with focused rule/state tests plus the required repository check lane (pnpm install --frozen-lockfile once, then bash scripts/check.sh). Use an existing broker session for visible acceptance. Report source/build checks, runtime launch and visible interaction separately. Demonstrate three-lane volley and fallback concentration, weapon-specific melee reach, interruptible reload/bayonets, a casualty exposing the commander, planner cancel/execute under pressure, charge contact/blockage, per-soldier ability readiness, commander defeat with living soldiers, and save/resume/travel without timing resets or duplicated effects.
-
-Finish with bounded tuning from visible play, recording what felt wrong, authored adjustments and remaining limitations. This is an iteration-ready martial layer, not certification of the aspirational brief.
-
-## M01 prototype examples: screening and reach
-
-The initial screening model classifies the source relative to the party's facing
+The screening model classifies the source relative to the party's facing
 into a cardinal approach sector and one of three lateral lanes. Sector selection
 uses the dominant axis; exact diagonals choose front/rear consistently. Lane
 boundaries are authored angular ratios, so a tightly grouped distant crowd may
@@ -111,10 +103,8 @@ across the permitted frontage. Preference selects own lane before the nearest
 permitted alternative, then nearest enemy, with stable identity resolving ties.
 An empty preferred lane never authorizes a short sword to exceed its reach.
 
-These examples establish the prototype's expected behavior; admitted content
-and focused checks implement the exact thresholds. Runtime commander and combat
-integration follow in M02/M04. Visible tuning in M09 may change coverage without
-turning the formation into independently navigable world cells.
+Admitted content owns the exact thresholds. Formation positions remain
+internal coverage and reach rules, not independently navigable world cells.
 
 ## Commander integration policy
 

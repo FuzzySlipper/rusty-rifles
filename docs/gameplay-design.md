@@ -1,10 +1,8 @@
 # Gameplay and ownership
 
-Rifles implements the blobber foundation and martial-command layer. One party
-occupies one cell and faces one cardinal direction. Six soldiers screen a fixed
-central commander. The accepted design is in `martial-command-design.md`; Den owns
-live task status and acceptance. Historical milestone records are Den documents
-`historical-milestone-1` through `historical-milestone-9`.
+One party occupies one cell and faces one cardinal direction. Six soldiers
+screen a fixed central commander. `martial-command-design.md` describes the
+party and combat contracts; this document maps behavior to its owning code.
 
 ## Domain owners
 
@@ -39,7 +37,11 @@ motion, releases occupancy and detaches a defeated body.
 
 Orders resolve each ready soldier's actual weapon and forward lane. Reloads and
 bayonets belong to the unique musket. Formation planning pauses gameplay, and
-execution takes authored admitted time. The commander cannot leave the center;
+execution takes authored admitted time. Member identity remains distinct from
+formation-position identity: selection, equipment and inventory follow the member
+when positions change. C# owns placement legality; the UI displays legal targets
+and submits intents. Inventory transfers and formation changes remain distinct
+actions with rejection feedback. The commander cannot leave the center;
 casualties do not auto-fill gaps. Charge locks movement and its participants.
 Shared abilities retain each provider's cost/recovery with one stable owner for
 a shared effect. Enemy decisions and action policy consume Engine-admitted time;
@@ -104,19 +106,18 @@ UI inventory revisions reject stale presentation commands at the product boundar
 They are not a second Engine ledger or per-frame runtime admission protocol.
 Engine inventory transactions use `Prepare`, `Publish` and `Cancel`.
 
-## Checks and evidence
+## Checks and inspection
 
 `bash scripts/check.sh` covers two source and two check projects, SDK UI types,
 domain checks and CoreCLR staging. Checks collect failures by group. The pure
 floor factory and roster projection have product tests. Offline export is
 `dotnet run --project tests/Game -c Release -- --export-floors DIRECTORY`;
-`docs/evidence/milestone-7/floor-bank/` is a labelled generated snapshot.
+`docs/generated/floor-bank/` is a labelled generated snapshot.
 
 Build/staging, runtime launch and visible interaction are separate claims.
-Keep captures, review results and dated campaign reports in Den. The historical
-archive is indexed in Den document `historical-evidence-index`; Git history is
-preserved. See `engine-integration-notes.md` for current Engine behavior and
-`debug-tools.md` for repeatable inspection commands.
+Keep captures, review results, measurements and progress records in Den.
+See `engine-integration-notes.md` for Engine behavior and `debug-tools.md`
+for repeatable inspection commands.
 
 ### Skeleton musket watch
 

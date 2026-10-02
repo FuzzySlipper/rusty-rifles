@@ -1,8 +1,8 @@
 # Agent review workflow
 
-Status: active convention, 2026-09-20. The Den project document
-`rusty-rifles/agent-review-workflow` owns the policy; the files here are the
-packets handed to reviewers. Where the two disagree, Den wins.
+The Den project document `rusty-rifles/agent-review-workflow` owns review
+policy and lane selection. The files here are reusable reviewer packets.
+Where the two disagree, Den wins. Record review rounds and findings in Den.
 
 Reviewers are persistent agents, not one-shot checks. An identified issue is
 re-checked by the same reviewer in the same session, so round two verifies the
@@ -13,8 +13,7 @@ source-backed findings; the root agent reconciles them and decides.
 
 ## Lane roster
 
-Three lanes run on **every** task (the third is a temporary counterbalance —
-see its lane file for the sunset rule):
+Reuse and runtime-trust questions:
 
 | Lane | Packet |
 | --- | --- |
@@ -22,17 +21,17 @@ see its lane file for the sunset rule):
 | Existing product reuse — repo-local reinvention, placement, and mechanism shape | [lanes/existing-product-reuse.md](lanes/existing-product-reuse.md) |
 | Runtime trust — validation ceremony on trusted paths | [lanes/runtime-trust.md](lanes/runtime-trust.md) |
 
-The reuse lanes are always on because agents skip capabilities that already
-exist. New code gets written for something the Engine already guarantees, or for
-something this repository already owns, instead of extending it. Runtime trust is
-always on for the opposite failure: agents add checking the runtime does not
+The reuse lanes catch skipped capabilities that already exist. New code gets
+written for something the Engine already guarantees, or for something this
+repository already owns, instead of extending it. Runtime trust is
+concerned with the opposite failure: agents add checking the runtime does not
 need. Content-admission gravity (typed records, SHA digests, schema versions)
 leaks into trusted single-player runtime paths as proposal/revision/replay
 steps, repeated hash admission, revision guards, snapshots, and save-shaped
-reads. Campaign #8356 established the current owners; preserve their trusted runtime paths as described in `docs/gameplay-design.md`.
+reads. Preserve the trusted runtime paths and concrete owners described in
+`docs/gameplay-design.md`.
 
-Optional lanes. Pick to a total of three to four reviewers, and pick lanes whose
-questions can disagree with each other:
+Other focused questions:
 
 | Lane | Use when |
 | --- | --- |
@@ -42,9 +41,8 @@ questions can disagree with each other:
 | [Error and boundary paths](lanes/error-and-boundary-paths.md) | the change adds parsing, input handling, or failure paths |
 | [Test claims](lanes/test-claims.md) | the change adds or edits tests, or claims verification |
 
-Do not open a lane that repeats another lane's question in different words. Do
-not run the full roster to be safe: a trivial task is three reviewers, and a task
-that changes a boundary, a save contract, or an ownership seam is four.
+Choose lanes through Den's policy. Do not duplicate another lane's question
+or expand the review beyond the task's contract.
 
 ## Choosing the reviewer tool
 

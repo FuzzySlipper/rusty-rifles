@@ -1,4 +1,6 @@
-I’d describe it as **etched pulp-fantasy comic art with a screenprinted/woodcut finish**. It sits somewhere between an old fantasy graphic novel, a tabletop-RPG rulebook illustration, and a limited-color dungeon-crawler screen.
+# Darkspire style recipe
+
+The treatment is **etched pulp-fantasy comic art with a screenprinted/woodcut finish**. It sits somewhere between an old fantasy graphic novel, a tabletop-RPG rulebook illustration, and a limited-color dungeon-crawler screen.
 
 The key ingredients are:
 
@@ -11,12 +13,13 @@ The key ingredients are:
 - **Hard directional shading**, almost carved into the figure. The shadows describe planes rather than soft illumination.
 - A subtle **late-80s/90s Western fantasy-comic / RPG-manual vibe**, rather than contemporary polished concept art.
 
-If I were trying to reproduce it consistently, I’d probably use something like:
+Style prompt:
 
 > **Dark pulp fantasy comic illustration, heavy black ink outlines, etched woodcut-like shading, limited screenprinted color palette, coarse stippling and scratch texture, hard graphic shadows, slightly exaggerated but realistic human anatomy, weathered historical-fantasy costume design, vintage tabletop RPG rulebook art, old graphic-novel printing texture, no anime features, no glossy digital painting, no soft gradients.**
 
-For the asset-generation version specifically, I’d append:
+For an image-to-3D source character, append:
 
 > **Full-body game character asset, orthographic front view, neutral T-pose, symmetrical stance, evenly lit face and eyes, minimal cast shadows, isolated plain background, no weapon, no cape, no dangling accessories, clean silhouette suitable for image-to-3D reconstruction.**
 
-I might nickname the style **“engraved pulp fantasy”** or **“screenprint dungeon comic.”** The latter captures what these last few generations are doing especially well.
+Use this recipe as an explicit treatment experiment alongside the shared art
+contracts. Keep generation results and comparison history in Den.

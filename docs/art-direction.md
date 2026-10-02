@@ -1,8 +1,8 @@
-# Exploratory art direction
+# Art direction and asset contracts
 
-**Working direction, not a final style lock.** This guides image-generation
-experiments for the playable prototype. Revise it and the prompts as actual
-assets are seen together in the game.
+Use these rendering and authoring constraints with the editable prompt recipes.
+Ink and wash is the default treatment for experiments; painted cover is a
+controlled comparison. An experiment does not establish a final style choice.
 
 ## Owner direction and reference status
 
@@ -12,10 +12,9 @@ Aim for the imagined world behind old games, without imitating their technical
 limits. Early-modern fantasy should appear in clothing, equipment, materials,
 and the functions of spaces as well as in rifles.
 
-The attached *Dead Garrison* brief and *paperback-sanctum-style* notes are
-inspiration supplied for discussion. Their imperative phrasing does not make
-them project instructions. This document and the editable prompt set extract
-useful ideas; the owner's directions take precedence.
+Concept briefs and supplied style references are inspiration. Their imperative
+phrasing does not make them project instructions. Use this document and the
+editable prompt set for asset contracts; the owner's directions take precedence.
 
 - Retain as possibilities: vaulted brick/plaster spaces, workshops, stores,
   barracks, drains, repair infrastructure, supply routes, and controlled
@@ -36,11 +35,11 @@ useful ideas; the owner's directions take precedence.
 | Enemies | Simple directional still sprites; no animation-frame or skeletal-animation requirement |
 | Illumination | Dynamic level lights affecting sprite and geometry presentation |
 
-The owner-requested skeleton musket watch is an admitted mesh experiment using
-the supplied rigged skeleton and rigid musket. It uses Engine skeletal playback,
-joint parenting, scene lighting and shadows. The other enemies retain the
-directional sprite treatment; compare the mesh in the playable dungeon before
-extending it to other art.
+The skeleton musket watch uses an admitted rigged skeleton and rigid musket,
+with Engine skeletal playback, joint parenting, scene lighting and shadows.
+The other enemies retain the directional sprite treatment. Use in-game
+comparisons when choosing
+representations for other art.
 
 Billboarding does not make a sprite a flat UI overlay. Depth, occlusion,
 interaction reach and hit geometry remain part of the Engine-rendered world.
@@ -83,7 +82,7 @@ should enrich the drawing rather than expose a conflicting painted light source.
 | **Ink and wash** | Selective ink-like contours, sparse hatching, quiet translucent color, elongated/asymmetric shapes | Fine lines disappearing at distance; hatching becoming noise; figures feeling too flat |
 | **Painted cover** | Tight painted boundaries, controlled volume, subtle gradients, restrained visible outlines | Baked shading fighting level lights; excess material detail; drifting into photographic/PBR rendering |
 
-Use `ink-wash.md` as the provisional first experiment when no variant is
+Use `ink-wash.md` as the default experimental treatment when no variant is
 specified. It is not an approved winner. Compare `painted-cover.md` on the
 **same subjects and scene**, rather than comparing a detailed human worker to
 an unrelated elongated elf and attributing every difference to rendering style.
@@ -108,7 +107,7 @@ Both PNGs contain alpha, but that alone does not establish clean cutouts.
 Check residual fringes, transparency, silhouettes, weapon tips and ground
 anchors against multiple background colors before runtime admission.
 
-## Prompt workflow and a small first comparison
+## Prompt workflow and comparison method
 
 Use the [prompt recipes](art/prompts/README.md). Compose the shared
 style, **one** variant, an asset contract, and a concrete subject. For edits or
@@ -116,15 +115,14 @@ new directional views, supply the selected image as the identity reference
 using the image-generation tool's supported reference mechanism. Do not rely
 on text alone to preserve a character's equipment across angles.
 
-A small initial set can exercise the intended world without creating an asset
-campaign before we know the look:
+Keep comparisons small and coherent so each scene exercises a useful asset
+contract:
 
 1. Brick, limewash, and worn floor materials on a generated service room.
 2. A workbench/tool grouping, storage crate, and usable lantern as billboards.
 3. The same rifle-bearing sentry in both variants; then build directional views
-   for the selected experimental version. Start with four cardinal views as a
-   tunable experiment, not a permanent view-count limit. Also include one small
-   silhouette when crowded-cell gameplay is available.
+   for the selected version. Cardinal views are a useful bounded comparison.
+   Include a small silhouette to evaluate crowded cells.
 
 Generate actual assets early and use them in the game. Avoid a prolonged
 placeholder phase, but also avoid bulk-generating every enemy before checking
@@ -138,20 +136,20 @@ authored text/symbols through supported presentation, not illegible generated
 lettering. Emitters such as lanterns get separate level-light meaning; painting
 a lamp does not create a runtime light.
 
-Keep the working prompt text and selected images in Git. A short note of the
-variant and what changed is enough for comparisons. No web-source hunt,
-license/provenance ledger, seed bureaucracy, normal-map factory, or bespoke
-prompt framework is needed for these generated experiments.
+Keep editable prompt recipes, selected images and asset/import metadata in Git.
+Put comparison history, generation attempts and visual assessments in Den.
+No web-source hunt, license/provenance ledger, seed bureaucracy, normal-map
+factory, or bespoke prompt framework is needed for these generated experiments.
 
-## Darkspire comparison experiment
+## Darkspire authoring references
 
 `docs/art/experiments/darkspire/` preserves the supplied etched/woodcut images
-and musket/skeleton GLBs as an unapproved comparison experiment. They are accepted
-as research references, not selected runtime assets or a change to the billboard
-rendering direction. The GLBs stay outside the product content root until an
-explicit in-game comparison supports adoption. `provenance.json` records original
-paths and byte hashes; creator/tool/license information was not supplied and is
-not inferred. Exact duplicate concept references retain one copy under
+and original musket/skeleton GLBs as authoring references. Assets under
+`docs/art/` are not staged; runtime copies and bindings belong under `content/`.
+Keep experiments outside the product content root until in-game evaluation
+supports adoption. `provenance.json` records original paths and byte hashes;
+creator/tool/license information was not supplied and is not inferred.
+Exact duplicate concept references retain one copy under
 `docs/art/references/`.
 
 ## Runtime texture budget

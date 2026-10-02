@@ -1,9 +1,7 @@
 # Lane: Runtime trust
 
-**Always on (temporary counterbalance).** Run this lane on every task until
-campaign #8356 has landed and ordinary trusted-path code is the established
-gravity. When that happens, demote this lane to optional or retire it; do not
-keep it as a permanent tax.
+Use this packet to review validation ceremony on trusted runtime paths.
+Den's review policy owns when this lane runs.
 
 ## One question
 
@@ -18,7 +16,7 @@ multiplayer-cheating, MITM, wire-corruption, adversarial-content, or
 future-multiplayer threat model that justifies policing every mutation. There
 are no pointless SHA checks or repeated hashing gates on already-admitted bytes.
 
-Campaign #8356 deliberately removes that ceremony: baseline
+Avoid unnecessary baseline
 proposal/revision/replay/compatibility paths, global `commandRevision` /
 inventory-revision / target-revision guards, whole-state snapshots and rollback
 around ordinary gameplay, repeated hash admission of trusted live state,
@@ -26,7 +24,8 @@ constructing throwaway worlds to re-prove owned state, routing routine reads
 through save capture (`Capture()` to read doors/dressing/anchors), validating
 each retained floor against a synthetic active-party snapshot, and
 schema-version / compatibility-fingerprint gates on current development data.
-A reviewer that re-asks for the removed machinery undoes the campaign.
+Require a concrete consumer or protected property before introducing this
+machinery into a trusted runtime path.
 
 ## Basis required for an actionable finding
 
