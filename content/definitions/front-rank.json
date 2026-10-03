@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "body": "art/mesh/soldier.glb",
+  "weapon": "art/mesh/musket.glb",
+  "joint": "mixamorig:RightHand",
+  "heightScale": 1.8,
+  "facingOffsetDegrees": 180,
+  "forwardOffset": 0.72,
+  "laneSpacing": 0.58,
+  "gripPosition": [
+    0.04720063,
+    0.12164467,
+    -0.07955176
+  ],
+  "gripRotation": [
+    0.28113643,
+    0.3118316,
+    0.59682316,
+    0.68375835
+  ],
+  "gripScale": [
+    0.7,
+    0.7,
+    0.7
+  ],
+  "idleClip": "idle.001",
+  "walkClip": "walk.001",
+  "fireClip": "fire.001",
+  "firePose": 0.2
+}

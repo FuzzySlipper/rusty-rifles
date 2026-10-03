@@ -28,6 +28,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
     private DungeonMaterialCache? dungeonMaterials;
     private GameAudio? audio;
     private MusketeerArt? musketeerArt;
+    private FrontRankArt? frontRankArt;
     // Start mounts the live floor before commands, updates and projection.
     // Run-level state stays on the product.
     private ActiveFloor active = null!;
@@ -45,6 +46,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         // Remove those references before disposing the previous floor resources.
         if (previous is not null) engine.Graphics.PublishSnapshot(ReadOnlySpan<AppearanceFact>.Empty);
         musketeerArt?.ClearFloor();
+        frontRankArt?.ClearFloor();
         next.Combat.EnemyFired += enemy => musketeerArt!.Fire(enemy, next.Scene);
         previous?.Dispose();
     }
@@ -148,6 +150,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
                 (scene, cell) => AimOn(scene, cell, definitions.Combat.AimHeight));
             combatArt = new WorldArt(engine, generatedArt!, definitions.Art);
             musketeerArt = new(engine, definitions.Musketeer);
+            frontRankArt = new(engine, definitions.FrontRank);
             float[] boltColor = Combat.BoltColor;
             boltAppearance = engine.Graphics.CreatePrimitive(new PrimitiveAppearanceRequest(PrimitiveGeometry.Sphere, false,
                 new Color(boltColor[0], boltColor[1], boltColor[2], boltColor[3])));
@@ -562,10 +565,12 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         active.Features.SetExtraCandidates(ItemCandidates());
         active.Features.Observe(active.Exploration);
         phaseStarted = updateProfile.Record(UpdatePhase.FeatureFocus, phaseStarted);
-        active.Features.Present(active.Actor, active.Exploration, itemArt!.Facts(active.Inventory, active.ItemWorld, active.Scene).Concat(CombatFacts()).Concat(active.Generated.Facts()),
+        active.Features.Present(active.Actor, active.Exploration, itemArt!.Facts(active.Inventory, active.ItemWorld, active.Scene).Concat(CombatFacts()).Concat(active.Generated.Facts())
+            .Concat(frontRankArt!.Facts(party, definitions.Formation, active.Exploration, active.Scene, active.Combat, AllocateId)),
             active.Combat.Allies[active.Actor.Id].IsLiving ? 1 : Combat.CorpseScale,
             active.Combat.Allies[active.Features.Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         musketeerArt!.Animate(active.Combat.Enemies);
+        frontRankArt!.Animate(party, active.Exploration, active.Combat);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
         if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(active.Floor, active.Exploration, party, paused, feedback, selectedMember, active.Features.Readout, active.Features.Style, roomLights, active.Features.LightPosition, active.Inventory, active.ItemWorld, active.Scene, definitions.Characters, preset, active.Actor, definitions.ItemArt, CombatProjection, active.Combat.DropReachable, RunProjection, definitions.Formation);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);
@@ -580,6 +585,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
         active.Features?.Dispose();
         itemArt?.Dispose();
         musketeerArt?.Dispose();
+        frontRankArt?.Dispose();
         combatArt?.Dispose();
         boltAppearance?.Dispose();
         spellLight?.Dispose();

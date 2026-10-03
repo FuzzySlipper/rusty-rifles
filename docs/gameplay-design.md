@@ -143,6 +143,23 @@ lights. The product opts into Engine scene shadows; authored lantern and room
 light settings select the requesting lights. Shadow rendering remains entirely
 Engine-owned and applies to the posed body and its attached weapon.
 
+`Presentation/FrontRankArt` represents the living occupants of the three forward
+formation positions with `art/mesh/soldier.glb`. They remain presentation of the
+single party cell: placement and facing follow its interpolated grid pose, and
+formation membership changes at the existing formation commit. Fallen soldiers
+are hidden. Only equipped muskets receive the rigid weapon mesh; other equipment
+has no mesh representation yet. Idle/walk playback and action-sampled firing use
+Engine animation, with the musket attached to `mixamorig:RightHand`.
+
+`definitions/front-rank.json` owns the experiment switch, model scale, spacing,
+forward offset, clips and soldier-specific joint-local grip. The hand's local
+basis differs from the skeleton's despite sharing joint names, so their grip
+rotations differ. `tuning/exploration.json` owns camera height and perspective:
+the view stays level, with a modest eye-height lift to see over the full-height
+front rank. Reload currently returns to idle; the supplied clips do not provide
+a dedicated reload animation. Presentation adds no movement, targeting or save
+authority. Floor replacement clears its published instances before retirement.
+
 `tuning/appearance.json` also owns a low ambient fill. The direct point lights
 can contribute no light to faces pointing away from them; fill keeps those
 textures readable without raising every light or emitting from the materials.

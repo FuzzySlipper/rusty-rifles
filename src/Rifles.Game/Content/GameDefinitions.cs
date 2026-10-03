@@ -19,7 +19,7 @@ namespace Rifles.Game.Content;
 
 internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefinition Party, FormationDefinition Formation,
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
-    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MusketeerDefinition Musketeer, Func<string, ReadOnlyMemory<byte>> ReadContent)
+    CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MusketeerDefinition Musketeer, FrontRankDefinition FrontRank, Func<string, ReadOnlyMemory<byte>> ReadContent)
 {
     private MartialDrillDefinitionSet? martialDrills;
     internal MartialDrillDefinitionSet MartialDrills
@@ -85,7 +85,11 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<AudioDefinition>(read, "definitions/audio.json", x => x.Validate()),
             Read<ChargeDefinition>(read, "definitions/charge.json", x => x.Validate()),
             Read<MusketeerDefinition>(read, "definitions/musketeer.json", x => x.Validate()),
+            Read<FrontRankDefinition>(read, "definitions/front-rank.json", x => x.Validate()),
             read);
+        Require(result.FrontRank.ForwardOffset < result.Exploration.CellSize / 2
+            && result.FrontRank.LaneSpacing < result.Exploration.CellSize / 2,
+            "front-rank placement must stay within the party cell");
         // The formation file is the one authored layout. Adapt its integral
         // 3x3 coordinates to the existing half-cell projection once at admission.
         result = result with { Party = result.Party with { Positions = result.Formation.Cells.Select(cell =>
