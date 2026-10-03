@@ -1,0 +1,419 @@
+{
+  "size": 5,
+  "laneBoundaryRatio": 0.35,
+  "offensiveLaneWidth": 0.65,
+  "maximumLaneFallback": 4,
+  "repositionSeconds": 2.4,
+  "cells": [
+    {
+      "id": "company-1-1",
+      "name": "Rank 1, file 1",
+      "forward": 2,
+      "left": 2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "front-left",
+      "name": "Front left",
+      "forward": 2,
+      "left": 1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "front-center",
+      "name": "Front center",
+      "forward": 2,
+      "left": 0,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "front-right",
+      "name": "Front right",
+      "forward": 2,
+      "left": -1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "company-1-5",
+      "name": "Rank 1, file 5",
+      "forward": 2,
+      "left": -2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "company-2-1",
+      "name": "Rank 2, file 1",
+      "forward": 1,
+      "left": 2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "company-2-2",
+      "name": "Rank 2, file 2",
+      "forward": 1,
+      "left": 1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Left"
+        }
+      ]
+    },
+    {
+      "id": "company-2-3",
+      "name": "Rank 2, file 3",
+      "forward": 1,
+      "left": 0,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "company-2-4",
+      "name": "Rank 2, file 4",
+      "forward": 1,
+      "left": -1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Right"
+        }
+      ]
+    },
+    {
+      "id": "company-2-5",
+      "name": "Rank 2, file 5",
+      "forward": 1,
+      "left": -2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Front",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Front"
+        }
+      ]
+    },
+    {
+      "id": "company-3-1",
+      "name": "Rank 3, file 1",
+      "forward": 0,
+      "left": 2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Left",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "left-guard",
+      "name": "Left guard",
+      "forward": 0,
+      "left": 1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Left",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "commander",
+      "name": "Commander",
+      "forward": 0,
+      "left": 0,
+      "commander": true,
+      "screening": []
+    },
+    {
+      "id": "right-guard",
+      "name": "Right guard",
+      "forward": 0,
+      "left": -1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Right",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "company-3-5",
+      "name": "Rank 3, file 5",
+      "forward": 0,
+      "left": -2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Right",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "company-4-1",
+      "name": "Rank 4, file 1",
+      "forward": -1,
+      "left": 2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Rear"
+        }
+      ]
+    },
+    {
+      "id": "company-4-2",
+      "name": "Rank 4, file 2",
+      "forward": -1,
+      "left": 1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Left"
+        }
+      ]
+    },
+    {
+      "id": "company-4-3",
+      "name": "Rank 4, file 3",
+      "forward": -1,
+      "left": 0,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "company-4-4",
+      "name": "Rank 4, file 4",
+      "forward": -1,
+      "left": -1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Right"
+        }
+      ]
+    },
+    {
+      "id": "company-4-5",
+      "name": "Rank 4, file 5",
+      "forward": -1,
+      "left": -2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Rear"
+        }
+      ]
+    },
+    {
+      "id": "company-5-1",
+      "name": "Rank 5, file 1",
+      "forward": -2,
+      "left": 2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Rear"
+        }
+      ]
+    },
+    {
+      "id": "rear-left",
+      "name": "Rear left",
+      "forward": -2,
+      "left": 1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Left"
+        },
+        {
+          "sector": "Left",
+          "lane": "Rear"
+        }
+      ]
+    },
+    {
+      "id": "rear-center",
+      "name": "Rear center",
+      "forward": -2,
+      "left": 0,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Center"
+        }
+      ]
+    },
+    {
+      "id": "rear-right",
+      "name": "Rear right",
+      "forward": -2,
+      "left": -1,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Rear"
+        }
+      ]
+    },
+    {
+      "id": "company-5-5",
+      "name": "Rank 5, file 5",
+      "forward": -2,
+      "left": -2,
+      "commander": false,
+      "screening": [
+        {
+          "sector": "Rear",
+          "lane": "Right"
+        },
+        {
+          "sector": "Right",
+          "lane": "Rear"
+        }
+      ]
+    }
+  ],
+  "weapons": [
+    {
+      "id": "short-sword",
+      "name": "Short sword and shield",
+      "maximumRowsBehindFront": 0,
+      "maximumLateralLaneDifference": 0,
+      "maximumForwardDistance": 5.4,
+      "aimHalfAngleDegrees": 45
+    },
+    {
+      "id": "sword",
+      "name": "Sword",
+      "maximumRowsBehindFront": 0,
+      "maximumLateralLaneDifference": 1,
+      "maximumForwardDistance": 5.4,
+      "aimHalfAngleDegrees": 45
+    },
+    {
+      "id": "pike",
+      "name": "Pike",
+      "maximumRowsBehindFront": 2,
+      "maximumLateralLaneDifference": 1,
+      "maximumForwardDistance": 6.5,
+      "aimHalfAngleDegrees": 28
+    },
+    {
+      "id": "fixed-bayonet",
+      "name": "Fixed bayonet",
+      "maximumRowsBehindFront": 2,
+      "maximumLateralLaneDifference": 1,
+      "maximumForwardDistance": 6.5,
+      "aimHalfAngleDegrees": 24
+    },
+    {
+      "id": "musket",
+      "name": "Musket",
+      "maximumRowsBehindFront": 4,
+      "maximumLateralLaneDifference": 4,
+      "maximumForwardDistance": 24,
+      "aimHalfAngleDegrees": 35
+    }
+  ]
+}

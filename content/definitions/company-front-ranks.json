@@ -5,8 +5,8 @@
   "joint": "mixamorig:RightHand",
   "heightScale": 1.8,
   "facingOffsetDegrees": 180,
-  "forwardOffset": 0.72,
-  "laneSpacing": 0.58,
+  "forwardOffset": 1.2,
+  "laneSpacing": 0.65,
   "gripPosition": [
     0.04720063,
     0.12164467,
@@ -27,5 +27,5 @@
   "walkClip": "walk.001",
   "fireClip": "fire.001",
   "firePose": 0.2,
-  "rankSpacing": 0.72
+  "rankSpacing": 0.85
 }

@@ -27,7 +27,7 @@ internal static class ForwardOrderRules
                 candidate.ForwardDistance, candidate.LeftOffset, candidate.Exposed)));
         if (target is null) return null;
         ForwardOrderCandidate selected = all.Single(candidate => candidate.Target.ToString(System.Globalization.CultureInfo.InvariantCulture) == target);
-        return new ForwardOrderSelection(selected.Target, FormationRules.DeriveOffensiveLane(selected.LeftOffset, formation.OffensiveLaneWidth));
+        return new ForwardOrderSelection(selected.Target, FormationRules.DeriveOffensiveLane(selected.LeftOffset, formation.OffensiveLaneWidth, formation.FrontRow));
     }
 
     internal static ForwardOrderAvailability Assess(FormationDefinition formation, string attackerCell, bool living, bool busy,
@@ -162,7 +162,7 @@ internal sealed partial class RiflesCombat
             bool exposed = ForwardOrderRules.InOriginalForwardArea(definitions.Formation, reach, originalForward, originalLeft)
                 && hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
             FormationTarget target = new(enemy.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), forward, left, exposed);
-            yield return new OrderTarget(enemy, target, FormationRules.DeriveOffensiveLane(left, definitions.Formation.OffensiveLaneWidth));
+            yield return new OrderTarget(enemy, target, FormationRules.DeriveOffensiveLane(left, definitions.Formation.OffensiveLaneWidth, definitions.Formation.FrontRow));
         }
     }
 

@@ -1,0 +1,130 @@
+{
+  "drills": [
+    {
+      "id": "company-volley",
+      "name": "5x5 company volley",
+      "description": "A full company occupies one enlarged cell. Ten musketeers stand in the two ranks ahead of the centred commander; a skeleton musketeer provides a live firing target.",
+      "facing": "North",
+      "members": [
+        {
+          "member": "company-soldier-1-1",
+          "position": "company-1-1"
+        },
+        {
+          "member": "company-soldier-1-2",
+          "position": "front-left"
+        },
+        {
+          "member": "warden",
+          "position": "front-center"
+        },
+        {
+          "member": "musketeer-a",
+          "position": "front-right"
+        },
+        {
+          "member": "company-soldier-1-5",
+          "position": "company-1-5"
+        },
+        {
+          "member": "company-soldier-2-1",
+          "position": "company-2-1"
+        },
+        {
+          "member": "company-soldier-2-2",
+          "position": "company-2-2"
+        },
+        {
+          "member": "musketeer-b",
+          "position": "company-2-3"
+        },
+        {
+          "member": "company-soldier-2-4",
+          "position": "company-2-4"
+        },
+        {
+          "member": "company-soldier-2-5",
+          "position": "company-2-5"
+        },
+        {
+          "member": "company-soldier-3-1",
+          "position": "company-3-1"
+        },
+        {
+          "member": "blade",
+          "position": "left-guard"
+        },
+        {
+          "member": "commander",
+          "position": "commander"
+        },
+        {
+          "member": "company-soldier-3-4",
+          "position": "right-guard"
+        },
+        {
+          "member": "company-soldier-3-5",
+          "position": "company-3-5"
+        },
+        {
+          "member": "company-soldier-4-1",
+          "position": "company-4-1"
+        },
+        {
+          "member": "company-soldier-4-2",
+          "position": "company-4-2"
+        },
+        {
+          "member": "company-soldier-4-3",
+          "position": "company-4-3"
+        },
+        {
+          "member": "company-soldier-4-4",
+          "position": "company-4-4"
+        },
+        {
+          "member": "company-soldier-4-5",
+          "position": "company-4-5"
+        },
+        {
+          "member": "company-soldier-5-1",
+          "position": "company-5-1"
+        },
+        {
+          "member": "seeker",
+          "position": "rear-left"
+        },
+        {
+          "member": "mender",
+          "position": "rear-center"
+        },
+        {
+          "member": "company-soldier-5-4",
+          "position": "rear-right"
+        },
+        {
+          "member": "company-soldier-5-5",
+          "position": "company-5-5"
+        }
+      ],
+      "enemies": [
+        {
+          "spawnId": "musketeer-patrol",
+          "forward": 2,
+          "left": 0,
+          "placement": "north"
+        }
+      ],
+      "bayonetMembers": [
+        "warden",
+        "musketeer-a",
+        "musketeer-b"
+      ],
+      "forwardBlocked": false,
+      "expected": "Inspect both forward ranks, move and turn as one party, and fire a volley at the skeleton musketeer."
+    }
+  ],
+  "maximumAttackPositions": 12,
+  "selectedMember": "warden",
+  "rifleDefinition": "rifle"
+}

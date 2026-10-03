@@ -18,7 +18,7 @@ internal static class ArchitectureDetailChecks
         ArchitectureDetail.Validate(first, floor);
         ArchitectureDetail.Validate(first, floor, definition);
         ArchitectureDetail.ValidateVoxelResolution(first, floor, definitions.Appearance.VoxelsPerCell,
-            checked((definitions.Exploration.CeilingCells + 1) * definitions.Appearance.VoxelsPerCell));
+            checked(definitions.Exploration.CeilingBaseVoxels(definitions.Appearance.VoxelsPerCell) + definitions.Appearance.VoxelsPerCell));
         Require(first.Facts.Length <= definition.MaxFacts
             && first.Facts.GroupBy(fact => fact.RegionId).All(group => group.Count() <= definition.MaxFactsPerRoom),
             "Architecture detail facts stay within global and room budgets.");
@@ -82,7 +82,7 @@ internal static class ArchitectureDetailChecks
         };
         shallowBacking = shallowBacking with { Identity = ArchitectureDetail.Identity(shallowBacking) };
         RequireRejected(() => ArchitectureDetail.ValidateVoxelResolution(shallowBacking, floor, 1,
-                checked((definitions.Exploration.CeilingCells + 1) * definitions.Appearance.VoxelsPerCell)),
+                checked(definitions.Exploration.CeilingBaseVoxels(definitions.Appearance.VoxelsPerCell) + definitions.Appearance.VoxelsPerCell)),
             "Boundary detail cannot consume the only voxel in a wall cell.");
 
     }

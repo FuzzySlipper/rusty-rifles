@@ -21,13 +21,15 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
     GenerationDefinition Generation, AppearanceDefinition Appearance, FeatureDefinition Features, WorldArtDefinition Art,
     CharacterOptionsDefinition Characters, ItemDefinitions Items, ItemExplorationDefinition ItemExploration, ItemArtDefinition ItemArt, CombatDefinition Combat, CrowdDefinition Crowd, MagicDefinition Magic, HudTuning Hud, RoomCatalogue Rooms, GeneratedFeatureDefinition GeneratedFeatures, RouteSupplyDefinition RouteSupplies, HazardDefinition Hazards, EncounterPlacementDefinition EncounterPlacement, ArchitectureDetailDefinition Architecture, RunDefinition Run, AudioDefinition Audio, ChargeDefinition Charge, MusketeerDefinition Musketeer, FrontRankDefinition FrontRank, Func<string, ReadOnlyMemory<byte>> ReadContent)
 {
+    internal bool CompanyExperimentEnabled { get; init; }
     private MartialDrillDefinitionSet? martialDrills;
     internal MartialDrillDefinitionSet MartialDrills
     {
         get
         {
             if (martialDrills is not null) return martialDrills;
-            var loaded = Read<MartialDrillDefinitionSet>(ReadContent, "definitions/martial-drills.json", x => x.Validate());
+            var loaded = Read<MartialDrillDefinitionSet>(ReadContent,
+                CompanyExperimentEnabled ? "definitions/company-drills.json" : "definitions/martial-drills.json", x => x.Validate());
             loaded.ValidateAgainst(Characters, Formation, Combat, Crowd);
             martialDrills = loaded;
             return loaded;
@@ -60,10 +62,11 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
     internal static GameDefinitions Load(ProductContent content) => Load(content.ReadBytes);
     internal static GameDefinitions Load(Func<string, ReadOnlyMemory<byte>> read)
     {
-        GameDefinitions result = new(Read<ExplorationTuning>(read, "tuning/exploration.json", x => x.Validate()),
-            Read<PartyDefinition>(read, "definitions/party.json", x => x.Validate()),
-            Read<FormationDefinition>(read, "definitions/formation.json", x => x.Validate()),
-            Read<GenerationDefinition>(read, "tuning/generation.json", x => x.Validate()),
+        bool company = Read<CompanyExperimentDefinition>(read, "definitions/company-experiment.json", _ => { }).Enabled;
+        GameDefinitions result = new(Read<ExplorationTuning>(read, company ? "tuning/company-exploration.json" : "tuning/exploration.json", x => x.Validate()),
+            Read<PartyDefinition>(read, company ? "definitions/company-party.json" : "definitions/party.json", x => x.Validate()),
+            Read<FormationDefinition>(read, company ? "definitions/company-formation.json" : "definitions/formation.json", x => x.Validate()),
+            Read<GenerationDefinition>(read, company ? "tuning/company-generation.json" : "tuning/generation.json", x => x.Validate()),
             Read<AppearanceDefinition>(read, "tuning/appearance.json", x => x.Validate()),
             Read<FeatureDefinition>(read, "definitions/exploration-features.json", x => x.Validate()),
             Read<WorldArtDefinition>(read, "definitions/world-art.json", x => x.Validate()),
@@ -75,26 +78,58 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
             Read<CrowdDefinition>(read, "definitions/crowds.json", x => x.Validate()),
             Read<MagicDefinition>(read, "definitions/spells.json", x => x.Validate()),
             Read<HudTuning>(read, "tuning/hud.json", x => x.Validate()),
-            Read<RoomCatalogue>(read, "definitions/rooms.json", x => x.Validate()),
+            Read<RoomCatalogue>(read, company ? "definitions/company-rooms.json" : "definitions/rooms.json", x => x.Validate()),
             Read<GeneratedFeatureDefinition>(read, "definitions/generated-features.json", x => x.Validate()),
             Read<RouteSupplyDefinition>(read, "definitions/route-supplies.json", x => x.Validate()),
             Read<HazardDefinition>(read, "definitions/generated-hazards.json", x => x.Validate()),
-            Read<EncounterPlacementDefinition>(read, "definitions/encounter-placement.json", x => x.Validate()),
+            Read<EncounterPlacementDefinition>(read, company ? "definitions/company-encounters.json" : "definitions/encounter-placement.json", x => x.Validate()),
             Read<ArchitectureDetailDefinition>(read, "definitions/architecture-detail.json", x => x.Validate()),
             Read<RunDefinition>(read, "definitions/expedition.json", x => x.Validate()),
             Read<AudioDefinition>(read, "definitions/audio.json", x => x.Validate()),
             Read<ChargeDefinition>(read, "definitions/charge.json", x => x.Validate()),
             Read<MusketeerDefinition>(read, "definitions/musketeer.json", x => x.Validate()),
-            Read<FrontRankDefinition>(read, "definitions/front-rank.json", x => x.Validate()),
+            Read<FrontRankDefinition>(read, company ? "definitions/company-front-ranks.json" : "definitions/front-rank.json", x => x.Validate()),
             read);
-        Require(result.FrontRank.ForwardOffset < result.Exploration.CellSize / 2
-            && result.FrontRank.LaneSpacing < result.Exploration.CellSize / 2,
+        result = result with { CompanyExperimentEnabled = company };
+        if (company)
+        {
+            StarterPartyPresetDefinition companyParty = Read<StarterPartyPresetDefinition>(read, "definitions/company-roster.json", x => x.Validate());
+            StartingItem[] companyLoadout = Read<StartingItem[]>(read, "definitions/company-loadout.json", x => Require(x is { Length: > 0 }, "company starting loadout"));
+            CompanyEnvironmentDefinition environment = Read<CompanyEnvironmentDefinition>(read, "tuning/company-environment.json", x => x.Validate());
+            result = result with
+            {
+                Characters = result.Characters with { DefaultPresetId = companyParty.Id, Presets = [.. result.Characters.Presets, companyParty] },
+                Items = result.Items with { StartingItems = [.. result.Items.StartingItems, .. companyLoadout] },
+                Appearance = result.Appearance with { VoxelsPerCell = environment.VoxelsPerCell,
+                    LightRange = environment.LightRange, LightIntensity = environment.LightIntensity, AmbientIntensity = environment.AmbientIntensity },
+                Features = result.Features with { Reach = environment.InteractionReach, QueryDistance = environment.QueryDistance,
+                    ActorStepSeconds = environment.ActorStepSeconds },
+                ItemExploration = result.ItemExploration with { Reach = environment.InteractionReach },
+            };
+            CompanyCombatDefinition companyCombat = Read<CompanyCombatDefinition>(read, "tuning/company-combat.json", x => x.Validate());
+            result = result with { Combat = result.Combat with
+            {
+                Actions = result.Combat.Actions.Select(action => action.Kind == CombatActionKind.Melee
+                    ? action with { Range = companyCombat.MeleeRange } : action).ToArray(),
+                Enemies = result.Combat.Enemies.Select(enemy => enemy with
+                {
+                    StepSeconds = enemy.StepSeconds * companyCombat.EnemyStepTimeScale,
+                    Brain = enemy.Attack == CombatActionKind.Melee
+                        ? enemy.Brain with { PreferredMaximumRange = companyCombat.MeleeRange } : enemy.Brain,
+                }).ToArray(),
+            } };
+            result.Combat.Validate();
+            result.Characters.Validate(); result.Items.Validate(); result.Appearance.Validate();
+            result.Features.Validate(); result.ItemExploration.Validate();
+        }
+        Require(result.FrontRank.ForwardOffset + (result.Formation.FrontRow - 1) * result.FrontRank.RankSpacing < result.Exploration.CellSize / 2
+            && result.FrontRank.LaneSpacing * result.Formation.FrontRow < result.Exploration.CellSize / 2,
             "front-rank placement must stay within the party cell");
         // The formation file is the one authored layout. Adapt its integral
-        // 3x3 coordinates to the existing half-cell projection once at admission.
+        // authored square coordinates to the existing half-cell projection once at admission.
         result = result with { Party = result.Party with { Positions = result.Formation.Cells.Select(cell =>
-            new FormationPositionDefinition(cell.Id, cell.Name, 1 - cell.Forward,
-                cell.Forward / 2f, cell.Left / 2f, cell.Commander)).ToArray() } };
+            new FormationPositionDefinition(cell.Id, cell.Name, result.Formation.FrontRow - cell.Forward,
+                cell.Forward / (float)(result.Formation.Size - 1), cell.Left / (float)(result.Formation.Size - 1), cell.Commander)).ToArray() } };
         Require(result.Appearance.InitialStyle == result.Art.InitialStyle
             && result.Appearance.Styles.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)
                 .SetEquals(result.Art.Styles.Select(s => s.Id)), "tuning/appearance.json and definitions/world-art.json must have matching treatments and initial style");
@@ -131,7 +166,7 @@ internal sealed record GameDefinitions(ExplorationTuning Exploration, PartyDefin
         HashSet<string> positionIds = result.Party.Positions.Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         foreach (var preset in result.Characters.Presets)
         {
-            Require(preset.Members.Length == result.Party.MaxPartySize, "preset party capacity");
+            Require(preset.Members.Length <= result.Party.MaxPartySize, "preset party capacity");
             MemberDefinition[] roster = result.Characters.ResolvePreset(preset.Id);
             Require(roster.Count(member => member.Commander) == 1, "preset commander");
             Require(preset.Members.All(m => positionIds.Contains(m.Position)), "preset formation positions");

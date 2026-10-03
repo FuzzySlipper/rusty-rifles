@@ -5,7 +5,7 @@ internal static class ContentChecks
 {
     internal static void Run(string root)
     {
-        byte[] Read(string path) => File.ReadAllBytes(Path.Combine(root, path));
+        byte[] Read(string path) => path == "definitions/company-experiment.json" ? "{\"enabled\":false}"u8.ToArray() : File.ReadAllBytes(Path.Combine(root, path));
         GameDefinitions lazy = GameDefinitions.Load(path => path == "definitions/martial-drills.json" ? "{"u8.ToArray() : Read(path));
         Check.Require(lazy.Characters.Presets.Length > 0, "Invalid debug-only drill content does not block ordinary content admission.");
         Check.Rejected(() => _ = lazy.MartialDrills, "Invalid drills fail only when requested.", "definitions/martial-drills.json");

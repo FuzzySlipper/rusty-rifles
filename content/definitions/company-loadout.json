@@ -1,0 +1,254 @@
+[
+  {
+    "owner": "member:company-soldier-1-1",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-1-1",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-1-2",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-1-2",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-1-5",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-1-5",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-1",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-1",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-2",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-2",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-4",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-4",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-5",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-2-5",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-1",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-1",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-4",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-4",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-5",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-3-5",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-1",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-1",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-2",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-2",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-3",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-3",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-4",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-4",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-5",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-4-5",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-1",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-1",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-4",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-4",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-5",
+    "definition": "rifle",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  },
+  {
+    "owner": "member:company-soldier-5-5",
+    "definition": "coat",
+    "quantity": 1,
+    "equipped": true,
+    "preset": "company-test"
+  }
+]

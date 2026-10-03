@@ -18,7 +18,7 @@ internal sealed class DungeonScene : IDisposable
     private float VoxelCellSize => CellSize / VoxelsPerCell;
     private const int FloorY = 0;
     private const int NavigationY = 1;
-    private int CeilingY => tuning.CeilingCells;
+    private int CeilingBase => tuning.CeilingBaseVoxels(VoxelsPerCell);
     private const ulong GridId = 1;
     private const uint StoneSlot = 1, ExitSlot = 2, DoorSlot = 3, LimewashSlot = 4, FloorDetailSlot = 5;
     private readonly IEngineContext engine;
@@ -61,12 +61,14 @@ internal sealed class DungeonScene : IDisposable
             foreach (GridPoint cell in cells)
             {
                 AddLogicalVoxel(edits, cell, FloorY + floor.Level(cell), cell == floor.Exit ? ExitSlot : StoneSlot);
-                AddLogicalVoxel(edits, cell, CeilingY + floor.Level(cell), StoneSlot);
+                AddVoxelSlab(edits, cell, Subcell(floor.Level(cell), CeilingBase), VoxelsPerCell, StoneSlot);
             }
             foreach (GridPoint wall in walls)
             {
                 int[] neighbors = CardinalDirections.Ordered.Select(d => wall + d.Offset()).Where(cells.Contains).Select(floor.Level).ToArray();
-                for (int y = FloorY + neighbors.Min(); y <= CeilingY + neighbors.Max(); y++) AddLogicalVoxel(edits, wall, y, StoneSlot);
+                int bottom = Subcell(neighbors.Min(), 0);
+                int top = Subcell(neighbors.Max(), CeilingBase + VoxelsPerCell);
+                AddVoxelSlab(edits, wall, bottom, top - bottom, StoneSlot);
             }
             AddArchitecture(edits);
             // Stair treads are explicit traversal geometry, not decorative occluders.
@@ -109,7 +111,8 @@ internal sealed class DungeonScene : IDisposable
     internal void SetDoor(GridPoint door, bool open)
     {
         List<VoxelEdit> edits = [];
-        for (int y = FloorY + floor.Level(door) + 1; y < CeilingY + floor.Level(door); y++) AddLogicalVoxel(edits, door, y, doorMaterial is null ? StoneSlot : DoorSlot);
+        AddVoxelSlab(edits, door, Subcell(floor.Level(door) + 1, 0), CeilingBase - VoxelsPerCell,
+            doorMaterial is null ? StoneSlot : DoorSlot);
         if (open) edits = edits.Select(e => e with { Kind = VoxelEditKind.Clear }).ToList();
         engine.Voxel.ApplyEdits(new VoxelEditTransaction(spatial, edits.ToArray()));
         if (open) closedDoors.Remove(door); else closedDoors.Add(door);
@@ -218,24 +221,30 @@ internal sealed class DungeonScene : IDisposable
 
     private void AddLogicalVoxel(List<VoxelEdit> edits, GridPoint cell, int y, uint material)
     {
-        for (int offsetY = 0; offsetY < VoxelsPerCell; offsetY++)
+        AddVoxelSlab(edits, cell, Subcell(y, 0), VoxelsPerCell, material);
+    }
+
+    private void AddVoxelSlab(List<VoxelEdit> edits, GridPoint cell, int bottom, int height, uint material)
+    {
+        for (int offsetY = 0; offsetY < height; offsetY++)
             for (int offsetZ = 0; offsetZ < VoxelsPerCell; offsetZ++)
                 for (int offsetX = 0; offsetX < VoxelsPerCell; offsetX++)
                     edits.Add(new VoxelEdit(VoxelEditKind.Set, new VoxelAddress(
-                        Subcell(cell.X, offsetX), Subcell(y, offsetY), Subcell(cell.Y, offsetZ)), material));
+                        Subcell(cell.X, offsetX), bottom + offsetY, Subcell(cell.Y, offsetZ)), material));
     }
 
     private void AddArchitecture(List<VoxelEdit> edits)
     {
         if (floor.Architecture is not { } detail) return;
-        ArchitectureDetail.ValidateVoxelResolution(detail, floor, VoxelsPerCell, (CeilingY + 1) * VoxelsPerCell);
+        ArchitectureDetail.ValidateVoxelResolution(detail, floor, VoxelsPerCell, CeilingBase + VoxelsPerCell);
         foreach (var fact in detail.Facts)
         {
             uint material = fact.Material switch { ArchitectureDetailMaterial.Limewash => LimewashSlot,
                 ArchitectureDetailMaterial.Floor => FloorDetailSlot, _ => StoneSlot };
             if (fact.Kind == ArchitectureDetailKind.MaterialRegion)
             {
-                AddLogicalVoxel(edits, fact.Cell, (fact.Surface == ArchitectureDetailSurface.Floor ? FloorY : CeilingY) + floor.Level(fact.Cell), material);
+                AddVoxelSlab(edits, fact.Cell, Subcell(floor.Level(fact.Cell),
+                    fact.Surface == ArchitectureDetailSurface.Floor ? 0 : CeilingBase), VoxelsPerCell, material);
                 continue;
             }
             var side = fact.Side!.Value;

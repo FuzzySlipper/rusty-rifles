@@ -38,9 +38,9 @@ internal static class ForwardAbilityRules
         ArgumentNullException.ThrowIfNull(candidates);
         FormationCellDefinition attacker = formation.Cell(attackerCell);
         return candidates.Where(candidate => candidate.Exposed)
-            .Where(candidate => Math.Abs(attacker.Left - (int)FormationRules.DeriveOffensiveLane(candidate.LeftOffset, formation.OffensiveLaneWidth))
+            .Where(candidate => Math.Abs(attacker.Left - (int)FormationRules.DeriveOffensiveLane(candidate.LeftOffset, formation.OffensiveLaneWidth, formation.FrontRow))
                 <= formation.MaximumLaneFallback)
-            .OrderBy(candidate => Math.Abs(attacker.Left - (int)FormationRules.DeriveOffensiveLane(candidate.LeftOffset, formation.OffensiveLaneWidth)))
+            .OrderBy(candidate => Math.Abs(attacker.Left - (int)FormationRules.DeriveOffensiveLane(candidate.LeftOffset, formation.OffensiveLaneWidth, formation.FrontRow)))
             .ThenBy(candidate => candidate.ForwardDistance * candidate.ForwardDistance + candidate.LeftOffset * candidate.LeftOffset)
             .ThenBy(candidate => candidate.Target)
             .Select(candidate => (ulong?)candidate.Target)
@@ -214,7 +214,7 @@ internal sealed partial class RiflesCombat
                 && currentOffset.Length() <= spell.Range && hit.Present && hit.Kind == SpatialHitKind.Entity && hit.Entity == enemy.Id;
             if (exposed)
                 yield return new AbilityTarget(enemy, currentForward, currentLeft,
-                    FormationRules.DeriveOffensiveLane(currentLeft, definitions.Formation.OffensiveLaneWidth));
+                    FormationRules.DeriveOffensiveLane(currentLeft, definitions.Formation.OffensiveLaneWidth, definitions.Formation.FrontRow));
         }
     }
 

@@ -15,6 +15,10 @@ internal static class BootstrapAndSaveChecks
     private static void Require(bool condition, string message) => Check.Require(condition, message);
     internal static void Run(GameDefinitions definitions, string contentRoot)
     {
+byte[] Read(string path) => path == "definitions/company-experiment.json"
+    ? System.Text.Encoding.UTF8.GetBytes(definitions.CompanyExperimentEnabled ? "{\"enabled\":true}" : "{\"enabled\":false}")
+    : File.ReadAllBytes(Path.Combine(contentRoot, path));
+string explorationPath = definitions.CompanyExperimentEnabled ? "tuning/company-exploration.json" : "tuning/exploration.json";
 var hud = new Rifles.Game.HudPublication();
 Require(hud.Take(.1, true), "Initial HUD is immediate.");
 hud.Advance(.05);
@@ -37,15 +41,15 @@ foreach (string invalid in new[] { "{", "{}", "null", System.Text.Json.JsonSeria
 {
     try
     {
-        GameDefinitions.Load(path => path == "tuning/exploration.json"
-            ? System.Text.Encoding.UTF8.GetBytes(invalid) : File.ReadAllBytes(Path.Combine(contentRoot, path)));
+        GameDefinitions.Load(path => path == explorationPath
+            ? System.Text.Encoding.UTF8.GetBytes(invalid) : Read(path));
         throw new Exception("Invalid content was accepted.");
     }
-    catch (InvalidDataException error) { Require(error.Message.Contains("tuning/exploration.json"), "Content errors identify the asset."); }
+    catch (InvalidDataException error) { Require(error.Message.Contains(explorationPath), "Content errors identify the asset."); }
 }
-GameDefinitions retuned = GameDefinitions.Load(path => path == "tuning/exploration.json"
+GameDefinitions retuned = GameDefinitions.Load(path => path == explorationPath
     ? System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(definitions.Exploration with { StepSeconds = .44 }, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } })
-    : File.ReadAllBytes(Path.Combine(contentRoot, path)));
+    : Read(path));
 Require(retuned.Exploration.StepSeconds == .44, "Authored tuning reaches the typed domain.");
 // Exercise the actual game's composition of graph intent and physical geometry.
 foreach (ulong seed in new ulong[] { 0, 1, 29, 83 })
@@ -175,14 +179,15 @@ ItemInventory savedInventory = new(definitions.Items,
     .Concat(savedItemWorld.Anchors.Select(a => new PackOwner(a.Id, a.Key,
         a.Key == "crate" ? definitions.Items.Container.Mass : definitions.Items.Anchor.Mass,
         a.Key == "crate" ? definitions.Items.Container.Space : definitions.Items.Anchor.Space))));
-savedInventory.GrantStarting(AllocateDressingId);
+savedInventory.GrantStarting(AllocateDressingId, definitions.Characters.DefaultPresetId);
 savedDressing.Bind(saveGrid);
 ulong savedObserverId = savedDressing.ObserverId;
 var savedGeneratedGates = Rifles.Game.Generation.GeneratedFeatures.Resolve(savedFloor, AllocateDressingId);
 List<EnemySnapshot> saveEnemies = [];
 var savedEncounterPlacement = new EncounterPlacementResolver(definitions.EncounterPlacement).Resolve(savedFloor.Seed, savedFloor,
     definitions.Combat, definitions.Crowd, savedFloor.Cells.Where(saveGrid.Occupied).Append(savedItemWorld.Capture().Door).Concat(savedGeneratedGates.Select(g => g.Cell)).ToHashSet());
-Require(savedEncounterPlacement.Accepted, "Saved fixture encounter placement accepted.");
+Require(savedEncounterPlacement.Accepted, "Saved fixture encounter placement accepted: " + System.Text.Json.JsonSerializer.Serialize(savedEncounterPlacement));
+if (!savedEncounterPlacement.Accepted) throw new InvalidDataException("Saved encounter fixture rejected.");
 foreach (var placed in savedEncounterPlacement.Instances)
 {
     var spawn = definitions.Combat.Encounter.Single(s => s.Id == placed.SpawnId);
@@ -289,7 +294,7 @@ try
 {
     GameDefinitions.Load(path => path == "definitions/world-art.json"
         ? System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(Path.Combine(contentRoot, path)).Replace("ink-wash", "different-treatment"))
-        : File.ReadAllBytes(Path.Combine(contentRoot, path)));
+        : Read(path));
     throw new Exception("Mismatched voxel/sprite treatments were accepted.");
 }
 catch (InvalidDataException error)

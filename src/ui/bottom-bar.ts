@@ -36,24 +36,6 @@ function authoredPositions(state: Values): Array<{ id: string; name: string; ran
     .sort((left, right) => left.rank - right.rank || left.id.localeCompare(right.id));
 }
 
-// Formation-local grid cell from authored offsets. The bank lays cells on a
-// 0.5 step around (forward 0, left 0); col grows to the party's right,
-// row grows toward the rear. Returns null outside the 3×3 board (including
-// non-finite input) so stray positions overflow instead of throwing.
-// INVARIANT: the bank uses exact 0.5 steps, so every authored cell maps
-// 1:1 with no rounding collisions; update this if the lattice ever changes.
-function gridCell(offsetForward: number, offsetLeft: number): { col: number; row: number } | null {
-  if (!Number.isFinite(offsetForward) || !Number.isFinite(offsetLeft)) return null;
-  const col = Math.round(1 - offsetLeft / 0.5);
-  const row = Math.round(1 - offsetForward / 0.5);
-  if (col < 0 || col > 2 || row < 0 || row > 2) return null;
-  return { col, row };
-}
-
-function isCenterCell(col: number, row: number): boolean {
-  return col === 1 && row === 1;
-}
-
 const tokenPalette = ['#7fb3d5', '#8ca65c', '#e4bd63', '#c96a5a', '#9b7bd5', '#6fc2b4', '#d58cc0', '#a5c65c', '#6a9ae0', '#e08c5a'];
 
 function initials(name: string): string {
@@ -81,7 +63,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   bar.setAttribute('aria-label', 'Party status bar');
   bar.dataset.rustyUiInteractive = 'true';
   bar.dataset.partyBar = 'true';
-  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr) 150px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;overflow:hidden;max-height:min(180px,25.5vh)';
+  bar.style.cssText = 'box-sizing:border-box;position:fixed;left:0;right:0;bottom:0;z-index:1;display:grid;grid-template-columns:minmax(140px,170px) minmax(0,1fr) 150px;gap:10px;align-items:stretch;padding:6px 14px;background:#141610f2 url("/product-ui/bar-backdrop.png") no-repeat center/cover;border-top:1px solid #74694e;color:#eee6d5;font:13px/1.35 system-ui;pointer-events:auto;overflow:hidden;max-height:min(180px,25.5vh)';
 
   const formationSection = document.createElement('section');
   formationSection.setAttribute('aria-label', 'Formation');
@@ -89,8 +71,8 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
   formationGrid.dataset.barFormation = 'true';
   formationGrid.tabIndex = -1;
   formationGrid.setAttribute('role', 'group');
-  formationGrid.setAttribute('aria-label', '3×3 party formation. The commander stays fixed at the center; select a party member for inventory or ally targeting.');
-  formationGrid.style.cssText = 'box-sizing:border-box;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px;width:min(100%,128px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
+  formationGrid.setAttribute('aria-label', 'Party formation. The commander stays fixed at the center; select a party member for inventory or ally targeting.');
+  formationGrid.style.cssText = 'box-sizing:border-box;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px;width:min(100%,150px);aspect-ratio:1/1;margin:0 auto;border:2px solid #6b5f45;border-radius:3px;background:linear-gradient(#1d201b,#141610);box-shadow:inset 0 0 24px #000000aa';
   const formationOverflow = document.createElement('div');
   formationOverflow.dataset.barFormationOverflow = 'true';
   formationOverflow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;min-height:0';
@@ -304,12 +286,20 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
     // Grid placement: every authored position renders in its formation-local
     // cell (row 0 = front, always at the top — turning the party never
     // shuffles the board; world rotation lives in C# hit geometry), with an
-    // empty gap cell where unoccupied. Offsets outside the 3x3 board, and
-    // members on unauthored positions, overflow into the strip below so a
-    // larger future party never breaks the layout.
+    // empty gap cell where unoccupied. Board dimensions follow the authored
+    // projection; members on unauthored positions appear below the board.
     const claimed = new Set<string>();
     const placed: Array<{ key: string; id: string; member: Values; positionId: string; color: string; cell: { col: number; row: number } | null } | { key: string; id: null; position: { id: string; name: string }; cell: { col: number; row: number } | null }> = [];
     const layout = authoredPositions(state);
+    const forwards = [...new Set(layout.map(position => position.offsetForward))].sort((a, b) => b - a);
+    const lefts = [...new Set(layout.map(position => position.offsetLeft))].sort((a, b) => b - a);
+    formationGrid.style.gridTemplateRows = `repeat(${forwards.length},1fr)`;
+    formationGrid.style.gridTemplateColumns = `repeat(${lefts.length},1fr)`;
+    formationGrid.setAttribute('aria-label', `${lefts.length}×${forwards.length} party formation. The commander stays fixed at the center; select a party member for inventory or ally targeting.`);
+    const gridCell = (forward: number, left: number): { col: number; row: number } | null => {
+      const row = forwards.indexOf(forward), col = lefts.indexOf(left);
+      return row < 0 || col < 0 ? null : { row, col };
+    };
     const colorFor = (index: number): string => tokenPalette[index % tokenPalette.length];
     for (const [index, position] of layout.entries()) {
       const cell = gridCell(position.offsetForward, position.offsetLeft);
@@ -398,7 +388,7 @@ export function mountBottomBar(root: Element, command: (action: string, fields?:
       // The commander owns the center. If a malformed projection leaves it
       // empty, omit a moveable gap there; off-board gaps stay omitted too.
       if (item.id === null) {
-        if (item.cell === null || isCenterCell(item.cell.col, item.cell.row)) {
+        if (item.cell === null || (lefts[item.cell.col] === 0 && forwards[item.cell.row] === 0)) {
           // No UI for these: the post-loop relocation below restores focus
           // if the removed token had it.
           const stale = memberTokens.get(item.key);

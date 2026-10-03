@@ -1,0 +1,435 @@
+{
+  "id": "company-garrison-rooms",
+  "rooms": [
+    {
+      "id": "guard-hall",
+      "title": "Guard Hall",
+      "function": "guard-post",
+      "landmark": "Wide open crossing",
+      "nodeKinds": [
+        "Start",
+        "Junction"
+      ],
+      "plan": [
+        ".....",
+        ".....",
+        "....."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 1
+      }
+    },
+    {
+      "id": "receiving-bay",
+      "title": "Receiving Bay",
+      "function": "supply-receiving",
+      "landmark": "Open loading bay",
+      "nodeKinds": [
+        "Start",
+        "Resource"
+      ],
+      "plan": [
+        "...",
+        "...",
+        "..."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 1,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 2,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 1,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 1,
+        "y": 1
+      }
+    },
+    {
+      "id": "powder-bays",
+      "title": "Powder Bays",
+      "function": "powder-storage",
+      "landmark": "Compact magazine",
+      "nodeKinds": [
+        "Treasure",
+        "Key"
+      ],
+      "plan": [
+        "...",
+        "...",
+        "..."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 1,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 2,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 1,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 1,
+        "y": 1
+      }
+    },
+    {
+      "id": "records-alcove",
+      "title": "Records Alcove",
+      "function": "records-storage",
+      "landmark": "Single rear alcove",
+      "nodeKinds": [
+        "Treasure",
+        "Key",
+        "Resource"
+      ],
+      "plan": [
+        "...",
+        "...",
+        "#.#"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 1,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 2,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 1,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 1,
+        "y": 1
+      }
+    },
+    {
+      "id": "mess-room",
+      "title": "Mess Room",
+      "function": "mess",
+      "landmark": "Wide open crossing",
+      "nodeKinds": [
+        "Resource",
+        "Goal"
+      ],
+      "plan": [
+        ".....",
+        ".....",
+        "....."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 1
+      }
+    },
+    {
+      "id": "watch-gallery",
+      "title": "Watch Gallery",
+      "function": "watch",
+      "landmark": "Long narrow gallery",
+      "nodeKinds": [
+        "Gate",
+        "Goal",
+        "Shortcut"
+      ],
+      "plan": [
+        "#.#",
+        "#.#",
+        "...",
+        "#.#",
+        "#.#"
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 1,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 2,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 1,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 1,
+        "y": 2
+      }
+    },
+    {
+      "id": "drain-crossing",
+      "title": "Drain Crossing",
+      "function": "drainage",
+      "landmark": "Wide open crossing",
+      "nodeKinds": [
+        "Hazard",
+        "Junction"
+      ],
+      "plan": [
+        ".....",
+        ".....",
+        "....."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 1
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 2
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 1
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 1
+      }
+    },
+    {
+      "id": "redoubt-chamber",
+      "title": "Redoubt Chamber",
+      "function": "defense",
+      "landmark": "Four stone piers",
+      "nodeKinds": [
+        "Gate",
+        "Goal"
+      ],
+      "plan": [
+        ".....",
+        ".#.#.",
+        ".....",
+        ".#.#.",
+        "....."
+      ],
+      "exits": [
+        {
+          "id": "north",
+          "cell": {
+            "x": 2,
+            "y": 0
+          },
+          "direction": "North"
+        },
+        {
+          "id": "east",
+          "cell": {
+            "x": 4,
+            "y": 2
+          },
+          "direction": "East"
+        },
+        {
+          "id": "south",
+          "cell": {
+            "x": 2,
+            "y": 4
+          },
+          "direction": "South"
+        },
+        {
+          "id": "west",
+          "cell": {
+            "x": 0,
+            "y": 2
+          },
+          "direction": "West"
+        }
+      ],
+      "content": {
+        "x": 2,
+        "y": 2
+      }
+    }
+  ]
+}

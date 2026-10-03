@@ -90,8 +90,8 @@ internal static class FormationRulesChecks
         Require(FormationRules.SelectPreferredTarget(formation, "short-sword", "front-center",
             [new FormationTarget("preferred-but-sideways", 2, .8f, true)]) is null,
             "Lane preference cannot expand a weapon's physical reach.");
-        Require(FormationRules.DeriveOffensiveLane(.8f, formation.OffensiveLaneWidth) == OffensiveLane.Left
-            && FormationRules.DeriveOffensiveLane(0, formation.OffensiveLaneWidth) == OffensiveLane.Center,
+        Require(FormationRules.DeriveOffensiveLane(.8f, formation.OffensiveLaneWidth, formation.FrontRow) == OffensiveLane.Left
+            && FormationRules.DeriveOffensiveLane(0, formation.OffensiveLaneWidth, formation.FrontRow) == OffensiveLane.Center,
             "Offensive lanes derive once from actual party-relative crowd offsets.");
     }
 

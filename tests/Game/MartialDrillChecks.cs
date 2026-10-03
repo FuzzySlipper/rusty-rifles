@@ -47,8 +47,15 @@ internal static class MartialDrillChecks
         {
             ExpeditionSnapshot prepared = Rifles.Game.Debugging.MartialDrillBuilder.PrepareMartialDrill(definitions, snapshot, drill);
             _ = ExpeditionCodec.Validate(prepared, definitions);
+            if (definitions.CompanyExperimentEnabled)
+            {
+                Require(prepared.Members.Length == 25 && prepared.Combat.Members.Length == 25,
+                    "Company drill saves and restores all 25 party/action owners.");
+                continue;
+            }
             if (drill.Id == "concentration") concentration = prepared;
         }
+        if (definitions.CompanyExperimentEnabled) return;
         ExpeditionSnapshot preparedConcentration = concentration
             ?? throw new InvalidOperationException("The concentration drill is required.");
 

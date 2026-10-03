@@ -67,8 +67,9 @@ internal sealed class FrontRankArt : IDisposable
             if (!soldiers.TryGetValue(member.InstanceId, out Soldier? soldier))
                 soldiers.Add(member.InstanceId, soldier = new(allocate(), allocate()));
             FormationCellDefinition cell = formation.Cells.Single(cell => cell.Id == member.Position);
-            bool visible = definition.Enabled && member.IsLiving && cell.Forward == 1;
-            Vector3 offset = new(-cell.Left * definition.LaneSpacing, 0, -definition.ForwardOffset);
+            bool visible = definition.Enabled && member.IsLiving && cell.Forward > 0;
+            float forward = definition.ForwardOffset + (cell.Forward - 1) * definition.RankSpacing;
+            Vector3 offset = new(-cell.Left * definition.LaneSpacing, 0, -forward);
             yield return new(soldier.BodyId, false, 0,
                 new(ground + Vector3.Transform(offset, yaw), rotation, new(definition.HeightScale)), body, visible, RenderLayer.Scene);
             yield return WeaponFact(soldier, visible && combat.WeaponCapabilities(member.InstanceId) is { FireDamage: > 0 });
@@ -80,7 +81,7 @@ internal sealed class FrontRankArt : IDisposable
             Vector(definition.GripScale)), weapon, visible, RenderLayer.Scene);
 
     // The ordinary scene publication admits bodies and children before attachment.
-    internal void Animate(PartyState party, ExplorationState exploration, RiflesCombat combat)
+    internal void Animate(PartyState party, FormationDefinition formation, ExplorationState exploration, RiflesCombat combat)
     {
         foreach (var member in party.Soldiers)
         {
@@ -88,7 +89,7 @@ internal sealed class FrontRankArt : IDisposable
             if (soldier.Animation is null)
             {
                 engine.Graphics.PublishChanges(new(new[] { WeaponFact(soldier, definition.Enabled && member.IsLiving
-                    && member.Rank == 0 && combat.WeaponCapabilities(member.InstanceId) is { FireDamage: > 0 }) }, ReadOnlyMemory<ulong>.Empty,
+                    && formation.Cell(member.Position).Forward > 0 && combat.WeaponCapabilities(member.InstanceId) is { FireDamage: > 0 }) }, ReadOnlyMemory<ulong>.Empty,
                     new MeshJointAttachment[] { new(soldier.WeaponId, definition.Joint) }));
                 soldier.Animation = engine.Animation.CreateInstance(new(body, soldier.BodyId));
             }

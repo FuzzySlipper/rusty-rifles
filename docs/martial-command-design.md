@@ -6,7 +6,7 @@ Authored definitions under `content/` own tunable values.
 
 ## Product contract
 
-One party occupies one dungeon cell and steps/rotates as a group. Charge is a special maneuver, never a replacement movement mode. A 3×3 internal formation has a fixed central commander and six soldiers in eight surrounding positions. The commander cannot attack or be repositioned. Commander death ends the run even with surviving soldiers. Loss of all soldiers alone does not end the run; retreat remains possible.
+One party occupies one dungeon cell and steps/rotates as a group. Charge is a special maneuver, never a replacement movement mode. The patrol uses a 3×3 internal formation with a fixed central commander and six soldiers. The enabled company experiment uses a 5×5 formation with 24 soldiers around the same fixed center; it still occupies one world cell. The commander cannot attack or be repositioned. Commander death ends the run even with surviving soldiers. Loss of all soldiers alone does not end the run; retreat remains possible.
 
 Controls are blunt forward-facing orders: Fire, Melee, Fix bayonets, Unfix bayonets, and a unique ability list. There is no player-selected enemy for combat. Rotation changes forward. Feature focus and inventory/ally selection remain separate concerns.
 
@@ -18,11 +18,11 @@ Use actual world positions/crowd offsets and Engine spatial queries for obstruct
 
 Choose a target at action start and recheck at effect time. A lost/invalid target may be replaced within the original forward attack area; later rotation must not swing a committed attack into a new direction. Weapon reach still limits replacement. No valid participant means no action or cooldown expenditure and a useful reason.
 
-Defensive screening is distinct from offensive target selection. Incoming attacks use front/right/rear/left sectors and authored lane coverage. Near-side soldiers screen before the commander; soldiers beyond the commander do not screen; corner positions cover their adjoining sectors. One living matching soldier receives an ordinary hit, with stable member identity resolving ties and no excess-damage spill-through. An uncovered approach exposes the commander. `content/definitions/formation.json` owns coverage and lane thresholds; the examples below illustrate the rule without introducing physical soldier collision.
+Defensive screening is distinct from offensive target selection. Incoming attacks use front/right/rear/left sectors and authored lane coverage. Near-side soldiers screen before the commander; soldiers beyond the commander do not screen; corner positions cover their adjoining sectors. The outermost matching rank or file screens first. One living matching soldier receives an ordinary hit, with stable member identity resolving equal-depth ties and no excess-damage spill-through. An uncovered approach exposes the commander. The selected formation definition owns coverage and lane thresholds (`formation.json` for the patrol, `company-formation.json` for the experiment); the examples below illustrate the rule without introducing physical soldier collision.
 
 ## Orders and timing
 
-Orders fan out to eligible soldiers; unready soldiers skip rather than queue a surprise attack. Each participant owns windup, effect, recovery and relevant cooldowns. An order is not a shared uniform cooldown. The ability menu groups by stable ability ID, displays eligible/total users and readiness, and starts all eligible owners. Party maneuvers such as Charge run once and coordinate their contributors, never six separate movement operations or six duplicate party buffs. Distinguish effect scope from the number of ability providers.
+Orders fan out to eligible soldiers; unready soldiers skip rather than queue a surprise attack. Each participant owns windup, effect, recovery and relevant cooldowns. An order is not a shared uniform cooldown. The ability menu groups by stable ability ID, displays eligible/total users and readiness, and starts all eligible owners. Party maneuvers such as Charge run once and coordinate their contributors, never separate movement operations or duplicate party buffs per soldier. Distinguish effect scope from the number of ability providers.
 
 A short useful report explains who acted and why others did not. C# provides availability and execution checks from the same rules; TypeScript displays them. Existing packaged diagnostics should report target lane/fallback, obstruction, reach, readiness, screening recipient and commander exposure.
 

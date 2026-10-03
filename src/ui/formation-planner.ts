@@ -42,6 +42,16 @@ export function mountFormationPlanner(root: Element, command: (action: string, f
         const a = record(left), b = record(right);
         return Number(b.offsetForward) - Number(a.offsetForward) || Number(b.offsetLeft) - Number(a.offsetLeft);
       });
+      const files = new Set(positions.map(([, raw]) => Number(record(raw).offsetLeft))).size;
+      grid.style.gridTemplateColumns = `repeat(${files},minmax(0,1fr))`;
+      const company = files === 5;
+      overlay.style.fontSize = company ? '14px' : '16px';
+      overlay.style.padding = company ? '18px' : '24px';
+      heading.style.margin = company ? '0 0 8px' : '';
+      instructions.style.margin = company ? '0 0 10px' : '';
+      grid.style.gap = company ? '6px' : '12px';
+      grid.style.margin = company ? '8px auto' : '20px auto';
+      pending.style.margin = company ? '8px 0' : '12px 0';
       for (const [positionId, raw] of positions) {
         const position = record(raw);
         const memberId = Object.keys(draft).find(id => draft[id] === positionId) ?? '';
@@ -50,7 +60,7 @@ export function mountFormationPlanner(root: Element, command: (action: string, f
         const living = Number(member.vitality) > 0;
         const cell = document.createElement('button'); cell.type = 'button';
         cell.dataset.formationPosition = positionId;
-        cell.style.cssText = `min-height:110px;white-space:pre-line;font:inherit;border:2px solid ${memberId && memberId === selected ? '#ffe197' : '#776e56'};border-radius:6px;background:${center ? '#4b3a20' : '#283128'};color:#f0e7ce;padding:12px`;
+        cell.style.cssText = `min-height:${company ? '76px' : '110px'};white-space:pre-line;font:inherit;border:2px solid ${memberId && memberId === selected ? '#ffe197' : '#776e56'};border-radius:6px;background:${center ? '#4b3a20' : '#283128'};color:#f0e7ce;padding:${company ? '8px' : '12px'}`;
         cell.textContent = center
           ? `${text(member.name) || 'Commander'}\n${text(member.vitality)}/${text(member.maximumVitality)} health\nFixed center`
           : `${text(position.name)}\n${memberId ? text(member.name) : 'Empty'}${memberId ? `\n${text(member.vitality)}/${text(member.maximumVitality)} health` : ''}`;

@@ -50,7 +50,8 @@ internal static class ExpeditionCodec
         // A travelling party moves untouched: its vitals, entities, books,
         // and markers are live-continuous. Only fresh boots rebuild.
         PartyState party = travellingParty ?? PartyState.FromSnapshot(definitions.Party.Positions, definitions.Party.MaxPartySize, saved.Roster, saved.Members);
-        GameDefinitions.Require(party.Members.Count == definitions.Party.MaxPartySize && party.Commander is not null, "saved commander and squad roster");
+        GameDefinitions.Require(party.Members.Count == definitions.Characters.GetPreset(saved.Preset).Members.Length
+            && party.Commander is not null, "saved commander and squad roster");
         inventory.BindMembers(party.Entities, party.Members);
         foreach (RiflesCharacter member in party.Members)
         {

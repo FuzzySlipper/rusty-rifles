@@ -11,7 +11,12 @@ using Rusty.Engine.Entities;
 using Rusty.Engine.Mechanics;
 
 string contentRoot = Path.GetFullPath("content");
-GameDefinitions definitions = GameDefinitions.Load(path => File.ReadAllBytes(Path.Combine(contentRoot, path)));
+byte[] ReadContent(string path) => File.ReadAllBytes(Path.Combine(contentRoot, path));
+GameDefinitions company = GameDefinitions.Load(path => path == "definitions/company-experiment.json" ? "{\"enabled\":true}"u8.ToArray() : ReadContent(path));
+GameDefinitions definitions = GameDefinitions.Load(path => path == "definitions/company-experiment.json" ? "{\"enabled\":false}"u8.ToArray() : ReadContent(path));
+Check.Run("CompanyChecks", () => CompanyChecks.Run(company));
+Check.Run("CompanyBootstrapAndSaveChecks", () => BootstrapAndSaveChecks.Run(company, contentRoot));
+if (args.Contains("--company-only", StringComparer.Ordinal)) return Check.Finish();
 Check.Run("ExpeditionChecks", () => ExpeditionChecks.Run(definitions));
 Check.Run("RoomCatalogueChecks", () => RoomCatalogueChecks.Run(definitions));
 Check.Run("GeneratedFeatureChecks", () => GeneratedFeatureChecks.Run(definitions));

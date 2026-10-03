@@ -1,0 +1,9 @@
+{
+  "voxelsPerCell": 4,
+  "lightRange": 26,
+  "lightIntensity": 24,
+  "ambientIntensity": 0.16,
+  "interactionReach": 6,
+  "queryDistance": 24,
+  "actorStepSeconds": 2.8
+}

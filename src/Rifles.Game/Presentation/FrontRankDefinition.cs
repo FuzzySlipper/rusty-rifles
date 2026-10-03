@@ -4,7 +4,7 @@ using Rifles.Game.Content;
 namespace Rifles.Game.Presentation;
 
 internal sealed record FrontRankDefinition(bool Enabled, string Body, string Weapon, string Joint,
-    float HeightScale, float FacingOffsetDegrees, float ForwardOffset, float LaneSpacing,
+    float HeightScale, float FacingOffsetDegrees, float ForwardOffset, float RankSpacing, float LaneSpacing,
     float[] GripPosition, float[] GripRotation, float[] GripScale,
     string IdleClip, string WalkClip, string FireClip, float FirePose)
 {
@@ -14,6 +14,7 @@ internal sealed record FrontRankDefinition(bool Enabled, string Body, string Wea
             .All(value => !string.IsNullOrWhiteSpace(value)), "front-rank model paths, joint and clips");
         GameDefinitions.Require(float.IsFinite(HeightScale) && HeightScale > 0
             && float.IsFinite(FacingOffsetDegrees) && float.IsFinite(ForwardOffset) && ForwardOffset > 0
+            && float.IsFinite(RankSpacing) && RankSpacing > 0
             && float.IsFinite(LaneSpacing) && LaneSpacing > 0, "front-rank scale and placement");
         GameDefinitions.Require(GripPosition is { Length: 3 } && GripRotation is { Length: 4 }
             && GripScale is { Length: 3 } && GripPosition.Concat(GripRotation).Concat(GripScale).All(float.IsFinite)

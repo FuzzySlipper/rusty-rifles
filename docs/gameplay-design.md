@@ -143,20 +143,34 @@ lights. The product opts into Engine scene shadows; authored lantern and room
 light settings select the requesting lights. Shadow rendering remains entirely
 Engine-owned and applies to the posed body and its attached weapon.
 
-`Presentation/FrontRankArt` represents the living occupants of the three forward
-formation positions with `art/mesh/soldier.glb`. They remain presentation of the
+`Presentation/FrontRankArt` represents living soldiers in formation rows
+ahead of the commander with `art/mesh/soldier.glb`. They remain presentation of the
 single party cell: placement and facing follow its interpolated grid pose, and
 formation membership changes at the existing formation commit. Fallen soldiers
 are hidden. Only equipped muskets receive the rigid weapon mesh; other equipment
 has no mesh representation yet. Idle/walk playback and action-sampled firing use
 Engine animation, with the musket attached to `mixamorig:RightHand`.
 
-`definitions/front-rank.json` owns the experiment switch, model scale, spacing,
-forward offset, clips and soldier-specific joint-local grip. The hand's local
-basis differs from the skeleton's despite sharing joint names, so their grip
-rotations differ. `tuning/exploration.json` owns camera height and perspective:
-the view stays level, with a modest eye-height lift to see over the full-height
-front rank. Reload currently returns to idle; the supplied clips do not provide
+`definitions/company-experiment.json` selects the enabled 5×5 test. Its
+`company-roster.json` supplies 24 soldiers and a central commander; the two rows
+ahead of the commander show ten full-height soldiers. `company-front-ranks.json`
+owns their 1.8 m scale, file/rank spacing, clips and soldier-specific joint-local
+grip. The base `front-rank.json` remains available with the 3×3 patrol when the
+company experiment is disabled. The hand's local basis differs from the skeleton's despite sharing joint names, so their grip
+rotations differ. `tuning/company-exploration.json` uses 4.8 m cells, a 1.95 m
+eye height and the existing level perspective/FOV. `ceilingHeight` specifies
+clearance above the floor in metres, rounded up to the voxel resolution,
+independently of tile width. `company-rooms.json` and `company-generation.json`
+use smaller room footprints and single-cell corridors; elevations are disabled
+for this scale test. Props and texture repeat retain their physical sizes.
+`company-environment.json` tunes voxel resolution, lighting and interaction
+reach for those wider cells. `company-combat.json` adjusts enemy step time and
+melee reach, while `company-encounters.json` keeps spawn and attack distances
+suited to the wider tiles. The formation board and paused planner derive
+their dimensions from the C# position projection. Saves retain all party members
+and the selected preset. Set the experiment's `enabled` field to `false` to
+restore the patrol definitions and tile scale. Reload currently returns to idle;
+the supplied clips do not provide
 a dedicated reload animation. Presentation adds no movement, targeting or save
 authority. Floor replacement clears its published instances before retirement.
 

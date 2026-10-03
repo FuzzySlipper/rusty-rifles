@@ -570,7 +570,7 @@ public sealed partial class RiflesProduct : IEngineProduct, IDebugCommandModuleS
             active.Combat.Allies[active.Actor.Id].IsLiving ? 1 : Combat.CorpseScale,
             active.Combat.Allies[active.Features.Dressing.ObserverId].IsLiving ? 1 : Combat.CorpseScale);
         musketeerArt!.Animate(active.Combat.Enemies);
-        frontRankArt!.Animate(party, active.Exploration, active.Combat);
+        frontRankArt!.Animate(party, definitions.Formation, active.Exploration, active.Combat);
         phaseStarted = updateProfile.Record(UpdatePhase.AppearancePublication, phaseStarted);
         if (updateProfile.UiProjectionEnabled && hudPublication.Take(definitions.Hud.RefreshSeconds, immediateHud)) projection!.Publish(active.Floor, active.Exploration, party, paused, feedback, selectedMember, active.Features.Readout, active.Features.Style, roomLights, active.Features.LightPosition, active.Inventory, active.ItemWorld, active.Scene, definitions.Characters, preset, active.Actor, definitions.ItemArt, CombatProjection, active.Combat.DropReachable, RunProjection, definitions.Formation);
         updateProfile.Record(UpdatePhase.UiProjection, phaseStarted);

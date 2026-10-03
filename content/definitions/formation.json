@@ -1,4 +1,5 @@
 {
+  "size": 3,
   "laneBoundaryRatio": 0.35,
   "offensiveLaneWidth": 0.5,
   "maximumLaneFallback": 2,
