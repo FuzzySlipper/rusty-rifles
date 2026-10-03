@@ -32,7 +32,7 @@ connection alone does not prove that the host device is audible to the remote
 observer.
 
 The SDK supplies `RustyEngineProductUiTypes`, the required UI port and packaged
-live-debug declarations. `scripts/build-ui.sh` typechecks against these files.
+live-debug declarations. `scripts/build-ui.mjs` typechecks against these files.
 The product declares UI source/build/input dependencies in its project; Engine's
 single build graph compiles the UI and stages it. Atlas copies run before
 `BuildRustyEngineProductUi`. Generated UI and SDK output are ignored.

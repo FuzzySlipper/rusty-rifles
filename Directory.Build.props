@@ -3,6 +3,8 @@
     <!-- The one Engine SDK/runtime pair pin. `rusty install` installs it;
          only `rusty update` changes it. -->
     <RustyEnginePackageVersion>0.1.0-dev.7a6b9d979e59</RustyEnginePackageVersion>
+    <!-- The product `rusty dev` and `rusty build` run when no project is named. -->
+    <RustyEngineProject>src/Rifles.Game/Rifles.Game.csproj</RustyEngineProject>
     <!-- Every restore, plain dotnet included, takes exactly the pinned SDK from
          the pair installed in the shared rusty cache. -->
     <RustyEngineCache Condition="'$(RustyEngineCache)' == ''">$(RUSTY_ENGINE_CACHE)</RustyEngineCache>

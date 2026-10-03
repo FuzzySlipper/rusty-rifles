@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@10.15.0",
   "scripts": {
-    "check:ui": "bash scripts/build-ui.sh '' --noEmit",
+    "check:ui": "node scripts/build-ui.mjs --noEmit",
     "dev": "rusty dev --project src/Rifles.Game/Rifles.Game.csproj --live-debug --bind-host 0.0.0.0 --port 4420",
     "check": "bash scripts/check.sh"
   },

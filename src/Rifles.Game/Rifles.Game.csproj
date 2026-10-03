@@ -10,7 +10,7 @@
     <RustyEngineProductUiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../ui/generated/source'))</RustyEngineProductUiRoot>
     <RustyEngineProductContentRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../content'))</RustyEngineProductContentRoot>
     <RustyEngineProductUiSourceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../ui'))</RustyEngineProductUiSourceRoot>
-    <RustyEngineProductUiBuildCommand>bash &quot;$(MSBuildThisFileDirectory)../../scripts/build-ui.sh&quot; &quot;$(RustyEngineProductUiTypes)&quot;</RustyEngineProductUiBuildCommand>
+    <RustyEngineProductUiBuildCommand>node &quot;$(MSBuildThisFileDirectory)../../scripts/build-ui.mjs&quot; &quot;$(RustyEngineProductUiTypes)&quot;</RustyEngineProductUiBuildCommand>
     <RustyEngineProductUiEntry>main.js</RustyEngineProductUiEntry>
     <RustyEngineProductUiProjectionStream>rifles.session</RustyEngineProductUiProjectionStream>
     <RustyEngineProductUiProjectionContract>rifles.session.v1</RustyEngineProductUiProjectionContract>
@@ -74,7 +74,7 @@
     <RustyEngineProductInputMapping Include="rifles.turn-right.press" Intent="rifles.turn-right" Trigger="key:key-e:pressed" />
   </ItemGroup>
   <ItemGroup>
-    <RustyEngineProductUiInput Include="$(MSBuildThisFileDirectory)../../package.json;$(MSBuildThisFileDirectory)../../pnpm-lock.yaml;$(MSBuildThisFileDirectory)../../scripts/build-ui.sh;$(RustyEngineProductUiTypes)" />
+    <RustyEngineProductUiInput Include="$(MSBuildThisFileDirectory)../../package.json;$(MSBuildThisFileDirectory)../../pnpm-lock.yaml;$(MSBuildThisFileDirectory)../../scripts/build-ui.mjs;$(RustyEngineProductUiTypes)" />
     <RustyEngineProductUiInput Include="$(MSBuildThisFileDirectory)../../content/art/generated/items/ink-wash-items-atlas.png;$(MSBuildThisFileDirectory)../../content/art/generated/ui/bar-backdrop.png" />
   </ItemGroup>
   <Target Name="CopyRiflesUiArt" BeforeTargets="BuildRustyEngineProductUi">
